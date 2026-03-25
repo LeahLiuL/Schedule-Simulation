@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>7 Vessels Schedule – 12 kts Speed</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #e8e8e8;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    color: #1b5e20;
+    font-size: 20px;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+
+  .vessel-section {
+    background: #fff;
+    margin-bottom: 25px;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    overflow: hidden;
+  }
+
+  .vessel-header {
+    background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+    color: #fff;
+    padding: 10px 16px;
+    font-size: 15px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .vessel-name { font-size: 18px; color: #ffe57f; }
+  .service-name { font-size: 13px; opacity: 0.9; }
+
+  .tbl-wrap { padding: 0; }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  /* header row */
+  thead tr th {
+    background: #66bb6a;
+    color: #fff;
+    font-weight: bold;
+    padding: 8px 10px;
+    text-align: center;
+    border: 1px solid #43a047;
+    font-size: 12.5px;
+  }
+
+  /* data rows */
+  tbody tr:nth-child(even) { background: #f9fbe7; }
+  tbody tr:hover { background: #e8f5e9; }
+  
+  tbody td {
+    padding: 7px 10px;
+    border: 1px solid #c8e6c9;
+    text-align: center;
+  }
+
+  td.port {
+    font-weight: bold;
+    color: #1b5e20;
+    background: #e8f5e9 !important;
+    min-width: 80px;
+  }
+
+  td.voy { color: #888; font-style: italic; }
+  td.wait { color: #555; }
+
+  .note {
+    margin-top: 20px;
+    background: #fff;
+    border: 1px solid #a5d6a7;
+    border-left: 4px solid #2e7d32;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: #555;
+    line-height: 1.7;
+    border-radius: 4px;
+    max-width: 900px;
+  }
+  .note b { color: #2e7d32; }
+  .note .title { font-size: 14px; font-weight: bold; color: #1b5e20; margin-bottom: 8px; }
+  .dist-table {
+    margin-top: 10px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .dist-table th, .dist-table td {
+    padding: 5px 8px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+  }
+  .dist-table th { background: #f5f5f5; color: #333; }
+</style>
+</head>
+<body>
+
+<h1>🚢 7条船船期模拟（航速：12 kts）</h1>
+
+<!-- ===== 船1: KRTM ===== -->
+<div class="vessel-section">
+  <div class="vessel-header">
+    <span class="vessel-name">KRTM</span>
+    <span class="service-name">KR TASMAN</span>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:70px;">PORT</th>
+        <th style="min-width:45px;">wait</th>
+        <th style="min-width:70px;">VOY NO</th>
+        <th style="min-width:140px;">ETA</th>
+        <th style="min-width:140px;">ETB</th>
+        <th style="min-width:140px;">ETD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy">2615W</td>
+        <td>2026/04/21 07:00</td>
+        <td>2026/04/21 10:00</td>
+        <td>2026/04/22 13:00</td>
+      </tr>
+      <tr>
+        <td class="port">SAJED</td>
+        <td>0</td>
+        <td class="voy">2615E</td>
+        <td>2026/05/05 17:00</td>
+        <td>2026/05/05 19:00</td>
+        <td>2026/05/06 21:00</td>
+      </tr>
+      <tr>
+        <td class="port">YEADE</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/09 12:00</td>
+        <td>2026/05/09 14:00</td>
+        <td>2026/05/10 14:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNNGB</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/31 15:00</td>
+        <td>2026/05/31 15:00</td>
+        <td>2026/06/02 08:00</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== 船2: CUNS ===== -->
+<div class="vessel-section">
+  <div class="vessel-header">
+    <span class="vessel-name">CUNS</span>
+    <span class="service-name">REX RED</span>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:70px;">PORT</th>
+        <th style="min-width:45px;">wait</th>
+        <th style="min-width:70px;">VOY NO</th>
+        <th style="min-width:140px;">ETA</th>
+        <th style="min-width:140px;">ETB</th>
+        <th style="min-width:140px;">ETD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="port">EGSOK</td>
+        <td>0</td>
+        <td class="voy">2615W</td>
+        <td>2026/04/15 08:00</td>
+        <td>2026/04/15 10:00</td>
+        <td>2026/04/16 12:00</td>
+      </tr>
+      <tr>
+        <td class="port">SAJED</td>
+        <td>0</td>
+        <td class="voy">2615E</td>
+        <td>2026/04/16 21:00</td>
+        <td>2026/04/16 23:00</td>
+        <td>2026/04/18 01:00</td>
+      </tr>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/04/24 09:00</td>
+        <td>2026/04/24 11:00</td>
+        <td>2026/04/25 14:00</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== 船3: HAMD ===== -->
+<div class="vessel-section">
+  <div class="vessel-header">
+    <span class="vessel-name">HAMD</span>
+    <span class="service-name">REX RED</span>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:70px;">PORT</th>
+        <th style="min-width:45px;">wait</th>
+        <th style="min-width:70px;">VOY NO</th>
+        <th style="min-width:140px;">ETA</th>
+        <th style="min-width:140px;">ETB</th>
+        <th style="min-width:140px;">ETD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="port">EGSOK</td>
+        <td>0</td>
+        <td class="voy">2616W</td>
+        <td>2026/04/22 08:00</td>
+        <td>2026/04/22 10:00</td>
+        <td>2026/04/23 12:00</td>
+      </tr>
+      <tr>
+        <td class="port">SAJED</td>
+        <td>0</td>
+        <td class="voy">2616E</td>
+        <td>2026/04/23 21:00</td>
+        <td>2026/04/23 23:00</td>
+        <td>2026/04/25 01:00</td>
+      </tr>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/01 09:00</td>
+        <td>2026/05/01 11:00</td>
+        <td>2026/05/02 14:00</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== 船4: WNFD ===== -->
+<div class="vessel-section">
+  <div class="vessel-header">
+    <span class="vessel-name">WNFD</span>
+    <span class="service-name">SE2</span>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:70px;">PORT</th>
+        <th style="min-width:45px;">wait</th>
+        <th style="min-width:70px;">VOY NO</th>
+        <th style="min-width:140px;">ETA</th>
+        <th style="min-width:140px;">ETB</th>
+        <th style="min-width:140px;">ETD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy">2615W</td>
+        <td>2026/04/10 07:00</td>
+        <td>2026/04/10 09:00</td>
+        <td>2026/04/11 13:00</td>
+      </tr>
+      <tr>
+        <td class="port">SAJED</td>
+        <td>0</td>
+        <td class="voy">2615E</td>
+        <td>2026/04/24 17:00</td>
+        <td>2026/04/24 19:00</td>
+        <td>2026/04/25 21:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNNGB</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/16 22:00</td>
+        <td>2026/05/16 22:00</td>
+        <td>2026/05/17 22:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNSHK</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/20 06:00</td>
+        <td>2026/05/20 08:00</td>
+        <td>2026/05/21 10:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNNAS</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/21 14:00</td>
+        <td>2026/05/21 16:00</td>
+        <td>2026/05/22 18:00</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== 船5: CHANG SHENG JI 7 ===== -->
+<div class="vessel-section">
+  <div class="vessel-header">
+    <span class="vessel-name">CHANG SHENG JI 7</span>
+    <span class="service-name">CSJ LINE</span>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:70px;">PORT</th>
+        <th style="min-width:45px;">wait</th>
+        <th style="min-width:70px;">VOY NO</th>
+        <th style="min-width:140px;">ETA</th>
+        <th style="min-width:140px;">ETB</th>
+        <th style="min-width:140px;">ETD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy">2615W</td>
+        <td>2026/04/08 07:00</td>
+        <td>2026/04/08 09:00</td>
+        <td>2026/04/09 13:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNSHA</td>
+        <td>0</td>
+        <td class="voy">2615E</td>
+        <td>2026/04/14 18:00</td>
+        <td>2026/04/14 20:00</td>
+        <td>2026/04/15 22:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNXMN</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/04/16 18:00</td>
+        <td>2026/04/16 20:00</td>
+        <td>2026/04/17 22:00</td>
+      </tr>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/04/25 13:00</td>
+        <td>2026/04/25 15:00</td>
+        <td>2026/04/26 17:00</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== 船6: ZHI YING HE SHUN ===== -->
+<div class="vessel-section">
+  <div class="vessel-header">
+    <span class="vessel-name">ZHI YING HE SHUN</span>
+    <span class="service-name">ZYHS LINE</span>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:70px;">PORT</th>
+        <th style="min-width:45px;">wait</th>
+        <th style="min-width:70px;">VOY NO</th>
+        <th style="min-width:140px;">ETA</th>
+        <th style="min-width:140px;">ETB</th>
+        <th style="min-width:140px;">ETD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy">2615W</td>
+        <td>2026/04/12 07:00</td>
+        <td>2026/04/12 09:00</td>
+        <td>2026/04/13 13:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNTAO</td>
+        <td>0</td>
+        <td class="voy">2615E</td>
+        <td>2026/04/24 12:00</td>
+        <td>2026/04/24 14:00</td>
+        <td>2026/04/25 16:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNNGB</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/04/27 08:00</td>
+        <td>2026/04/27 08:00</td>
+        <td>2026/04/28 08:00</td>
+      </tr>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/08 19:00</td>
+        <td>2026/05/08 21:00</td>
+        <td>2026/05/09 23:00</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== 船7: HUA DONG 811 ===== -->
+<div class="vessel-section">
+  <div class="vessel-header">
+    <span class="vessel-name">HUA DONG 811</span>
+    <span class="service-name">HD811 LINE</span>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:70px;">PORT</th>
+        <th style="min-width:45px;">wait</th>
+        <th style="min-width:70px;">VOY NO</th>
+        <th style="min-width:140px;">ETA</th>
+        <th style="min-width:140px;">ETB</th>
+        <th style="min-width:140px;">ETD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy">2615W</td>
+        <td>2026/04/07 07:00</td>
+        <td>2026/04/07 09:00</td>
+        <td>2026/04/08 13:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNSHK</td>
+        <td>0</td>
+        <td class="voy">2615E</td>
+        <td>2026/04/15 20:00</td>
+        <td>2026/04/15 22:00</td>
+        <td>2026/04/17 00:00</td>
+      </tr>
+      <tr>
+        <td class="port">CNNAS</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/04/17 04:00</td>
+        <td>2026/04/17 06:00</td>
+        <td>2026/04/18 08:00</td>
+      </tr>
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/04/24 10:00</td>
+        <td>2026/04/24 12:00</td>
+        <td>2026/04/25 14:00</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== Distance Reference ===== -->
+<div class="note">
+  <div class="title">📐 航程距离参考（12 kts）</div>
+  <table class="dist-table">
+    <tr>
+      <th>航段</th>
+      <th>距离 (NM)</th>
+      <th>航行时间 (12 kts)</th>
+      <th>数据来源</th>
+    </tr>
+    <tr><td>MYPKG → SAJED</td><td>3,788</td><td>≈ 13天 4小时</td><td>Breezada.com</td></tr>
+    <tr><td>SAJED → YEADE</td><td>755</td><td>≈ 2天 15小时</td><td>Fluent Cargo</td></tr>
+    <tr><td>YEADE → CNNGB</td><td>6,063</td><td>≈ 21天 1小时</td><td>Fluent Cargo</td></tr>
+    <tr><td>EGSOK → SAJED</td><td>~720</td><td>≈ 2天 12小时</td><td>*估算（红海航线）</td></tr>
+    <tr><td>SAJED → MYPKG</td><td>4,193</td><td>≈ 14天 13小时</td><td>Searoutes</td></tr>
+    <tr><td>CNNGB → CNSHK</td><td>~960</td><td>≈ 3天 8小时</td><td>*估算（东海-南海）</td></tr>
+    <tr><td>CNSHK → CNNAS</td><td>~35</td><td>≈ 3小时</td><td>*估算（珠江三角洲）</td></tr>
+    <tr><td>MYPKG → CNSHA</td><td>~2,050</td><td>≈ 7天 3小时</td><td>*估算（南海）</td></tr>
+    <tr><td>CNSHA → CNXMN</td><td>540</td><td>≈ 1天 22小时</td><td>Searoutes</td></tr>
+    <tr><td>CNXMN → MYPKG</td><td>1,858</td><td>≈ 6天 11小时</td><td>Searoutes</td></tr>
+    <tr><td>MYPKG → CNTAO</td><td>2,686</td><td>≈ 9天 9小时</td><td>Searoutes</td></tr>
+    <tr><td>CNTAO → CNNGB</td><td>377</td><td>≈ 1日 7小时</td><td>Breezada.com</td></tr>
+    <tr><td>CNNGB → MYPKG</td><td>2,290</td><td>≈ 7日 23小时</td><td>Searoutes</td></tr>
+    <tr><td>MYPKG → CNSHK</td><td>1,621</td><td>≈ 5日 14小时</td><td>Searoutes</td></tr>
+    <tr><td>CNNAS → MYPKG</td><td>~1,650</td><td>≈ 5日 17小时</td><td>*估算（南沙-巴生）</td></tr>
+  </table>
+  <p style="margin-top:12px; color:#666; font-size:11px;">
+    *标注为估算值（基于地理距离与典型航线）。港口作业时间假设约24小时；ETA→ETB候泊约1-2小时。<br>
+    起始ETD为假设值，可根据实际需求调整。
+  </p>
+</div>
+
+</body>
+</html>
