@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>HAIAN MIND 船期（13 kts）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #e8e8e8;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    color: #1565c0;
+    font-size: 20px;
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+  .vessel-section {
+    background: #fff;
+    margin-bottom: 25px;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    overflow: hidden;
+    max-width: 900px;
+    margin: 0 auto 25px auto;
+  }
+  .vessel-header {
+    background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+    color: #fff;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .vessel-name { font-size: 18px; color: #ffecb3; }
+  .service-name { font-size: 13px; opacity: 0.9; }
+  .tbl-wrap { padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead tr th {
+    background: #42a5f5;
+    color: #fff;
+    font-weight: bold;
+    padding: 10px 12px;
+    text-align: center;
+    border: 1px solid #2196f3;
+    font-size: 12.5px;
+  }
+  tbody tr:nth-child(even) { background: #e3f2fd; }
+  tbody tr:hover { background: #bbdefb; }
+  tbody td {
+    padding: 8px 12px;
+    border: 1px solid #90caf9;
+    text-align: center;
+  }
+  td.port {
+    font-weight: bold;
+    color: #1565c0;
+    background: #e3f2fd !important;
+    min-width: 90px;
+  }
+  td.voy { color: #888; font-style: italic; }
+  td.wait { color: #555; }
+  td.fuel { color: #c62828; font-weight: bold; }
+  td.fuel-na { color: #999; font-style: italic; }
+  .note {
+    margin-top: 20px;
+    background: #fff;
+    border: 1px solid #90caf9;
+    border-left: 4px solid #1976d2;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: #555;
+    line-height: 1.7;
+    border-radius: 4px;
+    max-width: 900px;
+    margin: 20px auto 20px auto;
+  }
+  .note b { color: #1976d2; }
+  .note .title { font-size: 14px; font-weight: bold; color: #1565c0; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<h1>🚢 HAIAN MIND 船期模拟（航速：13 kts）- 含海上航行油耗</h1>
+
+<div class="vessel-section">
+  <div class="vessel-header">
+    <span class="vessel-name">HAIAN MIND (HAMD)</span>
+    <span class="service-name">Asia-Gulf Service</span>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="min-width:90px;">PORT</th>
+        <th style="min-width:50px;">wait</th>
+        <th style="min-width:80px;">VOY NO</th>
+        <th style="min-width:150px;">ETA</th>
+        <th style="min-width:150px;">ETB</th>
+        <th style="min-width:150px;">ETD</th>
+        <th style="min-width:140px;">海上油耗(吨)</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr>
+        <td class="port">CNNGB</td>
+        <td>0</td>
+        <td class="voy">2616W</td>
+        <td>2026/04/15 08:00</td>
+        <td>2026/04/15 10:00</td>
+        <td>2026/04/16 12:00</td>
+        <td class="">-</td>
+      </tr>
+
+      <tr>
+        <td class="port">CNNAS</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/04/19 05:23</td>
+        <td>2026/04/19 07:23</td>
+        <td>2026/04/20 07:23</td>
+        <td class="fuel">73.6 (2.7天)</td>
+      </tr>
+
+      <tr>
+        <td class="port">MYPKG</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/04/25 14:18</td>
+        <td>2026/04/25 16:18</td>
+        <td>2026/04/26 16:18</td>
+        <td class="fuel">142.8 (5.3天)</td>
+      </tr>
+
+      <tr>
+        <td class="port">AEKFK</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/07 13:50</td>
+        <td>2026/05/07 15:50</td>
+        <td>2026/05/08 15:50</td>
+        <td class="fuel">294.2 (10.9天)</td>
+      </tr>
+
+      <tr>
+        <td class="port">CNNGB</td>
+        <td>0</td>
+        <td class="voy"></td>
+        <td>2026/05/27 06:00</td>
+        <td>2026/05/27 08:00</td>
+        <td>2026/05/28 08:00</td>
+        <td class="fuel">501.9 (18.6天)</td>
+      </tr>
+
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="note">
+  <div class="title">📊 航程距离与油耗</div>
+  <p><b>距离估算：</b></p>
+  <ul>
+    <li>CNNGB (Ningbo) → CNNAS (Nansha): ~850 NM (中国沿海航线)</li>
+    <li>CNNAS (Nansha) → MYPKG (Port Klang): ~1,650 NM (南海至马来西亚)</li>
+    <li>MYPKG (Port Klang) → AEKFK (Khor Fakkan): ~3,400 NM (经马六甲海峡至阿拉伯湾)</li>
+    <li>AEKFK (Khor Fakkan) → CNNGB (Ningbo): ~5,800 NM (阿拉伯湾至中国)</li>
+  </ul>
+  <p><b>海上油耗</b> = 每天油耗（27吨/天）× 航行天数</p>
+  <p><b>数据来源：</b></p>
+  <ul>
+    <li>船舶油耗：Port Distance.xlsx - Sheet4</li>
+    <li>港口距离：基于地理位置估算（Port Distance.xlsx中无此航线数据）</li>
+  </ul>
+  <p><b>假设条件：</b></p>
+  <ul>
+    <li>港口作业时间：约24小时</li>
+    <li>ETA→ETB候泊时间：约2小时</li>
+  </ul>
+</div>
+
+</body>
+</html>
