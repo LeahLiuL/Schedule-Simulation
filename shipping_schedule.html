@@ -645,37 +645,74 @@ const PORTS_DATA = [
   ["VNSGN","HO CHI MINH","胡志明市"],["VNVUT","CAI MEP","盖梅"],["YEADE","ADEN","亚丁"]
 ];
 
+// Full vessel data with multiple speed tiers from vessels.csv
 const VESSELS_DATA = [
-  {code:"CSJ",  name:"CHANG SHENG JI 7",   speed:14, lsfo:28, hsfo:0,  mgo:2.5},
-  {code:"CUBK", name:"CUL BANGKOK",         speed:14, lsfo:24, hsfo:0,  mgo:2.0},
-  {code:"CUHC", name:"CUL HOCHIMINH",       speed:14, lsfo:24, hsfo:0,  mgo:2.0},
-  {code:"CUHM", name:"CUL HUMEN",           speed:12, lsfo:18, hsfo:0,  mgo:1.8},
-  {code:"CUHP", name:"CUL HAIPHONG",        speed:14, lsfo:26, hsfo:30, mgo:2.2},
-  {code:"CUJK", name:"CUL JAKARTA",         speed:14, lsfo:24, hsfo:0,  mgo:2.0},
-  {code:"CUKL", name:"CUL KLANG",           speed:14, lsfo:24, hsfo:0,  mgo:2.0},
-  {code:"CULC", name:"CUL LAEMCHABANG",     speed:15, lsfo:30, hsfo:0,  mgo:2.5},
-  {code:"CUML", name:"CUL MANILA",          speed:14, lsfo:24, hsfo:0,  mgo:2.0},
-  {code:"CUNS", name:"CUL NANSHA",          speed:13, lsfo:20, hsfo:0,  mgo:1.8},
-  {code:"CUSK", name:"CUL SHEKOU",          speed:13, lsfo:20, hsfo:0,  mgo:1.8},
-  {code:"CUXM", name:"CUL XIAMEN",          speed:13, lsfo:20, hsfo:0,  mgo:1.8},
-  {code:"CUYP", name:"CUL YANGPU",          speed:12, lsfo:18, hsfo:0,  mgo:1.5},
-  {code:"FULI", name:"FU LIAN",             speed:12, lsfo:16, hsfo:0,  mgo:1.5},
-  {code:"HAMD", name:"HAIAN MIND",          speed:13, lsfo:22, hsfo:0,  mgo:2.0},
-  {code:"HDHY", name:"HDX HONGYUAN",        speed:12, lsfo:18, hsfo:0,  mgo:1.8},
-  {code:"KRCL", name:"KR CELEBES",          speed:16, lsfo:35, hsfo:0,  mgo:3.0},
-  {code:"KRTM", name:"KR TASMAN",           speed:16, lsfo:35, hsfo:0,  mgo:3.0},
-  {code:"OSGB", name:"OSG BOSSTEC",         speed:15, lsfo:28, hsfo:0,  mgo:2.5},
-  {code:"SISO", name:"SINAR SOLO",          speed:14, lsfo:25, hsfo:28, mgo:2.2},
-  {code:"STBL", name:"STAR BLESSING",       speed:15, lsfo:30, hsfo:0,  mgo:2.5},
-  {code:"TGLK", name:"TIGER LONGKOU",       speed:12, lsfo:18, hsfo:0,  mgo:1.5},
-  {code:"UGLG", name:"UGL GUANGZHOU",       speed:13, lsfo:20, hsfo:0,  mgo:1.8},
-  {code:"WNFD", name:"WAN FU DA",           speed:12, lsfo:16, hsfo:0,  mgo:1.5},
-  {code:"XD88", name:"XING DONG 88",        speed:13, lsfo:20, hsfo:0,  mgo:1.8},
-  {code:"XHDL", name:"XH DOLPHIN",          speed:14, lsfo:24, hsfo:0,  mgo:2.0},
-  {code:"ZLST", name:"ZHONG LIAN SHAN TOU", speed:13, lsfo:20, hsfo:0,  mgo:1.8},
-  {code:"ZYHS", name:"ZHI YING HE SHUN",    speed:13, lsfo:20, hsfo:0,  mgo:1.8},
-  {code:"NBST", name:"NOBAL STAR",          speed:15, lsfo:28, hsfo:0,  mgo:2.5}
+  {code:"CSJ",  name:"CHANG SHENG JI 7",   speed:11, lsfo:12, hsfo:0, mgo:1.5},
+  {code:"CUBK", name:"CUL BANGKOK",         speed:12, lsfo:15, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:12.5, lsfo:15.5, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:13, lsfo:17.6, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:13.5, lsfo:19.6, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:14, lsfo:21.6, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:14.5, lsfo:23.8, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:15, lsfo:25.3, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:15.5, lsfo:27.8, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:16, lsfo:29.6, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:16.5, lsfo:33.3, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:17, lsfo:35.5, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:17.5, lsfo:36.1, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:18, lsfo:38.6, hsfo:0, mgo:0},
+  {code:"CUHC", name:"CUL HOCHIMINH",       speed:12, lsfo:18, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:12.5, lsfo:20, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:13, lsfo:21.5, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:13.5, lsfo:23, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:14, lsfo:25, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:14.5, lsfo:26.5, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:15, lsfo:28.5, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:15.5, lsfo:30.5, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:16, lsfo:33, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:16.5, lsfo:36, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:17, lsfo:39, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:17.5, lsfo:42, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:18, lsfo:46, hsfo:0, mgo:0},
+  {code:"CUHM", name:"CUL HUMEN",           speed:12, lsfo:24, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:12.5, lsfo:24.5, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:13, lsfo:26, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:13.5, lsfo:27.5, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:14, lsfo:27.5, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:15, lsfo:28.5, hsfo:0, mgo:0},
+  {code:"CUHP", name:"CUL HAIPHONG",        speed:9.4, lsfo:9.4, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:10.18, lsfo:10.18, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:11.63, lsfo:11.63, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:12.73, lsfo:12.73, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:14.14, lsfo:14.14, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:15.76, lsfo:15.76, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:17.2, lsfo:17.2, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:18.26, lsfo:18.26, hsfo:0, mgo:1.2},
+  {code:"CUHP", name:"CUL HUANGPU",         speed:12, lsfo:9.3, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:12.5, lsfo:9.44, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:13, lsfo:10.61, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:13.5, lsfo:11.87, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:14, lsfo:13.23, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:14.5, lsfo:14.68, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:15, lsfo:16.5, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:15.5, lsfo:18.1, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:16, lsfo:19.8, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:16.5, lsfo:21.8, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:17, lsfo:24.4, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:17.5, lsfo:26.25, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:18, lsfo:28.53, hsfo:0, mgo:1.2},
+  {code:"CUJK", name:"CUL JAKARTA",         speed:12, lsfo:27.3, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:12.5, lsfo:29.5, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:13, lsfo:33, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:13.5, lsfo:38.2, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:14, lsfo:39.8, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:14.5, lsfo:42.8, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:15, lsfo:48.8, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:15.5, lsfo:60, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:16, lsfo:85.8, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:16.5, lsfo:70, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:17, lsfo:78, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:17.5, lsfo:84, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:18, lsfo:91, hsfo:0, mgo:0},
+  {code:"CUKL", name:"CUL KLANG",           speed:12, lsfo:21.2, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:12.5, lsfo:23.6, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:13, lsfo:26.7, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:13.5, lsfo:28.2, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:14, lsfo:30.5, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:14.5, lsfo:32.2, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:15, lsfo:34.6, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:15.5, lsfo:35.2, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:16, lsfo:36.9, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:16.5, lsfo:37.6, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:17, lsfo:38.8, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:17.5, lsfo:41.3, hsfo:0, mgo:0},
+  {code:"CULC", name:"CUL LAEMCHABANG",     speed:11, lsfo:17, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:11.5, lsfo:18, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:12, lsfo:12.93, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:12.5, lsfo:14.29, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:13, lsfo:15.76, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:13.5, lsfo:17.35, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:14, lsfo:19.06, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:14.5, lsfo:20.91, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:15, lsfo:23.02, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:15.5, lsfo:24.98, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:16, lsfo:27.22, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:16.5, lsfo:29.62, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:17, lsfo:32.16, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:17.5, lsfo:34.85, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:18, lsfo:37.7, hsfo:0, mgo:0},
+  {code:"CUML", name:"CUL MANILA",          speed:12, lsfo:27.3, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:12.5, lsfo:31.5, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:13, lsfo:37.7, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:13.5, lsfo:41.7, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:14, lsfo:46, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:14.5, lsfo:49, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:15, lsfo:52, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:15.5, lsfo:57, hsfo:0, mgo:0},
+  {code:"CUNS", name:"CUL NANSHA",          speed:11, lsfo:12, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:11.5, lsfo:15, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:12, lsfo:13.84, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:12.5, lsfo:15.25, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:13, lsfo:16.23, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:13.5, lsfo:17.27, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:14, lsfo:18.32, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:14.5, lsfo:20.06, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:15, lsfo:21.93, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:15.5, lsfo:23.26, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:16, lsfo:24.64, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:16.5, lsfo:26.56, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:17, lsfo:30.15, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:17.5, lsfo:32.16, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:18, lsfo:34.34, hsfo:0, mgo:0},
+  {code:"CUSK", name:"CUL SHEKOU",          speed:12, lsfo:18, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:12.5, lsfo:20, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:13, lsfo:21.5, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:13.5, lsfo:23, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:14, lsfo:25, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:14.5, lsfo:26.5, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:15, lsfo:28.5, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:15.5, lsfo:30.5, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:16, lsfo:33, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:16.5, lsfo:36, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:17, lsfo:39, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:17.5, lsfo:42, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:18, lsfo:46, hsfo:0, mgo:0},
+  {code:"CUXM", name:"CUL XIAMEN",          speed:12, lsfo:24.3, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:12.5, lsfo:24.9, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:13, lsfo:25.4, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:13.5, lsfo:26.4, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:14, lsfo:27.3, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:14.5, lsfo:28.1, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:15, lsfo:29.4, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:15.5, lsfo:30.7, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:16, lsfo:32, hsfo:0, mgo:0},
+  {code:"CUYP", name:"CUL YANGPU",          speed:12, lsfo:13.8, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:12.5, lsfo:14.9, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:13, lsfo:16.1, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:13.5, lsfo:17.4, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:14, lsfo:19.2, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:14.5, lsfo:21.3, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:15, lsfo:22.8, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:15.5, lsfo:24.5, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:16, lsfo:27.2, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:16.5, lsfo:28.1, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:17, lsfo:29.8, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:17.5, lsfo:33.3, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:18, lsfo:35.6, hsfo:0, mgo:0},
+  {code:"FULI", name:"FU LIAN",             speed:12.5, lsfo:20, hsfo:0, mgo:0},
+  {code:"HAMD", name:"HAIAN MIND",          speed:11, lsfo:22, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:11.5, lsfo:22.5, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:12, lsfo:24, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:12.5, lsfo:24.5, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:13, lsfo:27, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:13.5, lsfo:27.5, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:14, lsfo:30, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:14.5, lsfo:32, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:15, lsfo:34, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:15.5, lsfo:36, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:16, lsfo:39, hsfo:0, mgo:0},
+  {code:"HDHY", name:"HDX HONGYUAN",        speed:11, lsfo:20, hsfo:0, mgo:0},
+  {code:"KRCL", name:"KR CELEBES",          speed:9.8, lsfo:6.6, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:10, lsfo:9.93, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:10.5, lsfo:9.93, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:11, lsfo:11.55, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:12.3, lsfo:12.3, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:13.4, lsfo:15.7, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:14.1, lsfo:18.1, hsfo:0, mgo:0},
+  {code:"KRTM", name:"KR TASMAN",           speed:11, lsfo:18, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:11.5, lsfo:18.5, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:12, lsfo:19.5, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:12.5, lsfo:22, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:13, lsfo:23, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:13.5, lsfo:25, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:14, lsfo:27, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:14.5, lsfo:32, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:15, lsfo:35, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:15.5, lsfo:38, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:16, lsfo:42, hsfo:0, mgo:0},
+  {code:"OSGB", name:"OSG BOSSTEC",         speed:12, lsfo:15.8, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:12.5, lsfo:16.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:13, lsfo:17.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:13.5, lsfo:18.8, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:14, lsfo:20.2, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:14.5, lsfo:21.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:15, lsfo:22.8, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:15.5, lsfo:23.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:16, lsfo:24, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:16.5, lsfo:24.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:17, lsfo:25, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:17.5, lsfo:26, hsfo:0, mgo:0},
+  {code:"SISO", name:"SINAR SOLO",          speed:12, lsfo:14, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:12.5, lsfo:14.5, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:13, lsfo:15.1, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:13.5, lsfo:15.7, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:14, lsfo:16.3, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:14.5, lsfo:16.8, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:15, lsfo:17.4, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:15.5, lsfo:18, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:16, lsfo:18.6, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:16.5, lsfo:19.1, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:17, lsfo:19.7, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:17.5, lsfo:20.3, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:18, lsfo:20.9, hsfo:0, mgo:1.2},
+  {code:"STBL", name:"STAR BLESSING",       speed:12, lsfo:16.5, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:12.5, lsfo:17, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:13, lsfo:18.7, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:13.5, lsfo:19.8, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:14, lsfo:21.4, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:14.5, lsfo:22.5, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:15, lsfo:24, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:15.5, lsfo:26.5, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:16, lsfo:27.4, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:16.5, lsfo:29, hsfo:0, mgo:0},
+  {code:"TGLK", name:"TIGER LONGKOU",       speed:11, lsfo:14, hsfo:0, mgo:3},{code:"TGLK", name:"TIGER LONGKOU",       speed:11.5, lsfo:15.5, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:12, lsfo:16, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:12.5, lsfo:18, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:13, lsfo:18, hsfo:0, mgo:3},{code:"TGLK", name:"TIGER LONGKOU",       speed:13.5, lsfo:21, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:14, lsfo:23.2, hsfo:0, mgo:3},{code:"TGLK", name:"TIGER LONGKOU",       speed:14.5, lsfo:25, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:15, lsfo:27.3, hsfo:0, mgo:3},{code:"TGLK", name:"TIGER LONGKOU",       speed:16, lsfo:33.5, hsfo:0, mgo:3},
+  {code:"UGLG", name:"UGL GUANGZHOU",       speed:10, lsfo:12, hsfo:0, mgo:0},{code:"UGLG", name:"UGL GUANGZHOU",       speed:14.5, lsfo:26.5, hsfo:0, mgo:0},{code:"UGLG", name:"UGL GUANGZHOU",       speed:15.5, lsfo:29.5, hsfo:0, mgo:0},
+  {code:"WNFD", name:"WAN FU DA",           speed:11, lsfo:24.5, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:11.5, lsfo:26, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:12, lsfo:27.5, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:12.5, lsfo:28, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:13, lsfo:30, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:13.5, lsfo:31, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:14, lsfo:32.5, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:14.5, lsfo:33, hsfo:0, mgo:0},
+  {code:"XD88", name:"XING DONG 88",        speed:7, lsfo:12.5, hsfo:0, mgo:1.2},{code:"XD88", name:"XING DONG 88",        speed:11.5, lsfo:15.5, hsfo:0, mgo:1.2},{code:"XD88", name:"XING DONG 88",        speed:12.5, lsfo:18, hsfo:0, mgo:1.2},
+  {code:"XHDL", name:"XH DOLPHIN",          speed:15, lsfo:37.9, hsfo:0, mgo:0},{code:"XHDL", name:"XH DOLPHIN",          speed:16, lsfo:39.4, hsfo:0, mgo:0},{code:"XHDL", name:"XH DOLPHIN",          speed:17, lsfo:44.9, hsfo:0, mgo:0},{code:"XHDL", name:"XH DOLPHIN",          speed:18, lsfo:51.5, hsfo:0, mgo:0},
+  {code:"ZLST", name:"ZHONG LIAN SHAN TOU", speed:12, lsfo:11.2, hsfo:0, mgo:0},
+  {code:"ZYHS", name:"ZHI YING HE SHUN",    speed:11, lsfo:13.5, hsfo:0, mgo:0},
+  {code:"NBST", name:"NOBAL STAR",          speed:17, lsfo:30.5, hsfo:0, mgo:0.1},{code:"NBST", name:"NOBAL STAR",          speed:16, lsfo:28, hsfo:0, mgo:0.1},{code:"NBST", name:"NOBAL STAR",          speed:15, lsfo:26, hsfo:0, mgo:0.1},{code:"NBST", name:"NOBAL STAR",          speed:14, lsfo:21.5, hsfo:0, mgo:0.1},{code:"NBST", name:"NOBAL STAR",          speed:13, lsfo:17.5, hsfo:0, mgo:0.1}
 ];
+
+// Get unique vessel list (first tier as default) for combobox
+function getUniqueVessels(){
+  const map = new Map();
+  VESSELS_DATA.forEach(v=>{
+    if(!map.has(v.code)){
+      map.set(v.code, {code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo});
+    }
+  });
+  return Array.from(map.values());
+}
+
+// Find fuel rates for a vessel code at a given speed (exact or nearest)
+function lookupFuelRates(code, speed){
+  const tiers = VESSELS_DATA.filter(v=>v.code===code);
+  if(!tiers.length) return {lsfo:0, hsfo:0, mgo:0};
+  // Exact match
+  const exact = tiers.find(t=>Math.abs(t.speed-speed)<0.01);
+  if(exact) return {lsfo:exact.lsfo||0, hsfo:exact.hsfo||0, mgo:exact.mgo||0};
+  // Nearest match (interpolate between two closest tiers)
+  tiers.sort((a,b)=>a.speed-b.speed);
+  if(speed <= tiers[0].speed) return {lsfo:tiers[0].lsfo||0, hsfo:tiers[0].hsfo||0, mgo:tiers[0].mgo||0};
+  if(speed >= tiers[tiers.length-1].speed) return {lsfo:tiers[tiers.length-1].lsfo||0, hsfo:tiers[tiers.length-1].hsfo||0, mgo:tiers[tiers.length-1].mgo||0};
+  // Linear interpolation
+  for(let i=0;i<tiers.length-1;i++){
+    if(speed>=tiers[i].speed && speed<=tiers[i+1].speed){
+      const ratio = (speed-tiers[i].speed)/(tiers[i+1].speed-tiers[i].speed);
+      const lsfo = (tiers[i].lsfo||0) + ratio*((tiers[i+1].lsfo||0)-(tiers[i].lsfo||0));
+      const hsfo = (tiers[i].hsfo||0) + ratio*((tiers[i+1].hsfo||0)-(tiers[i].hsfo||0));
+      const mgo  = (tiers[i].mgo||0)  + ratio*((tiers[i+1].mgo||0)-(tiers[i].mgo||0));
+      return {lsfo:+lsfo.toFixed(1), hsfo:+hsfo.toFixed(1), mgo:+mgo.toFixed(1)};
+    }
+  }
+  return {lsfo:0, hsfo:0, mgo:0};
+}
 
 // Distance matrix
 const DIST_RAW = [
@@ -883,7 +920,8 @@ function fmtDt(d){
 
 // ==================== VESSEL COMBOBOX ====================
 function initVesselCombobox(){
-  const vesselItems = VESSELS_DATA.map(v => ({
+  const uniqueVessels = getUniqueVessels();
+  const vesselItems = uniqueVessels.map(v => ({
     code: v.code,
     name: v.name,
     search: v.code + ' ' + v.name,
@@ -892,7 +930,7 @@ function initVesselCombobox(){
   }));
 
   initCombobox('vesselInput', 'vesselDropdown', vesselItems, (item) => {
-    const v = VESSELS_DATA.find(x=>x.code===item.code);
+    const v = uniqueVessels.find(x=>x.code===item.code);
     if(v){
       currentVessel = { code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo };
       showVesselInfo();
@@ -914,6 +952,14 @@ function onDesignSpeedChange(val){
   const spd = parseFloat(val)||14;
   currentVessel.speed = spd;
   document.getElementById('speedInput').value = spd;
+  // Auto-lookup fuel rates from vessel data by speed
+  if(currentVessel.code){
+    const rates = lookupFuelRates(currentVessel.code, spd);
+    currentVessel.lsfo = rates.lsfo;
+    currentVessel.hsfo = rates.hsfo;
+    currentVessel.mgo  = rates.mgo;
+    showVesselInfo();
+  }
   updateFuelEstimate();
 }
 
