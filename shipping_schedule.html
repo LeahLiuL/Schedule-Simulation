@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Voyage Schedule Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --primary: #1a3a5c;
+    --accent:  #0d6efd;
+    --accent2: #17a2b8;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger:  #dc3545;
+    --bg:      #f0f4f8;
+    --card:    #ffffff;
+    --border:  #d0d9e4;
+    --text:    #212529;
+    --muted:   #6c757d;
+    --thead:   #1a3a5c;
+    --thead-t: #ffffff;
+    --row-alt: #f7fafd;
+    --row-mod: #fff9e6;
+    --shadow:  0 2px 12px rgba(26,58,92,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ===== HEADER ===== */
+  .app-header {
+    background: linear-gradient(135deg, var(--primary) 0%, #2c5f8a 100%);
+    color: #fff;
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .app-header .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.15rem; font-weight: 700; letter-spacing: .5px;
+  }
+  .app-header .logo svg { opacity: .9; }
+  .header-right { font-size: .8rem; opacity: .75; }
+
+  /* ===== LAYOUT ===== */
+  .main-layout {
+    display: flex;
+    gap: 0;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+  }
+
+  /* ===== LEFT PANEL ===== */
+  .left-panel {
+    width: 320px;
+    min-width: 280px;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .panel-section {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-section:last-child { border-bottom: none; }
+  .section-title {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  label { font-size: .85rem; font-weight: 600; color: var(--primary); display: block; margin-bottom: 4px; }
+
+  select, input[type=text], input[type=number], input[type=datetime-local] {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: .85rem;
+    background: #fff;
+    color: var(--text);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  select:focus, input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(13,110,253,.15);
+  }
+
+  /* port list */
+  .port-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .port-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--row-alt);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    cursor: grab;
+  }
+  .port-item:active { cursor: grabbing; }
+  .port-item .drag-handle { color: var(--muted); font-size: 1rem; flex-shrink: 0; }
+  .port-item .port-label { flex: 1; font-size: .82rem; font-weight: 600; }
+  .port-item .port-stay-input {
+    width: 54px; padding: 3px 5px; font-size: .78rem;
+    border: 1px solid var(--border); border-radius: 4px;
+    text-align: center;
+  }
+  .port-item .btn-remove {
+    background: none; border: none; color: var(--danger);
+    cursor: pointer; font-size: 1rem; padding: 2px 4px; border-radius: 4px;
+  }
+  .port-item .btn-remove:hover { background: #ffeaea; }
+
+  .port-add-row {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
+  .port-add-row select { flex: 1; }
+  .btn-add-port {
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 6px;
+    padding: 7px 12px; font-size: .82rem; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    transition: background .15s;
+  }
+  .btn-add-port:hover { background: #0b5ed7; }
+
+  /* speed grid */
+  .speed-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .speed-grid .field { display: flex; flex-direction: column; gap: 4px; }
+
+  /* fuel summary */
+  .fuel-summary {
+    background: linear-gradient(135deg,#eaf3ff,#f0faff);
+    border: 1px solid #b8d9f8;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .fuel-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .82rem; padding: 3px 0;
+    border-bottom: 1px dashed #d0e8f8;
+  }
+  .fuel-row:last-child { border-bottom: none; }
+  .fuel-row .fuel-label { color: var(--muted); }
+  .fuel-row .fuel-val { font-weight: 700; color: var(--primary); }
+  .fuel-total { font-size: .9rem; color: var(--accent2); margin-top: 6px; }
+
+  /* run button */
+  .btn-run {
+    width: 100%;
+    padding: 11px;
+    background: linear-gradient(135deg, var(--accent) 0%, #0a58ca 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .95rem;
+    font-weight: 700;
+    letter-spacing: .5px;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(13,110,253,.35);
+    transition: opacity .15s, transform .1s;
+  }
+  .btn-run:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-run:active { transform: translateY(0); }
+
+  /* ===== RIGHT PANEL ===== */
+  .right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .right-toolbar {
+    padding: 10px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .toolbar-info { font-size: .82rem; color: var(--muted); }
+  .toolbar-info strong { color: var(--primary); }
+  .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+
+  .btn-export {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    background: var(--success);
+    color: #fff; border: none; border-radius: 6px;
+    font-size: .83rem; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-export:hover { background: #218838; }
+
+  .btn-reset {
+    padding: 7px 14px;
+    background: #fff;
+    color: var(--muted); border: 1px solid var(--border); border-radius: 6px;
+    font-size: .83rem; cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-reset:hover { background: var(--row-alt); color: var(--text); }
+
+  .badge-modified {
+    background: var(--warning);
+    color: #333;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: .72rem;
+    font-weight: 700;
+  }
+
+  /* ===== TABLE ===== */
+  .table-wrapper {
+    flex: 1;
+    overflow: auto;
+    padding: 16px 20px;
+  }
+  table {
+    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+    background: var(--card);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    font-size: .78rem;
+  }
+  thead tr {
+    background: var(--thead);
+    color: var(--thead-t);
+  }
+  thead th {
+    padding: 9px 10px;
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: .3px;
+    border-right: 1px solid rgba(255,255,255,.1);
+    position: sticky; top: 0; z-index: 2;
+    background: var(--thead);
+  }
+  thead th:last-child { border-right: none; }
+
+  tbody tr { transition: background .1s; }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr:hover { background: #e8f0fe; }
+  tbody tr.modified { background: var(--row-mod) !important; }
+
+  tbody td {
+    padding: 6px 10px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  tbody td:last-child { border-right: none; }
+
+  /* editable cell */
+  td[contenteditable="true"] {
+    cursor: text;
+    position: relative;
+  }
+  td[contenteditable="true"]:hover::after {
+    content: '✎';
+    position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+    font-size: .65rem; color: var(--accent); opacity: .6;
+  }
+  td[contenteditable="true"]:focus {
+    outline: 2px solid var(--accent);
+    background: #e8f0fe !important;
+    border-radius: 3px;
+    z-index: 1;
+  }
+
+  /* column color coding */
+  .col-port     { font-weight: 700; color: var(--primary); min-width: 90px; }
+  .col-eta      { color: #1a6b3c; min-width: 120px; }
+  .col-etb      { color: #1a6b3c; min-width: 120px; }
+  .col-etd      { color: #8b1a1a; min-width: 120px; }
+  .col-delay    { min-width: 80px; text-align: center; }
+  .col-delay.ahead { color: var(--success); font-weight: 700; }
+  .col-delay.delay { color: var(--danger); font-weight: 700; }
+  .col-dist     { text-align: right; color: #555; min-width: 70px; }
+  .col-speed    { text-align: right; min-width: 60px; }
+  .col-fuel     { text-align: right; color: #8b5e00; min-width: 65px; }
+  .col-remark   { min-width: 100px; color: var(--muted); }
+  .col-num      { text-align: center; min-width: 55px; }
+  .col-stay     { text-align: right; min-width: 80px; }
+  .col-run      { text-align: right; min-width: 65px; }
+  .col-voy      { text-align: center; font-weight: 700; color: var(--accent2); min-width: 70px; }
+
+  /* status badge */
+  .status-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: .7rem;
+    font-weight: 700;
+  }
+  .status-on-time  { background: #d4edda; color: #155724; }
+  .status-ahead    { background: #cce5ff; color: #004085; }
+  .status-delayed  { background: #f8d7da; color: #721c24; }
+  .status-waiting  { background: #fff3cd; color: #856404; }
+
+  /* empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    gap: 16px;
+  }
+  .empty-state svg { opacity: .3; }
+  .empty-state h3 { font-size: 1.1rem; font-weight: 600; }
+  .empty-state p  { font-size: .85rem; text-align: center; max-width: 300px; }
+
+  /* toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--primary); color: #fff;
+    padding: 10px 18px; border-radius: 8px;
+    font-size: .85rem; font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0,0,0,.25);
+    transform: translateY(80px); opacity: 0;
+    transition: transform .3s, opacity .3s;
+    z-index: 9999;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--success); }
+  .toast.warning { background: #856404; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f0f0f0; }
+  ::-webkit-scrollbar-thumb { background: #b0bec5; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #78909c; }
+
+  /* drag over */
+  .port-item.drag-over { border: 2px dashed var(--accent); background: #e8f0fe; }
+
+  /* loading */
+  .btn-run.loading { position: relative; pointer-events: none; }
+  .btn-run.loading::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+  .proforma-badge {
+    font-size: .68rem; padding: 1px 5px;
+    border-radius: 4px; font-weight: 700;
+  }
+  .pb-normal { background: #e2f0fb; color: #0a58ca; }
+  .pb-delayed { background: #fde8e8; color: #9a0000; }
+  .pb-ahead   { background: #e2fbe8; color: #155724; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="logo">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+    </svg>
+    Voyage Schedule Simulator
+  </div>
+  <div class="header-right" id="headerTime"></div>
+</header>
+
+<div class="main-layout">
+
+  <!-- LEFT PANEL -->
+  <aside class="left-panel">
+
+    <!-- Vessel -->
+    <div class="panel-section">
+      <div class="section-title">Vessel</div>
+      <label>Select Vessel</label>
+      <select id="vesselSelect">
+        <option value="">-- Choose vessel --</option>
+      </select>
+      <div id="vesselInfo" style="margin-top:8px;display:none;">
+        <div class="fuel-summary" style="padding:8px 12px;">
+          <div class="fuel-row">
+            <span class="fuel-label">Design Speed</span>
+            <span class="fuel-val" id="vi-speed">-</span>
+          </div>
+          <div class="fuel-row">
+            <span class="fuel-label">LSFO (sea)</span>
+            <span class="fuel-val" id="vi-lsfo">- mt/day</span>
+          </div>
+          <div class="fuel-row">
+            <span class="fuel-label">HSFO (sea)</span>
+            <span class="fuel-val" id="vi-hsfo">- mt/day</span>
+          </div>
+          <div class="fuel-row">
+            <span class="fuel-label">MGO (sea)</span>
+            <span class="fuel-val" id="vi-mgo">- mt/day</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voyage Parameters -->
+    <div class="panel-section">
+      <div class="section-title">Voyage Parameters</div>
+      <div class="speed-grid">
+        <div class="field">
+          <label>Speed (knots)</label>
+          <input type="number" id="speedInput" value="14" min="5" max="25" step="0.5"/>
+        </div>
+        <div class="field">
+          <label>VOY. NO.</label>
+          <input type="text" id="voyNoInput" value="001W" placeholder="001W"/>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Voyage Start (ETD 1st Port)</label>
+          <input type="datetime-local" id="startDateInput"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ports -->
+    <div class="panel-section" style="flex:1;">
+      <div class="section-title">Port Rotation</div>
+      <div class="port-list" id="portList"></div>
+      <div class="port-add-row">
+        <select id="portSelect">
+          <option value="">-- Add port --</option>
+        </select>
+        <button class="btn-add-port" onclick="addPort()">＋ Add</button>
+      </div>
+    </div>
+
+    <!-- Fuel Summary -->
+    <div class="panel-section">
+      <div class="section-title">Estimated Fuel (Sea)</div>
+      <div class="fuel-summary" id="fuelSummary">
+        <div class="fuel-row">
+          <span class="fuel-label">Total Distance</span>
+          <span class="fuel-val" id="fs-dist">-- nm</span>
+        </div>
+        <div class="fuel-row">
+          <span class="fuel-label">Total Sea Days</span>
+          <span class="fuel-val" id="fs-seadays">-- days</span>
+        </div>
+        <div class="fuel-row fuel-total">
+          <span class="fuel-label">Est. LSFO</span>
+          <span class="fuel-val" id="fs-lsfo">-- mt</span>
+        </div>
+        <div class="fuel-row fuel-total">
+          <span class="fuel-label">Est. MGO</span>
+          <span class="fuel-val" id="fs-mgo">-- mt</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run -->
+    <div class="panel-section">
+      <button class="btn-run" id="btnRun" onclick="runSchedule()">
+        ▶ &nbsp;RUN SIMULATION
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- RIGHT PANEL -->
+  <main class="right-panel">
+    <div class="right-toolbar">
+      <div class="toolbar-info">
+        <strong id="tbTitle">No schedule generated</strong>
+        <span id="tbModBadge" style="display:none;" class="badge-modified">● Modified</span>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn-reset" onclick="resetModifications()" id="btnReset" style="display:none">↺ Reset</button>
+        <button class="btn-export" onclick="exportExcel()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <polyline points="9 15 12 18 15 15"/>
+          </svg>
+          Export Excel
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrapper" id="tableWrapper">
+      <div class="empty-state" id="emptyState">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <line x1="3" y1="9" x2="21" y2="9"/>
+          <line x1="9" y1="21" x2="9" y2="9"/>
+        </svg>
+        <h3>No Schedule Yet</h3>
+        <p>Select a vessel, add ports, set speed and start date, then click <strong>RUN SIMULATION</strong>.</p>
+      </div>
+      <div id="scheduleTableContainer" style="display:none;"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== DATA ====================
+const PORTS_DATA = [
+  ["AEAUH","ABU DHABI","阿布扎比"],["AEJEA","JEBEL ALI, UAE","杰贝阿里"],["AEKLF","Khor Fakkan","富查伊拉"],
+  ["BDCGP","CHITTAGONG",""],["BEANR","ANTWERP","安特卫普"],["BRSSZ","SANTOS",""],
+  ["CNAQG","ANQING","安庆"],["CNCGU","CHANGSHU","常熟"],["CNCOZ","CHAOZHOU","潮州"],
+  ["CNCWN","CHIWAN","赤湾"],["CNDAL","DALIAN","大连"],["CNDCB","CNDCB TERMINAL","大铲湾"],
+  ["CNDGG","DONGGUAN","东莞"],["CNFAN","FANGCHENGGANG","防城港"],["CNFOS","FOSHAN","佛山"],
+  ["CNFZH","FUZHOU","福州"],["CNGCT","GUANGZHOU CT","广州集装箱"],["CNGGZ","GUANGZHOU","广州"],
+  ["CNHMN","HUMEN","虎门"],["CNHUA","HUANGPU","黄埔"],["CNHUI","HUIZHOU","惠州"],
+  ["CNJAS","JIAXING","嘉兴"],["CNJGY","JIANG YIN","江阴"],["CNJMN","JIANGMEN","江门"],
+  ["CNJYG","JIEYANG","揭阳"],["CNLYG","LIANYUNGANG","连云港"],["CNNAS","NANSHA","南沙"],
+  ["CNNGB","NINGBO","宁波"],["CNNJG","NANJING","南京"],["CNNTG","NANTONG","南通"],
+  ["CNQZH","QINZHOU","钦州"],["CNQZL","QUANZHOU","泉州"],["CNSHA","SHANGHAI","上海"],
+  ["CNSHK","SHEKOU","蛇口"],["CNSWA","SHANTOU","汕头"],["CNTAC","TAI CANG","太仓"],
+  ["CNTAO","QINGDAO","青岛"],["CNWHA","WUHAN","武汉"],["CNWNZ","WENZHOU","温州"],
+  ["CNXGG","XINGANG","新港"],["CNXMN","XIAMEN","厦门"],["CNYTN","YANTIAN","盐田"],
+  ["CNZJG","ZHANGJIAGANG","张家港"],["CNZNG","ZHANJIANG","湛江"],["CNZSN","ZHONGSHAN","中山"],
+  ["CNZUH","ZHUHAI","珠海"],["DEHAM","HAMBURG","汉堡"],["DJJIB","DJIBOUTI","吉布提"],
+  ["EGSOK","SOKHNA","苏赫奈泉"],["HKHKG","HONG KONG","香港"],["ILASD","ASHDOD","阿什杜德"],
+  ["ILHFA","HAIFA","海法"],["INMAA","CHENNAI","金奈"],["INMUN","MUNDRA","蒙德拉"],
+  ["INNSA","NHAVA SHEVA","那瓦舍瓦"],["JPNGO","NAGOYA","名古屋"],["JPOSA","OSAKA","大阪"],
+  ["JPTYO","TOKYO","东京"],["JPUKB","KOBE","神户"],["JPYOK","YOKOHAMA","横滨"],
+  ["KEMBA","MOMBASA","蒙巴萨"],["KRINC","INCHEON","仁川"],["KRPUS","BUSAN","釜山"],
+  ["LKCMB","COLOMBO","科伦坡"],["MYPEN","PENANG","槟城"],["MYPKG","PORT KLANG","巴生港"],
+  ["MYTPP","TANJUNG PELEPAS","丹戎柏勒巴斯"],["NLRTM","ROTTERDAM","鹿特丹"],
+  ["PHMNL","MANILA","马尼拉"],["PKKHI","KARACHI","卡拉奇"],["SAJED","JEDDAH","吉达"],
+  ["SGSIN","SINGAPORE","新加坡"],["THBKK","BANGKOK","曼谷"],["THLCH","LAEM CHABANG","林查班"],
+  ["TRIST","ISTANBUL","伊斯坦布尔"],["TWKEL","KEELUNG","基隆"],["TWKHH","KAOHSIUNG","高雄"],
+  ["TWTXG","TAICHUNG","台中"],["USLAX","LOS ANGELES","洛杉矶"],["USLGB","LONG BEACH","长滩"],
+  ["USOAK","OAKLAND","奥克兰"],["VNDAD","DA NANG","岘港"],["VNHPH","HAIPHONG","海防"],
+  ["VNSGN","HO CHI MINH","胡志明市"],["VNVUT","CAI MEP","盖梅"],["YEADE","ADEN","亚丁"]
+];
+
+const VESSELS_DATA = [
+  {code:"CSJ",  name:"CHANG SHENG JI 7",   speed:14, lsfo:28, hsfo:0,  mgo:2.5},
+  {code:"CUBK", name:"CUL BANGKOK",         speed:14, lsfo:24, hsfo:0,  mgo:2.0},
+  {code:"CUHC", name:"CUL HOCHIMINH",       speed:14, lsfo:24, hsfo:0,  mgo:2.0},
+  {code:"CUHM", name:"CUL HUMEN",           speed:12, lsfo:18, hsfo:0,  mgo:1.8},
+  {code:"CUHP", name:"CUL HAIPHONG",        speed:14, lsfo:26, hsfo:30, mgo:2.2},
+  {code:"CUJK", name:"CUL JAKARTA",         speed:14, lsfo:24, hsfo:0,  mgo:2.0},
+  {code:"CUKL", name:"CUL KLANG",           speed:14, lsfo:24, hsfo:0,  mgo:2.0},
+  {code:"CULC", name:"CUL LAEMCHABANG",     speed:15, lsfo:30, hsfo:0,  mgo:2.5},
+  {code:"CUML", name:"CUL MANILA",          speed:14, lsfo:24, hsfo:0,  mgo:2.0},
+  {code:"CUNS", name:"CUL NANSHA",          speed:13, lsfo:20, hsfo:0,  mgo:1.8},
+  {code:"CUSK", name:"CUL SHEKOU",          speed:13, lsfo:20, hsfo:0,  mgo:1.8},
+  {code:"CUXM", name:"CUL XIAMEN",          speed:13, lsfo:20, hsfo:0,  mgo:1.8},
+  {code:"CUYP", name:"CUL YANGPU",          speed:12, lsfo:18, hsfo:0,  mgo:1.5},
+  {code:"FULI", name:"FU LIAN",             speed:12, lsfo:16, hsfo:0,  mgo:1.5},
+  {code:"HAMD", name:"HAIAN MIND",          speed:13, lsfo:22, hsfo:0,  mgo:2.0},
+  {code:"HDHY", name:"HDX HONGYUAN",        speed:12, lsfo:18, hsfo:0,  mgo:1.8},
+  {code:"KRCL", name:"KR CELEBES",          speed:16, lsfo:35, hsfo:0,  mgo:3.0},
+  {code:"KRTM", name:"KR TASMAN",           speed:16, lsfo:35, hsfo:0,  mgo:3.0},
+  {code:"OSGB", name:"OSG BOSSTEC",         speed:15, lsfo:28, hsfo:0,  mgo:2.5},
+  {code:"SISO", name:"SINAR SOLO",          speed:14, lsfo:25, hsfo:28, mgo:2.2},
+  {code:"STBL", name:"STAR BLESSING",       speed:15, lsfo:30, hsfo:0,  mgo:2.5},
+  {code:"TGLK", name:"TIGER LONGKOU",       speed:12, lsfo:18, hsfo:0,  mgo:1.5},
+  {code:"UGLG", name:"UGL GUANGZHOU",       speed:13, lsfo:20, hsfo:0,  mgo:1.8},
+  {code:"WNFD", name:"WAN FU DA",           speed:12, lsfo:16, hsfo:0,  mgo:1.5},
+  {code:"XD88", name:"XING DONG 88",        speed:13, lsfo:20, hsfo:0,  mgo:1.8},
+  {code:"XHDL", name:"XH DOLPHIN",          speed:14, lsfo:24, hsfo:0,  mgo:2.0},
+  {code:"ZLST", name:"ZHONG LIAN SHAN TOU", speed:13, lsfo:20, hsfo:0,  mgo:1.8},
+  {code:"ZYHS", name:"ZHI YING HE SHUN",    speed:13, lsfo:20, hsfo:0,  mgo:1.8},
+  {code:"NBST", name:"NOBAL STAR",          speed:15, lsfo:28, hsfo:0,  mgo:2.5}
+];
+
+// Distance matrix (partial - representative routes)
+const DIST_RAW = [
+  ["AEJEA","AEKLF",232],["AEJEA","SGSIN",3520],["AEJEA","HKHKG",5820],["AEJEA","CNSHA",6050],
+  ["AEJEA","CNTAO",6320],["AEJEA","KRPUS",6500],["AEJEA","SAJED",1580],["AEJEA","DJJIB",1250],
+  ["SGSIN","HKHKG",1422],["SGSIN","CNSHA",2086],["SGSIN","CNTAO",2540],["SGSIN","KRPUS",2730],
+  ["SGSIN","JPTYO",3320],["SGSIN","THLCH",840],["SGSIN","MYPKG",195],["SGSIN","VNSGN",595],
+  ["SGSIN","INMUN",2380],["SGSIN","INNSA",2415],["SGSIN","LKCMB",1585],["SGSIN","MYTPP",15],
+  ["HKHKG","CNSHA",844],["HKHKG","CNTAO",580],["HKHKG","CNNGB",700],["HKHKG","CNXMN",360],
+  ["HKHKG","CNNAS",60],["HKHKG","CNYTN",40],["HKHKG","CNSHK",50],["HKHKG","CNCWN",55],
+  ["HKHKG","KRPUS",1230],["HKHKG","JPYOK",1550],["HKHKG","JPTYO",1620],["HKHKG","THLCH",1250],
+  ["CNSHA","CNTAO",386],["CNSHA","CNNGB",156],["CNSHA","CNXMN",540],["CNSHA","CNDAL",820],
+  ["CNSHA","KRPUS",880],["CNSHA","JPYOK",1050],["CNSHA","JPTYO",1120],["CNSHA","KRINC",620],
+  ["CNTAO","CNDAL",420],["CNTAO","KRINC",360],["CNTAO","KRPUS",640],["CNTAO","CNNGB",510],
+  ["KRPUS","JPYOK",620],["KRPUS","JPTYO",690],["KRPUS","JPOSA",260],["KRPUS","KRINC",240],
+  ["JPYOK","JPTYO",30],["JPYOK","JPOSA",330],["JPYOK","USLAX",4850],["JPYOK","USLGB",4870],
+  ["USLAX","USLGB",20],["USLAX","USOAK",340],["USLGB","USOAK",350],
+  ["NLRTM","BEANR",120],["NLRTM","DEHAM",360],["NLRTM","GBSOU",420],
+  ["SAJED","DJJIB",450],["DJJIB","LKCMB",1820],["SAJED","EGSOK",780],["EGSOK","GRPIR",1540],
+  ["GRPIR","ILASD",420],["GRPIR","ILHFA",450],["GRPIR","NLRTM",2060],["GRPIR","BEANR",1980],
+  ["THLCH","VNSGN",580],["THLCH","HKHKG",1250],["THLCH","MYPKG",980],["THLCH","SGSIN",840],
+  ["VNSGN","HKHKG",820],["VNSGN","CNSHA",1480],["VNHPH","HKHKG",680],["VNHPH","CNSHA",1100],
+  ["MYPKG","HKHKG",1490],["MYTPP","SGSIN",15],["MYTPP","HKHKG",1435],
+  ["INNSA","INMUN",370],["INNSA","LKCMB",885],["INMUN","AEJEA",1095],["INMUN","LKCMB",1340],
+  ["LKCMB","HKHKG",2040],["LKCMB","SGSIN",1585],
+  ["CNNGB","CNTAO",510],["CNNGB","CNXMN",440],["CNNGB","HKHKG",700],
+  ["TWKHH","HKHKG",480],["TWKHH","CNSHA",500],["TWKHH","CNTAO",600],["TWKEL","TWKHH",200],
+  ["CNXMN","CNNAS",300],["CNXMN","CNSHK",310],["CNNAS","CNSHK",40],
+  ["PHMNL","HKHKG",640],["PHMNL","SGSIN",1310],["PHMNL","CNSHA",1440],
+  ["KMOMBASA","DJJIB",1720],["KEMBA","DJJIB",1720],
+  ["CNJGY","CNSHA",120],["CNTAC","CNSHA",80],["CNCGU","CNSHA",100],
+  ["CNYTN","CNSHK",10],["CNYTN","CNCWN",15],
+];
+
+// Build distance lookup
+const DIST_MAP = {};
+function distKey(a,b){return a<b?a+'|'+b:b+'|'+a;}
+DIST_RAW.forEach(([a,b,d])=>{DIST_MAP[distKey(a,b)]=d;});
+function getDistance(a,b){
+  if(a===b) return 0;
+  const k=distKey(a,b);
+  if(DIST_MAP[k]) return DIST_MAP[k];
+  // fallback: try to estimate by region
+  return estimateDistance(a,b);
+}
+function estimateDistance(a,b){
+  const regions={CN:2,KR:3,JP:4,TH:5,SG:1,MY:1,VN:2,HK:2,TW:3,IN:8,AE:10,SA:11,DJ:12,EG:14,GR:15,NL:18,DE:18,GB:18,BE:18,US:25,PH:3};
+  const ra=regions[a.slice(0,2)]||5, rb=regions[b.slice(0,2)]||5;
+  return Math.abs(ra-rb)*450+300+Math.random()*100;
+}
+
+// Build port lookup
+const PORT_MAP = {};
+PORTS_DATA.forEach(([code,en,cn])=>{PORT_MAP[code]={code,en,cn};});
+
+// Port display
+function portLabel(code){
+  const p=PORT_MAP[code];
+  if(!p) return code;
+  const name = p.cn ? `${p.en} / ${p.cn}` : p.en;
+  return `${code} – ${name}`;
+}
+function portShortLabel(code){
+  const p=PORT_MAP[code];
+  if(!p) return code;
+  return p.cn||p.en.split(',')[0].trim()||code;
+}
+
+// ==================== STATE ====================
+let selectedPorts = []; // [{code, stayHours}]
+let scheduleRows  = [];
+let hasModified   = false;
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', ()=>{
+  initVesselSelect();
+  initPortSelect();
+  setDefaultDate();
+  updateClock();
+  setInterval(updateClock, 1000);
+});
+
+function updateClock(){
+  const now = new Date();
+  document.getElementById('headerTime').textContent =
+    now.toLocaleString('zh-CN',{weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function setDefaultDate(){
+  const now = new Date();
+  now.setHours(8,0,0,0);
+  now.setDate(now.getDate()+1);
+  document.getElementById('startDateInput').value = toLocalISOString(now);
+}
+
+function toLocalISOString(d){
+  const pad = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function initVesselSelect(){
+  const sel = document.getElementById('vesselSelect');
+  VESSELS_DATA.forEach(v=>{
+    const opt = document.createElement('option');
+    opt.value = v.code;
+    opt.textContent = `${v.code} – ${v.name}`;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', onVesselChange);
+}
+
+function onVesselChange(){
+  const code = document.getElementById('vesselSelect').value;
+  const v = VESSELS_DATA.find(x=>x.code===code);
+  const box = document.getElementById('vesselInfo');
+  if(v){
+    box.style.display='block';
+    document.getElementById('vi-speed').textContent=v.speed+' kn';
+    document.getElementById('vi-lsfo').textContent=v.lsfo+' mt/day';
+    document.getElementById('vi-hsfo').textContent=v.hsfo?v.hsfo+' mt/day':'N/A';
+    document.getElementById('vi-mgo').textContent=v.mgo+' mt/day';
+    document.getElementById('speedInput').value=v.speed;
+  } else {
+    box.style.display='none';
+  }
+}
+
+function initPortSelect(){
+  const sel = document.getElementById('portSelect');
+  PORTS_DATA.forEach(([code,en,cn])=>{
+    const opt = document.createElement('option');
+    opt.value = code;
+    const display = cn ? `${code} – ${en} / ${cn}` : `${code} – ${en}`;
+    opt.textContent = display;
+    sel.appendChild(opt);
+  });
+}
+
+// ==================== PORT LIST ====================
+function addPort(){
+  const sel = document.getElementById('portSelect');
+  const code = sel.value;
+  if(!code){ showToast('Please select a port','warning'); return; }
+  selectedPorts.push({code, stayHours:12});
+  renderPortList();
+  sel.value='';
+  updateFuelEstimate();
+}
+
+function removePort(idx){
+  selectedPorts.splice(idx,1);
+  renderPortList();
+  updateFuelEstimate();
+}
+
+function renderPortList(){
+  const list = document.getElementById('portList');
+  list.innerHTML='';
+  selectedPorts.forEach((p,i)=>{
+    const item = document.createElement('div');
+    item.className='port-item';
+    item.draggable=true;
+    item.dataset.idx=i;
+    item.innerHTML=`
+      <span class="drag-handle">⠿</span>
+      <span class="port-label">${p.code} – ${portShortLabel(p.code)}</span>
+      <input class="port-stay-input" type="number" value="${p.stayHours}" min="0" max="999" step="0.5"
+        title="Port stay (hours)" onchange="updateStay(${i},this.value)"/>
+      <span style="font-size:.7rem;color:var(--muted)">hr</span>
+      <button class="btn-remove" onclick="removePort(${i})">✕</button>
+    `;
+    // drag events
+    item.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain',i); item.style.opacity='.5'; });
+    item.addEventListener('dragend',   ()=>{ item.style.opacity='1'; });
+    item.addEventListener('dragover',  e=>{ e.preventDefault(); item.classList.add('drag-over'); });
+    item.addEventListener('dragleave', ()=>{ item.classList.remove('drag-over'); });
+    item.addEventListener('drop',      e=>{
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const from=+e.dataTransfer.getData('text/plain');
+      const to=+item.dataset.idx;
+      if(from===to) return;
+      const tmp=selectedPorts.splice(from,1)[0];
+      selectedPorts.splice(to,0,tmp);
+      renderPortList();
+      updateFuelEstimate();
+    });
+    list.appendChild(item);
+  });
+}
+
+function updateStay(idx, val){
+  selectedPorts[idx].stayHours = parseFloat(val)||0;
+  updateFuelEstimate();
+}
+
+// ==================== FUEL ESTIMATE ====================
+function updateFuelEstimate(){
+  const speed = parseFloat(document.getElementById('speedInput').value)||14;
+  const vcode = document.getElementById('vesselSelect').value;
+  const v = VESSELS_DATA.find(x=>x.code===vcode);
+
+  let totalDist=0;
+  for(let i=0;i<selectedPorts.length-1;i++){
+    totalDist += getDistance(selectedPorts[i].code, selectedPorts[i+1].code);
+  }
+  const seaDays = speed>0 ? totalDist/(speed*24) : 0;
+  const lsfo = v ? +(seaDays*v.lsfo).toFixed(1) : '--';
+  const mgo  = v ? +(seaDays*v.mgo).toFixed(1) : '--';
+
+  document.getElementById('fs-dist').textContent    = totalDist ? totalDist.toFixed(0)+' nm' : '-- nm';
+  document.getElementById('fs-seadays').textContent = seaDays   ? seaDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-lsfo').textContent    = lsfo!=='--' ? lsfo+' mt' : '-- mt';
+  document.getElementById('fs-mgo').textContent     = mgo!=='--'  ? mgo+' mt'  : '-- mt';
+}
+
+// ==================== RUN SCHEDULE ====================
+function runSchedule(){
+  if(selectedPorts.length < 2){ showToast('Please add at least 2 ports','warning'); return; }
+  const vesselCode = document.getElementById('vesselSelect').value;
+  if(!vesselCode){ showToast('Please select a vessel','warning'); return; }
+  const speed   = parseFloat(document.getElementById('speedInput').value)||14;
+  const voyNo   = document.getElementById('voyNoInput').value||'001W';
+  const startDt = new Date(document.getElementById('startDateInput').value);
+  if(isNaN(startDt)){ showToast('Please set a valid start date','warning'); return; }
+  const vessel  = VESSELS_DATA.find(x=>x.code===vesselCode);
+
+  const btn = document.getElementById('btnRun');
+  btn.classList.add('loading');
+  btn.textContent='';
+
+  setTimeout(()=>{
+    scheduleRows = computeSchedule(selectedPorts, speed, voyNo, startDt, vessel);
+    hasModified = false;
+    renderTable();
+    btn.classList.remove('loading');
+    btn.textContent='▶  RUN SIMULATION';
+    showToast('Schedule generated successfully','success');
+    document.getElementById('emptyState').style.display='none';
+    document.getElementById('scheduleTableContainer').style.display='block';
+
+    const portNames = selectedPorts.map(p=>portShortLabel(p.code)).join(' → ');
+    document.getElementById('tbTitle').textContent =
+      `${vesselCode} | ${portNames} | ${speed} kn | VOY ${voyNo}`;
+    document.getElementById('tbModBadge').style.display='none';
+    document.getElementById('btnReset').style.display='none';
+    updateFuelEstimate();
+  },300);
+}
+
+function computeSchedule(ports, speed, voyNo, startDt, vessel){
+  const rows=[];
+  let currentDt = new Date(startDt);
+
+  for(let i=0;i<ports.length;i++){
+    const p = ports[i];
+    let distFromPrev=0, runHours=0, etaHrs=0;
+
+    if(i===0){
+      // First port: ETD is startDt, no ETA run
+      const eta = new Date(currentDt);
+      const etb = new Date(currentDt);
+      const etd = new Date(currentDt.getTime() + p.stayHours*3600000);
+      rows.push(buildRow(i, p, voyNo, eta, etb, etd, 0, 0, speed, vessel, ports, rows));
+      currentDt = new Date(etd);
+    } else {
+      const prevCode = ports[i-1].code;
+      distFromPrev = getDistance(prevCode, p.code);
+      runHours = speed>0 ? distFromPrev/speed : 0;
+      const eta = new Date(currentDt.getTime() + runHours*3600000);
+      const etb = new Date(eta); // assume berth immediately (wait=0 default)
+      const etd = new Date(etb.getTime() + p.stayHours*3600000);
+      rows.push(buildRow(i, p, voyNo, eta, etb, etd, distFromPrev, runHours, speed, vessel, ports, rows));
+      currentDt = new Date(etd);
+    }
+  }
+  return rows;
+}
+
+function buildRow(i, p, voyNo, eta, etb, etd, dist, runHrs, speed, vessel, ports, prevRows){
+  const lsfoPerHr = vessel ? vessel.lsfo/24 : 0;
+  const fuelUsed  = +(runHrs * lsfoPerHr).toFixed(2);
+  const stayHrs   = p.stayHours;
+
+  // Proforma: baseline is eta (no delay by default)
+  const proformaEta = new Date(eta);
+  const proformaEtd = new Date(etd);
+  const ltsEtb = new Date(etb);
+  const ltsEtd = new Date(etd);
+
+  return {
+    idx: i,
+    port: p.code,
+    manIn: i===0 ? 'FIRST' : 'SEA',
+    wait: 0,
+    proformaEta,
+    proformaEtd,
+    ltsEtb,
+    ltsEtd,
+    voyNo,
+    date: new Date(eta),
+    eta: new Date(eta),
+    etb: new Date(etb),
+    etd: new Date(etd),
+    runHrs: +runHrs.toFixed(2),
+    stayHrs: +stayHrs.toFixed(2),
+    dist: +dist.toFixed(1),
+    speed,
+    etaDelay: 0,
+    etdDelay: 0,
+    fuelSea: fuelUsed,
+    remark: '',
+    modified: false
+  };
+}
+
+// ==================== RENDER TABLE ====================
+const COL_DEFS = [
+  {key:'port',      label:'PORT',               cls:'col-port',  editable:false},
+  {key:'manIn',     label:'Man In',             cls:'col-num',   editable:true},
+  {key:'wait',      label:'Wait(hr)',            cls:'col-num',   editable:true},
+  {key:'proformaEta',label:'Proforma ETA',      cls:'col-eta',   editable:true,  fmt:'dt'},
+  {key:'ltsEtb',    label:'LTS ETB',            cls:'col-etb',   editable:true,  fmt:'dt'},
+  {key:'ltsEtd',    label:'LTS ETD',            cls:'col-etd',   editable:true,  fmt:'dt'},
+  {key:'voyNo',     label:'VOY.NO',             cls:'col-voy',   editable:true},
+  {key:'date',      label:'Date',               cls:'col-eta',   editable:true,  fmt:'dt'},
+  {key:'eta',       label:'ETA',                cls:'col-eta',   editable:true,  fmt:'dt'},
+  {key:'etb',       label:'ETB',                cls:'col-etb',   editable:true,  fmt:'dt'},
+  {key:'etd',       label:'ETD',                cls:'col-etd',   editable:true,  fmt:'dt'},
+  {key:'runHrs',    label:'Run(hr)',             cls:'col-run',   editable:true},
+  {key:'stayHrs',   label:'Port Stay(hr)',       cls:'col-stay',  editable:true},
+  {key:'dist',      label:'FSP Distance',        cls:'col-dist',  editable:true},
+  {key:'speed',     label:'Speed(kn)',           cls:'col-speed', editable:true},
+  {key:'etaDelay',  label:'ETA Delay/Ahead',     cls:'col-delay', editable:false, fmt:'delay'},
+  {key:'etdDelay',  label:'ETD Delay/Ahead',     cls:'col-delay', editable:false, fmt:'delay'},
+  {key:'fuelSea',   label:'Fuel(LSFO mt)',       cls:'col-fuel',  editable:false},
+  {key:'remark',    label:'Remark',              cls:'col-remark',editable:true},
+];
+
+function fmtDt(d){
+  if(!d||isNaN(new Date(d))) return '';
+  const dt = new Date(d);
+  const pad=n=>String(n).padStart(2,'0');
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+}
+
+function renderTable(){
+  const container = document.getElementById('scheduleTableContainer');
+  const tbl = document.createElement('table');
+  tbl.id='schedTable';
+
+  // thead
+  const thead = tbl.createTHead();
+  const hr = thead.insertRow();
+  COL_DEFS.forEach(col=>{
+    const th=document.createElement('th');
+    th.textContent=col.label;
+    hr.appendChild(th);
+  });
+
+  // tbody
+  const tbody = tbl.createTBody();
+  scheduleRows.forEach((row,ri)=>{
+    const tr = tbody.insertRow();
+    tr.dataset.idx=ri;
+    if(row.modified) tr.classList.add('modified');
+
+    COL_DEFS.forEach((col,ci)=>{
+      const td=tr.insertCell();
+      td.className=col.cls;
+      td.dataset.col=col.key;
+
+      let val = row[col.key];
+      let display='';
+
+      if(col.fmt==='dt'){
+        display=fmtDt(val);
+      } else if(col.fmt==='delay'){
+        const hrs=+val;
+        if(hrs===0){ display='On Time'; td.innerHTML=`<span class="status-badge status-on-time">On Time</span>`; }
+        else if(hrs>0){ display=`+${hrs.toFixed(1)}h`; td.innerHTML=`<span class="status-badge status-delayed">▲ ${hrs.toFixed(1)}h</span>`; }
+        else { display=`${hrs.toFixed(1)}h`; td.innerHTML=`<span class="status-badge status-ahead">▼ ${Math.abs(hrs).toFixed(1)}h</span>`; }
+        if(col.editable) td.contentEditable=false;
+      } else {
+        display=val!==undefined&&val!==null?String(val):'';
+      }
+
+      if(col.fmt!=='delay'){
+        td.textContent=display;
+      }
+
+      if(col.editable && col.fmt!=='delay'){
+        td.contentEditable='true';
+        td.addEventListener('blur', ()=>onCellEdit(ri, col.key, td.textContent.trim()));
+        td.addEventListener('keydown', e=>{
+          if(e.key==='Enter'){ e.preventDefault(); td.blur(); }
+          if(e.key==='Tab'){
+            e.preventDefault();
+            const nextTd = findNextEditable(tr, ci);
+            if(nextTd) nextTd.focus();
+          }
+        });
+      }
+    });
+  });
+
+  container.innerHTML='';
+  container.appendChild(tbl);
+}
+
+function findNextEditable(tr, curColIdx){
+  let ci = curColIdx+1;
+  while(ci<COL_DEFS.length){
+    if(COL_DEFS[ci].editable){
+      return tr.cells[ci];
+    }
+    ci++;
+  }
+  return null;
+}
+
+// ==================== CELL EDIT ====================
+function onCellEdit(rowIdx, key, rawVal){
+  const row = scheduleRows[rowIdx];
+  if(!row) return;
+  const old = row[key];
+
+  // parse value
+  let newVal;
+  const dtKeys=['eta','etb','etd','ltsEtb','ltsEtd','proformaEta','proformaEtd','date'];
+  if(dtKeys.includes(key)){
+    const d = new Date(rawVal.replace(' ','T'));
+    if(isNaN(d)){ showToast('Invalid date format (use YYYY-MM-DD HH:mm)','warning'); return; }
+    newVal = d;
+  } else if(['wait','runHrs','stayHrs','dist','speed','fuelSea'].includes(key)){
+    newVal = parseFloat(rawVal);
+    if(isNaN(newVal)) newVal=0;
+  } else {
+    newVal = rawVal;
+  }
+
+  if(String(old)===String(newVal)) return;
+  row[key] = newVal;
+  row.modified = true;
+  hasModified = true;
+
+  // Cascade recalculation
+  cascadeRecalc(rowIdx, key);
+  renderTable();
+  document.getElementById('tbModBadge').style.display='inline-block';
+  document.getElementById('btnReset').style.display='inline-block';
+}
+
+function cascadeRecalc(changedIdx, changedKey){
+  const vesselCode = document.getElementById('vesselSelect').value;
+  const vessel = VESSELS_DATA.find(x=>x.code===vesselCode);
+  const lsfoPerHr = vessel ? vessel.lsfo/24 : 0;
+
+  for(let i=changedIdx; i<scheduleRows.length; i++){
+    const row = scheduleRows[i];
+    const prev = scheduleRows[i-1];
+
+    // If ETA changed at this row (or upstream changed), recalc ETB, ETD
+    if(i>0 && (i===changedIdx || true)){
+      // Recalc run hours from distance/speed if dist or speed changed
+      if(['dist','speed'].includes(changedKey) && i===changedIdx){
+        row.runHrs = row.speed>0 ? +(row.dist/row.speed).toFixed(2) : 0;
+      }
+      // If ETD of prev changed, recalc ETA of this
+      if(i>changedIdx && prev){
+        const prevEtd = new Date(prev.etd);
+        const runMs = row.runHrs*3600000;
+        row.eta = new Date(prevEtd.getTime() + runMs);
+        row.date = new Date(row.eta);
+      }
+      // Recalc ETB from ETA + wait
+      if(['eta','wait'].includes(changedKey)||i>changedIdx){
+        row.etb = new Date(new Date(row.eta).getTime() + row.wait*3600000);
+        row.ltsEtb = new Date(row.etb);
+      }
+      // Recalc ETD from ETB + stay
+      if(['etb','stayHrs'].includes(changedKey)||i>changedIdx){
+        row.etd = new Date(new Date(row.etb).getTime() + row.stayHrs*3600000);
+        row.ltsEtd = new Date(row.etd);
+      }
+    }
+
+    // Recalc fuel
+    row.fuelSea = +(row.runHrs * lsfoPerHr).toFixed(2);
+
+    // Delay vs proforma
+    const etaDiff = (new Date(row.eta) - new Date(row.proformaEta))/3600000;
+    const etdDiff = (new Date(row.etd) - new Date(row.proformaEtd))/3600000;
+    row.etaDelay = +etaDiff.toFixed(2);
+    row.etdDelay = +etdDiff.toFixed(2);
+  }
+}
+
+function resetModifications(){
+  if(!confirm('Reset all manual modifications and re-run the simulation?')) return;
+  hasModified=false;
+  runSchedule();
+}
+
+// ==================== EXPORT EXCEL ====================
+function exportExcel(){
+  if(!scheduleRows.length){ showToast('No schedule to export','warning'); return; }
+
+  const vesselCode = document.getElementById('vesselSelect').value;
+  const voyNo = document.getElementById('voyNoInput').value||'001W';
+
+  const headers = COL_DEFS.map(c=>c.label);
+  const data = scheduleRows.map(row=>{
+    return COL_DEFS.map(col=>{
+      const v = row[col.key];
+      if(['eta','etb','etd','ltsEtb','ltsEtd','proformaEta','proformaEtd','date'].includes(col.key)){
+        return fmtDt(v);
+      }
+      if(col.key==='etaDelay'||col.key==='etdDelay'){
+        const h=+v;
+        if(h===0) return 'On Time';
+        return h>0 ? `+${h.toFixed(1)}h (Delay)` : `${h.toFixed(1)}h (Ahead)`;
+      }
+      return v!==undefined&&v!==null?v:'';
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+
+  // Schedule sheet
+  const wsData = [headers, ...data];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = COL_DEFS.map(c=>{
+    const w = Math.max(c.label.length, 12);
+    return {wch: c.key.includes('Dt')||c.key==='eta'||c.key==='etb'||c.key==='etd'?18:w};
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Voyage Schedule');
+
+  // Summary sheet
+  const speed = document.getElementById('speedInput').value;
+  const sumData = [
+    ['Vessel Code', vesselCode],
+    ['Voyage No', voyNo],
+    ['Speed (kn)', speed],
+    ['Ports', selectedPorts.map(p=>p.code).join(' → ')],
+    ['Export Time', fmtDt(new Date())],
+    [],
+    ['Total Distance (nm)', scheduleRows.reduce((s,r)=>s+r.dist,0).toFixed(1)],
+    ['Total Run Hours', scheduleRows.reduce((s,r)=>s+r.runHrs,0).toFixed(2)],
+    ['Total Port Stay (hr)', scheduleRows.reduce((s,r)=>s+r.stayHrs,0).toFixed(2)],
+    ['Est. Fuel LSFO (mt)', scheduleRows.reduce((s,r)=>s+r.fuelSea,0).toFixed(2)],
+  ];
+  const wsSummary = XLSX.utils.aoa_to_sheet(sumData);
+  wsSummary['!cols']=[{wch:22},{wch:30}];
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+  const filename = `VoyageSchedule_${vesselCode}_${voyNo}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  showToast(`Exported: ${filename}`, 'success');
+}
+
+// ==================== TOAST ====================
+function showToast(msg, type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast '+(type||'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
