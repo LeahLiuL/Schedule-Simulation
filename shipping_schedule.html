@@ -1121,6 +1121,7 @@ function runSchedule(){
 
 function computeSchedule(ports, speed, voyNo, startDt, vessel){
   const rows=[];
+  const lsfoPerHr = vessel.lsfo/24;
   // First port: ETD = startDt, ETA = startDt, Man In = 0 (already at port)
   const firstEta = ceilToHour(startDt);
   const firstManIn = 0; // First port: no pilotage needed
@@ -1131,16 +1132,22 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
   const firstEtd = new Date(firstEtB.getTime() + firstStay*3600000);
   firstEtd.setMinutes(0,0,0);
 
+  // First port: run/dist to NEXT port
+  let firstDist = 0, firstRun = 0, firstFuel = 0;
+  if(ports.length > 1){
+    firstDist = getDistance(ports[0].code, ports[1].code);
+    firstRun = speed>0 ? firstDist/speed : 0;
+    firstFuel = +(firstRun * lsfoPerHr).toFixed(2);
+  }
+
   rows.push(buildRow(0, ports[0], voyNo, firstEta, firstEtB, firstEtd,
-    0, 0, speed, vessel, firstManIn, firstWait, firstStay));
+    firstDist, firstRun, speed, vessel, firstManIn, firstWait, firstStay));
 
   let prevEtd = new Date(firstEtd);
 
   for(let i=1; i<ports.length; i++){
     const p = ports[i];
-    const distFromPrev = getDistance(ports[i-1].code, p.code);
-    const runHours = speed>0 ? distFromPrev/speed : 0;
-    const eta = ceilToHour(new Date(prevEtd.getTime() + runHours*3600000));
+    const eta = ceilToHour(new Date(prevEtd.getTime() + rows[i-1].runHrs*3600000));
     const manIn = DEFAULT_MAN_IN; // 3h pilotage
     const wait = 0;
     const etb = new Date(eta.getTime() + (manIn + wait)*3600000);
@@ -1149,7 +1156,14 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
     const etd = new Date(etb.getTime() + stay*3600000);
     etd.setMinutes(0,0,0);
 
-    rows.push(buildRow(i, p, voyNo, eta, etb, etd, distFromPrev, runHours, speed, vessel, manIn, wait, stay));
+    // Run/dist to NEXT port (empty for last port)
+    let dist = 0, runHrs = 0;
+    if(i < ports.length - 1){
+      dist = getDistance(ports[i].code, ports[i+1].code);
+      runHrs = speed>0 ? dist/speed : 0;
+    }
+
+    rows.push(buildRow(i, p, voyNo, eta, etb, etd, dist, runHrs, speed, vessel, manIn, wait, stay));
     prevEtd = new Date(etd);
   }
   return rows;
@@ -1381,8 +1395,9 @@ function cascadeRecalc(changedIdx, changedKey){
 
     // ---- SUBSEQUENT ROWS (i > changedIdx): full recalc from prev ETD ----
     if(i > changedIdx && prev){
-      // ETA = prev ETD + Run hours
-      const etaRaw = new Date(prev.etd.getTime() + row.runHrs*3600000);
+      // ETA = prev ETD + prev.runHrs (run time stored on departure port)
+      const prevRunHrs = prev.runHrs || 0;
+      const etaRaw = new Date(prev.etd.getTime() + prevRunHrs*3600000);
       row.eta = ceilToHour(etaRaw);
       row.date = new Date(row.eta);
 
