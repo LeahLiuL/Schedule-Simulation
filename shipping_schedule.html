@@ -374,6 +374,7 @@
 
   /* column color coding */
   .col-port     { font-weight: 700; color: var(--primary); min-width: 90px; }
+  .col-day      { color: #2c5aa0; font-weight: 600; text-align: center; min-width: 55px; letter-spacing: 0.5px; }
   .col-eta      { color: #1a6b3c; min-width: 110px; }
   .col-etb      { color: #1a6b3c; min-width: 110px; }
   .col-etd      { color: #8b1a1a; min-width: 110px; }
@@ -1153,7 +1154,7 @@ const COL_DEFS = [
   {key:'ltsEtb',      label:'LTS ETB',           cls:'col-etb',   editable:false, fmt:'dt'},
   {key:'ltsEtd',      label:'LTS ETD',           cls:'col-etd',   editable:false, fmt:'dt'},
   {key:'voyNo',       label:'VOY.NO',            cls:'col-voy',   editable:true},
-  {key:'date',        label:'Date',              cls:'col-eta',   editable:true,  fmt:'dt'},
+  {key:'date',        label:'Date',              cls:'col-day',   editable:false, fmt:'weekday'},
   {key:'eta',         label:'ETA',               cls:'col-eta',   editable:true,  fmt:'dt'},
   {key:'etb',         label:'ETB',               cls:'col-etb',   editable:true,  fmt:'dt'},
   {key:'etd',         label:'ETD',               cls:'col-etd',   editable:true,  fmt:'dt'},
@@ -1193,6 +1194,10 @@ function renderTable(){
 
       if(col.fmt==='dt'){
         td.textContent = fmtDt(row[col.key]);
+      } else if(col.fmt==='weekday'){
+        const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const d = row[col.key] instanceof Date ? row[col.key] : new Date(row[col.key]);
+        td.textContent = (!isNaN(d)) ? dayNames[d.getDay()] : '';
       } else if(col.fmt==='delay'){
         const hrs=+row[col.key];
         if(hrs===0) td.innerHTML=`<span class="status-badge status-on-time">On Time</span>`;
