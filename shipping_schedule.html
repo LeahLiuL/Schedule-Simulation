@@ -48,9 +48,22 @@
   .app-header .logo {
     display: flex; align-items: center; gap: 10px;
     font-size: 1.15rem; font-weight: 700; letter-spacing: .5px;
+    flex-shrink: 0;
   }
   .app-header .logo svg { opacity: .9; }
-  .header-right { font-size: .8rem; opacity: .75; }
+  .header-right { font-size: .8rem; opacity: .75; flex-shrink: 0; display:flex; align-items:center; gap:8px; }
+  .app-tabs {
+    display: flex; gap: 0; margin: 0 20px;
+    height: 100%; align-items: stretch;
+  }
+  .app-tab {
+    padding: 0 20px; display: flex; align-items: center; gap: 6px;
+    font-size: .85rem; font-weight: 600; cursor: pointer;
+    color: rgba(255,255,255,.65); border-bottom: 3px solid transparent;
+    transition: all .2s; user-select: none; white-space: nowrap;
+  }
+  .app-tab:hover { color: rgba(255,255,255,.9); background: rgba(255,255,255,.08); }
+  .app-tab.active { color: #fff; border-bottom-color: #fff; }
 
   /* ===== LAYOUT ===== */
   .main-layout {
@@ -577,6 +590,120 @@
 
   /* hint text */
   .hint { font-size: .72rem; color: var(--muted); margin-top: 3px; }
+
+  /* ===== TAB CONTENT ===== */
+  .tab-content { display: none; }
+  .tab-content.active { display: flex; }
+  .tab-content.active.block { display: block; }
+
+  /* ===== DAILY FLEET PAGE ===== */
+  .daily-layout {
+    display: flex; height: calc(100vh - 60px); overflow: hidden;
+  }
+  .daily-left {
+    width: 380px; min-width: 320px; background: var(--card);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  }
+  .daily-filter {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .daily-filter-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .daily-filter-row select, .daily-filter-row input {
+    flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px;
+    font-size: .78rem; background: #fff;
+  }
+  .daily-filter-row select { max-width: 140px; }
+  .daily-actions {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  }
+  .daily-actions .dm-btn { font-size: .75rem; padding: 4px 10px; }
+  .daily-fleet-list {
+    flex: 1; overflow-y: auto; padding: 0;
+  }
+  .daily-vessel-card {
+    border-bottom: 1px solid var(--border); padding: 10px 16px;
+    cursor: pointer; transition: background .15s;
+  }
+  .daily-vessel-card:hover { background: var(--row-alt); }
+  .daily-vessel-card.selected { background: #e8f0fe; border-left: 3px solid var(--accent); }
+  .daily-vessel-card .vc-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;
+  }
+  .daily-vessel-card .vc-code { font-weight: 700; font-size: .85rem; color: var(--primary); }
+  .daily-vessel-card .vc-lane {
+    font-size: .7rem; background: var(--accent); color: #fff;
+    padding: 1px 6px; border-radius: 3px; font-weight: 600;
+  }
+  .daily-vessel-card .vc-summary {
+    font-size: .75rem; color: var(--muted); line-height: 1.5;
+  }
+  .daily-vessel-card .vc-status {
+    font-size: .68rem; padding: 1px 5px; border-radius: 3px; font-weight: 600;
+  }
+  .vc-status.current { background: #d4edda; color: #155724; }
+  .vc-status.completed { background: #e2e3e5; color: #383d41; }
+
+  /* Daily Right Panel */
+  .daily-right {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .daily-detail-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    background: #fff;
+  }
+  .daily-detail-header h2 { font-size: 1.1rem; margin-bottom: 6px; }
+  .daily-detail-header .dd-meta {
+    font-size: .78rem; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .daily-voyage-selector {
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    background: var(--row-alt); display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .daily-voyage-selector label { font-size: .78rem; color: var(--muted); font-weight: 600; }
+  .daily-voyage-selector select, .daily-voyage-selector input {
+    padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: .78rem;
+  }
+  .daily-detail-body {
+    flex: 1; overflow-y: auto; padding: 16px 20px;
+  }
+  .daily-schedule-table {
+    width: 100%; border-collapse: collapse; font-size: .8rem;
+  }
+  .daily-schedule-table th {
+    background: var(--thead); color: var(--thead-t); padding: 8px 10px;
+    text-align: left; font-weight: 600; position: sticky; top: 0; z-index: 1;
+    white-space: nowrap;
+  }
+  .daily-schedule-table td {
+    padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle;
+  }
+  .daily-schedule-table tr:nth-child(even) { background: var(--row-alt); }
+  .daily-schedule-table tr:hover { background: #e8f0fe; }
+  .daily-schedule-table .port-code { font-weight: 700; color: var(--primary); }
+  .daily-schedule-table input[type="datetime-local"] {
+    padding: 3px 5px; border: 1px solid var(--border); border-radius: 3px;
+    font-size: .78rem; width: 160px; font-family: inherit;
+  }
+  .daily-schedule-table input[type="number"] {
+    padding: 3px 5px; border: 1px solid var(--border); border-radius: 3px;
+    font-size: .78rem; width: 60px; font-family: inherit; text-align: center;
+  }
+  .daily-detail-footer {
+    padding: 10px 20px; border-top: 1px solid var(--border);
+    background: #fff; display: flex; justify-content: space-between; align-items: center;
+  }
+  .daily-detail-footer .commit-status { font-size: .75rem; color: var(--muted); }
+
+  .daily-empty {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: var(--muted); font-size: .9rem; text-align: center;
+    flex-direction: column; gap: 8px;
+  }
+  .daily-empty .icon { font-size: 2rem; opacity: .5; }
 </style>
 </head>
 <body>
@@ -589,12 +716,18 @@
     </svg>
     Voyage Schedule Simulator
   </div>
+  <div class="app-tabs">
+    <div class="app-tab active" data-tab="simulator" onclick="switchAppTab('simulator')">🚢 单船调度</div>
+    <div class="app-tab" data-tab="daily" onclick="switchAppTab('daily')">📋 Daily 船期总览</div>
+  </div>
   <div class="header-right">
     <button class="btn-dm" onclick="openDataManager()">⚙ Data Manager</button>
     <span id="headerTime"></span>
   </div>
 </header>
 
+<!-- TAB 1: Simulator (original content) -->
+<div class="tab-content active" id="tabSimulator">
 <div class="main-layout">
 
   <!-- LEFT PANEL -->
@@ -768,6 +901,7 @@
       </div>
       <div class="toolbar-actions">
         <button class="btn-reset" onclick="resetModifications()" id="btnReset" style="display:none">↺ Reset</button>
+        <button class="btn-dm" onclick="syncToDaily()" id="btnSyncDaily" style="display:none" title="Sync current schedule to Daily Fleet page">📋 Sync to Daily</button>
         <button class="btn-export" onclick="exportExcel()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -793,6 +927,51 @@
       <div id="scheduleTableContainer" style="display:none;"></div>
     </div>
   </main>
+</div>
+
+<!-- END TAB 1: Simulator -->
+</div>
+
+<!-- TAB 2: Daily Fleet Schedule -->
+<div class="tab-content" id="tabDaily">
+<div class="daily-layout">
+  <!-- Left: Fleet list -->
+  <div class="daily-left">
+    <div class="daily-filter">
+      <div class="daily-filter-row">
+        <select id="dailyLaneFilter" onchange="renderDailyFleet()">
+          <option value="">All Lanes</option>
+        </select>
+        <input type="text" id="dailySearch" placeholder="Search vessel..." oninput="renderDailyFleet()"/>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <label style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:3px;">
+          <input type="checkbox" id="dailySelectAll" onchange="toggleAllDailyVessels(this.checked)"/> Select All
+        </label>
+        <span style="font-size:.7rem;color:var(--muted);" id="dailyVesselCount"></span>
+      </div>
+    </div>
+    <div class="daily-actions">
+      <button class="dm-btn dm-btn-commit" onclick="commitFleetSchedule()">⬆ Commit</button>
+      <button class="dm-btn dm-btn-export" onclick="exportFleetExcel()">📥 Export Excel</button>
+      <button class="dm-btn dm-btn-primary" onclick="addNewVoyage()">+ New Voyage</button>
+      <span class="commit-status" id="dailyCommitStatus"></span>
+    </div>
+    <div class="daily-fleet-list" id="dailyFleetList">
+      <div class="daily-empty">
+        <div class="icon">📋</div>
+        <div>No fleet data.<br/>Use 单船调度 to simulate and sync.</div>
+      </div>
+    </div>
+  </div>
+  <!-- Right: Detail -->
+  <div class="daily-right" id="dailyRightPanel">
+    <div class="daily-empty">
+      <div class="icon">🚢</div>
+      <div>Select a vessel to view schedule</div>
+    </div>
+  </div>
+</div>
 </div>
 
 <!-- Toast -->
@@ -1575,6 +1754,7 @@ function runSchedule(){
       `${vesselDisplay} | ${portNames} | ${speed} kn | VOY ${voyNo}`;
     document.getElementById('tbModBadge').style.display='none';
     document.getElementById('btnReset').style.display='none';
+    document.getElementById('btnSyncDaily').style.display='inline-block';
     updateFuelFromSchedule();
   });
 }
@@ -1794,6 +1974,7 @@ function onCellEdit(rowIdx, key, rawVal){
   renderTable();
   document.getElementById('tbModBadge').style.display='inline-block';
   document.getElementById('btnReset').style.display='inline-block';
+  document.getElementById('btnSyncDaily').style.display='inline-block';
 }
 
 function cascadeRecalc(changedIdx, changedKey){
@@ -2729,6 +2910,558 @@ async function commitAllToGitHub(){
 
 // Helper: escape HTML for input values
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ==================== APP TAB SWITCHING ====================
+let currentAppTab = 'simulator';
+function switchAppTab(tab){
+  currentAppTab = tab;
+  document.querySelectorAll('.app-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active','block'));
+  const el = document.getElementById(tab==='simulator'?'tabSimulator':'tabDaily');
+  el.classList.add('active','block');
+  if(tab==='daily') initDailyPage();
+}
+
+// ==================== DAILY FLEET SCHEDULE ====================
+let FLEET_DATA = { vessels: [], lastSync: null };
+let FLEET_SHA = null; // GitHub file SHA for optimistic locking
+let LANES_DATA = []; // [{code, name}]
+let dailySelectedVessel = null; // {code, name, voyIdx}
+let dailyCheckedVessels = new Set(); // Set of "code|voyIdx" for multi-select
+
+const FLEET_FILE = 'shipping_data/fleet_schedule.json';
+const LANES_FILE = 'shipping_data/lanes.json';
+
+async function initDailyPage(){
+  if(LANES_DATA.length) populateLaneFilter();
+  else await loadLanesData();
+  if(!FLEET_DATA.vessels.length || FLEET_DATA.vessels.length === 0){
+    await loadFleetSchedule();
+  }
+  renderDailyFleet();
+}
+
+async function loadLanesData(){
+  try {
+    const url = CSV_LOCAL + '/lanes.json?t=' + Date.now();
+    const resp = await fetch(url);
+    if(resp.ok){ LANES_DATA = await resp.json(); }
+    else throw new Error('local not found');
+  } catch(e){
+    const url2 = CSV_GITHUB + '/lanes.json?t=' + Date.now();
+    const resp2 = await fetch(url2);
+    if(resp2.ok) LANES_DATA = await resp2.json();
+  }
+  populateLaneFilter();
+}
+
+function populateLaneFilter(){
+  const sel = document.getElementById('dailyLaneFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Lanes</option>';
+  LANES_DATA.forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l.code; opt.textContent = l.code + ' – ' + l.name;
+    sel.appendChild(opt);
+  });
+  sel.value = cur;
+}
+
+async function loadFleetSchedule(){
+  const token = getGhToken();
+  const path = FLEET_FILE;
+  try {
+    // Try local first
+    try {
+      const resp = await fetch(CSV_LOCAL + '/fleet_schedule.json?t=' + Date.now());
+      if(resp.ok){
+        FLEET_DATA = await resp.json();
+        return;
+      }
+    } catch(e){}
+    // GitHub raw
+    const resp = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now());
+    if(resp.ok){
+      FLEET_DATA = await resp.json();
+    } else {
+      FLEET_DATA = { vessels: [], lastSync: null };
+    }
+  } catch(e){
+    console.error('Load fleet error:', e);
+    FLEET_DATA = { vessels: [], lastSync: null };
+  }
+}
+
+function getLaneName(code){
+  const l = LANES_DATA.find(x=>x.code===code);
+  return l ? l.name : code;
+}
+
+function getUniqueVesselList(){
+  const map = {};
+  FLEET_DATA.vessels.forEach(v => {
+    if(!map[v.code]) map[v.code] = { code: v.code, name: v.name, voyages: [] };
+    v.voyages.forEach((voy, idx) => {
+      map[v.code].voyages.push({ ...voy, _vIdx: idx });
+    });
+  });
+  return Object.values(map);
+}
+
+function renderDailyFleet(){
+  const container = document.getElementById('dailyFleetList');
+  const laneFilter = document.getElementById('dailyLaneFilter').value;
+  const search = document.getElementById('dailySearch').value.toLowerCase().trim();
+
+  let vessels = getUniqueVesselList();
+
+  // Filter by lane
+  if(laneFilter){
+    vessels = vessels.filter(v =>
+      v.voyages.some(voy => voy.lane === laneFilter)
+    );
+  }
+  // Filter by search
+  if(search){
+    vessels = vessels.filter(v =>
+      v.code.toLowerCase().includes(search) ||
+      v.name.toLowerCase().includes(search) ||
+      v.voyages.some(voy => (voy.voyNo||'').toLowerCase().includes(search))
+    );
+  }
+
+  document.getElementById('dailyVesselCount').textContent = vessels.length + ' vessel(s)';
+
+  if(!vessels.length){
+    container.innerHTML = '<div class="daily-empty"><div class="icon">📋</div><div>No matching vessels.</div></div>';
+    return;
+  }
+
+  let html = '';
+  vessels.forEach(v => {
+    // Show current voyage (first non-completed, or latest)
+    let currentVoy = v.voyages.find(voy => voy.status !== 'completed') || v.voyages[0];
+    if(!currentVoy) return;
+
+    const isSelected = dailySelectedVessel && dailySelectedVessel.code === v.code;
+    const isChecked = dailyCheckedVessels.has(v.code + '|' + (currentVoy._vIdx));
+
+    const ports = currentVoy.ports || [];
+    const summary = ports.length > 0
+      ? ports.map(p => { const pp = PORT_MAP[p.code]; return (pp?pp.cn:pp?pp.en:p.code); }).join(' → ')
+      : 'No ports';
+
+    const summaryShort = summary.length > 50 ? summary.slice(0,50) + '…' : summary;
+    const statusCls = currentVoy.status === 'completed' ? 'completed' : 'current';
+    const statusText = currentVoy.status === 'completed' ? 'Completed' : 'Active';
+
+    html += `<div class="daily-vessel-card${isSelected?' selected':''}" onclick="selectDailyVessel('${v.code}',${currentVoy._vIdx})">
+      <div class="vc-header">
+        <div>
+          <span class="vc-code">${esc(v.code)}</span>
+          <span style="font-size:.78rem;color:var(--muted);margin-left:6px;">${esc(v.name)}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="checkbox" ${isChecked?'checked':''} onclick="event.stopPropagation();toggleDailyCheck('${v.code}',${currentVoy._vIdx},this.checked)" title="Select for export"/>
+          <span class="vc-lane">${esc(currentVoy.lane||'—')}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px;">
+        <span style="font-size:.75rem;font-weight:600;color:var(--primary);">${esc(currentVoy.voyNo||'—')}</span>
+        <span class="vc-status ${statusCls}">${statusText}</span>
+      </div>
+      <div class="vc-summary">${esc(summaryShort)}</div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function selectDailyVessel(code, voyIdx){
+  dailySelectedVessel = { code, voyIdx };
+  renderDailyFleet();
+  renderDailyDetail();
+}
+
+function toggleDailyCheck(code, voyIdx, checked){
+  const key = code + '|' + voyIdx;
+  if(checked) dailyCheckedVessels.add(key);
+  else dailyCheckedVessels.delete(key);
+}
+
+function toggleAllDailyVessels(checked){
+  const vessels = getUniqueVesselList();
+  dailyCheckedVessels.clear();
+  if(checked){
+    vessels.forEach(v => {
+      let currentVoy = v.voyages.find(voy => voy.status !== 'completed') || v.voyages[0];
+      if(currentVoy) dailyCheckedVessels.add(v.code + '|' + currentVoy._vIdx);
+    });
+  }
+  renderDailyFleet();
+}
+
+function renderDailyDetail(){
+  const panel = document.getElementById('dailyRightPanel');
+  if(!dailySelectedVessel){
+    panel.innerHTML = '<div class="daily-empty"><div class="icon">🚢</div><div>Select a vessel to view schedule</div></div>';
+    return;
+  }
+
+  const vessel = FLEET_DATA.vessels.find(v => v.code === dailySelectedVessel.code);
+  if(!vessel){
+    panel.innerHTML = '<div class="daily-empty"><div class="icon">⚠️</div><div>Vessel not found</div></div>';
+    return;
+  }
+
+  const voyages = vessel.voyages || [];
+  const curIdx = Math.min(dailySelectedVessel.voyIdx, voyages.length - 1);
+  const curVoy = voyages[curIdx];
+
+  // Voyage selector
+  let voyOptions = voyages.map((v, i) =>
+    `<option value="${i}"${i===curIdx?' selected':''}>${esc(v.voyNo||'?')} – ${esc(v.lane||'')} (${v.status==='completed'?'Completed':'Active'})</option>`
+  ).join('');
+
+  // Ports table
+  let portsHtml = '';
+  if(curVoy && curVoy.ports && curVoy.ports.length){
+    portsHtml = '<table class="daily-schedule-table"><thead><tr>' +
+      '<th>#</th><th>Port</th><th>ETA</th><th>ETB</th><th>ETD</th><th>Stay</th><th>Man In</th><th>Wait</th><th>Dist</th>' +
+      '</tr></thead><tbody>';
+    curVoy.ports.forEach((p, i) => {
+      const pp = PORT_MAP[p.code] || {};
+      const portDisplay = (pp.cn || pp.en || p.code);
+      portsHtml += `<tr>
+        <td>${i+1}</td>
+        <td class="port-code">${esc(p.code)}<br/><span style="font-size:.7rem;color:var(--muted);font-weight:400;">${esc(portDisplay)}</span></td>
+        <td><input type="datetime-local" value="${esc(p.eta||'')}" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'eta',this.value)"/></td>
+        <td><input type="datetime-local" value="${esc(p.etb||'')}" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'etb',this.value)"/></td>
+        <td><input type="datetime-local" value="${esc(p.etd||'')}" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'etd',this.value)"/></td>
+        <td><input type="number" value="${p.stayHrs||0}" min="0" step="1" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'stayHrs',this.value)"/></td>
+        <td><input type="number" value="${p.manIn||0}" min="0" step="0.5" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'manIn',this.value)"/></td>
+        <td><input type="number" value="${p.waitHrs||0}" min="0" step="1" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'waitHrs',this.value)"/></td>
+        <td>${p.dist?p.dist+' nm':'—'}</td>
+      </tr>`;
+    });
+    portsHtml += '</tbody></table>';
+  } else {
+    portsHtml = '<div style="color:var(--muted);padding:20px;">No port data for this voyage.</div>';
+  }
+
+  const laneName = getLaneName(curVoy?.lane || '');
+  const modifiedBy = curVoy?.modifiedBy || '';
+  const lastMod = curVoy?.lastModified ? new Date(curVoy.lastModified).toLocaleString('zh-CN') : '';
+
+  panel.innerHTML = `
+    <div class="daily-detail-header">
+      <h2>${esc(vessel.code)} – ${esc(vessel.name)}</h2>
+      <div class="dd-meta">
+        <span>📍 ${esc(curVoy?.lane||'—')} – ${esc(laneName)}</span>
+        <span>🔄 ${esc(curVoy?.voyNo||'—')}</span>
+        <span class="vc-status ${curVoy?.status==='completed'?'completed':'current'}">${curVoy?.status==='completed'?'Completed':'Active'}</span>
+        ${modifiedBy ? '<span>✏️ '+esc(modifiedBy)+'</span>' : ''}
+        ${lastMod ? '<span>🕐 '+lastMod+'</span>' : ''}
+      </div>
+    </div>
+    <div class="daily-voyage-selector">
+      <label>Voyage:</label>
+      <select onchange="selectDailyVessel('${vessel.code}',parseInt(this.value))">${voyOptions}</select>
+      <button class="dm-btn" onclick="archiveCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;" ${curVoy?.status==='completed'?'disabled':''}>📦 Archive</button>
+    </div>
+    <div class="daily-detail-body">${portsHtml}</div>
+    <div class="daily-detail-footer">
+      <span class="commit-status" id="dailyCommitStatus">${FLEET_DATA.lastSync?'Last sync: '+new Date(FLEET_DATA.lastSync).toLocaleString('zh-CN'):'Not synced yet'}</span>
+      <div style="display:flex;gap:6px;">
+        <button class="dm-btn dm-btn-commit" onclick="commitFleetSchedule()">⬆ Commit</button>
+      </div>
+    </div>`;
+}
+
+function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel || !vessel.voyages[voyIdx]) return;
+  const port = vessel.voyages[voyIdx].ports[portIdx];
+  if(!port) return;
+  if(field === 'stayHrs' || field === 'manIn' || field === 'waitHrs' || field === 'dist'){
+    port[field] = parseFloat(value) || 0;
+  } else {
+    port[field] = value;
+  }
+  // Track modification
+  vessel.voyages[voyIdx].lastModified = new Date().toISOString();
+  vessel.voyages[voyIdx].modifiedBy = localStorage.getItem('gh_username') || 'anonymous';
+}
+
+async function commitFleetSchedule(){
+  const token = getGhToken();
+  if(!token){
+    showToast('Please set your GitHub Token first (🔑 Token button)', 'warning');
+    openTokenSetup();
+    return;
+  }
+
+  const setStatus = (msg) => {
+    const el1 = document.getElementById('dailyCommitStatus');
+    const el2 = document.getElementById('dailyCommitStatus');
+    if(el1) el1.textContent = msg;
+  };
+
+  setStatus('Fetching current file...');
+
+  try {
+    // Get SHA
+    const getResp = await fetch(GH_REPO_API + '/' + FLEET_FILE, {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+    });
+
+    if(getResp.status === 404){
+      // File doesn't exist yet, create it
+      FLEET_SHA = null;
+    } else if(getResp.status === 401){
+      showToast('Invalid or expired token', 'warning');
+      setStatus('✗ Auth failed');
+      return;
+    } else if(!getResp.ok){
+      throw new Error('GitHub API error: ' + getResp.status);
+    } else {
+      const fileData = await getResp.json();
+      FLEET_SHA = fileData.sha;
+
+      // Conflict detection: if we had a SHA and it changed
+      // (For simplicity, we always use latest SHA since we re-fetch each time)
+    }
+
+    setStatus('Committing fleet_schedule.json...');
+    const content = JSON.stringify(FLEET_DATA, null, 2);
+    const base64Content = btoa(unescape(encodeURIComponent(content)));
+    const message = 'Update fleet schedule (' + new Date().toISOString().slice(0,10) + ')';
+
+    const putBody = {
+      message: message,
+      content: base64Content,
+      branch: 'main'
+    };
+    if(FLEET_SHA) putBody.sha = FLEET_SHA;
+
+    const putResp = await fetch(GH_REPO_API + '/' + FLEET_FILE, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(putBody)
+    });
+
+    if(!putResp.ok){
+      const err = await putResp.json().catch(()=>({}));
+      if(putResp.status === 409){
+        showToast('⚠️ Conflict: someone else modified the file. Please refresh and try again.', 'warning');
+        setStatus('⚠ Conflict detected — refresh needed');
+      } else {
+        throw new Error('Commit failed: ' + putResp.status + (err.message ? ' - ' + err.message : ''));
+      }
+      return;
+    }
+
+    const result = await putResp.json();
+    FLEET_SHA = result.content.sha;
+    FLEET_DATA.lastSync = new Date().toISOString();
+    setStatus('✓ Committed: ' + result.commit.sha.slice(0,7));
+    showToast('Fleet schedule committed to GitHub ✓', 'success');
+    renderDailyDetail();
+  } catch(err){
+    console.error('Fleet commit error:', err);
+    setStatus('✗ Error: ' + err.message);
+    showToast('Commit failed: ' + err.message, 'warning');
+  }
+}
+
+function archiveCurrentVoyage(vesselCode, voyIdx){
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel || !vessel.voyages[voyIdx]) return;
+  if(vessel.voyages[voyIdx].status === 'completed') return;
+  if(!confirm('Archive voyage ' + vessel.voyages[voyIdx].voyNo + '? It will be marked as completed.')) return;
+  vessel.voyages[voyIdx].status = 'completed';
+  vessel.voyages[voyIdx].lastModified = new Date().toISOString();
+  showToast('Voyage archived as completed', 'success');
+  renderDailyFleet();
+  renderDailyDetail();
+}
+
+// ===== Sync from Simulator to Daily =====
+function syncToDaily(){
+  if(!scheduleRows.length){
+    showToast('No schedule to sync. Run simulation first.', 'warning');
+    return;
+  }
+
+  const vesselCode = currentVessel.code || document.getElementById('vesselInput').value.trim().split('–')[0].trim();
+  const vesselName = currentVessel.name || document.getElementById('vesselInput').value.trim().split('–')[1]?.trim() || vesselCode;
+  const voyNo = document.getElementById('voyNoInput').value || '001W';
+
+  if(!vesselCode){ showToast('Please select a vessel first', 'warning'); return; }
+
+  // Ask for lane
+  let laneCode = '';
+  if(LANES_DATA.length === 0){
+    laneCode = prompt('Enter Lane Code (e.g. CT2):');
+    if(!laneCode) return;
+  } else {
+    const options = LANES_DATA.map(l => l.code + ' – ' + l.name).join('\n');
+    laneCode = prompt('Enter Lane Code:\n' + options);
+    if(!laneCode) return;
+    laneCode = laneCode.split('–')[0].trim().toUpperCase();
+  }
+
+  // Build voyage ports from scheduleRows
+  const ports = scheduleRows.map(row => ({
+    code: row.port,
+    name: PORT_MAP[row.port]?.en || row.port,
+    eta: row.eta || '',
+    etb: row.etb || '',
+    etd: row.etd || '',
+    stayHrs: row.stayHrs || 0,
+    manIn: row.manIn || 0,
+    waitHrs: row.wait || 0,
+    dist: row.dist || 0
+  }));
+
+  // Find or create vessel
+  let vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel){
+    vessel = { code: vesselCode, name: vesselName, voyages: [] };
+    FLEET_DATA.vessels.push(vessel);
+  }
+  vessel.name = vesselName;
+
+  // Check if voyNo already exists
+  const existIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
+  if(existIdx >= 0){
+    if(!confirm('Voyage ' + voyNo + ' already exists. Overwrite?')) return;
+    vessel.voyages[existIdx] = {
+      voyNo, lane: laneCode, status: 'current',
+      ports, lastModified: new Date().toISOString(),
+      modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
+    };
+  } else {
+    vessel.voyages.push({
+      voyNo, lane: laneCode, status: 'current',
+      ports, lastModified: new Date().toISOString(),
+      modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
+    });
+  }
+
+  showToast('✓ Schedule synced to Daily — ' + vesselCode + ' / ' + voyNo, 'success');
+
+  // Ask to commit immediately
+  if(confirm('Commit to GitHub now?')){
+    switchAppTab('daily');
+    setTimeout(() => commitFleetSchedule(), 300);
+  }
+}
+
+function addNewVoyage(){
+  const vesselCode = prompt('Enter Vessel Code (e.g. CUBK):');
+  if(!vesselCode) return;
+
+  let laneCode = '';
+  if(LANES_DATA.length){
+    const options = LANES_DATA.map(l => l.code + ' – ' + l.name).join('\n');
+    laneCode = prompt('Enter Lane Code:\n' + options);
+    if(!laneCode) return;
+    laneCode = laneCode.split('–')[0].trim().toUpperCase();
+  } else {
+    laneCode = prompt('Enter Lane Code:');
+  }
+
+  const voyNo = prompt('Enter Voyage Number (e.g. 001W):', '001W');
+  if(!voyNo) return;
+
+  const vesselName = VESSELS_DATA.find(v=>v.code===vesselCode.toUpperCase())?.name || vesselCode;
+  const code = vesselCode.toUpperCase();
+
+  let vessel = FLEET_DATA.vessels.find(v => v.code === code);
+  if(!vessel){
+    vessel = { code, name: vesselName, voyages: [] };
+    FLEET_DATA.vessels.push(vessel);
+  }
+
+  vessel.voyages.push({
+    voyNo, lane: laneCode, status: 'current',
+    ports: [], lastModified: new Date().toISOString(),
+    modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
+  });
+
+  dailySelectedVessel = { code, voyIdx: vessel.voyages.length - 1 };
+  renderDailyFleet();
+  renderDailyDetail();
+  showToast('New voyage added: ' + code + ' / ' + voyNo, 'success');
+}
+
+// ===== Export Fleet to Excel =====
+function exportFleetExcel(){
+  let vesselsToExport = [];
+
+  if(dailyCheckedVessels.size > 0){
+    // Export selected
+    dailyCheckedVessels.forEach(key => {
+      const [code, vIdx] = key.split('|');
+      const vessel = FLEET_DATA.vessels.find(v => v.code === code);
+      if(vessel && vessel.voyages[vIdx]){
+        vesselsToExport.push({ vessel, voyage: vessel.voyages[vIdx] });
+      }
+    });
+  } else if(dailySelectedVessel){
+    // Export selected vessel's current voyage
+    const vessel = FLEET_DATA.vessels.find(v => v.code === dailySelectedVessel.code);
+    if(vessel){
+      vesselsToExport.push({ vessel, voyage: vessel.voyages[dailySelectedVessel.voyIdx] });
+    }
+  } else {
+    // Export all current voyages
+    FLEET_DATA.vessels.forEach(v => {
+      const cur = v.voyages.find(voy => voy.status !== 'completed') || v.voyages[0];
+      if(cur) vesselsToExport.push({ vessel: v, voyage: cur });
+    });
+  }
+
+  if(!vesselsToExport.length){
+    showToast('No voyages to export', 'warning');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  vesselsToExport.forEach(({vessel, voyage}) => {
+    const sheetName = (vessel.code + '_' + voyage.voyNo).replace(/[^A-Za-z0-9_]/g, '').slice(0, 31);
+    const rows = [];
+    const header = ['Vessel', 'Vessel Name', 'Lane', 'Lane Name', 'Voyage No', 'Status',
+                    'Port', 'Port Name', 'ETA', 'ETB', 'ETD', 'Stay Hrs', 'Man In', 'Wait Hrs', 'Dist (NM)'];
+    rows.push(header);
+
+    (voyage.ports || []).forEach((p, i) => {
+      const pp = PORT_MAP[p.code] || {};
+      rows.push([
+        vessel.code, vessel.name, voyage.lane, getLaneName(voyage.lane), voyage.voyNo, voyage.status,
+        p.code, pp.cn || pp.en || p.code,
+        p.eta ? new Date(p.eta).toLocaleString('zh-CN') : '',
+        p.etb ? new Date(p.etb).toLocaleString('zh-CN') : '',
+        p.etd ? new Date(p.etd).toLocaleString('zh-CN') : '',
+        p.stayHrs || 0, p.manIn || 0, p.waitHrs || 0, p.dist || 0
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    // Auto column widths
+    ws['!cols'] = header.map((h, i) => ({ wch: i < 6 ? 14 : i < 9 ? 10 : 18 }));
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  const filename = 'Fleet_Schedule_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, filename);
+  showToast('Exported ' + vesselsToExport.length + ' voyage(s) to ' + filename, 'success');
+}
 </script>
 </body>
 </html>
