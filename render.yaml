@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: schedule-distance-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn distance_server:app
+    env: python
+    plan: free
+    region: singapore
