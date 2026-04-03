@@ -1124,7 +1124,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
   const lsfoPerHr = vessel.lsfo/24;
   // First port: ETD = startDt, ETA = startDt, Man In = 0 (already at port)
   const firstEta = ceilToHour(startDt);
-  const firstManIn = 0; // First port: no pilotage needed
+  const firstManIn = DEFAULT_MAN_IN; // First port also has 3h pilotage
   const firstWait = 0;
   const firstEtB = new Date(firstEta.getTime() + (firstManIn + firstWait)*3600000);
   firstEtB.setMinutes(0,0,0); // ceil to hour
