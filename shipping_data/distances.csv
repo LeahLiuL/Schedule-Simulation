@@ -1,4 +1,8 @@
 from_port,to_port,distance_nm,source
+CNZOS,EGALY,0,
+AEFJR,CNZOS,0,
+AEFJR,CNBJS,0,
+AEAUH,AEFJR,0,
 AEJEA,AEKLF,233,auto
 AEJEA,BDCGP,3238,auto
 AEJEA,BEANR,6340,auto
