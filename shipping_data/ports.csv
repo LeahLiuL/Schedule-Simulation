@@ -1,4 +1,5 @@
 code,name_en,name_cn,man_in,portstay_time
+"NEW","New Port","","",""
 "AEAUH","ABU DHABI","","",""
 "AEDXB","DUBAI","","",""
 "AEFJR","FUJAIRAH","","",""
@@ -61,7 +62,7 @@ code,name_en,name_cn,man_in,portstay_time
 "CNQZL","QUANZHOU","","",""
 "CNQZW","QUANZHOU, JIN JIANG, WEITOU","","",""
 "CNRZH","RI ZHAO","","",""
-"CNSHA","SHANGHAI","","",""
+"CNSHA","SHANGHAI","","5",""
 "CNSHK","SHEKOU","","",""
 "CNSHY","SHENYANG","","",""
 "CNSJZ","SHIJIAZHUANG","","",""
@@ -69,7 +70,7 @@ code,name_en,name_cn,man_in,portstay_time
 "CNSWA","SHANTOU","","",""
 "CNSWE","SHANWEI","","",""
 "CNTAC","TAI CANG PORT, JIANG SU PROVINCE","","",""
-"CNTAO","QINGDAO","","",""
+"CNTAO","QINGDAO","","1",""
 "CNTNJ","TIANJIN","","",""
 "CNTOL","TONGLING","","",""
 "CNTYU","TAIYUAN","","",""
