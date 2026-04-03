@@ -620,360 +620,91 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ==================== DATA ====================
-const PORTS_DATA = [
-  ["AEAUH","ABU DHABI","","",""],
-  ["AEDXB","DUBAI","","",""],
-  ["AEFJR","FUJAIRAH","","",""],
-  ["AEJEA","JEBEL ALI, UAE","","",""],
-  ["AEKLF","PORT OF KHOR AL FAKKAN","","",""],
-  ["BDCGP","CHITTAGONG/CHITTAGONG","","",""],
-  ["BDDAC","DHAKA/DHAKA","","",""],
-  ["BEANR","ANTWERP","","",""],
-  ["BRSSZ","SANTOS","","",""],
-  ["CNAJG","安吉港","","",""],
-  ["CNAQG","ANQING","","",""],
-  ["CNBIH","BEIHAI","","",""],
-  ["CNBJS","BEIJING","","",""],
-  ["CNCDU","CHENGDU","","",""],
-  ["CNCGC","CHANGCHUN","","",""],
-  ["CNCGU","CHANGSHU","","",""],
-  ["CNCOZ","CHAOZHOU","","",""],
-  ["CNCQI","CHONGQING","","",""],
-  ["CNCSH","CHANGSHA","","",""],
-  ["CNCWN","CHIWAN","","",""],
-  ["CNDAL","DALIAN","","",""],
-  ["CNDCB","CNDCB(大铲湾) TERMINAL","","",""],
-  ["CNDGG","DONGGUAN","","",""],
-  ["CNFAN","FANGCHENGGANG","","",""],
-  ["CNFOS","FOSHAN","","",""],
-  ["CNFZH","FUZHOU","","",""],
-  ["CNGGZ","GUANGZHOU","","",""],
-  ["CNGYA","GUIYANG","","",""],
-  ["CNHAZ","HANGZHOU","","",""],
-  ["CNHEY","HEYUAN","","",""],
-  ["CNHFI","HEFEI","","",""],
-  ["CNHHH","HOHHOT","","",""],
-  ["CNHKO","HAIKOU","","",""],
-  ["CNHMN","HUMEN","","",""],
-  ["CNHRN","HARBIN","","",""],
-  ["CNHSC","SHAOGUAN","","",""],
-  ["CNHSI","HUANGSHI","","",""],
-  ["CNHUA","HUANGPU","","",""],
-  ["CNHUI","HUIZHOU","","",""],
-  ["CNJAS","JIAXING, ZHEJIANG PROVINCE","","",""],
-  ["CNJGY","JIANG YIN PORT","","",""],
-  ["CNJIU","JIUJIANG","","",""],
-  ["CNJMN","JIANGMEN","","",""],
-  ["CNJNA","JINAN","","",""],
-  ["CNJYG","JIEYANG","","",""],
-  ["CNKNM","KUNMING","","",""],
-  ["CNLAZ","LANZHOU","","",""],
-  ["CNLHA","LHASA","","",""],
-  ["CNLYG","LIANYUNGANG","","",""],
-  ["CNMEZ","MEIZHOU","","",""],
-  ["CNMMI","MAOMING","","",""],
-  ["CNNAS","NANSHA","","",""],
-  ["CNNCH","NANCHANG","","",""],
-  ["CNNGB","NINGBO","","",""],
-  ["CNNIN","NANNING","","",""],
-  ["CNNJG","NANJING","","",""],
-  ["CNNTG","NANTONG","","",""],
-  ["CNQGY","QINGYUAN","","",""],
-  ["CNQZH","QINZHOU","","",""],
-  ["CNQZL","QUANZHOU","","",""],
-  ["CNQZW","QUANZHOU, JIN JIANG, WEITOU","","",""],
-  ["CNRZH","RI ZHAO","","",""],
-  ["CNSHA","SHANGHAI","","",""],
-  ["CNSHK","SHEKOU","","",""],
-  ["CNSHY","SHENYANG","","",""],
-  ["CNSJZ","SHIJIAZHUANG","","",""],
-  ["CNSNZ","SHENZHEN","","",""],
-  ["CNSWA","SHANTOU","","",""],
-  ["CNSWE","SHANWEI","","",""],
-  ["CNTAC","TAI CANG PORT, JIANG SU PROVINCE","","",""],
-  ["CNTAO","QINGDAO","","",""],
-  ["CNTNJ","TIANJIN","","",""],
-  ["CNTOL","TONGLING","","",""],
-  ["CNTYU","TAIYUAN","","",""],
-  ["CNURM","URUMUCHI","","",""],
-  ["CNWHA","WU HAN","","",""],
-  ["CNWNZ","WENZHOU","","",""],
-  ["CNWUH","WU HU","","",""],
-  ["CNXGG","XINGANG","","",""],
-  ["CNXIA","XIAN","","",""],
-  ["CNXMN","XIAMEN","","",""],
-  ["CNXNT","XINING","","",""],
-  ["CNYCH","YINCHUAN","","",""],
-  ["CNYIB","YIBIN","","",""],
-  ["CNYIC","YICHANG","","",""],
-  ["CNYJI","YANGJIANG","","",""],
-  ["CNYPN","YANGPU, HAINAN, CN","","",""],
-  ["CNYTN","YANTIAN","","",""],
-  ["CNYUF","YUNFU","","",""],
-  ["CNZEJ","ZHENJIANG","","",""],
-  ["CNZGZ","ZHENGZHOU","","",""],
-  ["CNZJG","ZHANGJIAGANG","","",""],
-  ["CNZNG","ZHANJIANG","","",""],
-  ["CNZOS","ZHOUSHAN","","",""],
-  ["CNZPU","ZHAPU, JIAXING, ZHEJIANG PROVINCE","","",""],
-  ["CNZQG","ZHAOQING","","",""],
-  ["CNZSN","ZHONGSHAN","","",""],
-  ["CNZUH","ZHUHAI","","",""],
-  ["DEHAM","HAMBURG","","",""],
-  ["DJJIB","DJIBOUTI","","",""],
-  ["EGALY","ALEXANDRIA","","",""],
-  ["EGDAM","DAMIETTA","","",""],
-  ["EGPSD","PORT SAID","","",""],
-  ["EGSOK","SOKHNA","","",""],
-  ["EGSUZ","SUEZ CANAL","","",""],
-  ["ETADD","ADDIS ABABA","","",""],
-  ["FRPAR","PARIS FRANCE","","",""],
-  ["GBIMM","IMMINGHAM","","",""],
-  ["GBLIV","LIVERPOOL","","",""],
-  ["GBLON","LONDON","","",""],
-  ["GBSOU","SOUTHAMPTON","","",""],
-  ["GBTIL","TILBURY","","",""],
-  ["GEPTI","POTI","","",""],
-  ["GRPIR","PIRAEUS","","",""],
-  ["HKHKG","HONG KONG","","",""],
-  ["IDBLW","BELAWAN","","",""],
-  ["IDJKT","JAKARTA","","",""],
-  ["IDSRG","SEMARANG","","",""],
-  ["IDSUB","SURABAYA","","",""],
-  ["ILASD","ASHDOD","","",""],
-  ["ILHFA","HAIFA","","",""],
-  ["INAMD","AHMEDABAD","","",""],
-  ["INBGJ","ICD BIRGUNJ","","",""],
-  ["INBOM","MUMBAI","","",""],
-  ["INCCU","KOLKATA (EX. CALCUTTA), INDIA","","",""],
-  ["INCOK","COCHIN","","",""],
-  ["INDAD","ICD - DELHI  DADRI","","",""],
-  ["INDDL","DHANDARI KALAN, LUDHIANA","","",""],
-  ["INDER","ICD DADRI","","",""],
-  ["INFBD","ICD FARIDABAD","","",""],
-  ["INHAR","ICD GARHI HARSARU","","",""],
-  ["INHYD","ICD HYDERABAD","","",""],
-  ["INICD","NEW DELHI, INDIA","","",""],
-  ["INJAI","ICD JAIPUR","","",""],
-  ["INJDP","ICD  JODHPUR","","",""],
-  ["INKAT","KATTUPALLI PORT","","",""],
-  ["INKHO","ICD KHODIYAR, AHMEDABAD","","",""],
-  ["INLDH","LUDHIANA , INDIA","","",""],
-  ["INLON","ICD LONI","","",""],
-  ["INLUD","ICD LUDHIANA","","",""],
-  ["INMAA","CHENNAI","","",""],
-  ["INMUN","MUNDRA","","",""],
-  ["INNAG","ICD NAGPUR","","",""],
-  ["INNSA","NHAVA SHEVA","","",""],
-  ["INPAT","ICD PATLI","","",""],
-  ["INPAV","PIPAVAV","","",""],
-  ["INPPG","ICD PATPARGANJ","","",""],
-  ["INPUN","ICD PUNE","","",""],
-  ["INPWL","ICD PALWAL","","",""],
-  ["INQRP","ICD KILA RAIPUR, LUDHIANA","","",""],
-  ["INSON","ICD SONEPAT","","",""],
-  ["INSSA","ICD SANAND AHMEDABAD","","",""],
-  ["INSWA","ICD SAHNEWAL, LUDHIANA","","",""],
-  ["INTKD","ICD TUGHLAKABAD","","",""],
-  ["INTUB","ICD TUMB","","",""],
-  ["INVIZ","VISAKHAPATNAM","","",""],
-  ["IQEBL","ERBIL","","",""],
-  ["IQSYH","SULAYMANIYAH","","",""],
-  ["IQZAO","ZAKHO","","",""],
-  ["JOAMM","AMMAN","","",""],
-  ["JOAQJ","AQABA","","",""],
-  ["JPNGO","NAGOYA/AICHI","","",""],
-  ["JPOSA","OSAKA/OSAKA","","",""],
-  ["JPTYO","TOKYO/TOKYO","","",""],
-  ["JPUKB","KOBE, JP","","",""],
-  ["JPYOK","YOKOHAMA/KANAGAWA","","",""],
-  ["KEMBA","MOMBASA","","",""],
-  ["KHKOS","SIHANOUKVILLE","","",""],
-  ["KHPNH","PHNOM PENH","","",""],
-  ["KRINC","INCHEON","","",""],
-  ["KRKAN","GWANGYANG","","",""],
-  ["KRPUS","BUSAN","","",""],
-  ["KRSEL","SEOUL","","",""],
-  ["KRUSN","ULSAN/ULSAN","","",""],
-  ["LAVTE","VIENTIANE","","",""],
-  ["LBBEY","BEIRUT","","",""],
-  ["LKCMB","COLOMBO","","",""],
-  ["LRMLW","MONROVIA, LIBERIA","","",""],
-  ["LYBEN","BENGHAZI","","",""],
-  ["LYKHO","AL KHOMS","","",""],
-  ["LYMRA","MISURATA","","",""],
-  ["MHMAJ","MAJURO, MARSHALL ISLANDS","","",""],
-  ["MMNPD","NAYPYIDAW/NAYPYIDAW UNION TERRITORY","","",""],
-  ["MMRGN","YANGON, MYANMAR","","",""],
-  ["MOMFM","MACAO","","",""],
-  ["MYKCH","KUCHING, MALAYSIA","","",""],
-  ["MYKUL","KUALA LUMPUR/KUALA LUMPUR","","",""],
-  ["MYPEN","PENANG","","",""],
-  ["MYPGU","PASIR GUDANG","","",""],
-  ["MYPKG","PORT KLANG","","",""],
-  ["MYPKN","PORT KLANG NORTH PORT","","",""],
-  ["MYTPP","TANJUNG PELEPAS/JOHOR BAHRU/JOHOR","","",""],
-  ["NLAMS","AMSTERDAM","","",""],
-  ["NLRTM","ROTTERDAM","","",""],
-  ["OMMCT","MUSCAT, SULTANATE OF OMAN","","",""],
-  ["OMSLL","SALALAH","","",""],
-  ["OMSOH","SOHAR, SULTANATE OF OMAN","","",""],
-  ["PHMNL","MANILA,PH","","",""],
-  ["PHMNN","MANILA - NORTH PORT","","",""],
-  ["PHSPS","SUBIC","","",""],
-  ["PKISB","ISLAMABAD/ISLAMABAD","","",""],
-  ["PKKHI","KARACHI","","",""],
-  ["PLWAW","WARSZAWA","","",""],
-  ["QAHMD","PORT OF HAMAD, QA","","",""],
-  ["ROCND","CONSTANTA","","",""],
-  ["SADMM","DAMMAM","","",""],
-  ["SAJED","JEDDAH","","",""],
-  ["SANEO","NEOM","","",""],
-  ["SARUH","RIYADH, SAUDI ARABIA","","",""],
-  ["SDPZU","PORT SUDAN","","",""],
-  ["SGSIN","SINGAPORE","","",""],
-  ["SOBBO","BERBERA","","",""],
-  ["SYDAM","DAMASCUS (DAMAS)","","",""],
-  ["SYLTR","LATTAKIA","","",""],
-  ["THBKK","BANGKOK","","",""],
-  ["THBKS","SUKSAWAT, BANGKOK","","",""],
-  ["THLCH","LAEM CHABANG","","",""],
-  ["THLKB","LAT KRABANG","","",""],
-  ["THSCS","SAHATHAI, BANGKOK","","",""],
-  ["TRALI","ALIAGA","","",""],
-  ["TRIST","ISTANBUL","","",""],
-  ["TRIZT","IZMIT","","",""],
-  ["TRMAR","MARDAS","","",""],
-  ["TRMER","MERSIN","","",""],
-  ["TWHSC","HSINCHU COUNTY","","",""],
-  ["TWHSZ","HSINCHU CITY","","",""],
-  ["TWKEL","KEELUNG","","",""],
-  ["TWKHH","KAOHSIUNG","","",""],
-  ["TWNTC","NEW TAIPEI CITY","","",""],
-  ["TWTPE","TAIPEI","","",""],
-  ["TWTXG","TAICHUNG","","",""],
-  ["TWTYN","TAOYUAN","","",""],
-  ["UAODS","ODESSA","","",""],
-  ["USLAX","LOS ANGELES","","",""],
-  ["USLGB","LONG BEACH","","",""],
-  ["USOAK","OAKLAND","","",""],
-  ["VNDAD","DA NANG","","",""],
-  ["VNHAN","HANOI/HA NOI CITY","","",""],
-  ["VNHPH","HAIPHONG","","",""],
-  ["VNHPP","TAN CANG","","",""],
-  ["VNSGN","HO CHI MINH CITY","","",""],
-  ["VNVUT","CAI MEP","","",""],
-  ["YEADE","ADEN","","",""],
-  ["YEHOD","HODEIDAH","","",""]
-];
+// ==================== DATA LOADER ====================
+// GitHub raw CSV base URL
+const CSV_BASE = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data';
 
-// Full vessel data with multiple speed tiers from vessels.csv
-const VESSELS_DATA = [
-  {code:"CSJ",  name:"CHANG SHENG JI 7",   speed:11, lsfo:12, hsfo:0, mgo:1.5},
-  {code:"CUBK", name:"CUL BANGKOK",         speed:12, lsfo:15, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:12.5, lsfo:15.5, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:13, lsfo:17.6, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:13.5, lsfo:19.6, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:14, lsfo:21.6, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:14.5, lsfo:23.8, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:15, lsfo:25.3, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:15.5, lsfo:27.8, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:16, lsfo:29.6, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:16.5, lsfo:33.3, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:17, lsfo:35.5, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:17.5, lsfo:36.1, hsfo:0, mgo:0},{code:"CUBK", name:"CUL BANGKOK",         speed:18, lsfo:38.6, hsfo:0, mgo:0},
-  {code:"CUHC", name:"CUL HOCHIMINH",       speed:12, lsfo:18, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:12.5, lsfo:20, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:13, lsfo:21.5, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:13.5, lsfo:23, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:14, lsfo:25, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:14.5, lsfo:26.5, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:15, lsfo:28.5, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:15.5, lsfo:30.5, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:16, lsfo:33, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:16.5, lsfo:36, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:17, lsfo:39, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:17.5, lsfo:42, hsfo:0, mgo:0},{code:"CUHC", name:"CUL HOCHIMINH",       speed:18, lsfo:46, hsfo:0, mgo:0},
-  {code:"CUHM", name:"CUL HUMEN",           speed:12, lsfo:24, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:12.5, lsfo:24.5, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:13, lsfo:26, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:13.5, lsfo:27.5, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:14, lsfo:27.5, hsfo:0, mgo:0},{code:"CUHM", name:"CUL HUMEN",           speed:15, lsfo:28.5, hsfo:0, mgo:0},
-  {code:"CUHP", name:"CUL HAIPHONG",        speed:9.4, lsfo:9.4, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:10.18, lsfo:10.18, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:11.63, lsfo:11.63, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:12.73, lsfo:12.73, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:14.14, lsfo:14.14, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:15.76, lsfo:15.76, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:17.2, lsfo:17.2, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HAIPHONG",        speed:18.26, lsfo:18.26, hsfo:0, mgo:1.2},
-  {code:"CUHP", name:"CUL HUANGPU",         speed:12, lsfo:9.3, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:12.5, lsfo:9.44, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:13, lsfo:10.61, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:13.5, lsfo:11.87, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:14, lsfo:13.23, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:14.5, lsfo:14.68, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:15, lsfo:16.5, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:15.5, lsfo:18.1, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:16, lsfo:19.8, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:16.5, lsfo:21.8, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:17, lsfo:24.4, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:17.5, lsfo:26.25, hsfo:0, mgo:1.2},{code:"CUHP", name:"CUL HUANGPU",         speed:18, lsfo:28.53, hsfo:0, mgo:1.2},
-  {code:"CUJK", name:"CUL JAKARTA",         speed:12, lsfo:27.3, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:12.5, lsfo:29.5, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:13, lsfo:33, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:13.5, lsfo:38.2, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:14, lsfo:39.8, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:14.5, lsfo:42.8, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:15, lsfo:48.8, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:15.5, lsfo:60, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:16, lsfo:85.8, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:16.5, lsfo:70, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:17, lsfo:78, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:17.5, lsfo:84, hsfo:0, mgo:0},{code:"CUJK", name:"CUL JAKARTA",         speed:18, lsfo:91, hsfo:0, mgo:0},
-  {code:"CUKL", name:"CUL KLANG",           speed:12, lsfo:21.2, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:12.5, lsfo:23.6, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:13, lsfo:26.7, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:13.5, lsfo:28.2, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:14, lsfo:30.5, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:14.5, lsfo:32.2, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:15, lsfo:34.6, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:15.5, lsfo:35.2, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:16, lsfo:36.9, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:16.5, lsfo:37.6, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:17, lsfo:38.8, hsfo:0, mgo:0},{code:"CUKL", name:"CUL KLANG",           speed:17.5, lsfo:41.3, hsfo:0, mgo:0},
-  {code:"CULC", name:"CUL LAEMCHABANG",     speed:11, lsfo:17, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:11.5, lsfo:18, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:12, lsfo:12.93, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:12.5, lsfo:14.29, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:13, lsfo:15.76, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:13.5, lsfo:17.35, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:14, lsfo:19.06, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:14.5, lsfo:20.91, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:15, lsfo:23.02, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:15.5, lsfo:24.98, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:16, lsfo:27.22, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:16.5, lsfo:29.62, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:17, lsfo:32.16, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:17.5, lsfo:34.85, hsfo:0, mgo:0},{code:"CULC", name:"CUL LAEMCHABANG",     speed:18, lsfo:37.7, hsfo:0, mgo:0},
-  {code:"CUML", name:"CUL MANILA",          speed:12, lsfo:27.3, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:12.5, lsfo:31.5, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:13, lsfo:37.7, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:13.5, lsfo:41.7, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:14, lsfo:46, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:14.5, lsfo:49, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:15, lsfo:52, hsfo:0, mgo:0},{code:"CUML", name:"CUL MANILA",          speed:15.5, lsfo:57, hsfo:0, mgo:0},
-  {code:"CUNS", name:"CUL NANSHA",          speed:11, lsfo:12, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:11.5, lsfo:15, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:12, lsfo:13.84, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:12.5, lsfo:15.25, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:13, lsfo:16.23, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:13.5, lsfo:17.27, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:14, lsfo:18.32, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:14.5, lsfo:20.06, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:15, lsfo:21.93, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:15.5, lsfo:23.26, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:16, lsfo:24.64, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:16.5, lsfo:26.56, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:17, lsfo:30.15, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:17.5, lsfo:32.16, hsfo:0, mgo:0},{code:"CUNS", name:"CUL NANSHA",          speed:18, lsfo:34.34, hsfo:0, mgo:0},
-  {code:"CUSK", name:"CUL SHEKOU",          speed:12, lsfo:18, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:12.5, lsfo:20, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:13, lsfo:21.5, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:13.5, lsfo:23, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:14, lsfo:25, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:14.5, lsfo:26.5, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:15, lsfo:28.5, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:15.5, lsfo:30.5, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:16, lsfo:33, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:16.5, lsfo:36, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:17, lsfo:39, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:17.5, lsfo:42, hsfo:0, mgo:0},{code:"CUSK", name:"CUL SHEKOU",          speed:18, lsfo:46, hsfo:0, mgo:0},
-  {code:"CUXM", name:"CUL XIAMEN",          speed:12, lsfo:24.3, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:12.5, lsfo:24.9, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:13, lsfo:25.4, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:13.5, lsfo:26.4, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:14, lsfo:27.3, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:14.5, lsfo:28.1, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:15, lsfo:29.4, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:15.5, lsfo:30.7, hsfo:0, mgo:0},{code:"CUXM", name:"CUL XIAMEN",          speed:16, lsfo:32, hsfo:0, mgo:0},
-  {code:"CUYP", name:"CUL YANGPU",          speed:12, lsfo:13.8, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:12.5, lsfo:14.9, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:13, lsfo:16.1, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:13.5, lsfo:17.4, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:14, lsfo:19.2, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:14.5, lsfo:21.3, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:15, lsfo:22.8, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:15.5, lsfo:24.5, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:16, lsfo:27.2, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:16.5, lsfo:28.1, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:17, lsfo:29.8, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:17.5, lsfo:33.3, hsfo:0, mgo:0},{code:"CUYP", name:"CUL YANGPU",          speed:18, lsfo:35.6, hsfo:0, mgo:0},
-  {code:"FULI", name:"FU LIAN",             speed:12.5, lsfo:20, hsfo:0, mgo:0},
-  {code:"HAMD", name:"HAIAN MIND",          speed:11, lsfo:22, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:11.5, lsfo:22.5, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:12, lsfo:24, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:12.5, lsfo:24.5, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:13, lsfo:27, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:13.5, lsfo:27.5, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:14, lsfo:30, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:14.5, lsfo:32, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:15, lsfo:34, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:15.5, lsfo:36, hsfo:0, mgo:0},{code:"HAMD", name:"HAIAN MIND",          speed:16, lsfo:39, hsfo:0, mgo:0},
-  {code:"HDHY", name:"HDX HONGYUAN",        speed:11, lsfo:20, hsfo:0, mgo:0},
-  {code:"KRCL", name:"KR CELEBES",          speed:9.8, lsfo:6.6, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:10, lsfo:9.93, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:10.5, lsfo:9.93, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:11, lsfo:11.55, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:12.3, lsfo:12.3, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:13.4, lsfo:15.7, hsfo:0, mgo:0},{code:"KRCL", name:"KR CELEBES",          speed:14.1, lsfo:18.1, hsfo:0, mgo:0},
-  {code:"KRTM", name:"KR TASMAN",           speed:11, lsfo:18, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:11.5, lsfo:18.5, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:12, lsfo:19.5, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:12.5, lsfo:22, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:13, lsfo:23, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:13.5, lsfo:25, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:14, lsfo:27, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:14.5, lsfo:32, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:15, lsfo:35, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:15.5, lsfo:38, hsfo:0, mgo:0},{code:"KRTM", name:"KR TASMAN",           speed:16, lsfo:42, hsfo:0, mgo:0},
-  {code:"OSGB", name:"OSG BOSSTEC",         speed:12, lsfo:15.8, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:12.5, lsfo:16.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:13, lsfo:17.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:13.5, lsfo:18.8, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:14, lsfo:20.2, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:14.5, lsfo:21.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:15, lsfo:22.8, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:15.5, lsfo:23.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:16, lsfo:24, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:16.5, lsfo:24.5, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:17, lsfo:25, hsfo:0, mgo:0},{code:"OSGB", name:"OSG BOSSTEC",         speed:17.5, lsfo:26, hsfo:0, mgo:0},
-  {code:"SISO", name:"SINAR SOLO",          speed:12, lsfo:14, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:12.5, lsfo:14.5, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:13, lsfo:15.1, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:13.5, lsfo:15.7, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:14, lsfo:16.3, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:14.5, lsfo:16.8, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:15, lsfo:17.4, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:15.5, lsfo:18, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:16, lsfo:18.6, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:16.5, lsfo:19.1, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:17, lsfo:19.7, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:17.5, lsfo:20.3, hsfo:0, mgo:1.2},{code:"SISO", name:"SINAR SOLO",          speed:18, lsfo:20.9, hsfo:0, mgo:1.2},
-  {code:"STBL", name:"STAR BLESSING",       speed:12, lsfo:16.5, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:12.5, lsfo:17, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:13, lsfo:18.7, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:13.5, lsfo:19.8, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:14, lsfo:21.4, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:14.5, lsfo:22.5, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:15, lsfo:24, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:15.5, lsfo:26.5, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:16, lsfo:27.4, hsfo:0, mgo:0},{code:"STBL", name:"STAR BLESSING",       speed:16.5, lsfo:29, hsfo:0, mgo:0},
-  {code:"TGLK", name:"TIGER LONGKOU",       speed:11, lsfo:14, hsfo:0, mgo:3},{code:"TGLK", name:"TIGER LONGKOU",       speed:11.5, lsfo:15.5, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:12, lsfo:16, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:12.5, lsfo:18, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:13, lsfo:18, hsfo:0, mgo:3},{code:"TGLK", name:"TIGER LONGKOU",       speed:13.5, lsfo:21, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:14, lsfo:23.2, hsfo:0, mgo:3},{code:"TGLK", name:"TIGER LONGKOU",       speed:14.5, lsfo:25, hsfo:0, mgo:3.5},{code:"TGLK", name:"TIGER LONGKOU",       speed:15, lsfo:27.3, hsfo:0, mgo:3},{code:"TGLK", name:"TIGER LONGKOU",       speed:16, lsfo:33.5, hsfo:0, mgo:3},
-  {code:"UGLG", name:"UGL GUANGZHOU",       speed:10, lsfo:12, hsfo:0, mgo:0},{code:"UGLG", name:"UGL GUANGZHOU",       speed:14.5, lsfo:26.5, hsfo:0, mgo:0},{code:"UGLG", name:"UGL GUANGZHOU",       speed:15.5, lsfo:29.5, hsfo:0, mgo:0},
-  {code:"WNFD", name:"WAN FU DA",           speed:11, lsfo:24.5, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:11.5, lsfo:26, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:12, lsfo:27.5, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:12.5, lsfo:28, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:13, lsfo:30, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:13.5, lsfo:31, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:14, lsfo:32.5, hsfo:0, mgo:0},{code:"WNFD", name:"WAN FU DA",           speed:14.5, lsfo:33, hsfo:0, mgo:0},
-  {code:"XD88", name:"XING DONG 88",        speed:7, lsfo:12.5, hsfo:0, mgo:1.2},{code:"XD88", name:"XING DONG 88",        speed:11.5, lsfo:15.5, hsfo:0, mgo:1.2},{code:"XD88", name:"XING DONG 88",        speed:12.5, lsfo:18, hsfo:0, mgo:1.2},
-  {code:"XHDL", name:"XH DOLPHIN",          speed:15, lsfo:37.9, hsfo:0, mgo:0},{code:"XHDL", name:"XH DOLPHIN",          speed:16, lsfo:39.4, hsfo:0, mgo:0},{code:"XHDL", name:"XH DOLPHIN",          speed:17, lsfo:44.9, hsfo:0, mgo:0},{code:"XHDL", name:"XH DOLPHIN",          speed:18, lsfo:51.5, hsfo:0, mgo:0},
-  {code:"ZLST", name:"ZHONG LIAN SHAN TOU", speed:12, lsfo:11.2, hsfo:0, mgo:0},
-  {code:"ZYHS", name:"ZHI YING HE SHUN",    speed:11, lsfo:13.5, hsfo:0, mgo:0},
-  {code:"NBST", name:"NOBAL STAR",          speed:17, lsfo:30.5, hsfo:0, mgo:0.1},{code:"NBST", name:"NOBAL STAR",          speed:16, lsfo:28, hsfo:0, mgo:0.1},{code:"NBST", name:"NOBAL STAR",          speed:15, lsfo:26, hsfo:0, mgo:0.1},{code:"NBST", name:"NOBAL STAR",          speed:14, lsfo:21.5, hsfo:0, mgo:0.1},{code:"NBST", name:"NOBAL STAR",          speed:13, lsfo:17.5, hsfo:0, mgo:0.1}
-];
-
-// Get unique vessel list (first tier as default) for combobox
-function getUniqueVessels(){
-  const map = new Map();
-  VESSELS_DATA.forEach(v=>{
-    if(!map.has(v.code)){
-      map.set(v.code, {code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo});
+// Parse CSV text into array of objects (header → keys)
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/);
+  if(!lines.length) return [];
+  const headers = lines[0].split(',').map(h=>h.trim());
+  return lines.slice(1).map(line=>{
+    // Simple CSV: split by comma, handle quoted fields
+    const vals = [];
+    let cur = '', inQuote = false;
+    for(let i=0;i<line.length;i++){
+      const ch = line[i];
+      if(inQuote){
+        if(ch==='"' && line[i+1]==='"'){ cur+='"'; i++; }
+        else if(ch==='"'){ inQuote=false; }
+        else { cur+=ch; }
+      } else {
+        if(ch==='"'){ inQuote=true; }
+        else if(ch===','){ vals.push(cur.trim()); cur=''; }
+        else { cur+=ch; }
+      }
     }
-  });
-  return Array.from(map.values());
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h,i)=>{ obj[h] = vals[i]||''; });
+    return obj;
+  }).filter(r=>Object.values(r).some(v=>v!==''));
 }
 
-// Find fuel rates for a vessel code at a given speed (exact or nearest)
-function lookupFuelRates(code, speed){
-  const tiers = VESSELS_DATA.filter(v=>v.code===code);
-  if(!tiers.length) return {lsfo:0, hsfo:0, mgo:0};
-  // Exact match
-  const exact = tiers.find(t=>Math.abs(t.speed-speed)<0.01);
-  if(exact) return {lsfo:exact.lsfo||0, hsfo:exact.hsfo||0, mgo:exact.mgo||0};
-  // Nearest match (interpolate between two closest tiers)
-  tiers.sort((a,b)=>a.speed-b.speed);
-  if(speed <= tiers[0].speed) return {lsfo:tiers[0].lsfo||0, hsfo:tiers[0].hsfo||0, mgo:tiers[0].mgo||0};
-  if(speed >= tiers[tiers.length-1].speed) return {lsfo:tiers[tiers.length-1].lsfo||0, hsfo:tiers[tiers.length-1].hsfo||0, mgo:tiers[tiers.length-1].mgo||0};
-  // Linear interpolation
-  for(let i=0;i<tiers.length-1;i++){
-    if(speed>=tiers[i].speed && speed<=tiers[i+1].speed){
-      const ratio = (speed-tiers[i].speed)/(tiers[i+1].speed-tiers[i].speed);
-      const lsfo = (tiers[i].lsfo||0) + ratio*((tiers[i+1].lsfo||0)-(tiers[i].lsfo||0));
-      const hsfo = (tiers[i].hsfo||0) + ratio*((tiers[i+1].hsfo||0)-(tiers[i].hsfo||0));
-      const mgo  = (tiers[i].mgo||0)  + ratio*((tiers[i+1].mgo||0)-(tiers[i].mgo||0));
-      return {lsfo:+lsfo.toFixed(1), hsfo:+hsfo.toFixed(1), mgo:+mgo.toFixed(1)};
-    }
-  }
-  return {lsfo:0, hsfo:0, mgo:0};
+// Fetch CSV file and parse
+async function fetchCSV(filename){
+  const url = CSV_BASE + '/' + filename + '?t=' + Date.now(); // cache-bust
+  const resp = await fetch(url);
+  if(!resp.ok) throw new Error('Failed to load ' + filename + ': ' + resp.status);
+  return parseCSV(await resp.text());
 }
 
-// Distance matrix
-const DIST_RAW = [
-  ["AEJEA","AEKLF",232],["AEJEA","SGSIN",3520],["AEJEA","HKHKG",5820],["AEJEA","CNSHA",6050],
-  ["AEJEA","CNTAO",6320],["AEJEA","KRPUS",6500],["AEJEA","SAJED",1580],["AEJEA","DJJIB",1250],
-  ["SGSIN","HKHKG",1422],["SGSIN","CNSHA",2086],["SGSIN","CNTAO",2540],["SGSIN","KRPUS",2730],
-  ["SGSIN","JPTYO",3320],["SGSIN","THLCH",840],["SGSIN","MYPKG",195],["SGSIN","VNSGN",595],
-  ["SGSIN","INMUN",2380],["SGSIN","INNSA",2415],["SGSIN","LKCMB",1585],["SGSIN","MYTPP",15],
-  ["HKHKG","CNSHA",844],["HKHKG","CNTAO",580],["HKHKG","CNNGB",700],["HKHKG","CNXMN",360],
-  ["HKHKG","CNNAS",60],["HKHKG","CNYTN",40],["HKHKG","CNSHK",50],["HKHKG","CNCWN",55],
-  ["HKHKG","KRPUS",1230],["HKHKG","JPYOK",1550],["HKHKG","JPTYO",1620],["HKHKG","THLCH",1250],
-  ["CNSHA","CNTAO",386],["CNSHA","CNNGB",156],["CNSHA","CNXMN",540],["CNSHA","CNDAL",820],
-  ["CNSHA","KRPUS",880],["CNSHA","JPYOK",1050],["CNSHA","JPTYO",1120],["CNSHA","KRINC",620],
-  ["CNTAO","CNDAL",420],["CNTAO","KRINC",360],["CNTAO","KRPUS",640],["CNTAO","CNNGB",510],
-  ["KRPUS","JPYOK",620],["KRPUS","JPTYO",690],["KRPUS","JPOSA",260],["KRPUS","KRINC",240],
-  ["JPYOK","JPTYO",30],["JPYOK","JPOSA",330],["JPYOK","USLAX",4850],["JPYOK","USLGB",4870],
-  ["USLAX","USLGB",20],["USLAX","USOAK",340],["USLGB","USOAK",350],
-  ["NLRTM","BEANR",120],["NLRTM","DEHAM",360],["NLRTM","GBSOU",420],
-  ["SAJED","DJJIB",450],["DJJIB","LKCMB",1820],["SAJED","EGSOK",780],["EGSOK","GRPIR",1540],
-  ["GRPIR","ILASD",420],["GRPIR","ILHFA",450],["GRPIR","NLRTM",2060],["GRPIR","BEANR",1980],
-  ["THLCH","VNSGN",580],["THLCH","HKHKG",1250],["THLCH","MYPKG",980],["THLCH","SGSIN",840],
-  ["VNSGN","HKHKG",820],["VNSGN","CNSHA",1480],["VNHPH","HKHKG",680],["VNHPH","CNSHA",1100],
-  ["MYPKG","HKHKG",1490],["MYTPP","SGSIN",15],["MYTPP","HKHKG",1435],
-  ["INNSA","INMUN",370],["INNSA","LKCMB",885],["INMUN","AEJEA",1095],["INMUN","LKCMB",1340],
-  ["LKCMB","HKHKG",2040],["LKCMB","SGSIN",1585],
-  ["CNNGB","CNTAO",510],["CNNGB","CNXMN",440],["CNNGB","HKHKG",700],
-  ["TWKHH","HKHKG",480],["TWKHH","CNSHA",500],["TWKHH","CNTAO",600],["TWKEL","TWKHH",200],
-  ["CNXMN","CNNAS",300],["CNXMN","CNSHK",310],["CNNAS","CNSHK",40],
-  ["PHMNL","HKHKG",640],["PHMNL","SGSIN",1310],["PHMNL","CNSHA",1440],
-  ["KEMBA","DJJIB",1720],
-  ["CNJGY","CNSHA",120],["CNTAC","CNSHA",80],["CNCGU","CNSHA",100],
-  ["CNYTN","CNSHK",10],["CNYTN","CNCWN",15],
-];
+// Data containers (populated async)
+let PORTS_DATA = [];    // [[code, name_en, name_cn, man_in, portstay_time], ...]
+let VESSELS_DATA = [];  // [{code, name, speed, lsfo, hsfo, mgo}, ...]
+let DIST_RAW = [];      // [[from, to, distance], ...]
+
+// Load all CSV data from GitHub
+async function loadAllData(){
+  const [portsRows, vesselsRows, distRows] = await Promise.all([
+    fetchCSV('ports.csv'),
+    fetchCSV('vessels.csv'),
+    fetchCSV('distances.csv')
+  ]);
+
+  // Parse ports
+  PORTS_DATA = portsRows.map(r=>[
+    r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||''
+  ]);
+
+  // Parse vessels
+  VESSELS_DATA = vesselsRows.map(r=>({
+    code: r.vessel_code,
+    name: r.vessel_name,
+    speed: parseFloat(r.speed_knots)||0,
+    lsfo: parseFloat(r.lsfo_mt_day)||0,
+    hsfo: parseFloat(r.hsfo_mt_day)||0,
+    mgo:  parseFloat(r.mgo_mt_day)||0
+  }));
+
+  // Parse distances
+  DIST_RAW = distRows.map(r=>[
+    r.from_port, r.to_port, Math.round(parseFloat(r.distance_nm)||0)
+  ]);
+
+  // Build lookup maps now that data is loaded
+  buildDistMap();
+  buildPortMap();
+}
 
 // Build distance lookup
-const DIST_MAP = {};
+let DIST_MAP = {};
+function buildDistMap(){
+  DIST_MAP = {};
+  DIST_RAW.forEach(([a,b,d])=>{DIST_MAP[distKey(a,b)]=d;});
+}
 function distKey(a,b){return a<b?a+'|'+b:b+'|'+a;}
-DIST_RAW.forEach(([a,b,d])=>{DIST_MAP[distKey(a,b)]=d;});
 function getDistance(a,b){
   if(a===b) return 0;
   const k=distKey(a,b);
@@ -989,13 +720,16 @@ function estimateDistance(a,b){
 var DEFAULT_MAN_IN = 3; // hours (var to avoid TDZ issues)
 
 // Build port lookup
-const PORT_MAP = {};
-PORTS_DATA.forEach(([code,en,cn,manIn,portstay])=>{
-  PORT_MAP[code]={code,en,cn,
-    manIn: manIn ? parseFloat(manIn) : DEFAULT_MAN_IN,
-    portstay: portstay ? parseFloat(portstay) : 12
-  };
-});
+let PORT_MAP = {};
+function buildPortMap(){
+  PORT_MAP = {};
+  PORTS_DATA.forEach(([code,en,cn,manIn,portstay])=>{
+    PORT_MAP[code]={code,en,cn,
+      manIn: manIn ? parseFloat(manIn) : DEFAULT_MAN_IN,
+      portstay: portstay ? parseFloat(portstay) : 12
+    };
+  });
+}
 
 // Get man_in hours for a port (from data or default)
 function getPortManIn(code){ return (PORT_MAP[code]||{}).manIn || DEFAULT_MAN_IN; }
@@ -1109,25 +843,31 @@ let currentVessel = {
 
 
 // ==================== INIT ====================
-// Debug: collect errors to show on page
-window._initErrors = [];
-window.addEventListener('error', function(e) {
-  const msg = e.message + ' (line ' + e.lineno + ')';
-  console.error('JS ERROR:', msg);
-  window._initErrors.push(msg);
-});
-document.addEventListener('DOMContentLoaded', ()=>{
-  try { initVesselCombobox(); window._initErrors.push('initVesselCombobox: OK'); } catch(e) { window._initErrors.push('initVesselCombobox FAILED: ' + e.message + ' stack: ' + e.stack); }
-  try { initPortCombobox(); window._initErrors.push('initPortCombobox: OK'); } catch(e) { window._initErrors.push('initPortCombobox FAILED: ' + e.message + ' stack: ' + e.stack); }
-  try { setDefaultDate(); window._initErrors.push('setDefaultDate: OK'); } catch(e) { window._initErrors.push('setDefaultDate FAILED: ' + e.message); }
-  try { updateClock(); window._initErrors.push('updateClock: OK'); } catch(e) { window._initErrors.push('updateClock FAILED: ' + e.message); }
-  // Show debug panel
-  const dbg = document.createElement('div');
-  dbg.id = 'debugPanel';
-  dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;color:#0f0;padding:12px;font-size:12px;z-index:99999;max-height:200px;overflow:auto;font-family:monospace;';
-  dbg.innerHTML = '<strong style="color:#fff">Debug Log:</strong><br>' + window._initErrors.map(e=>'<div>'+e+'</div>').join('');
-  document.body.appendChild(dbg);
-  setInterval(updateClock, 1000);
+document.addEventListener('DOMContentLoaded', async ()=>{
+  // Show loading state
+  const statusEl = document.getElementById('headerTime');
+  const origUpdate = updateClock;
+
+  try {
+    // Load data from GitHub CSVs
+    statusEl.textContent = 'Loading data...';
+    await loadAllData();
+    console.log('Data loaded:', PORTS_DATA.length, 'ports,', VESSELS_DATA.length, 'vessel tiers,', DIST_RAW.length, 'distances');
+
+    // Now init UI
+    initVesselCombobox();
+    initPortCombobox();
+    setDefaultDate();
+    updateClock();
+    setInterval(updateClock, 1000);
+  } catch(err) {
+    console.error('Failed to load data:', err);
+    statusEl.textContent = 'Error loading data: ' + err.message;
+    document.body.insertAdjacentHTML('afterbegin',
+      '<div style="background:#d32f2f;color:#fff;padding:16px;position:fixed;top:0;left:0;right:0;z-index:99999;font-size:14px;text-align:center">' +
+      'Failed to load shipping data from GitHub.<br>Please check your network connection and refresh.' +
+      '</div>');
+  }
 });
 
 function updateClock(){
