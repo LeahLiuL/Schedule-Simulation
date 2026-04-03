@@ -621,8 +621,9 @@
 
 <script>
 // ==================== DATA LOADER ====================
-// GitHub raw CSV base URL
-const CSV_BASE = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data';
+// CSV data paths: try local first, fallback to GitHub
+const CSV_LOCAL = './shipping_data';
+const CSV_GITHUB = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data';
 
 // Parse CSV text into array of objects (header → keys)
 function parseCSV(text){
@@ -630,7 +631,6 @@ function parseCSV(text){
   if(!lines.length) return [];
   const headers = lines[0].split(',').map(h=>h.trim());
   return lines.slice(1).map(line=>{
-    // Simple CSV: split by comma, handle quoted fields
     const vals = [];
     let cur = '', inQuote = false;
     for(let i=0;i<line.length;i++){
@@ -652,10 +652,17 @@ function parseCSV(text){
   }).filter(r=>Object.values(r).some(v=>v!==''));
 }
 
-// Fetch CSV file and parse
+// Fetch CSV: try local first, fallback to GitHub
 async function fetchCSV(filename){
-  const url = CSV_BASE + '/' + filename + '?t=' + Date.now(); // cache-bust
-  const resp = await fetch(url);
+  // Try local path first
+  try {
+    const localUrl = CSV_LOCAL + '/' + filename + '?t=' + Date.now();
+    const resp = await fetch(localUrl);
+    if(resp.ok) return parseCSV(await resp.text());
+  } catch(e) { /* local failed, try GitHub */ }
+  // Fallback to GitHub
+  const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
+  const resp = await fetch(githubUrl);
   if(!resp.ok) throw new Error('Failed to load ' + filename + ': ' + resp.status);
   return parseCSV(await resp.text());
 }
@@ -862,11 +869,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     setInterval(updateClock, 1000);
   } catch(err) {
     console.error('Failed to load data:', err);
-    statusEl.textContent = 'Error loading data: ' + err.message;
-    document.body.insertAdjacentHTML('afterbegin',
-      '<div style="background:#d32f2f;color:#fff;padding:16px;position:fixed;top:0;left:0;right:0;z-index:99999;font-size:14px;text-align:center">' +
-      'Failed to load shipping data from GitHub.<br>Please check your network connection and refresh.' +
-      '</div>');
+    statusEl.textContent = 'Data load error';
   }
 });
 
