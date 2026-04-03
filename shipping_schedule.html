@@ -986,7 +986,7 @@ function estimateDistance(a,b){
   return Math.abs(ra-rb)*450+300+Math.random()*100;
 }
 
-const DEFAULT_MAN_IN = 3; // hours
+var DEFAULT_MAN_IN = 3; // hours (var to avoid TDZ issues)
 
 // Build port lookup
 const PORT_MAP = {};
@@ -1109,11 +1109,24 @@ let currentVessel = {
 
 
 // ==================== INIT ====================
+// Debug: collect errors to show on page
+window._initErrors = [];
+window.addEventListener('error', function(e) {
+  const msg = e.message + ' (line ' + e.lineno + ')';
+  console.error('JS ERROR:', msg);
+  window._initErrors.push(msg);
+});
 document.addEventListener('DOMContentLoaded', ()=>{
-  initVesselCombobox();
-  initPortCombobox();
-  setDefaultDate();
-  updateClock();
+  try { initVesselCombobox(); window._initErrors.push('initVesselCombobox: OK'); } catch(e) { window._initErrors.push('initVesselCombobox FAILED: ' + e.message + ' stack: ' + e.stack); }
+  try { initPortCombobox(); window._initErrors.push('initPortCombobox: OK'); } catch(e) { window._initErrors.push('initPortCombobox FAILED: ' + e.message + ' stack: ' + e.stack); }
+  try { setDefaultDate(); window._initErrors.push('setDefaultDate: OK'); } catch(e) { window._initErrors.push('setDefaultDate FAILED: ' + e.message); }
+  try { updateClock(); window._initErrors.push('updateClock: OK'); } catch(e) { window._initErrors.push('updateClock FAILED: ' + e.message); }
+  // Show debug panel
+  const dbg = document.createElement('div');
+  dbg.id = 'debugPanel';
+  dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a1a2e;color:#0f0;padding:12px;font-size:12px;z-index:99999;max-height:200px;overflow:auto;font-family:monospace;';
+  dbg.innerHTML = '<strong style="color:#fff">Debug Log:</strong><br>' + window._initErrors.map(e=>'<div>'+e+'</div>').join('');
+  document.body.appendChild(dbg);
   setInterval(updateClock, 1000);
 });
 
