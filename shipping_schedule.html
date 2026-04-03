@@ -859,7 +859,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     // Load data from GitHub CSVs
     statusEl.textContent = 'Loading data...';
     await loadAllData();
-    console.log('Data loaded:', PORTS_DATA.length, 'ports,', VESSELS_DATA.length, 'vessel tiers,', DIST_RAW.length, 'distances');
 
     // Now init UI
     initVesselCombobox();
@@ -869,7 +868,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     setInterval(updateClock, 1000);
   } catch(err) {
     console.error('Failed to load data:', err);
-    statusEl.textContent = 'Data load error';
+    statusEl.textContent = 'Data load error: ' + err.message;
   }
 });
 
@@ -909,6 +908,41 @@ function fmtDt(d){
 }
 
 // ==================== VESSEL COMBOBOX ====================
+// Get unique vessel list (first tier as default) for combobox
+function getUniqueVessels(){
+  const map = new Map();
+  VESSELS_DATA.forEach(v=>{
+    if(!map.has(v.code)){
+      map.set(v.code, {code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo});
+    }
+  });
+  return Array.from(map.values());
+}
+
+// Find fuel rates for a vessel code at a given speed (exact or nearest)
+function lookupFuelRates(code, speed){
+  const tiers = VESSELS_DATA.filter(v=>v.code===code);
+  if(!tiers.length) return {lsfo:0, hsfo:0, mgo:0};
+  // Exact match
+  const exact = tiers.find(t=>Math.abs(t.speed-speed)<0.01);
+  if(exact) return {lsfo:exact.lsfo||0, hsfo:exact.hsfo||0, mgo:exact.mgo||0};
+  // Nearest match (interpolate between two closest tiers)
+  tiers.sort((a,b)=>a.speed-b.speed);
+  if(speed <= tiers[0].speed) return {lsfo:tiers[0].lsfo||0, hsfo:tiers[0].hsfo||0, mgo:tiers[0].mgo||0};
+  if(speed >= tiers[tiers.length-1].speed) return {lsfo:tiers[tiers.length-1].lsfo||0, hsfo:tiers[tiers.length-1].hsfo||0, mgo:tiers[tiers.length-1].mgo||0};
+  // Linear interpolation
+  for(let i=0;i<tiers.length-1;i++){
+    if(speed>=tiers[i].speed && speed<=tiers[i+1].speed){
+      const ratio = (speed-tiers[i].speed)/(tiers[i+1].speed-tiers[i].speed);
+      const lsfo = (tiers[i].lsfo||0) + ratio*((tiers[i+1].lsfo||0)-(tiers[i].lsfo||0));
+      const hsfo = (tiers[i].hsfo||0) + ratio*((tiers[i+1].hsfo||0)-(tiers[i].hsfo||0));
+      const mgo  = (tiers[i].mgo||0)  + ratio*((tiers[i+1].mgo||0)-(tiers[i].mgo||0));
+      return {lsfo:+lsfo.toFixed(1), hsfo:+hsfo.toFixed(1), mgo:+mgo.toFixed(1)};
+    }
+  }
+  return {lsfo:0, hsfo:0, mgo:0};
+}
+
 function initVesselCombobox(){
   const uniqueVessels = getUniqueVessels();
   const vesselItems = uniqueVessels.map(v => ({
