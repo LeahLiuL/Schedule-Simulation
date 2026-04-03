@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Voyage Schedule Simulator</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="searoute-browser.js"></script>
 <style>
   :root {
     --primary: #1a3a5c;
@@ -936,8 +937,9 @@
     <div>
       <h4 style="margin:0 0 4px;font-size:.85rem;color:var(--primary);">📏 距离计算说明</h4>
       <p class="token-hint">
-        内置 244 个港口坐标，使用大圆距离（Haversine）估算航行距离。
-        未知港口会通过 Nominatim（OpenStreetMap）自动查询坐标，无需注册。
+        内置 244 个港口坐标，使用 <b>searoute</b> 海运网络算法（Dijkstra 寻路）计算实际航行距离。
+        未知港口通过 Nominatim（OpenStreetMap）自动查询坐标，无需注册。
+        首次查询需加载海运网络数据（~600KB），之后自动缓存。
       </p>
     </div>
   </div>
@@ -2409,7 +2411,7 @@ async function lookupPortCoords(portCode){
   return null;
 }
 
-// Core function: calculate sailing distance between two ports (browser-side)
+// Core function: calculate sailing distance between two ports (browser-side, actual sea route)
 // Returns {distance: number} or {error: string}
 async function fetchSearouteDistance(fromCode, toCode){
   try {
@@ -2421,11 +2423,23 @@ async function fetchSearouteDistance(fromCode, toCode){
     if(!c1) return {error: '未找到港口坐标: ' + fromCode};
     if(!c2) return {error: '未找到港口坐标: ' + toCode};
 
+    // Try actual sea route calculation (Dijkstra on marnet network)
+    const routeResult = await calcSearoute(c1.lng, c1.lat, c2.lng, c2.lat);
+    if(routeResult && routeResult.distance_nm > 0){
+      return {distance: routeResult.distance_nm};
+    }
+
+    // Fallback to great-circle distance if searoute fails
     const gcDist = Math.round(haversineNM(c1.lat, c1.lng, c2.lat, c2.lng));
-    const adj = getCanalAdjustment(c1.lat, c1.lng, c2.lat, c2.lng);
-    return {distance: Math.round(gcDist * adj)};
+    return {distance: gcDist};
   } catch(err){
     console.warn('Distance lookup failed:', err);
+    // Fallback to haversine on error
+    try {
+      const c1 = await lookupPortCoords(fromCode);
+      const c2 = await lookupPortCoords(toCode);
+      if(c1 && c2) return {distance: Math.round(haversineNM(c1.lat, c1.lng, c2.lat, c2.lng))};
+    } catch(e){}
     return {error: err.message};
   }
 }
