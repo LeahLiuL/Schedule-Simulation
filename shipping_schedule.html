@@ -622,35 +622,250 @@
 <script>
 // ==================== DATA ====================
 const PORTS_DATA = [
-  ["AEAUH","ABU DHABI","阿布扎比"],["AEJEA","JEBEL ALI, UAE","杰贝阿里"],["AEKLF","Khor Fakkan","富查伊拉"],
-  ["BDCGP","CHITTAGONG",""],["BEANR","ANTWERP","安特卫普"],["BRSSZ","SANTOS",""],
-  ["CNAQG","ANQING","安庆"],["CNCGU","CHANGSHU","常熟"],["CNCOZ","CHAOZHOU","潮州"],
-  ["CNCWN","CHIWAN","赤湾"],["CNDAL","DALIAN","大连"],["CNDCB","CNDCB TERMINAL","大铲湾"],
-  ["CNDGG","DONGGUAN","东莞"],["CNFAN","FANGCHENGGANG","防城港"],["CNFOS","FOSHAN","佛山"],
-  ["CNFZH","FUZHOU","福州"],["CNGCT","GUANGZHOU CT","广州集装箱"],["CNGGZ","GUANGZHOU","广州"],
-  ["CNHMN","HUMEN","虎门"],["CNHUA","HUANGPU","黄埔"],["CNHUI","HUIZHOU","惠州"],
-  ["CNJAS","JIAXING","嘉兴"],["CNJGY","JIANG YIN","江阴"],["CNJMN","JIANGMEN","江门"],
-  ["CNJYG","JIEYANG","揭阳"],["CNLYG","LIANYUNGANG","连云港"],["CNNAS","NANSHA","南沙"],
-  ["CNNGB","NINGBO","宁波"],["CNNJG","NANJING","南京"],["CNNTG","NANTONG","南通"],
-  ["CNQZH","QINZHOU","钦州"],["CNQZL","QUANZHOU","泉州"],["CNSHA","SHANGHAI","上海"],
-  ["CNSHK","SHEKOU","蛇口"],["CNSWA","SHANTOU","汕头"],["CNTAC","TAI CANG","太仓"],
-  ["CNTAO","QINGDAO","青岛"],["CNWHA","WUHAN","武汉"],["CNWNZ","WENZHOU","温州"],
-  ["CNXGG","XINGANG","新港"],["CNXMN","XIAMEN","厦门"],["CNYTN","YANTIAN","盐田"],
-  ["CNZJG","ZHANGJIAGANG","张家港"],["CNZNG","ZHANJIANG","湛江"],["CNZSN","ZHONGSHAN","中山"],
-  ["CNZUH","ZHUHAI","珠海"],["DEHAM","HAMBURG","汉堡"],["DJJIB","DJIBOUTI","吉布提"],
-  ["EGSOK","SOKHNA","苏赫奈泉"],["HKHKG","HONG KONG","香港"],["ILASD","ASHDOD","阿什杜德"],
-  ["ILHFA","HAIFA","海法"],["INMAA","CHENNAI","金奈"],["INMUN","MUNDRA","蒙德拉"],
-  ["INNSA","NHAVA SHEVA","那瓦舍瓦"],["JPNGO","NAGOYA","名古屋"],["JPOSA","OSAKA","大阪"],
-  ["JPTYO","TOKYO","东京"],["JPUKB","KOBE","神户"],["JPYOK","YOKOHAMA","横滨"],
-  ["KEMBA","MOMBASA","蒙巴萨"],["KRINC","INCHEON","仁川"],["KRPUS","BUSAN","釜山"],
-  ["LKCMB","COLOMBO","科伦坡"],["MYPEN","PENANG","槟城"],["MYPKG","PORT KLANG","巴生港"],
-  ["MYTPP","TANJUNG PELEPAS","丹戎柏勒巴斯"],["NLRTM","ROTTERDAM","鹿特丹"],
-  ["PHMNL","MANILA","马尼拉"],["PKKHI","KARACHI","卡拉奇"],["SAJED","JEDDAH","吉达"],
-  ["SGSIN","SINGAPORE","新加坡"],["THBKK","BANGKOK","曼谷"],["THLCH","LAEM CHABANG","林查班"],
-  ["TRIST","ISTANBUL","伊斯坦布尔"],["TWKEL","KEELUNG","基隆"],["TWKHH","KAOHSIUNG","高雄"],
-  ["TWTXG","TAICHUNG","台中"],["USLAX","LOS ANGELES","洛杉矶"],["USLGB","LONG BEACH","长滩"],
-  ["USOAK","OAKLAND","奥克兰"],["VNDAD","DA NANG","岘港"],["VNHPH","HAIPHONG","海防"],
-  ["VNSGN","HO CHI MINH","胡志明市"],["VNVUT","CAI MEP","盖梅"],["YEADE","ADEN","亚丁"]
+  ["AEAUH","ABU DHABI","","",""],
+  ["AEDXB","DUBAI","","",""],
+  ["AEFJR","FUJAIRAH","","",""],
+  ["AEJEA","JEBEL ALI, UAE","","",""],
+  ["AEKLF","PORT OF KHOR AL FAKKAN","","",""],
+  ["BDCGP","CHITTAGONG/CHITTAGONG","","",""],
+  ["BDDAC","DHAKA/DHAKA","","",""],
+  ["BEANR","ANTWERP","","",""],
+  ["BRSSZ","SANTOS","","",""],
+  ["CNAJG","安吉港","","",""],
+  ["CNAQG","ANQING","","",""],
+  ["CNBIH","BEIHAI","","",""],
+  ["CNBJS","BEIJING","","",""],
+  ["CNCDU","CHENGDU","","",""],
+  ["CNCGC","CHANGCHUN","","",""],
+  ["CNCGU","CHANGSHU","","",""],
+  ["CNCOZ","CHAOZHOU","","",""],
+  ["CNCQI","CHONGQING","","",""],
+  ["CNCSH","CHANGSHA","","",""],
+  ["CNCWN","CHIWAN","","",""],
+  ["CNDAL","DALIAN","","",""],
+  ["CNDCB","CNDCB(大铲湾) TERMINAL","","",""],
+  ["CNDGG","DONGGUAN","","",""],
+  ["CNFAN","FANGCHENGGANG","","",""],
+  ["CNFOS","FOSHAN","","",""],
+  ["CNFZH","FUZHOU","","",""],
+  ["CNGGZ","GUANGZHOU","","",""],
+  ["CNGYA","GUIYANG","","",""],
+  ["CNHAZ","HANGZHOU","","",""],
+  ["CNHEY","HEYUAN","","",""],
+  ["CNHFI","HEFEI","","",""],
+  ["CNHHH","HOHHOT","","",""],
+  ["CNHKO","HAIKOU","","",""],
+  ["CNHMN","HUMEN","","",""],
+  ["CNHRN","HARBIN","","",""],
+  ["CNHSC","SHAOGUAN","","",""],
+  ["CNHSI","HUANGSHI","","",""],
+  ["CNHUA","HUANGPU","","",""],
+  ["CNHUI","HUIZHOU","","",""],
+  ["CNJAS","JIAXING, ZHEJIANG PROVINCE","","",""],
+  ["CNJGY","JIANG YIN PORT","","",""],
+  ["CNJIU","JIUJIANG","","",""],
+  ["CNJMN","JIANGMEN","","",""],
+  ["CNJNA","JINAN","","",""],
+  ["CNJYG","JIEYANG","","",""],
+  ["CNKNM","KUNMING","","",""],
+  ["CNLAZ","LANZHOU","","",""],
+  ["CNLHA","LHASA","","",""],
+  ["CNLYG","LIANYUNGANG","","",""],
+  ["CNMEZ","MEIZHOU","","",""],
+  ["CNMMI","MAOMING","","",""],
+  ["CNNAS","NANSHA","","",""],
+  ["CNNCH","NANCHANG","","",""],
+  ["CNNGB","NINGBO","","",""],
+  ["CNNIN","NANNING","","",""],
+  ["CNNJG","NANJING","","",""],
+  ["CNNTG","NANTONG","","",""],
+  ["CNQGY","QINGYUAN","","",""],
+  ["CNQZH","QINZHOU","","",""],
+  ["CNQZL","QUANZHOU","","",""],
+  ["CNQZW","QUANZHOU, JIN JIANG, WEITOU","","",""],
+  ["CNRZH","RI ZHAO","","",""],
+  ["CNSHA","SHANGHAI","","",""],
+  ["CNSHK","SHEKOU","","",""],
+  ["CNSHY","SHENYANG","","",""],
+  ["CNSJZ","SHIJIAZHUANG","","",""],
+  ["CNSNZ","SHENZHEN","","",""],
+  ["CNSWA","SHANTOU","","",""],
+  ["CNSWE","SHANWEI","","",""],
+  ["CNTAC","TAI CANG PORT, JIANG SU PROVINCE","","",""],
+  ["CNTAO","QINGDAO","","",""],
+  ["CNTNJ","TIANJIN","","",""],
+  ["CNTOL","TONGLING","","",""],
+  ["CNTYU","TAIYUAN","","",""],
+  ["CNURM","URUMUCHI","","",""],
+  ["CNWHA","WU HAN","","",""],
+  ["CNWNZ","WENZHOU","","",""],
+  ["CNWUH","WU HU","","",""],
+  ["CNXGG","XINGANG","","",""],
+  ["CNXIA","XIAN","","",""],
+  ["CNXMN","XIAMEN","","",""],
+  ["CNXNT","XINING","","",""],
+  ["CNYCH","YINCHUAN","","",""],
+  ["CNYIB","YIBIN","","",""],
+  ["CNYIC","YICHANG","","",""],
+  ["CNYJI","YANGJIANG","","",""],
+  ["CNYPN","YANGPU, HAINAN, CN","","",""],
+  ["CNYTN","YANTIAN","","",""],
+  ["CNYUF","YUNFU","","",""],
+  ["CNZEJ","ZHENJIANG","","",""],
+  ["CNZGZ","ZHENGZHOU","","",""],
+  ["CNZJG","ZHANGJIAGANG","","",""],
+  ["CNZNG","ZHANJIANG","","",""],
+  ["CNZOS","ZHOUSHAN","","",""],
+  ["CNZPU","ZHAPU, JIAXING, ZHEJIANG PROVINCE","","",""],
+  ["CNZQG","ZHAOQING","","",""],
+  ["CNZSN","ZHONGSHAN","","",""],
+  ["CNZUH","ZHUHAI","","",""],
+  ["DEHAM","HAMBURG","","",""],
+  ["DJJIB","DJIBOUTI","","",""],
+  ["EGALY","ALEXANDRIA","","",""],
+  ["EGDAM","DAMIETTA","","",""],
+  ["EGPSD","PORT SAID","","",""],
+  ["EGSOK","SOKHNA","","",""],
+  ["EGSUZ","SUEZ CANAL","","",""],
+  ["ETADD","ADDIS ABABA","","",""],
+  ["FRPAR","PARIS FRANCE","","",""],
+  ["GBIMM","IMMINGHAM","","",""],
+  ["GBLIV","LIVERPOOL","","",""],
+  ["GBLON","LONDON","","",""],
+  ["GBSOU","SOUTHAMPTON","","",""],
+  ["GBTIL","TILBURY","","",""],
+  ["GEPTI","POTI","","",""],
+  ["GRPIR","PIRAEUS","","",""],
+  ["HKHKG","HONG KONG","","",""],
+  ["IDBLW","BELAWAN","","",""],
+  ["IDJKT","JAKARTA","","",""],
+  ["IDSRG","SEMARANG","","",""],
+  ["IDSUB","SURABAYA","","",""],
+  ["ILASD","ASHDOD","","",""],
+  ["ILHFA","HAIFA","","",""],
+  ["INAMD","AHMEDABAD","","",""],
+  ["INBGJ","ICD BIRGUNJ","","",""],
+  ["INBOM","MUMBAI","","",""],
+  ["INCCU","KOLKATA (EX. CALCUTTA), INDIA","","",""],
+  ["INCOK","COCHIN","","",""],
+  ["INDAD","ICD - DELHI  DADRI","","",""],
+  ["INDDL","DHANDARI KALAN, LUDHIANA","","",""],
+  ["INDER","ICD DADRI","","",""],
+  ["INFBD","ICD FARIDABAD","","",""],
+  ["INHAR","ICD GARHI HARSARU","","",""],
+  ["INHYD","ICD HYDERABAD","","",""],
+  ["INICD","NEW DELHI, INDIA","","",""],
+  ["INJAI","ICD JAIPUR","","",""],
+  ["INJDP","ICD  JODHPUR","","",""],
+  ["INKAT","KATTUPALLI PORT","","",""],
+  ["INKHO","ICD KHODIYAR, AHMEDABAD","","",""],
+  ["INLDH","LUDHIANA , INDIA","","",""],
+  ["INLON","ICD LONI","","",""],
+  ["INLUD","ICD LUDHIANA","","",""],
+  ["INMAA","CHENNAI","","",""],
+  ["INMUN","MUNDRA","","",""],
+  ["INNAG","ICD NAGPUR","","",""],
+  ["INNSA","NHAVA SHEVA","","",""],
+  ["INPAT","ICD PATLI","","",""],
+  ["INPAV","PIPAVAV","","",""],
+  ["INPPG","ICD PATPARGANJ","","",""],
+  ["INPUN","ICD PUNE","","",""],
+  ["INPWL","ICD PALWAL","","",""],
+  ["INQRP","ICD KILA RAIPUR, LUDHIANA","","",""],
+  ["INSON","ICD SONEPAT","","",""],
+  ["INSSA","ICD SANAND AHMEDABAD","","",""],
+  ["INSWA","ICD SAHNEWAL, LUDHIANA","","",""],
+  ["INTKD","ICD TUGHLAKABAD","","",""],
+  ["INTUB","ICD TUMB","","",""],
+  ["INVIZ","VISAKHAPATNAM","","",""],
+  ["IQEBL","ERBIL","","",""],
+  ["IQSYH","SULAYMANIYAH","","",""],
+  ["IQZAO","ZAKHO","","",""],
+  ["JOAMM","AMMAN","","",""],
+  ["JOAQJ","AQABA","","",""],
+  ["JPNGO","NAGOYA/AICHI","","",""],
+  ["JPOSA","OSAKA/OSAKA","","",""],
+  ["JPTYO","TOKYO/TOKYO","","",""],
+  ["JPUKB","KOBE, JP","","",""],
+  ["JPYOK","YOKOHAMA/KANAGAWA","","",""],
+  ["KEMBA","MOMBASA","","",""],
+  ["KHKOS","SIHANOUKVILLE","","",""],
+  ["KHPNH","PHNOM PENH","","",""],
+  ["KRINC","INCHEON","","",""],
+  ["KRKAN","GWANGYANG","","",""],
+  ["KRPUS","BUSAN","","",""],
+  ["KRSEL","SEOUL","","",""],
+  ["KRUSN","ULSAN/ULSAN","","",""],
+  ["LAVTE","VIENTIANE","","",""],
+  ["LBBEY","BEIRUT","","",""],
+  ["LKCMB","COLOMBO","","",""],
+  ["LRMLW","MONROVIA, LIBERIA","","",""],
+  ["LYBEN","BENGHAZI","","",""],
+  ["LYKHO","AL KHOMS","","",""],
+  ["LYMRA","MISURATA","","",""],
+  ["MHMAJ","MAJURO, MARSHALL ISLANDS","","",""],
+  ["MMNPD","NAYPYIDAW/NAYPYIDAW UNION TERRITORY","","",""],
+  ["MMRGN","YANGON, MYANMAR","","",""],
+  ["MOMFM","MACAO","","",""],
+  ["MYKCH","KUCHING, MALAYSIA","","",""],
+  ["MYKUL","KUALA LUMPUR/KUALA LUMPUR","","",""],
+  ["MYPEN","PENANG","","",""],
+  ["MYPGU","PASIR GUDANG","","",""],
+  ["MYPKG","PORT KLANG","","",""],
+  ["MYPKN","PORT KLANG NORTH PORT","","",""],
+  ["MYTPP","TANJUNG PELEPAS/JOHOR BAHRU/JOHOR","","",""],
+  ["NLAMS","AMSTERDAM","","",""],
+  ["NLRTM","ROTTERDAM","","",""],
+  ["OMMCT","MUSCAT, SULTANATE OF OMAN","","",""],
+  ["OMSLL","SALALAH","","",""],
+  ["OMSOH","SOHAR, SULTANATE OF OMAN","","",""],
+  ["PHMNL","MANILA,PH","","",""],
+  ["PHMNN","MANILA - NORTH PORT","","",""],
+  ["PHSPS","SUBIC","","",""],
+  ["PKISB","ISLAMABAD/ISLAMABAD","","",""],
+  ["PKKHI","KARACHI","","",""],
+  ["PLWAW","WARSZAWA","","",""],
+  ["QAHMD","PORT OF HAMAD, QA","","",""],
+  ["ROCND","CONSTANTA","","",""],
+  ["SADMM","DAMMAM","","",""],
+  ["SAJED","JEDDAH","","",""],
+  ["SANEO","NEOM","","",""],
+  ["SARUH","RIYADH, SAUDI ARABIA","","",""],
+  ["SDPZU","PORT SUDAN","","",""],
+  ["SGSIN","SINGAPORE","","",""],
+  ["SOBBO","BERBERA","","",""],
+  ["SYDAM","DAMASCUS (DAMAS)","","",""],
+  ["SYLTR","LATTAKIA","","",""],
+  ["THBKK","BANGKOK","","",""],
+  ["THBKS","SUKSAWAT, BANGKOK","","",""],
+  ["THLCH","LAEM CHABANG","","",""],
+  ["THLKB","LAT KRABANG","","",""],
+  ["THSCS","SAHATHAI, BANGKOK","","",""],
+  ["TRALI","ALIAGA","","",""],
+  ["TRIST","ISTANBUL","","",""],
+  ["TRIZT","IZMIT","","",""],
+  ["TRMAR","MARDAS","","",""],
+  ["TRMER","MERSIN","","",""],
+  ["TWHSC","HSINCHU COUNTY","","",""],
+  ["TWHSZ","HSINCHU CITY","","",""],
+  ["TWKEL","KEELUNG","","",""],
+  ["TWKHH","KAOHSIUNG","","",""],
+  ["TWNTC","NEW TAIPEI CITY","","",""],
+  ["TWTPE","TAIPEI","","",""],
+  ["TWTXG","TAICHUNG","","",""],
+  ["TWTYN","TAOYUAN","","",""],
+  ["UAODS","ODESSA","","",""],
+  ["USLAX","LOS ANGELES","","",""],
+  ["USLGB","LONG BEACH","","",""],
+  ["USOAK","OAKLAND","","",""],
+  ["VNDAD","DA NANG","","",""],
+  ["VNHAN","HANOI/HA NOI CITY","","",""],
+  ["VNHPH","HAIPHONG","","",""],
+  ["VNHPP","TAN CANG","","",""],
+  ["VNSGN","HO CHI MINH CITY","","",""],
+  ["VNVUT","CAI MEP","","",""],
+  ["YEADE","ADEN","","",""],
+  ["YEHOD","HODEIDAH","","",""]
 ];
 
 // Full vessel data with multiple speed tiers from vessels.csv
@@ -773,7 +988,17 @@ function estimateDistance(a,b){
 
 // Build port lookup
 const PORT_MAP = {};
-PORTS_DATA.forEach(([code,en,cn])=>{PORT_MAP[code]={code,en,cn};});
+PORTS_DATA.forEach(([code,en,cn,manIn,portstay])=>{
+  PORT_MAP[code]={code,en,cn,
+    manIn: manIn ? parseFloat(manIn) : DEFAULT_MAN_IN,
+    portstay: portstay ? parseFloat(portstay) : 12
+  };
+});
+
+// Get man_in hours for a port (from data or default)
+function getPortManIn(code){ return (PORT_MAP[code]||{}).manIn || DEFAULT_MAN_IN; }
+// Get portstay hours for a port (from data or default)
+function getPortStay(code){ return (PORT_MAP[code]||{}).portstay || 12; }
 
 // Port display
 function portLabel(code){
@@ -1014,7 +1239,7 @@ function addPortFromCombobox(){
     // Otherwise use the raw input as a custom code
   }
 
-  selectedPorts.push({code, stayHours:12});
+  selectedPorts.push({code, stayHours: getPortStay(code)});
   renderPortList();
   input.value='';
   updateFuelEstimate();
@@ -1078,8 +1303,9 @@ function updateFuelEstimate(){
   }
   const seaDays = speed>0 ? totalDist/(speed*24) : 0;
 
-  // Man In: each port has DEFAULT_MAN_IN hours, including first port
-  const manInHours = selectedPorts.length * DEFAULT_MAN_IN;
+  // Man In: sum each port's actual man_in from data (or default)
+  let manInHours = 0;
+  for(const p of selectedPorts){ manInHours += getPortManIn(p.code); }
   const manInDays = manInHours / 24;
 
   // Total run = sea + man in
@@ -1163,13 +1389,13 @@ function runSchedule(){
 function computeSchedule(ports, speed, voyNo, startDt, vessel){
   const rows=[];
   const lsfoPerHr = vessel.lsfo/24;
-  // First port: ETD = startDt, ETA = startDt, Man In = 0 (already at port)
+  // First port: ETD = startDt, ETA = startDt
   const firstEta = ceilToHour(startDt);
-  const firstManIn = DEFAULT_MAN_IN; // First port also has 3h pilotage
+  const firstManIn = getPortManIn(ports[0].code);
   const firstWait = 0;
   const firstEtB = new Date(firstEta.getTime() + (firstManIn + firstWait)*3600000);
   firstEtB.setMinutes(0,0,0); // ceil to hour
-  const firstStay = ports[0].stayHours || 12;
+  const firstStay = getPortStay(ports[0].code);
   const firstEtd = new Date(firstEtB.getTime() + firstStay*3600000);
   firstEtd.setMinutes(0,0,0);
 
@@ -1179,7 +1405,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
   if(ports.length > 1){
     firstDist = getDistance(ports[0].code, ports[1].code);
     const seaRun = speed>0 ? firstDist/speed : 0;
-    firstRun = seaRun + DEFAULT_MAN_IN; // include next port's man in
+    firstRun = seaRun + getPortManIn(ports[1].code); // include next port's man in
     firstFuel = +(firstRun * lsfoPerHr).toFixed(2);
   }
 
@@ -1192,11 +1418,11 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
     const p = ports[i];
     // ETA = prev ETD + prev.runHrs (which already includes this port's man in)
     const eta = ceilToHour(new Date(prevEtd.getTime() + rows[i-1].runHrs*3600000));
-    const manIn = DEFAULT_MAN_IN; // 3h pilotage (already counted in prev runHrs)
+    const manIn = getPortManIn(p.code); // from port data or default
     const wait = 0;
     const etb = new Date(eta.getTime() + (manIn + wait)*3600000);
     etb.setMinutes(0,0,0);
-    const stay = p.stayHours || 12;
+    const stay = getPortStay(p.code);
     const etd = new Date(etb.getTime() + stay*3600000);
     etd.setMinutes(0,0,0);
 
@@ -1206,7 +1432,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
     if(i < ports.length - 1){
       dist = getDistance(ports[i].code, ports[i+1].code);
       const seaRun = speed>0 ? dist/speed : 0;
-      runHrs = seaRun + DEFAULT_MAN_IN; // include next port's man in
+      runHrs = seaRun + getPortManIn(ports[i+1].code); // include next port's man in
     }
 
     rows.push(buildRow(i, p, voyNo, eta, etb, etd, dist, runHrs, speed, vessel, manIn, wait, stay));
