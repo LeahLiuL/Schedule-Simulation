@@ -650,7 +650,7 @@
       <div class="speed-grid">
         <div class="field">
           <label>Speed (knots)</label>
-          <input type="number" id="speedInput" value="14" min="5" max="25" step="0.5"/>
+          <input type="number" id="speedInput" value="14" min="5" max="25" step="0.5" onchange="onVoyageSpeedChange(this.value)"/>
         </div>
         <div class="field">
           <label>VOY. NO.</label>
@@ -1314,6 +1314,22 @@ function onDesignSpeedChange(val){
   const spd = parseFloat(val)||14;
   currentVessel.speed = spd;
   document.getElementById('speedInput').value = spd;
+  // Auto-lookup fuel rates from vessel data by speed
+  if(currentVessel.code){
+    const rates = lookupFuelRates(currentVessel.code, spd);
+    currentVessel.lsfo = rates.lsfo;
+    currentVessel.hsfo = rates.hsfo;
+    currentVessel.mgo  = rates.mgo;
+    showVesselInfo();
+  }
+  updateFuelEstimate();
+}
+
+function onVoyageSpeedChange(val){
+  const spd = parseFloat(val)||14;
+  // Sync back to vessel Design Speed
+  currentVessel.speed = spd;
+  document.getElementById('vi-speed-input').value = spd;
   // Auto-lookup fuel rates from vessel data by speed
   if(currentVessel.code){
     const rates = lookupFuelRates(currentVessel.code, spd);
