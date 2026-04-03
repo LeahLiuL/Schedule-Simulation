@@ -307,6 +307,39 @@
   .dm-btn-danger { background:#dc3545; color:#fff; }
   .dm-btn-sm { padding:4px 10px; font-size:.75rem; }
   .dm-btn-export { background:#6c757d; color:#fff; }
+  .dm-btn-commit { background:#0d6efd; color:#fff; font-weight:700; }
+  @keyframes dmFlashNew {
+    0% { background:#fff3cd; }
+    100% { background:transparent; }
+  }
+  .dm-row-new { animation: dmFlashNew 2s ease-out; }
+  .dm-btn-commit:hover { background:#0b5ed7; }
+  .dm-btn-commit.loading { opacity:.65; pointer-events:none; }
+  .dm-btn-external { background:#0d6efd22; color:#0d6efd; text-decoration:none; display:inline-block; text-align:center; }
+  .dm-btn-external:hover { opacity:.75; background:#0d6efd33; }
+  .dm-footer {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 24px; border-top:1px solid #eee; background:#fafbfc;
+    border-radius: 0 0 14px 14px;
+  }
+  .dm-footer .commit-status { font-size:.78rem; color:var(--muted); }
+  /* token settings modal */
+  .token-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:600;
+    justify-content:center; align-items:center;
+  }
+  .token-overlay.open { display:flex; }
+  .token-modal {
+    background:#fff; border-radius:12px; padding:24px; width:400px; max-width:90vw;
+    box-shadow:0 12px 40px rgba(0,0,0,.3);
+  }
+  .token-modal h3 { margin:0 0 4px; font-size:1rem; color:var(--primary); }
+  .token-modal .token-hint { font-size:.75rem; color:var(--muted); margin-bottom:14px; line-height:1.5; }
+  .token-modal input {
+    width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:6px;
+    font-size:.85rem; font-family:monospace; margin-bottom:12px;
+  }
+  .token-modal .token-actions { display:flex; gap:8px; justify-content:flex-end; }
   .dm-body { flex:1; overflow:auto; padding:0; }
   .dm-tab-content { display:none; height:100%; }
   .dm-tab-content.active { display:flex; flex-direction:column; }
@@ -328,6 +361,12 @@
   }
   .dm-table td input:focus, .dm-table td select:focus { border-color:var(--primary); outline:none; }
   .dm-actions-cell { display:flex; gap:4px; }
+  .dm-src-badge {
+    display:inline-block; padding:2px 6px; border-radius:4px;
+    font-size:.68rem; white-space:nowrap;
+  }
+  .dm-src-auto { background:#e8f5e9; color:#2e7d32; }
+  .dm-src-manual { background:#fff3e0; color:#e65100; }
   .dm-footer {
     padding:12px 24px; border-top:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-between;
@@ -588,6 +627,18 @@
             <span class="fuel-label">MGO (sea) mt/day</span>
             <span class="fuel-val"><input type="number" id="vi-mgo-input" value="2.0" min="0" step="0.1" onchange="onFuelRateChange()"/></span>
           </div>
+          <div class="fuel-row" style="border-top:1px dashed var(--border);margin-top:4px;padding-top:4px">
+            <span class="fuel-label" style="font-size:.7rem;color:var(--muted)">Port Stay Fuel</span>
+            <span class="fuel-val"></span>
+          </div>
+          <div class="fuel-row">
+            <span class="fuel-label">PS LSFO mt/day</span>
+            <span class="fuel-val"><input type="number" id="vi-ps-lsfo-input" value="0" min="0" step="0.5" onchange="onPsFuelRateChange()"/></span>
+          </div>
+          <div class="fuel-row">
+            <span class="fuel-label">PS MGO mt/day</span>
+            <span class="fuel-val"><input type="number" id="vi-ps-mgo-input" value="0" min="0" step="0.1" onchange="onPsFuelRateChange()"/></span>
+          </div>
         </div>
       </div>
     </div>
@@ -646,12 +697,54 @@
           <span class="fuel-val" id="fs-rundays">-- days</span>
         </div>
         <div class="fuel-row fuel-total">
-          <span class="fuel-label">Est. LSFO</span>
+          <span class="fuel-label">Est. Sea LSFO</span>
           <span class="fuel-val" id="fs-lsfo">-- mt</span>
         </div>
         <div class="fuel-row fuel-total">
-          <span class="fuel-label">Est. MGO</span>
+          <span class="fuel-label">Est. Sea MGO</span>
           <span class="fuel-val" id="fs-mgo">-- mt</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Port Stay Fuel Summary -->
+    <div class="panel-section">
+      <div class="section-title">Estimated Fuel (Port Stay)</div>
+      <div class="fuel-summary" id="portStayFuelSummary">
+        <div class="fuel-row">
+          <span class="fuel-label">Total Port Stay Days</span>
+          <span class="fuel-val" id="fs-portstaydays">-- days</span>
+        </div>
+        <div class="fuel-row">
+          <span class="fuel-label">  Port Stay (hr)</span>
+          <span class="fuel-val" id="fs-stayhrs">-- hr</span>
+        </div>
+        <div class="fuel-row">
+          <span class="fuel-label">  Wait (hr)</span>
+          <span class="fuel-val" id="fs-waithrs">-- hr</span>
+        </div>
+        <div class="fuel-row fuel-total">
+          <span class="fuel-label">Est. Port Stay LSFO</span>
+          <span class="fuel-val" id="fs-ps-lsfo">-- mt</span>
+        </div>
+        <div class="fuel-row fuel-total">
+          <span class="fuel-label">Est. Port Stay MGO</span>
+          <span class="fuel-val" id="fs-ps-mgo">-- mt</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grand Total Fuel -->
+    <div class="panel-section">
+      <div class="section-title">Total Estimated Fuel</div>
+      <div class="fuel-summary" id="totalFuelSummary">
+        <div class="fuel-row fuel-total" style="border-top:2px solid var(--border)">
+          <span class="fuel-label">Grand Total LSFO</span>
+          <span class="fuel-val" id="fs-total-lsfo">-- mt</span>
+        </div>
+        <div class="fuel-row fuel-total">
+          <span class="fuel-label">Grand Total MGO</span>
+          <span class="fuel-val" id="fs-total-mgo">-- mt</span>
         </div>
       </div>
     </div>
@@ -709,7 +802,10 @@
   <div class="dm-modal">
     <div class="dm-header">
       <h2>⚙ Data Manager</h2>
-      <button class="dm-close" onclick="closeDataManager()">&times;</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="dm-btn" id="btnTokenSetup" onclick="openTokenSetup()" title="Settings (GitHub Token & GeoNames)">⚙ Settings</button>
+        <button class="dm-close" onclick="closeDataManager()">&times;</button>
+      </div>
     </div>
     <div class="dm-tabs">
       <button class="dm-tab active" data-tab="ports" onclick="switchDmTab('ports')">Ports</button>
@@ -723,6 +819,7 @@
         <input class="dm-search" id="dmPortSearch" placeholder="Search port code or name..." oninput="filterDmPorts()"/>
         <button class="dm-btn dm-btn-primary" onclick="addDmPort()">+ Add Port</button>
         <button class="dm-btn dm-btn-export" onclick="exportDmCSV('ports')">📥 Export CSV</button>
+        <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('ports')">⬆ Commit</button>
       </div>
       <div class="dm-table-wrap">
         <table class="dm-table" id="dmPortTable">
@@ -748,6 +845,7 @@
         <input class="dm-search" id="dmVesselSearch" placeholder="Search vessel code or name..." oninput="filterDmVessels()"/>
         <button class="dm-btn dm-btn-primary" onclick="addDmVessel()">+ Add Vessel</button>
         <button class="dm-btn dm-btn-export" onclick="exportDmCSV('vessels')">📥 Export CSV</button>
+        <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('vessels')">⬆ Commit</button>
       </div>
       <div class="dm-table-wrap">
         <table class="dm-table" id="dmVesselTable">
@@ -760,6 +858,8 @@
               <th style="width:90px">LSFO mt/d</th>
               <th style="width:90px">HSFO mt/d</th>
               <th style="width:90px">MGO mt/d</th>
+              <th style="width:90px">PS LSFO</th>
+              <th style="width:90px">PS MGO</th>
               <th style="width:100px">Actions</th>
             </tr>
           </thead>
@@ -773,7 +873,10 @@
       <div class="dm-toolbar">
         <input class="dm-search" id="dmDistSearch" placeholder="Search from/to port code..." oninput="filterDmDists()"/>
         <button class="dm-btn dm-btn-primary" onclick="addDmDist()">+ Add Distance</button>
+        <a class="dm-btn dm-btn-external" href="https://www.myvessel.cn" target="_blank" title="打开调度宝查询实际航行距离">🚢 调度宝</a>
         <button class="dm-btn dm-btn-export" onclick="exportDmCSV('distances')">📥 Export CSV</button>
+        <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('distances')">⬆ Commit</button>
+        <span style="font-size:.72rem;color:var(--muted);white-space:nowrap;margin-left:4px;">🔍 = 自动查询航行距离 &nbsp; 🚢 = 调度宝查询</span>
       </div>
       <div class="dm-table-wrap">
         <table class="dm-table" id="dmDistTable">
@@ -783,7 +886,8 @@
               <th>From Port</th>
               <th>To Port</th>
               <th style="width:100px">Distance (NM)</th>
-              <th style="width:100px">Actions</th>
+              <th style="width:80px">Source</th>
+              <th style="width:130px">Actions</th>
             </tr>
           </thead>
           <tbody id="dmDistBody"></tbody>
@@ -793,7 +897,53 @@
 
     <div class="dm-footer">
       <span id="dmStatus">Ready</span>
-      <span>Changes take effect immediately in the simulator</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="commitStatus" class="commit-status"></span>
+        <button class="dm-btn dm-btn-commit" id="btnCommitAll" onclick="commitAllToGitHub()">⬆ Commit All to GitHub</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="token-overlay" id="tokenOverlay">
+  <div class="token-modal">
+    <h3>⚙ Settings</h3>
+
+    <!-- GitHub Token Section -->
+    <div style="margin-bottom:18px;">
+      <h4 style="margin:0 0 4px;font-size:.85rem;color:var(--primary);">🔑 GitHub Personal Access Token</h4>
+      <p class="token-hint">
+        Fine-grained token with <b>Contents: Read and Write</b> on
+        <code>LeahLiuL/Schedule-Simulation</code>.
+      </p>
+      <input type="password" id="ghTokenInput" placeholder="ghp_xxxxxxxxxxxxx" autocomplete="off"/>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <label style="font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:4px;">
+          <input type="checkbox" id="ghTokenShow" onchange="document.getElementById('ghTokenInput').type=this.checked?'text':'password'"/>
+          Show token
+        </label>
+        <div class="token-actions">
+          <button class="dm-btn" onclick="clearGhToken()">Clear</button>
+          <button class="dm-btn dm-btn-primary" onclick="saveGhToken()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #eee;margin:0 0 18px;"/>
+
+    <!-- GeoNames Section -->
+    <div>
+      <h4 style="margin:0 0 4px;font-size:.85rem;color:var(--primary);">🌍 GeoNames Username (port coordinates)</h4>
+      <p class="token-hint">
+        Free account at <a href="https://www.geonames.org/login" target="_blank" style="color:var(--primary)">geonames.org</a>.
+        Used to look up port coordinates for ports not in the built-in database. Distance is calculated via searoute (actual sailing route).
+      </p>
+      <input type="text" id="geonamesInput" placeholder="your_geonames_username" autocomplete="off" style="font-size:.85rem;font-family:monospace;"/>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="dm-btn" onclick="clearGeonames()">Clear</button>
+        <button class="dm-btn dm-btn-primary" onclick="saveGeonames()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -849,7 +999,7 @@ async function fetchCSV(filename){
 // Data containers (populated async)
 let PORTS_DATA = [];    // [[code, name_en, name_cn, man_in, portstay_time], ...]
 let VESSELS_DATA = [];  // [{code, name, speed, lsfo, hsfo, mgo}, ...]
-let DIST_RAW = [];      // [[from, to, distance], ...]
+let DIST_RAW = [];      // [[from, to, distance, source], ...] source: 'auto' | 'manual'
 
 // Load all CSV data from GitHub
 async function loadAllData(){
@@ -871,12 +1021,15 @@ async function loadAllData(){
     speed: parseFloat(r.speed_knots)||0,
     lsfo: parseFloat(r.lsfo_mt_day)||0,
     hsfo: parseFloat(r.hsfo_mt_day)||0,
-    mgo:  parseFloat(r.mgo_mt_day)||0
+    mgo:  parseFloat(r.mgo_mt_day)||0,
+    ps_lsfo: parseFloat(r.portstay_lsfo_mt_day)||0,
+    ps_mgo:  parseFloat(r.portstay_mgo_mt_day)||0
   }));
 
   // Parse distances
   DIST_RAW = distRows.map(r=>[
-    r.from_port, r.to_port, Math.round(parseFloat(r.distance_nm)||0)
+    r.from_port, r.to_port, Math.round(parseFloat(r.distance_nm)||0),
+    r.source || ''
   ]);
 
   // Build lookup maps now that data is loaded
@@ -895,7 +1048,12 @@ function getDistance(a,b){
   if(a===b) return 0;
   const k=distKey(a,b);
   if(DIST_MAP[k]) return DIST_MAP[k];
-  return estimateDistance(a,b);
+  // No actual distance on record — return 0 (never estimate)
+  return 0;
+}
+function hasActualDistance(a,b){
+  if(a===b) return true;
+  return !!DIST_MAP[distKey(a,b)];
 }
 function estimateDistance(a,b){
   const regions={CN:2,KR:3,JP:4,TH:5,SG:1,MY:1,VN:2,HK:2,TW:3,IN:8,AE:10,SA:11,DJ:12,EG:14,GR:15,NL:18,DE:18,GB:18,BE:18,US:25,PH:3};
@@ -1022,9 +1180,11 @@ let currentVessel = {
   code: '',
   name: '',
   speed: 14,
-  lsfo: 24,
+  lsfo: 0,
   hsfo: 0,
-  mgo: 2.0
+  mgo: 0,
+  ps_lsfo: 0,
+  ps_mgo: 0
 };
 
 
@@ -1092,7 +1252,7 @@ function getUniqueVessels(){
   const map = new Map();
   VESSELS_DATA.forEach(v=>{
     if(!map.has(v.code)){
-      map.set(v.code, {code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo});
+      map.set(v.code, {code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo, ps_lsfo:v.ps_lsfo||0, ps_mgo:v.ps_mgo||0});
     }
   });
   return Array.from(map.values());
@@ -1135,7 +1295,7 @@ function initVesselCombobox(){
   initCombobox('vesselInput', 'vesselDropdown', vesselItems, (item) => {
     const v = uniqueVessels.find(x=>x.code===item.code);
     if(v){
-      currentVessel = { code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo };
+      currentVessel = { code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo, ps_lsfo:v.ps_lsfo||0, ps_mgo:v.ps_mgo||0 };
       showVesselInfo();
       document.getElementById('speedInput').value = v.speed;
     }
@@ -1149,6 +1309,8 @@ function showVesselInfo(){
   document.getElementById('vi-lsfo-input').value = currentVessel.lsfo;
   document.getElementById('vi-hsfo-input').value = currentVessel.hsfo;
   document.getElementById('vi-mgo-input').value = currentVessel.mgo;
+  document.getElementById('vi-ps-lsfo-input').value = currentVessel.ps_lsfo||0;
+  document.getElementById('vi-ps-mgo-input').value = currentVessel.ps_mgo||0;
 }
 
 function onDesignSpeedChange(val){
@@ -1170,6 +1332,11 @@ function onFuelRateChange(){
   currentVessel.lsfo = parseFloat(document.getElementById('vi-lsfo-input').value)||0;
   currentVessel.hsfo = parseFloat(document.getElementById('vi-hsfo-input').value)||0;
   currentVessel.mgo  = parseFloat(document.getElementById('vi-mgo-input').value)||0;
+  updateFuelEstimate();
+}
+function onPsFuelRateChange(){
+  currentVessel.ps_lsfo = parseFloat(document.getElementById('vi-ps-lsfo-input').value)||0;
+  currentVessel.ps_mgo  = parseFloat(document.getElementById('vi-ps-mgo-input').value)||0;
   updateFuelEstimate();
 }
 
@@ -1284,22 +1451,39 @@ function updateFuelEstimate(){
   const lsfo = +(runDays*currentVessel.lsfo).toFixed(1);
   const mgo  = +(runDays*currentVessel.mgo).toFixed(1);
 
+  // Port stay fuel: sum of (stayHrs + waitHrs) / 24 * ps rate
+  let totalStayHrs = 0, totalWaitHrs = 0;
+  for(const p of selectedPorts){ totalStayHrs += p.stayHours || 0; }
+  // wait is 0 in pre-estimate (actual wait from schedule rows)
+  const totalPortStayDays = totalStayHrs / 24;
+  const psLsfo = +(totalPortStayDays * (currentVessel.ps_lsfo||0)).toFixed(1);
+  const psMgo  = +(totalPortStayDays * (currentVessel.ps_mgo||0)).toFixed(1);
+
   document.getElementById('fs-dist').textContent      = totalDist ? totalDist.toFixed(0)+' nm' : '-- nm';
   document.getElementById('fs-seadays').textContent   = seaDays   ? seaDays.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-manindays').textContent = manInDays ? manInDays.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-rundays').textContent   = runDays   ? runDays.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-lsfo').textContent      = lsfo+' mt';
   document.getElementById('fs-mgo').textContent       = mgo+' mt';
+  document.getElementById('fs-portstaydays').textContent = totalPortStayDays ? totalPortStayDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-stayhrs').textContent   = totalStayHrs ? totalStayHrs+' hr' : '-- hr';
+  document.getElementById('fs-waithrs').textContent   = '-- hr';
+  document.getElementById('fs-ps-lsfo').textContent   = psLsfo ? psLsfo+' mt' : '0 mt';
+  document.getElementById('fs-ps-mgo').textContent    = psMgo  ? psMgo+' mt' : '0 mt';
+  document.getElementById('fs-total-lsfo').textContent = +(lsfo + psLsfo).toFixed(1)+' mt';
+  document.getElementById('fs-total-mgo').textContent  = +(mgo + psMgo).toFixed(1)+' mt';
 }
 
 // Update fuel summary from actual schedule rows (after user edits)
 function updateFuelFromSchedule(){
   if(!scheduleRows.length) return;
-  let totalDist=0, totalRunHrs=0, totalManInHrs=0;
+  let totalDist=0, totalRunHrs=0, totalManInHrs=0, totalStayHrs=0, totalWaitHrs=0;
   for(const row of scheduleRows){
     totalDist += row.dist || 0;
     totalRunHrs += row.runHrs || 0;
     totalManInHrs += row.manIn || 0;
+    totalStayHrs += row.stayHrs || 0;
+    totalWaitHrs += row.wait || 0;
   }
   const seaDays = totalRunHrs > 0 ? (totalRunHrs - totalManInHrs) / 24 : 0;
   const manInDays = totalManInHrs / 24;
@@ -1307,12 +1491,25 @@ function updateFuelFromSchedule(){
   const lsfo = +(runDays * currentVessel.lsfo).toFixed(1);
   const mgo  = +(runDays * currentVessel.mgo).toFixed(1);
 
+  // Port stay fuel (stayHrs + waitHrs)
+  const totalPortStayHrs = totalStayHrs + totalWaitHrs;
+  const totalPortStayDays = totalPortStayHrs / 24;
+  const psLsfo = +(totalPortStayDays * (currentVessel.ps_lsfo||0)).toFixed(1);
+  const psMgo  = +(totalPortStayDays * (currentVessel.ps_mgo||0)).toFixed(1);
+
   document.getElementById('fs-dist').textContent      = totalDist ? totalDist.toFixed(0)+' nm' : '-- nm';
   document.getElementById('fs-seadays').textContent   = seaDays   ? seaDays.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-manindays').textContent = manInDays ? manInDays.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-rundays').textContent   = runDays   ? runDays.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-lsfo').textContent      = lsfo+' mt';
   document.getElementById('fs-mgo').textContent       = mgo+' mt';
+  document.getElementById('fs-portstaydays').textContent = totalPortStayDays ? totalPortStayDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-stayhrs').textContent   = totalStayHrs+' hr';
+  document.getElementById('fs-waithrs').textContent   = totalWaitHrs+' hr';
+  document.getElementById('fs-ps-lsfo').textContent   = psLsfo ? psLsfo+' mt' : '0 mt';
+  document.getElementById('fs-ps-mgo').textContent    = psMgo  ? psMgo+' mt' : '0 mt';
+  document.getElementById('fs-total-lsfo').textContent = +(lsfo + psLsfo).toFixed(1)+' mt';
+  document.getElementById('fs-total-mgo').textContent  = +(mgo + psMgo).toFixed(1)+' mt';
 }
 
 // ==================== RUN SCHEDULE ====================
@@ -1334,11 +1531,24 @@ function runSchedule(){
 
   const btn = document.getElementById('btnRun');
   btn.classList.add('loading');
-  btn.textContent='';
+  btn.textContent='🔍 查询距离中...';
 
-  setTimeout(()=>{
+  // First auto-fill missing distances, then generate schedule
+  autoFillMissingDistances(selectedPorts).then(({filled, failed}) => {
+    if(filled > 0){
+      showToast('已自动查询并填入 ' + filled + ' 段航行距离', 'success');
+    }
+    if(failed.length > 0){
+      const msg = failed.length + ' 段距离自动查询失败:\n\n' +
+        failed.map(f => f.from + ' → ' + f.to + ': ' + f.error).join('\n') +
+        '\n\n已添加到距离列表（距离=0），请手动填写实际航行距离。';
+      console.warn('Auto-fill distance failures:', failed);
+      showToast(msg, 'warning', 8000);
+    }
+
     scheduleRows = computeSchedule(selectedPorts, speed, voyNo, startDt, currentVessel);
     hasModified = false;
+
     renderTable();
     btn.classList.remove('loading');
     btn.textContent='\u25B6  RUN SIMULATION';
@@ -1352,8 +1562,8 @@ function runSchedule(){
       `${vesselDisplay} | ${portNames} | ${speed} kn | VOY ${voyNo}`;
     document.getElementById('tbModBadge').style.display='none';
     document.getElementById('btnReset').style.display='none';
-    updateFuelEstimate();
-  },300);
+    updateFuelFromSchedule();
+  });
 }
 
 function computeSchedule(ports, speed, voyNo, startDt, vessel){
@@ -1765,12 +1975,12 @@ function exportExcel(){
 }
 
 // ==================== TOAST ====================
-function showToast(msg, type=''){
+function showToast(msg, type='', duration=3000){
   const t=document.getElementById('toast');
   t.textContent=msg;
   t.className='toast '+(type||'');
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),3000);
+  setTimeout(()=>t.classList.remove('show'), duration);
 }
 
 // ==================== DATA MANAGER ====================
@@ -1782,6 +1992,8 @@ function openDataManager(){
   renderDmVessels();
   renderDmDists();
   updateDmStatus();
+  updateTokenBtn();
+  setCommitStatus('');
 }
 function closeDataManager(){
   document.getElementById('dmOverlay').classList.remove('open');
@@ -1837,12 +2049,19 @@ function deleteDmPort(i){
   showToast('Port deleted');
 }
 function addDmPort(){
-  PORTS_DATA.push(['NEW','New Port','','','']);
+  PORTS_DATA.unshift(['NEW','New Port','','','']);
   buildPortMap(); initPortCombobox();
-  renderDmPorts(document.getElementById('dmPortSearch').value);
-  // scroll to bottom
-  const wrap = document.querySelector('#dmTabPorts .dm-table-wrap');
-  wrap.scrollTop = wrap.scrollHeight;
+  document.getElementById('dmPortSearch').value = '';
+  renderDmPorts('');
+  // highlight & scroll to top row
+  requestAnimationFrame(()=>{
+    const tbody = document.getElementById('dmPortBody');
+    const firstRow = tbody && tbody.firstElementChild;
+    if(firstRow){
+      firstRow.classList.add('dm-row-new');
+      firstRow.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  });
   showToast('New port added – edit the row');
 }
 function filterDmPorts(){ renderDmPorts(document.getElementById('dmPortSearch').value); }
@@ -1862,17 +2081,19 @@ function renderDmVessels(filter=''){
       <td><input type="number" value="${v.lsfo}" min="0" step="0.5" onchange="editDmVessel(${i},'lsfo',this.value)" style="width:75px"/></td>
       <td><input type="number" value="${v.hsfo}" min="0" step="0.5" onchange="editDmVessel(${i},'hsfo',this.value)" style="width:75px"/></td>
       <td><input type="number" value="${v.mgo}" min="0" step="0.1" onchange="editDmVessel(${i},'mgo',this.value)" style="width:75px"/></td>
+      <td><input type="number" value="${v.ps_lsfo||''}" min="0" step="0.5" onchange="editDmVessel(${i},'ps_lsfo',this.value)" style="width:75px" placeholder="0" title="Port Stay LSFO mt/day"/></td>
+      <td><input type="number" value="${v.ps_mgo||''}" min="0" step="0.1" onchange="editDmVessel(${i},'ps_mgo',this.value)" style="width:75px" placeholder="0" title="Port Stay MGO mt/day"/></td>
       <td class="dm-actions-cell">
         <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmVessel(${i})">✕</button>
       </td>
     </tr>`;
   });
-  if(!html) html = '<tr><td colspan="8" class="dm-empty">No vessels found</td></tr>';
+  if(!html) html = '<tr><td colspan="10" class="dm-empty">No vessels found</td></tr>';
   body.innerHTML = html;
   updateDmStatus();
 }
 function editDmVessel(i,key,val){
-  if(key==='speed'||key==='lsfo'||key==='hsfo'||key==='mgo') val=parseFloat(val)||0;
+  if(key==='speed'||key==='lsfo'||key==='hsfo'||key==='mgo'||key==='ps_lsfo'||key==='ps_mgo') val=parseFloat(val)||0;
   VESSELS_DATA[i][key] = val;
   initVesselCombobox();
   updateDmStatus();
@@ -1885,11 +2106,18 @@ function deleteDmVessel(i){
   showToast('Vessel deleted');
 }
 function addDmVessel(){
-  VESSELS_DATA.push({code:'NEW',name:'New Vessel',speed:14,lsfo:24,hsfo:0,mgo:2});
+  VESSELS_DATA.unshift({code:'NEW',name:'New Vessel',speed:14,lsfo:24,hsfo:0,mgo:2,ps_lsfo:0,ps_mgo:0});
   initVesselCombobox();
-  renderDmVessels(document.getElementById('dmVesselSearch').value);
-  const wrap = document.querySelector('#dmTabVessels .dm-table-wrap');
-  wrap.scrollTop = wrap.scrollHeight;
+  document.getElementById('dmVesselSearch').value = '';
+  renderDmVessels('');
+  requestAnimationFrame(()=>{
+    const tbody = document.getElementById('dmVesselBody');
+    const firstRow = tbody && tbody.firstElementChild;
+    if(firstRow){
+      firstRow.classList.add('dm-row-new');
+      firstRow.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  });
   showToast('New vessel added – edit the row');
 }
 function filterDmVessels(){ renderDmVessels(document.getElementById('dmVesselSearch').value); }
@@ -1900,26 +2128,54 @@ function renderDmDists(filter=''){
   const f = filter.toLowerCase();
   let html = '';
   DIST_RAW.forEach((row,i)=>{
-    const from=row[0], to=row[1], dist=row[2];
+    const from=row[0], to=row[1], dist=row[2], src=row[3]||'';
     if(f && !(from.toLowerCase().includes(f) || to.toLowerCase().includes(f))) return;
+    const hasFromTo = from && to;
+    // Source badge
+    let srcBadge = '';
+    if(src === 'auto') srcBadge = '<span class="dm-src-badge dm-src-auto" title="自动查询（searoute）">🔍 自动</span>';
+    else if(src === 'manual') srcBadge = '<span class="dm-src-badge dm-src-manual" title="人工输入">✏️ 人工</span>';
+    else srcBadge = '<span style="color:var(--muted);font-size:.7rem;">—</span>';
+
     html += `<tr>
       <td>${i+1}</td>
       <td><input value="${esc(from)}" onchange="editDmDist(${i},0,this.value)" style="width:90px;font-weight:600"/></td>
       <td><input value="${esc(to)}" onchange="editDmDist(${i},1,this.value)" style="width:90px;font-weight:600"/></td>
       <td><input type="number" value="${dist}" min="0" step="1" onchange="editDmDist(${i},2,this.value)" style="width:85px"/></td>
+      <td style="text-align:center">${srcBadge}</td>
       <td class="dm-actions-cell">
+        <button class="dm-btn dm-btn-sm" id="lookupBtn_${i}" onclick="lookupDistance(${i})" title="自动查询航行距离（searoute）" ${!hasFromTo?'disabled':''}>🔍</button>
+        <a class="dm-btn dm-btn-sm dm-btn-external" href="javascript:void(0)" onclick="openDiaodubao(${i})" title="在调度宝中查询实际航行距离" ${!hasFromTo?'style="opacity:.4;pointer-events:none"':''}>🚢</a>
         <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmDist(${i})">✕</button>
       </td>
     </tr>`;
   });
-  if(!html) html = '<tr><td colspan="5" class="dm-empty">No distances found</td></tr>';
+  if(!html) html = '<tr><td colspan="6" class="dm-empty">No distances found</td></tr>';
   body.innerHTML = html;
   updateDmStatus();
 }
 function editDmDist(i,col,val){
-  if(col===2) val=Math.round(parseFloat(val)||0);
+  if(col===2) {
+    val=Math.round(parseFloat(val)||0);
+    DIST_RAW[i][3] = 'manual';  // Manual edit → mark as manual
+  }
   DIST_RAW[i][col] = val;
   buildDistMap();
+  if(col<=1){
+    // 港口代码变化后重新渲染，以更新🔍和🚢按钮的启用/禁用状态
+    const filter = document.getElementById('dmDistSearch').value;
+    renderDmDists(filter);
+    // 重新聚焦到对应输入框
+    requestAnimationFrame(()=>{
+      const tbody = document.getElementById('dmDistBody');
+      const row = tbody && tbody.rows[i];
+      if(row) (col===0?row.cells[1]:row.cells[2]).querySelector('input').focus();
+    });
+  } else if(col===2){
+    // 距离值手动编辑后刷新 source badge
+    const filter = document.getElementById('dmDistSearch').value;
+    renderDmDists(filter);
+  }
   updateDmStatus();
 }
 function deleteDmDist(i){
@@ -1930,14 +2186,148 @@ function deleteDmDist(i){
   showToast('Distance deleted');
 }
 function addDmDist(){
-  DIST_RAW.push(['','','0']);
+  DIST_RAW.unshift(['','','0','']);
   buildDistMap();
-  renderDmDists(document.getElementById('dmDistSearch').value);
-  const wrap = document.querySelector('#dmTabDistances .dm-table-wrap');
-  wrap.scrollTop = wrap.scrollHeight;
+  document.getElementById('dmDistSearch').value = '';
+  renderDmDists('');
+  requestAnimationFrame(()=>{
+    const tbody = document.getElementById('dmDistBody');
+    const firstRow = tbody && tbody.firstElementChild;
+    if(firstRow){
+      firstRow.classList.add('dm-row-new');
+      firstRow.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  });
   showToast('New distance added – edit the row');
 }
 function filterDmDists(){ renderDmDists(document.getElementById('dmDistSearch').value); }
+
+// ========== DIAODUBAO LINK ==========
+// 调度宝 URL base - opens diaodubao for manual distance lookup
+const DIAODUBAO_URL = 'https://www.myvessel.cn';
+
+function openDiaodubao(rowIdx){
+  const row = DIST_RAW[rowIdx];
+  if(!row || !row[0] || !row[1]){
+    showToast('Please fill in From Port and To Port first', 'warning');
+    return;
+  }
+  const fromCode = row[0], toCode = row[1];
+  const fromName = getPortName(fromCode);
+  const toName = getPortName(toCode);
+  // Build a search query hint using port codes and names
+  const searchHint = encodeURIComponent(fromCode + (fromName ? ' ' + fromName : '') + ' to ' + toCode + (toName ? ' ' + toName : ''));
+  const url = 'https://www.myvessel.cn';
+  window.open(url, '_blank');
+  showToast('请在调度宝中搜索: ' + fromCode + ' → ' + toCode + '，然后手动填入距离');
+}
+
+// Auto-fill missing distances via searoute service before generating schedule
+// Returns: {filled: number, failed: [{from, to, error}]}
+async function autoFillMissingDistances(ports){
+  const missing = [];
+  for(let i = 0; i < ports.length - 1; i++){
+    const a = ports[i].code, b = ports[i+1].code;
+    if(a !== b && !hasActualDistance(a, b)){
+      missing.push({from: a, to: b});
+    }
+  }
+  if(missing.length === 0) return {filled: 0, failed: []};
+
+  // Query all missing distances in parallel via searoute
+  const results = await Promise.all(
+    missing.map(async m => {
+      const r = await fetchSearouteDistance(m.from, m.to);
+      return {from: m.from, to: m.to, result: r};
+    })
+  );
+
+  let filled = 0;
+  const failed = [];
+
+  results.forEach(({from, to, result}) => {
+    if(result.distance !== undefined){
+      // Add to DIST_RAW with source=auto
+      DIST_RAW.unshift([from, to, result.distance, 'auto']);
+      filled++;
+    } else {
+      failed.push({from, to, error: result.error});
+      // Also add to DIST_RAW with distance=0 so user can find & fill it later
+      const exists = DIST_RAW.find(r => distKey(r[0], r[1]) === distKey(from, to));
+      if(!exists) DIST_RAW.unshift([from, to, 0, '']);
+    }
+  });
+
+  buildDistMap();
+  return {filled, failed};
+}
+
+// ========== DISTANCE LOOKUP (searoute service) ==========
+const GEONAMES_KEY = 'geonames_username';
+const GEO_CACHE = {};  // portCode → {lat, lng}
+
+function getGeonamesUser(){ return localStorage.getItem(GEONAMES_KEY) || ''; }
+function setGeonamesUser(u){ u ? localStorage.setItem(GEONAMES_KEY, u) : localStorage.removeItem(GEONAMES_KEY); }
+
+// Local searoute distance service
+const DIST_SERVICE_URL = 'http://localhost:8898';
+
+// Get port name from PORTS_DATA by code
+function getPortName(code){
+  const row = PORTS_DATA.find(r => r[0] === code);
+  return row ? (row[1] || row[2] || '') : '';
+}
+
+// Core function: query searoute service for sailing distance between two ports
+// Returns {distance: number} or {error: string}
+async function fetchSearouteDistance(fromCode, toCode){
+  try {
+    const geonamesUser = getGeonamesUser();
+    const fromName = getPortName(fromCode), toName = getPortName(toCode);
+    let url = DIST_SERVICE_URL + '/distance?from=' + encodeURIComponent(fromCode) + '&to=' + encodeURIComponent(toCode);
+    if(fromName) url += '&from_name=' + encodeURIComponent(fromName);
+    if(toName) url += '&to_name=' + encodeURIComponent(toName);
+    if(geonamesUser) url += '&geonames_user=' + encodeURIComponent(geonamesUser);
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if(!resp.ok){
+      const msg = data.port ? ('港口 ' + data.port + ' 未找到坐标') : (data.error || '未知错误');
+      console.warn('Distance lookup failed for', fromCode, '→', toCode, ':', msg);
+      return {error: msg};
+    }
+    return {distance: data.distance_nm};
+  } catch(err){
+    console.warn('Distance lookup failed:', err);
+    return {error: err.message};
+  }
+}
+
+// Look up sailing distance for a row in DIST_RAW via local searoute service
+async function lookupDistance(rowIdx){
+  const row = DIST_RAW[rowIdx];
+  if(!row || !row[0] || !row[1]){
+    showToast('Please fill in From Port and To Port first', 'warning');
+    return;
+  }
+  const fromCode = row[0], toCode = row[1];
+
+  const btn = document.getElementById('lookupBtn_' + rowIdx);
+  if(btn){ btn.disabled = true; btn.textContent = '🔍 ...'; }
+
+  const result = await fetchSearouteDistance(fromCode, toCode);
+  if(result.distance !== undefined){
+    DIST_RAW[rowIdx][2] = result.distance;
+    DIST_RAW[rowIdx][3] = 'auto';  // Mark as auto-queried
+    buildDistMap();
+    renderDmDists(document.getElementById('dmDistSearch').value);
+    showToast(fromCode + ' → ' + toCode + ': ' + result.distance + ' NM（航行距离）', 'success');
+  } else {
+    showToast('查询失败: ' + result.error + ' — 请手动输入', 'warning');
+  }
+  if(btn){ btn.disabled = false; btn.textContent = '🔍'; }
+}
 
 // ========== EXPORT CSV ==========
 function exportDmCSV(type){
@@ -1947,11 +2337,11 @@ function exportDmCSV(type){
     PORTS_DATA.forEach(r=>{ csv += [r[0],r[1],r[2],r[3],r[4]].map(v=>'"'+(v||'')+'"').join(',')+'\n'; });
     filename = 'ports.csv';
   } else if(type==='vessels'){
-    csv = 'vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day\n';
-    VESSELS_DATA.forEach(v=>{ csv += [v.code,v.name,v.speed,v.lsfo,v.hsfo,v.mgo].join(',')+'\n'; });
+    csv = 'vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day\n';
+    VESSELS_DATA.forEach(v=>{ csv += [v.code,v.name,v.speed,v.lsfo,v.hsfo,v.mgo,v.ps_lsfo||0,v.ps_mgo||0].join(',')+'\n'; });
     filename = 'vessels.csv';
   } else {
-    csv = 'from_port,to_port,distance_nm\n';
+    csv = 'from_port,to_port,distance_nm,source\n';
     DIST_RAW.forEach(r=>{ csv += r.join(',')+'\n'; });
     filename = 'distances.csv';
   }
@@ -1961,6 +2351,235 @@ function exportDmCSV(type){
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
   showToast(filename+' exported');
+}
+
+// ========== GITHUB COMMIT ==========
+const GH_REPO_API = 'https://api.github.com/repos/LeahLiuL/Schedule-Simulation/contents';
+const GH_TOKEN_KEY = 'gh_pat_token';
+
+function getGhToken(){ return localStorage.getItem(GH_TOKEN_KEY) || ''; }
+
+function openTokenSetup(){
+  document.getElementById('tokenOverlay').classList.add('open');
+  document.getElementById('ghTokenInput').value = getGhToken();
+  document.getElementById('geonamesInput').value = getGeonamesUser();
+  updateTokenBtn();
+}
+function closeTokenSetup(){
+  document.getElementById('tokenOverlay').classList.remove('open');
+}
+function saveGhToken(){
+  const val = document.getElementById('ghTokenInput').value.trim();
+  if(val) localStorage.setItem(GH_TOKEN_KEY, val);
+  else localStorage.removeItem(GH_TOKEN_KEY);
+  closeTokenSetup();
+  updateTokenBtn();
+  showToast(val ? 'Token saved' : 'Token cleared', 'success');
+}
+function clearGhToken(){
+  document.getElementById('ghTokenInput').value = '';
+  localStorage.removeItem(GH_TOKEN_KEY);
+  closeTokenSetup();
+  updateTokenBtn();
+  showToast('Token cleared');
+}
+function saveGeonames(){
+  const val = document.getElementById('geonamesInput').value.trim();
+  setGeonamesUser(val);
+  showToast(val ? 'GeoNames username saved' : 'GeoNames username cleared', 'success');
+}
+function clearGeonames(){
+  document.getElementById('geonamesInput').value = '';
+  setGeonamesUser('');
+  showToast('GeoNames username cleared');
+}
+function updateTokenBtn(){
+  const btn = document.getElementById('btnTokenSetup');
+  if(!btn) return;
+  const has = !!getGhToken();
+  btn.style.background = has ? 'rgba(40,167,69,.25)' : 'rgba(255,193,7,.25)';
+  btn.style.borderColor = has ? 'rgba(40,167,69,.5)' : 'rgba(255,193,7,.5)';
+  btn.style.color = has ? '#28a745' : '#856404';
+}
+
+// Build CSV string for a given data type (same format as exportDmCSV)
+function buildCSV(type){
+  let csv = '';
+  if(type==='ports'){
+    csv = 'code,name_en,name_cn,man_in,portstay_time\n';
+    PORTS_DATA.forEach(r=>{ csv += [r[0],r[1],r[2],r[3],r[4]].map(v=>'"'+(v||'')+'"').join(',')+'\n'; });
+  } else if(type==='vessels'){
+    csv = 'vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day\n';
+    VESSELS_DATA.forEach(v=>{ csv += [v.code,v.name,v.speed,v.lsfo,v.hsfo,v.mgo,v.ps_lsfo||0,v.ps_mgo||0].join(',')+'\n'; });
+  } else {
+    csv = 'from_port,to_port,distance_nm,source\n';
+    DIST_RAW.forEach(r=>{ csv += r.join(',')+'\n'; });
+  }
+  return csv;
+}
+
+function csvFilename(type){
+  return {ports:'ports.csv', vessels:'vessels.csv', distances:'distances.csv'}[type];
+}
+
+// Set commit status text
+function setCommitStatus(msg){
+  const el = document.getElementById('commitStatus');
+  if(el) el.textContent = msg;
+}
+
+// Commit a single CSV file to GitHub via Contents API
+async function commitToGitHub(type){
+  const token = getGhToken();
+  if(!token){
+    showToast('Please set your GitHub Token first (🔑 Token button)', 'warning');
+    openTokenSetup();
+    return;
+  }
+
+  const filename = csvFilename(type);
+  const content = buildCSV(type);
+  const path = 'shipping_data/' + filename;
+
+  // Update button to loading state
+  const btns = document.querySelectorAll('.dm-btn-commit');
+  btns.forEach(b=>b.classList.add('loading'));
+
+  try {
+    // Step 1: Get current file SHA
+    setCommitStatus('Fetching current file...');
+    const getResp = await fetch(GH_REPO_API + '/' + path, {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+    });
+
+    if(getResp.status === 404){
+      showToast('File not found in repo: ' + path, 'warning');
+      setCommitStatus('');
+      btns.forEach(b=>b.classList.remove('loading'));
+      return;
+    }
+    if(getResp.status === 401){
+      showToast('Invalid or expired token', 'warning');
+      setCommitStatus('Auth failed');
+      btns.forEach(b=>b.classList.remove('loading'));
+      return;
+    }
+    if(!getResp.ok){
+      const err = await getResp.json().catch(()=>({}));
+      throw new Error('GitHub API error: ' + getResp.status + (err.message ? ' - ' + err.message : ''));
+    }
+
+    const fileData = await getResp.json();
+    const sha = fileData.sha;
+
+    // Step 2: Update file with new content
+    setCommitStatus('Committing ' + filename + '...');
+    const base64Content = btoa(unescape(encodeURIComponent(content)));
+    const message = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
+
+    const putResp = await fetch(GH_REPO_API + '/' + path, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: message,
+        content: base64Content,
+        sha: sha,
+        branch: 'main'
+      })
+    });
+
+    if(!putResp.ok){
+      const err = await putResp.json().catch(()=>({}));
+      throw new Error('Commit failed: ' + putResp.status + (err.message ? ' - ' + err.message : ''));
+    }
+
+    const result = await putResp.json();
+    setCommitStatus('✓ Committed: ' + result.commit.sha.slice(0,7));
+    showToast(filename + ' committed to GitHub ✓', 'success');
+  } catch(err){
+    console.error('GitHub commit error:', err);
+    setCommitStatus('✗ Error: ' + err.message);
+    showToast('Commit failed: ' + err.message, 'warning');
+  } finally {
+    btns.forEach(b=>b.classList.remove('loading'));
+  }
+}
+
+// Commit all 3 CSV files sequentially
+async function commitAllToGitHub(){
+  const token = getGhToken();
+  if(!token){
+    showToast('Please set your GitHub Token first (🔑 Token button)', 'warning');
+    openTokenSetup();
+    return;
+  }
+
+  const btnAll = document.getElementById('btnCommitAll');
+  const types = ['ports', 'vessels', 'distances'];
+  let ok = 0, fail = 0;
+
+  btnAll.classList.add('loading');
+  setCommitStatus('Committing all files...');
+
+  for(const type of types){
+    const filename = csvFilename(type);
+    try {
+      setCommitStatus('Committing ' + filename + '...');
+      const content = buildCSV(type);
+      const path = 'shipping_data/' + filename;
+
+      const getResp = await fetch(GH_REPO_API + '/' + path, {
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+      });
+
+      if(getResp.status === 401){
+        showToast('Invalid or expired token', 'warning');
+        setCommitStatus('✗ Auth failed');
+        break;
+      }
+      if(!getResp.ok){
+        throw new Error(getResp.status);
+      }
+
+      const fileData = await getResp.json();
+      const sha = fileData.sha;
+      const base64Content = btoa(unescape(encodeURIComponent(content)));
+      const message = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
+
+      const putResp = await fetch(GH_REPO_API + '/' + path, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message, content: base64Content, sha, branch: 'main' })
+      });
+
+      if(!putResp.ok){
+        const err = await putResp.json().catch(()=>({}));
+        throw new Error(putResp.status + (err.message ? ' - ' + err.message : ''));
+      }
+
+      ok++;
+    } catch(err){
+      console.error('Commit error for ' + filename + ':', err);
+      fail++;
+    }
+  }
+
+  btnAll.classList.remove('loading');
+  if(fail === 0){
+    setCommitStatus('✓ All ' + ok + ' files committed');
+    showToast('All ' + ok + ' CSV files committed to GitHub ✓', 'success');
+  } else {
+    setCommitStatus('⚠ ' + ok + ' ok, ' + fail + ' failed');
+    showToast(ok + ' committed, ' + fail + ' failed', 'warning');
+  }
 }
 
 // Helper: escape HTML for input values
