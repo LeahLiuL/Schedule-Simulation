@@ -260,6 +260,88 @@
   .btn-run:hover { opacity: .9; transform: translateY(-1px); }
   .btn-run:active { transform: translateY(0); }
 
+  /* ===== DATA MANAGER MODAL ===== */
+  .dm-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500;
+    justify-content:center; align-items:center;
+  }
+  .dm-overlay.open { display:flex; }
+  .dm-modal {
+    background:#fff; border-radius:14px; width:92vw; max-width:1100px; height:80vh;
+    display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3);
+    font-size:.85rem;
+  }
+  .dm-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; border-bottom:1px solid var(--border);
+  }
+  .dm-header h2 { margin:0; font-size:1.1rem; color:var(--text); }
+  .dm-close { background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--muted); padding:4px 8px; border-radius:6px; }
+  .dm-close:hover { background:#f0f0f0; color:var(--text); }
+  .dm-tabs {
+    display:flex; gap:0; border-bottom:2px solid var(--border); padding:0 24px; background:#fafbfc;
+  }
+  .dm-tab {
+    padding:10px 22px; border:none; background:none; cursor:pointer; font-size:.82rem;
+    font-weight:600; color:var(--muted); border-bottom:2px solid transparent;
+    margin-bottom:-2px; transition:color .15s, border-color .15s;
+  }
+  .dm-tab:hover { color:var(--text); }
+  .dm-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+  .dm-toolbar {
+    display:flex; align-items:center; gap:10px; padding:12px 24px;
+    border-bottom:1px solid #eee; flex-wrap:wrap;
+  }
+  .dm-search {
+    flex:1; min-width:180px; padding:7px 12px; border:1px solid #ddd; border-radius:6px;
+    font-size:.82rem; outline:none;
+  }
+  .dm-search:focus { border-color:var(--primary); }
+  .dm-btn {
+    padding:7px 16px; border:none; border-radius:6px; font-size:.8rem; font-weight:600;
+    cursor:pointer; transition:opacity .15s;
+  }
+  .dm-btn:hover { opacity:.85; }
+  .dm-btn-primary { background:var(--primary); color:#fff; }
+  .dm-btn-success { background:#28a745; color:#fff; }
+  .dm-btn-danger { background:#dc3545; color:#fff; }
+  .dm-btn-sm { padding:4px 10px; font-size:.75rem; }
+  .dm-btn-export { background:#6c757d; color:#fff; }
+  .dm-body { flex:1; overflow:auto; padding:0; }
+  .dm-tab-content { display:none; height:100%; }
+  .dm-tab-content.active { display:flex; flex-direction:column; }
+  .dm-table-wrap { flex:1; overflow:auto; }
+  .dm-table {
+    width:100%; border-collapse:collapse; font-size:.8rem;
+  }
+  .dm-table th {
+    position:sticky; top:0; background:#f0f2f5; padding:9px 12px; text-align:left;
+    font-weight:600; color:var(--muted); text-transform:uppercase; font-size:.72rem;
+    letter-spacing:.5px; border-bottom:1px solid #ddd; white-space:nowrap; z-index:1;
+  }
+  .dm-table td {
+    padding:7px 12px; border-bottom:1px solid #f0f0f0; white-space:nowrap;
+  }
+  .dm-table tr:hover td { background:#f8f9ff; }
+  .dm-table td input, .dm-table td select {
+    width:100%; padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:.8rem;
+  }
+  .dm-table td input:focus, .dm-table td select:focus { border-color:var(--primary); outline:none; }
+  .dm-actions-cell { display:flex; gap:4px; }
+  .dm-footer {
+    padding:12px 24px; border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:.78rem; color:var(--muted);
+  }
+  .dm-empty { text-align:center; padding:40px; color:var(--muted); }
+  /* Header data manager button */
+  .btn-dm {
+    padding:6px 14px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.3);
+    color:#fff; border-radius:6px; font-size:.78rem; font-weight:600; cursor:pointer;
+    transition:background .15s;
+  }
+  .btn-dm:hover { background:rgba(255,255,255,.35); }
+
   /* ===== RIGHT PANEL ===== */
   .right-panel {
     flex: 1;
@@ -467,7 +549,10 @@
     </svg>
     Voyage Schedule Simulator
   </div>
-  <div class="header-right" id="headerTime"></div>
+  <div class="header-right">
+    <button class="btn-dm" onclick="openDataManager()">⚙ Data Manager</button>
+    <span id="headerTime"></span>
+  </div>
 </header>
 
 <div class="main-layout">
@@ -618,6 +703,100 @@
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- DATA MANAGER MODAL -->
+<div class="dm-overlay" id="dmOverlay">
+  <div class="dm-modal">
+    <div class="dm-header">
+      <h2>⚙ Data Manager</h2>
+      <button class="dm-close" onclick="closeDataManager()">&times;</button>
+    </div>
+    <div class="dm-tabs">
+      <button class="dm-tab active" data-tab="ports" onclick="switchDmTab('ports')">Ports</button>
+      <button class="dm-tab" data-tab="vessels" onclick="switchDmTab('vessels')">Vessels</button>
+      <button class="dm-tab" data-tab="distances" onclick="switchDmTab('distances')">Distances</button>
+    </div>
+
+    <!-- PORTS TAB -->
+    <div class="dm-tab-content active" id="dmTabPorts">
+      <div class="dm-toolbar">
+        <input class="dm-search" id="dmPortSearch" placeholder="Search port code or name..." oninput="filterDmPorts()"/>
+        <button class="dm-btn dm-btn-primary" onclick="addDmPort()">+ Add Port</button>
+        <button class="dm-btn dm-btn-export" onclick="exportDmCSV('ports')">📥 Export CSV</button>
+      </div>
+      <div class="dm-table-wrap">
+        <table class="dm-table" id="dmPortTable">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Code</th>
+              <th>Name (EN)</th>
+              <th>Name (CN)</th>
+              <th style="width:80px">Man-In (hr)</th>
+              <th style="width:90px">Stay (hr)</th>
+              <th style="width:100px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dmPortBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VESSELS TAB -->
+    <div class="dm-tab-content" id="dmTabVessels">
+      <div class="dm-toolbar">
+        <input class="dm-search" id="dmVesselSearch" placeholder="Search vessel code or name..." oninput="filterDmVessels()"/>
+        <button class="dm-btn dm-btn-primary" onclick="addDmVessel()">+ Add Vessel</button>
+        <button class="dm-btn dm-btn-export" onclick="exportDmCSV('vessels')">📥 Export CSV</button>
+      </div>
+      <div class="dm-table-wrap">
+        <table class="dm-table" id="dmVesselTable">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Vessel Code</th>
+              <th>Vessel Name</th>
+              <th style="width:90px">Speed (kn)</th>
+              <th style="width:90px">LSFO mt/d</th>
+              <th style="width:90px">HSFO mt/d</th>
+              <th style="width:90px">MGO mt/d</th>
+              <th style="width:100px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dmVesselBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DISTANCES TAB -->
+    <div class="dm-tab-content" id="dmTabDistances">
+      <div class="dm-toolbar">
+        <input class="dm-search" id="dmDistSearch" placeholder="Search from/to port code..." oninput="filterDmDists()"/>
+        <button class="dm-btn dm-btn-primary" onclick="addDmDist()">+ Add Distance</button>
+        <button class="dm-btn dm-btn-export" onclick="exportDmCSV('distances')">📥 Export CSV</button>
+      </div>
+      <div class="dm-table-wrap">
+        <table class="dm-table" id="dmDistTable">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>From Port</th>
+              <th>To Port</th>
+              <th style="width:100px">Distance (NM)</th>
+              <th style="width:100px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dmDistBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dm-footer">
+      <span id="dmStatus">Ready</span>
+      <span>Changes take effect immediately in the simulator</span>
+    </div>
+  </div>
+</div>
 
 <script>
 // ==================== DATA LOADER ====================
@@ -1593,6 +1772,199 @@ function showToast(msg, type=''){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3000);
 }
+
+// ==================== DATA MANAGER ====================
+let dmEditIdx = -1; // -1 = not editing
+
+function openDataManager(){
+  document.getElementById('dmOverlay').classList.add('open');
+  renderDmPorts();
+  renderDmVessels();
+  renderDmDists();
+  updateDmStatus();
+}
+function closeDataManager(){
+  document.getElementById('dmOverlay').classList.remove('open');
+}
+
+function switchDmTab(tab){
+  document.querySelectorAll('.dm-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.dm-tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.dm-tab[data-tab="'+tab+'"]').classList.add('active');
+  document.getElementById('dmTab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+}
+
+function updateDmStatus(){
+  const np=PORTS_DATA.length, nv=VESSELS_DATA.length, nd=DIST_RAW.length;
+  document.getElementById('dmStatus').textContent = np+' ports | '+nv+' vessel tiers | '+nd+' distances';
+}
+
+// ========== PORTS ==========
+function renderDmPorts(filter=''){
+  const body = document.getElementById('dmPortBody');
+  const f = filter.toLowerCase();
+  let html = '';
+  PORTS_DATA.forEach((row,i)=>{
+    const code=row[0], en=row[1]||'', cn=row[2]||'', manIn=row[3]||'', stay=row[4]||'';
+    if(f && !(code.toLowerCase().includes(f) || en.toLowerCase().includes(f) || cn.includes(f))) return;
+    html += `<tr>
+      <td>${i+1}</td>
+      <td><input value="${esc(code)}" onchange="editDmPort(${i},0,this.value)" style="width:80px;font-weight:600"/></td>
+      <td><input value="${esc(en)}" onchange="editDmPort(${i},1,this.value)"/></td>
+      <td><input value="${esc(cn)}" onchange="editDmPort(${i},2,this.value)"/></td>
+      <td><input type="number" value="${manIn}" min="0" max="48" step="0.5" onchange="editDmPort(${i},3,this.value)" style="width:70px"/></td>
+      <td><input type="number" value="${stay}" min="0" max="720" step="1" onchange="editDmPort(${i},4,this.value)" style="width:70px"/></td>
+      <td class="dm-actions-cell">
+        <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmPort(${i})">✕</button>
+      </td>
+    </tr>`;
+  });
+  if(!html) html = '<tr><td colspan="7" class="dm-empty">No ports found</td></tr>';
+  body.innerHTML = html;
+  updateDmStatus();
+}
+function editDmPort(i,col,val){
+  PORTS_DATA[i][col] = val;
+  buildPortMap();
+  initPortCombobox();
+  updateDmStatus();
+}
+function deleteDmPort(i){
+  if(!confirm('Delete port '+PORTS_DATA[i][0]+' – '+PORTS_DATA[i][1]+'?')) return;
+  PORTS_DATA.splice(i,1);
+  buildPortMap(); initPortCombobox();
+  renderDmPorts(document.getElementById('dmPortSearch').value);
+  showToast('Port deleted');
+}
+function addDmPort(){
+  PORTS_DATA.push(['NEW','New Port','','','']);
+  buildPortMap(); initPortCombobox();
+  renderDmPorts(document.getElementById('dmPortSearch').value);
+  // scroll to bottom
+  const wrap = document.querySelector('#dmTabPorts .dm-table-wrap');
+  wrap.scrollTop = wrap.scrollHeight;
+  showToast('New port added – edit the row');
+}
+function filterDmPorts(){ renderDmPorts(document.getElementById('dmPortSearch').value); }
+
+// ========== VESSELS ==========
+function renderDmVessels(filter=''){
+  const body = document.getElementById('dmVesselBody');
+  const f = filter.toLowerCase();
+  let html = '';
+  VESSELS_DATA.forEach((v,i)=>{
+    if(f && !(v.code.toLowerCase().includes(f) || v.name.toLowerCase().includes(f))) return;
+    html += `<tr>
+      <td>${i+1}</td>
+      <td><input value="${esc(v.code)}" onchange="editDmVessel(${i},'code',this.value)" style="width:80px;font-weight:600"/></td>
+      <td><input value="${esc(v.name)}" onchange="editDmVessel(${i},'name',this.value)"/></td>
+      <td><input type="number" value="${v.speed}" min="0" max="30" step="0.5" onchange="editDmVessel(${i},'speed',this.value)" style="width:75px"/></td>
+      <td><input type="number" value="${v.lsfo}" min="0" step="0.5" onchange="editDmVessel(${i},'lsfo',this.value)" style="width:75px"/></td>
+      <td><input type="number" value="${v.hsfo}" min="0" step="0.5" onchange="editDmVessel(${i},'hsfo',this.value)" style="width:75px"/></td>
+      <td><input type="number" value="${v.mgo}" min="0" step="0.1" onchange="editDmVessel(${i},'mgo',this.value)" style="width:75px"/></td>
+      <td class="dm-actions-cell">
+        <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmVessel(${i})">✕</button>
+      </td>
+    </tr>`;
+  });
+  if(!html) html = '<tr><td colspan="8" class="dm-empty">No vessels found</td></tr>';
+  body.innerHTML = html;
+  updateDmStatus();
+}
+function editDmVessel(i,key,val){
+  if(key==='speed'||key==='lsfo'||key==='hsfo'||key==='mgo') val=parseFloat(val)||0;
+  VESSELS_DATA[i][key] = val;
+  initVesselCombobox();
+  updateDmStatus();
+}
+function deleteDmVessel(i){
+  if(!confirm('Delete vessel '+VESSELS_DATA[i].code+' – '+VESSELS_DATA[i].name+'?')) return;
+  VESSELS_DATA.splice(i,1);
+  initVesselCombobox();
+  renderDmVessels(document.getElementById('dmVesselSearch').value);
+  showToast('Vessel deleted');
+}
+function addDmVessel(){
+  VESSELS_DATA.push({code:'NEW',name:'New Vessel',speed:14,lsfo:24,hsfo:0,mgo:2});
+  initVesselCombobox();
+  renderDmVessels(document.getElementById('dmVesselSearch').value);
+  const wrap = document.querySelector('#dmTabVessels .dm-table-wrap');
+  wrap.scrollTop = wrap.scrollHeight;
+  showToast('New vessel added – edit the row');
+}
+function filterDmVessels(){ renderDmVessels(document.getElementById('dmVesselSearch').value); }
+
+// ========== DISTANCES ==========
+function renderDmDists(filter=''){
+  const body = document.getElementById('dmDistBody');
+  const f = filter.toLowerCase();
+  let html = '';
+  DIST_RAW.forEach((row,i)=>{
+    const from=row[0], to=row[1], dist=row[2];
+    if(f && !(from.toLowerCase().includes(f) || to.toLowerCase().includes(f))) return;
+    html += `<tr>
+      <td>${i+1}</td>
+      <td><input value="${esc(from)}" onchange="editDmDist(${i},0,this.value)" style="width:90px;font-weight:600"/></td>
+      <td><input value="${esc(to)}" onchange="editDmDist(${i},1,this.value)" style="width:90px;font-weight:600"/></td>
+      <td><input type="number" value="${dist}" min="0" step="1" onchange="editDmDist(${i},2,this.value)" style="width:85px"/></td>
+      <td class="dm-actions-cell">
+        <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmDist(${i})">✕</button>
+      </td>
+    </tr>`;
+  });
+  if(!html) html = '<tr><td colspan="5" class="dm-empty">No distances found</td></tr>';
+  body.innerHTML = html;
+  updateDmStatus();
+}
+function editDmDist(i,col,val){
+  if(col===2) val=Math.round(parseFloat(val)||0);
+  DIST_RAW[i][col] = val;
+  buildDistMap();
+  updateDmStatus();
+}
+function deleteDmDist(i){
+  if(!confirm('Delete distance '+DIST_RAW[i][0]+' → '+DIST_RAW[i][1]+'?')) return;
+  DIST_RAW.splice(i,1);
+  buildDistMap();
+  renderDmDists(document.getElementById('dmDistSearch').value);
+  showToast('Distance deleted');
+}
+function addDmDist(){
+  DIST_RAW.push(['','','0']);
+  buildDistMap();
+  renderDmDists(document.getElementById('dmDistSearch').value);
+  const wrap = document.querySelector('#dmTabDistances .dm-table-wrap');
+  wrap.scrollTop = wrap.scrollHeight;
+  showToast('New distance added – edit the row');
+}
+function filterDmDists(){ renderDmDists(document.getElementById('dmDistSearch').value); }
+
+// ========== EXPORT CSV ==========
+function exportDmCSV(type){
+  let csv = '', filename = '';
+  if(type==='ports'){
+    csv = 'code,name_en,name_cn,man_in,portstay_time\n';
+    PORTS_DATA.forEach(r=>{ csv += [r[0],r[1],r[2],r[3],r[4]].map(v=>'"'+(v||'')+'"').join(',')+'\n'; });
+    filename = 'ports.csv';
+  } else if(type==='vessels'){
+    csv = 'vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day\n';
+    VESSELS_DATA.forEach(v=>{ csv += [v.code,v.name,v.speed,v.lsfo,v.hsfo,v.mgo].join(',')+'\n'; });
+    filename = 'vessels.csv';
+  } else {
+    csv = 'from_port,to_port,distance_nm\n';
+    DIST_RAW.forEach(r=>{ csv += r.join(',')+'\n'; });
+    filename = 'distances.csv';
+  }
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast(filename+' exported');
+}
+
+// Helper: escape HTML for input values
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>
