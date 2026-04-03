@@ -1133,10 +1133,12 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
   firstEtd.setMinutes(0,0,0);
 
   // First port: run/dist to NEXT port
+  // runHrs = sea passage + man in of next port (manIn included in run time)
   let firstDist = 0, firstRun = 0, firstFuel = 0;
   if(ports.length > 1){
     firstDist = getDistance(ports[0].code, ports[1].code);
-    firstRun = speed>0 ? firstDist/speed : 0;
+    const seaRun = speed>0 ? firstDist/speed : 0;
+    firstRun = seaRun + DEFAULT_MAN_IN; // include next port's man in
     firstFuel = +(firstRun * lsfoPerHr).toFixed(2);
   }
 
@@ -1147,8 +1149,9 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
 
   for(let i=1; i<ports.length; i++){
     const p = ports[i];
+    // ETA = prev ETD + prev.runHrs (which already includes this port's man in)
     const eta = ceilToHour(new Date(prevEtd.getTime() + rows[i-1].runHrs*3600000));
-    const manIn = DEFAULT_MAN_IN; // 3h pilotage
+    const manIn = DEFAULT_MAN_IN; // 3h pilotage (already counted in prev runHrs)
     const wait = 0;
     const etb = new Date(eta.getTime() + (manIn + wait)*3600000);
     etb.setMinutes(0,0,0);
@@ -1157,10 +1160,12 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
     etd.setMinutes(0,0,0);
 
     // Run/dist to NEXT port (empty for last port)
+    // runHrs = sea passage + man in of NEXT port
     let dist = 0, runHrs = 0;
     if(i < ports.length - 1){
       dist = getDistance(ports[i].code, ports[i+1].code);
-      runHrs = speed>0 ? dist/speed : 0;
+      const seaRun = speed>0 ? dist/speed : 0;
+      runHrs = seaRun + DEFAULT_MAN_IN; // include next port's man in
     }
 
     rows.push(buildRow(i, p, voyNo, eta, etb, etd, dist, runHrs, speed, vessel, manIn, wait, stay));
@@ -1361,7 +1366,7 @@ function cascadeRecalc(changedIdx, changedKey){
         row.ltsEtd = new Date(row.etd);
         // Don't recalc ETB or ETA — user set ETD directly
       }
-      // Case 4: Man In changed -> recalc ETB, ETD
+      // Case 4: Man In changed -> recalc ETB, ETD; also update prev row's runHrs
       else if(changedKey === 'manIn'){
         row.etb = new Date(row.eta.getTime() + (row.manIn + row.wait)*3600000);
         row.etb.setMinutes(0,0,0);
@@ -1369,6 +1374,13 @@ function cascadeRecalc(changedIdx, changedKey){
         row.etd.setMinutes(0,0,0);
         row.ltsEtb = new Date(row.etb);
         row.ltsEtd = new Date(row.etd);
+        // Update prev row's runHrs: sea passage + this port's new manIn
+        if(changedIdx > 0){
+          const prevRow = scheduleRows[changedIdx-1];
+          const seaRun = prevRow.speed>0 ? +(prevRow.dist/prevRow.speed).toFixed(2) : 0;
+          prevRow.runHrs = +(seaRun + row.manIn).toFixed(2);
+          prevRow.fuelSea = +(prevRow.runHrs * lsfoPerHr).toFixed(2);
+        }
       }
       // Case 5: Wait changed -> recalc ETB, ETD
       else if(changedKey === 'wait'){
@@ -1385,9 +1397,13 @@ function cascadeRecalc(changedIdx, changedKey){
         row.etd.setMinutes(0,0,0);
         row.ltsEtd = new Date(row.etd);
       }
-      // Case 7: Distance or Speed changed -> recalc Run hours
+      // Case 7: Distance or Speed changed -> recalc Run hours (sea passage + next port's man in)
       else if(changedKey === 'dist' || changedKey === 'speed'){
-        row.runHrs = row.speed>0 ? +(row.dist/row.speed).toFixed(2) : 0;
+        const seaRun = row.speed>0 ? +(row.dist/row.speed).toFixed(2) : 0;
+        // Add man in of next port if next port exists
+        const nextRow = scheduleRows[changedIdx+1];
+        const nextManIn = nextRow ? (nextRow.manIn || DEFAULT_MAN_IN) : 0;
+        row.runHrs = +(seaRun + nextManIn).toFixed(2);
         // Note: this doesn't change ETA/ETB/ETD on this row — those stay
         // The run time change will affect the NEXT row's ETA via prev.ETD
       }
