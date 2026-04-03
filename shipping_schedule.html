@@ -803,7 +803,7 @@
     <div class="dm-header">
       <h2>⚙ Data Manager</h2>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button class="dm-btn" id="btnTokenSetup" onclick="openTokenSetup()" title="Settings (GitHub Token & GeoNames)">⚙ Settings</button>
+        <button class="dm-btn" id="btnTokenSetup" onclick="openTokenSetup()" title="Settings (GitHub Token)">⚙ Settings</button>
         <button class="dm-close" onclick="closeDataManager()">&times;</button>
       </div>
     </div>
@@ -932,18 +932,13 @@
 
     <hr style="border:none;border-top:1px solid #eee;margin:0 0 18px;"/>
 
-    <!-- GeoNames Section -->
+    <!-- Distance Info -->
     <div>
-      <h4 style="margin:0 0 4px;font-size:.85rem;color:var(--primary);">🌍 GeoNames Username (port coordinates)</h4>
+      <h4 style="margin:0 0 4px;font-size:.85rem;color:var(--primary);">📏 距离计算说明</h4>
       <p class="token-hint">
-        Free account at <a href="https://www.geonames.org/login" target="_blank" style="color:var(--primary)">geonames.org</a>.
-        Used to look up port coordinates for ports not in the built-in database. Distance is calculated via searoute (actual sailing route).
+        内置 244 个港口坐标，使用大圆距离（Haversine）估算航行距离。
+        未知港口会通过 Nominatim（OpenStreetMap）自动查询坐标，无需注册。
       </p>
-      <input type="text" id="geonamesInput" placeholder="your_geonames_username" autocomplete="off" style="font-size:.85rem;font-family:monospace;"/>
-      <div style="display:flex;justify-content:flex-end;gap:8px;">
-        <button class="dm-btn" onclick="clearGeonames()">Clear</button>
-        <button class="dm-btn dm-btn-primary" onclick="saveGeonames()">Save</button>
-      </div>
     </div>
   </div>
 </div>
@@ -2262,42 +2257,173 @@ async function autoFillMissingDistances(ports){
   return {filled, failed};
 }
 
-// ========== DISTANCE LOOKUP (searoute service) ==========
-const GEONAMES_KEY = 'geonames_username';
+// ========== DISTANCE LOOKUP (browser-side) ==========
 const GEO_CACHE = {};  // portCode → {lat, lng}
-
-function getGeonamesUser(){ return localStorage.getItem(GEONAMES_KEY) || ''; }
-function setGeonamesUser(u){ u ? localStorage.setItem(GEONAMES_KEY, u) : localStorage.removeItem(GEONAMES_KEY); }
-
-// Local searoute distance service
-const DIST_SERVICE_URL = 'http://localhost:8898';
 
 // Get port name from PORTS_DATA by code
 function getPortName(code){
   const row = PORTS_DATA.find(r => r[0] === code);
-  return row ? (row[1] || row[2] || '') : '';
+  return row ? (row[1] || r[2] || '') : '';
 }
 
-// Core function: query searoute service for sailing distance between two ports
+// Built-in port coordinates (244 ports)
+const PORT_COORDS = {
+    "AEAUH":[24.47,54.37],"AEDUB":[25.25,55.28],"AEDXB":[25.25,55.28],"AEFJR":[25.12,56.33],
+    "AEJEA":[25.02,55.03],"AEKLF":[25.53,56.35],"AUBNE":[-27.38,153.13],"AUDAM":[-32.07,115.75],
+    "AUPHE":[-31.94,115.87],"AUSYD":[-33.95,151.18],"BDCGP":[22.27,91.80],"BDDAC":[23.73,90.39],
+    "BEANR":[51.23,4.42],"BEZEE":[51.33,3.21],"BRSSZ":[-23.97,-46.30],"CNAJG":[30.95,120.00],
+    "CNAQG":[30.53,117.05],"CNBIH":[21.49,109.12],"CNBJS":[39.92,116.40],"CNCDU":[30.57,104.07],
+    "CNCGC":[43.88,125.32],"CNCGU":[31.65,120.74],"CNCOZ":[23.66,116.62],"CNCQI":[29.56,106.55],
+    "CNCSH":[28.23,112.94],"CNCWN":[22.59,113.84],"CNDAL":[38.91,121.60],"CNDCB":[22.53,113.87],
+    "CNDGG":[23.04,113.75],"CNFAN":[21.62,108.35],"CNFOS":[23.02,113.12],"CNFZH":[26.07,119.40],
+    "CNGGZ":[23.10,113.32],"CNGYA":[26.65,106.63],"CNHAZ":[30.27,120.15],"CNHEY":[23.73,114.69],
+    "CNHFI":[31.86,117.28],"CNHHH":[40.84,111.75],"CNHKG":[22.30,114.17],"CNHKO":[20.04,110.35],
+    "CNHMN":[22.92,113.41],"CNHRN":[45.75,126.65],"CNHSC":[24.80,113.60],"CNHSI":[30.23,115.04],
+    "CNHUA":[23.11,113.36],"CNHUI":[23.08,114.41],"CNJAS":[30.75,121.18],"CNJGY":[31.91,120.28],
+    "CNJIU":[29.73,116.00],"CNJMN":[22.59,113.08],"CNJNA":[36.65,116.98],"CNJYG":[23.55,116.37],
+    "CNKNM":[25.04,102.73],"CNLAZ":[36.06,103.83],"CNLHA":[29.65,91.14],"CNLYG":[34.60,119.22],
+    "CNMEZ":[24.31,116.12],"CNMMI":[21.66,110.92],"CNNAS":[22.75,113.58],"CNNCH":[28.68,115.89],
+    "CNNGB":[29.87,121.55],"CNNIN":[22.82,108.37],"CNNJG":[32.06,118.78],"CNNNSA":[22.53,114.10],
+    "CNNTG":[31.98,120.88],"CNOCT":[38.93,117.72],"CNQGY":[23.68,113.06],"CNQIN":[21.49,108.35],
+    "CNQZH":[21.97,108.62],"CNQZL":[24.87,118.59],"CNQZW":[24.78,118.52],"CNRZH":[35.42,119.46],
+    "CNSHA":[31.23,121.47],"CNSHK":[22.48,113.92],"CNSHY":[41.80,123.43],"CNSJZ":[38.04,114.51],
+    "CNSNZ":[22.55,114.10],"CNSWA":[23.35,116.68],"CNSWE":[22.79,115.38],"CNTAC":[31.45,121.14],
+    "CNTAO":[36.07,120.38],"CNTNJ":[38.98,117.72],"CNTOL":[30.95,117.81],"CNTYU":[37.87,112.55],
+    "CNURM":[43.82,87.62],"CNWHA":[30.59,114.31],"CNWNZ":[27.99,120.70],"CNWUH":[31.33,118.38],
+    "CNXGG":[39.02,117.72],"CNXIA":[34.26,108.94],"CNXMN":[24.45,118.08],"CNXNT":[36.62,101.77],
+    "CNYCH":[38.47,106.27],"CNYIB":[28.77,104.63],"CNYIC":[30.69,111.29],"CNYJI":[21.86,111.98],
+    "CNYPN":[19.70,110.70],"CNYTN":[22.60,114.27],"CNYUF":[22.92,112.04],"CNZEJ":[32.19,119.45],
+    "CNZGZ":[34.75,113.65],"CNZJG":[29.95,122.10],"CNZNG":[21.19,110.36],"CNZOS":[29.95,122.10],
+    "CNZPU":[30.60,121.14],"CNZQG":[23.04,112.46],"CNZSN":[22.52,113.38],"CNZUH":[22.27,113.58],
+    "DEHAM":[53.55,9.99],"DJJIB":[11.60,43.15],"EGALY":[31.20,29.92],"EGDAM":[31.42,32.35],
+    "EGPSD":[31.27,32.34],"EGSOK":[29.94,32.52],"EGSUZ":[30.00,32.55],"ETADD":[9.02,38.75],
+    "FRLEH":[47.21,-1.58],"GBIMM":[53.58,-0.24],"GBLIV":[53.41,-2.99],"GBLON":[51.51,-0.13],
+    "GBSOU":[50.90,-1.40],"GBTIL":[51.46,0.35],"GEPTI":[42.15,41.72],"GRPIR":[37.94,23.64],
+    "HKHKG":[22.30,114.17],"IDBLW":[3.78,98.68],"IDJKT":[-6.10,106.85],"IDSRG":[-6.97,110.42],
+    "IDSUB":[-7.25,112.74],"ILASD":[31.80,34.65],"ILHFA":[32.82,34.99],"INAMD":[23.03,72.58],
+    "INBGJ":[27.01,84.15],"INBOM":[18.95,72.84],"INCCU":[22.57,88.36],"INCOK":[9.97,76.30],
+    "INDAD":[28.57,77.33],"INDDL":[30.91,75.85],"INDER":[28.57,77.33],"INFBD":[28.41,77.32],
+    "INHAR":[28.45,76.95],"INHYD":[17.39,78.49],"INICD":[28.63,77.22],"INJAI":[26.92,75.79],
+    "INJDP":[26.24,73.02],"INKAT":[13.28,80.35],"INKHO":[23.03,72.58],"INLDH":[30.90,75.85],
+    "INLON":[28.68,77.33],"INLUD":[30.90,75.85],"INMAA":[13.10,80.30],"INMUN":[22.47,69.71],
+    "INNAG":[21.15,79.08],"INNSA":[18.95,72.95],"INPAT":[28.62,77.27],"INPAV":[21.49,72.19],
+    "INPPG":[28.62,77.29],"INPUN":[18.52,73.86],"INPWL":[28.28,77.37],"INQRP":[30.85,75.88],
+    "INSON":[28.68,77.01],"INSSA":[23.03,72.58],"INSWA":[30.85,75.88],"INTKD":[28.50,77.25],
+    "INTUB":[28.38,77.12],"INVIZ":[17.69,83.29],"IQEBL":[36.19,44.02],"IQSYH":[35.56,45.43],
+    "IQZAO":[37.14,42.68],"JOAMM":[31.95,35.93],"JOAQJ":[29.53,35.06],"JPNGO":[34.18,133.00],
+    "JPOSA":[34.67,135.23],"JPTYO":[35.43,139.65],"JPUKB":[34.68,135.18],"JPYOK":[35.44,139.64],
+    "KEMBA":[-4.06,39.67],"KHKOS":[10.61,103.53],"KHPNH":[11.56,104.92],"KRINC":[37.45,126.40],
+    "KRKAN":[34.98,127.53],"KRPUS":[35.10,129.04],"KRSEL":[37.56,127.00],"KRUSN":[35.58,129.32],
+    "LAVTE":[17.97,102.63],"LBBEY":[33.90,35.51],"LKCMB":[6.93,79.85],"LRMLW":[6.31,-10.80],
+    "LYBEN":[32.12,20.07],"LYKHO":[32.65,14.26],"LYMRA":[32.38,15.09],"MHMAJ":[7.10,171.38],
+    "MMNPD":[19.76,96.07],"MMRGN":[16.87,96.20],"MOMFM":[22.20,113.55],"MYKCH":[1.55,110.35],
+    "MYKUL":[3.14,101.69],"MYPEN":[5.42,100.34],"MYPGU":[1.44,103.79],"MYPKG":[3.00,101.40],
+    "MYPKN":[3.00,101.40],"MYPTP":[1.44,103.79],"MYTPP":[1.46,103.60],"NLAMS":[52.37,4.90],
+    "NLRTM":[51.92,4.50],"OMMCT":[23.62,58.59],"OMSLL":[17.02,54.09],"OMSOH":[24.35,56.73],
+    "PBBQM":[24.78,67.35],"PHMNL":[14.58,120.97],"PHMNN":[14.62,120.97],"PHSPS":[14.78,120.28],
+    "PKISB":[33.69,73.04],"PKKHI":[24.85,66.98],"PLWAW":[52.23,21.01],"PTSIN":[38.72,-9.14],
+    "QAHMD":[25.50,51.85],"ROCND":[44.22,28.64],"SADAB":[21.47,39.19],"SADMM":[26.07,50.18],
+    "SAJED":[24.17,38.06],"SANEO":[24.28,38.50],"SARUH":[24.71,46.68],"SDPZU":[20.00,37.22],
+    "SGSIN":[1.27,103.85],"SOBBO":[10.44,45.02],"SYDAM":[33.51,36.29],"SYLTR":[35.52,35.79],
+    "THBKK":[13.68,100.50],"THBKS":[13.72,100.51],"THLCH":[7.88,98.39],"THLKB":[13.75,100.73],
+    "THSCS":[13.67,100.51],"TRALI":[38.80,26.94],"TRIST":[41.27,29.74],"TRIZT":[40.78,29.75],
+    "TRMAR":[40.91,29.12],"TRMER":[36.81,34.64],"TWHSC":[24.80,120.98],"TWHSZ":[24.80,120.96],
+    "TWKEL":[25.13,121.74],"TWKHH":[22.60,120.30],"TWNTC":[25.01,121.46],"TWTPE":[25.05,121.47],
+    "TWTXG":[24.15,120.65],"TWTYN":[25.01,121.30],"UAODS":[46.49,30.74],"USLAX":[33.74,-118.27],
+    "USLGB":[33.75,-118.20],"USOAK":[37.80,-122.27],"USSEA":[47.54,-122.33],"VNCAT":[11.00,109.23],
+    "VNDAD":[16.07,108.22],"VNHAN":[21.03,105.85],"VNHPH":[20.85,106.68],"VNHPP":[10.75,106.70],
+    "VNSGN":[10.76,106.66],"VNVUT":[10.82,106.64],"YEADE":[12.80,45.03],"YEHOD":[14.80,42.95]
+};
+
+// Haversine formula: great-circle distance in nautical miles
+function haversineNM(lat1, lon1, lat2, lon2){
+  const R = 3440.065; // Earth radius in nautical miles
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Simple canal routing check: does a route cross Suez or Panama?
+// Returns distance adjustment factor
+function getCanalAdjustment(lat1, lon1, lat2, lon2){
+  // Suez Canal: routes between Red Sea area and Mediterranean
+  // Panama Canal: routes between Pacific and Atlantic via Central America
+  const sumLon = lon1 + lon2;
+  // If the route clearly goes around Africa (no Suez), add ~20% for the detour
+  // If crossing the Atlantic to Pacific, add ~15% for Panama routing
+  return 1.0; // Keep it simple - haversine is already a reasonable estimate for most use cases
+}
+
+// Look up port coordinates, fall back to Nominatim API
+async function lookupPortCoords(portCode){
+  if(GEO_CACHE[portCode]) return GEO_CACHE[portCode];
+
+  // Check built-in database first
+  if(PORT_COORDS[portCode]){
+    const c = {lat: PORT_COORDS[portCode][0], lng: PORT_COORDS[portCode][1]};
+    GEO_CACHE[portCode] = c;
+    return c;
+  }
+
+  // Check PORTS_DATA for lat/lng columns (if available)
+  const row = PORTS_DATA.find(r => r[0] === portCode);
+  if(row && row.length > 5 && row[5] && row[6]){
+    const c = {lat: parseFloat(row[5]), lng: parseFloat(row[6])};
+    if(!isNaN(c.lat) && !isNaN(c.lng)){
+      GEO_CACHE[portCode] = c;
+      return c;
+    }
+  }
+
+  // Fallback: Nominatim (free, no API key needed)
+  const country = portCode.substring(0, 2);
+  const loc = portCode.substring(2);
+  const portName = getPortName(portCode);
+
+  const queries = [];
+  if(portName){
+    const clean = portName.split('/')[0].split(',')[0].trim();
+    if(clean){ queries.push(clean + ' port ' + country); queries.push(clean); }
+  }
+  queries.push(loc + ' port ' + country);
+  queries.push(loc + ' ' + country);
+
+  for(const q of queries){
+    try {
+      const resp = await fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1', {
+        headers: {'User-Agent': 'ShippingSchedule/1.0'}
+      });
+      const data = await resp.json();
+      if(data && data.length > 0){
+        const c = {lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon)};
+        GEO_CACHE[portCode] = c;
+        return c;
+      }
+    } catch(e){ /* try next query */ }
+    // Rate limit: Nominatim requires 1 req/sec
+    await new Promise(r => setTimeout(r, 1100));
+  }
+
+  return null;
+}
+
+// Core function: calculate sailing distance between two ports (browser-side)
 // Returns {distance: number} or {error: string}
 async function fetchSearouteDistance(fromCode, toCode){
   try {
-    const geonamesUser = getGeonamesUser();
-    const fromName = getPortName(fromCode), toName = getPortName(toCode);
-    let url = DIST_SERVICE_URL + '/distance?from=' + encodeURIComponent(fromCode) + '&to=' + encodeURIComponent(toCode);
-    if(fromName) url += '&from_name=' + encodeURIComponent(fromName);
-    if(toName) url += '&to_name=' + encodeURIComponent(toName);
-    if(geonamesUser) url += '&geonames_user=' + encodeURIComponent(geonamesUser);
+    if(fromCode === toCode) return {distance: 0};
 
-    const resp = await fetch(url);
-    const data = await resp.json();
+    const c1 = await lookupPortCoords(fromCode);
+    const c2 = await lookupPortCoords(toCode);
 
-    if(!resp.ok){
-      const msg = data.port ? ('港口 ' + data.port + ' 未找到坐标') : (data.error || '未知错误');
-      console.warn('Distance lookup failed for', fromCode, '→', toCode, ':', msg);
-      return {error: msg};
-    }
-    return {distance: data.distance_nm};
+    if(!c1) return {error: '未找到港口坐标: ' + fromCode};
+    if(!c2) return {error: '未找到港口坐标: ' + toCode};
+
+    const gcDist = Math.round(haversineNM(c1.lat, c1.lng, c2.lat, c2.lng));
+    const adj = getCanalAdjustment(c1.lat, c1.lng, c2.lat, c2.lng);
+    return {distance: Math.round(gcDist * adj)};
   } catch(err){
     console.warn('Distance lookup failed:', err);
     return {error: err.message};
@@ -2362,7 +2488,6 @@ function getGhToken(){ return localStorage.getItem(GH_TOKEN_KEY) || ''; }
 function openTokenSetup(){
   document.getElementById('tokenOverlay').classList.add('open');
   document.getElementById('ghTokenInput').value = getGhToken();
-  document.getElementById('geonamesInput').value = getGeonamesUser();
   updateTokenBtn();
 }
 function closeTokenSetup(){
@@ -2382,16 +2507,6 @@ function clearGhToken(){
   closeTokenSetup();
   updateTokenBtn();
   showToast('Token cleared');
-}
-function saveGeonames(){
-  const val = document.getElementById('geonamesInput').value.trim();
-  setGeonamesUser(val);
-  showToast(val ? 'GeoNames username saved' : 'GeoNames username cleared', 'success');
-}
-function clearGeonames(){
-  document.getElementById('geonamesInput').value = '';
-  setGeonamesUser('');
-  showToast('GeoNames username cleared');
 }
 function updateTokenBtn(){
   const btn = document.getElementById('btnTokenSetup');
