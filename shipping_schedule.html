@@ -1187,7 +1187,7 @@ function buildRow(i, p, voyNo, eta, etb, etd, dist, runHrs, speed, vessel, manIn
   return {
     idx: i,
     port: p.code,
-    manIn: i===0 ? 0 : manIn,
+    manIn: manIn,
     wait: wait || 0,
     proformaEta,
     proformaEtd,
