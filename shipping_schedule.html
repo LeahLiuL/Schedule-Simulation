@@ -552,6 +552,14 @@
           <span class="fuel-label">Total Sea Days</span>
           <span class="fuel-val" id="fs-seadays">-- days</span>
         </div>
+        <div class="fuel-row">
+          <span class="fuel-label">Total Man In Days</span>
+          <span class="fuel-val" id="fs-manindays">-- days</span>
+        </div>
+        <div class="fuel-row">
+          <span class="fuel-label">Total Run Days</span>
+          <span class="fuel-val" id="fs-rundays">-- days</span>
+        </div>
         <div class="fuel-row fuel-total">
           <span class="fuel-label">Est. LSFO</span>
           <span class="fuel-val" id="fs-lsfo">-- mt</span>
@@ -1069,13 +1077,46 @@ function updateFuelEstimate(){
     totalDist += getDistance(selectedPorts[i].code, selectedPorts[i+1].code);
   }
   const seaDays = speed>0 ? totalDist/(speed*24) : 0;
-  const lsfo = +(seaDays*currentVessel.lsfo).toFixed(1);
-  const mgo  = +(seaDays*currentVessel.mgo).toFixed(1);
 
-  document.getElementById('fs-dist').textContent    = totalDist ? totalDist.toFixed(0)+' nm' : '-- nm';
-  document.getElementById('fs-seadays').textContent = seaDays   ? seaDays.toFixed(2)+' days' : '-- days';
-  document.getElementById('fs-lsfo').textContent    = lsfo+' mt';
-  document.getElementById('fs-mgo').textContent     = mgo+' mt';
+  // Man In: each port has DEFAULT_MAN_IN hours, including first port
+  const manInHours = selectedPorts.length * DEFAULT_MAN_IN;
+  const manInDays = manInHours / 24;
+
+  // Total run = sea + man in
+  const runDays = seaDays + manInDays;
+
+  const lsfo = +(runDays*currentVessel.lsfo).toFixed(1);
+  const mgo  = +(runDays*currentVessel.mgo).toFixed(1);
+
+  document.getElementById('fs-dist').textContent      = totalDist ? totalDist.toFixed(0)+' nm' : '-- nm';
+  document.getElementById('fs-seadays').textContent   = seaDays   ? seaDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-manindays').textContent = manInDays ? manInDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-rundays').textContent   = runDays   ? runDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-lsfo').textContent      = lsfo+' mt';
+  document.getElementById('fs-mgo').textContent       = mgo+' mt';
+}
+
+// Update fuel summary from actual schedule rows (after user edits)
+function updateFuelFromSchedule(){
+  if(!scheduleRows.length) return;
+  let totalDist=0, totalRunHrs=0, totalManInHrs=0;
+  for(const row of scheduleRows){
+    totalDist += row.dist || 0;
+    totalRunHrs += row.runHrs || 0;
+    totalManInHrs += row.manIn || 0;
+  }
+  const seaDays = totalRunHrs > 0 ? (totalRunHrs - totalManInHrs) / 24 : 0;
+  const manInDays = totalManInHrs / 24;
+  const runDays = totalRunHrs / 24;
+  const lsfo = +(runDays * currentVessel.lsfo).toFixed(1);
+  const mgo  = +(runDays * currentVessel.mgo).toFixed(1);
+
+  document.getElementById('fs-dist').textContent      = totalDist ? totalDist.toFixed(0)+' nm' : '-- nm';
+  document.getElementById('fs-seadays').textContent   = seaDays   ? seaDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-manindays').textContent = manInDays ? manInDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-rundays').textContent   = runDays   ? runDays.toFixed(2)+' days' : '-- days';
+  document.getElementById('fs-lsfo').textContent      = lsfo+' mt';
+  document.getElementById('fs-mgo').textContent       = mgo+' mt';
 }
 
 // ==================== RUN SCHEDULE ====================
@@ -1289,6 +1330,11 @@ function renderTable(){
 
   container.innerHTML='';
   container.appendChild(tbl);
+
+  // Update fuel summary from actual schedule rows (reflects manual edits)
+  if(scheduleRows.length > 0){
+    updateFuelFromSchedule();
+  }
 }
 
 function findNextEditable(tr, curColIdx){
