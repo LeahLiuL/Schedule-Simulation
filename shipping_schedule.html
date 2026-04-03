@@ -986,6 +986,8 @@ function estimateDistance(a,b){
   return Math.abs(ra-rb)*450+300+Math.random()*100;
 }
 
+const DEFAULT_MAN_IN = 3; // hours
+
 // Build port lookup
 const PORT_MAP = {};
 PORTS_DATA.forEach(([code,en,cn,manIn,portstay])=>{
@@ -1105,7 +1107,6 @@ let currentVessel = {
   mgo: 2.0
 };
 
-const DEFAULT_MAN_IN = 3; // hours
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', ()=>{
