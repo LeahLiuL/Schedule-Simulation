@@ -132,17 +132,14 @@
     font-size: .7rem;
   }
   .combobox-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    position: fixed;
     max-height: 200px;
     overflow-y: auto;
     background: #fff;
     border: 1px solid var(--border);
     border-top: none;
     border-radius: 0 0 6px 6px;
-    z-index: 50;
+    z-index: 9999;
     display: none;
     box-shadow: 0 4px 12px rgba(0,0,0,.15);
   }
@@ -1275,11 +1272,19 @@ function initCombobox(inputId, dropdownId, items, onSelect) {
   let activeIdx = -1;
   let filteredItems = [...items];
 
+  function positionDropdown() {
+    const rect = input.getBoundingClientRect();
+    dropdown.style.top = rect.bottom + 'px';
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.width = rect.width + 'px';
+  }
+
   function showDropdown(list) {
     filteredItems = list;
     activeIdx = -1;
     dropdown.innerHTML = '';
     if(list.length === 0){ dropdown.classList.remove('show'); return; }
+    positionDropdown();
     list.forEach((item, idx) => {
       const div = document.createElement('div');
       div.className = 'combobox-option';
@@ -1344,6 +1349,11 @@ function initCombobox(inputId, dropdownId, items, onSelect) {
       dropdown.classList.remove('show');
     }
   });
+
+  // Reposition on scroll/resize
+  const reposition = () => { if(dropdown.classList.contains('show')) positionDropdown(); };
+  input.closest('.left-panel, .port-add-row, .daily-left')?.addEventListener('scroll', reposition);
+  window.addEventListener('resize', reposition);
 }
 
 // ==================== STATE ====================
