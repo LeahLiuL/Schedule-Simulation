@@ -1450,8 +1450,20 @@ function cascadeRecalc(changedIdx, changedKey){
         const nextRow = scheduleRows[changedIdx+1];
         const nextManIn = nextRow ? (nextRow.manIn || DEFAULT_MAN_IN) : 0;
         row.runHrs = +(seaRun + nextManIn).toFixed(2);
-        // Note: this doesn't change ETA/ETB/ETD on this row — those stay
-        // The run time change will affect the NEXT row's ETA via prev.ETD
+        // Recalc fuel for this row
+        row.fuelSea = +(row.runHrs * lsfoPerHr).toFixed(2);
+        // Note: ETA/ETB/ETD on this row stay unchanged
+        // The run time change will affect the NEXT row's ETA via prev.ETD + prev.runHrs
+      }
+      // Case 8: Run hours changed -> recalc speed and fuel
+      else if(changedKey === 'runHrs'){
+        // Derive speed from runHrs = dist/speed + nextManIn
+        const nextRow = scheduleRows[changedIdx+1];
+        const nextManIn = nextRow ? (nextRow.manIn || DEFAULT_MAN_IN) : 0;
+        const seaRun = row.runHrs - nextManIn;
+        row.speed = seaRun > 0 ? +(row.dist / seaRun).toFixed(1) : 0;
+        // Recalc fuel for this row
+        row.fuelSea = +(row.runHrs * lsfoPerHr).toFixed(2);
       }
     }
 
