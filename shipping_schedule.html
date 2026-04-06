@@ -935,11 +935,26 @@
   <!-- Left: Fleet list -->
   <div class="daily-left">
     <div class="daily-filter">
-      <div class="daily-filter-row">
-        <select id="dailyLaneFilter" onchange="renderDailyFleet()">
+      <div class="daily-filter-row" style="gap:6px;align-items:center;">
+        <div class="combobox-wrap" id="dailyVesselCombobox" style="flex:1;min-width:0;">
+          <input type="text" id="dailyVesselInput" placeholder="选择船名..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
+          <span class="combobox-arrow">&#9662;</span>
+          <div class="combobox-dropdown" id="dailyVesselDropdown"></div>
+        </div>
+        <div class="combobox-wrap" id="dailyLaneCombobox" style="flex:1;min-width:0;">
+          <input type="text" id="dailyLaneInput" placeholder="选择航线..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
+          <span class="combobox-arrow">&#9662;</span>
+          <div class="combobox-dropdown" id="dailyLaneDropdown"></div>
+        </div>
+        <select id="dailyVoyFilter" style="flex:1;min-width:0;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;">
+          <option value="">全部航次</option>
+        </select>
+      </div>
+      <div class="daily-filter-row" style="gap:6px;align-items:center;">
+        <input type="text" id="dailySearch" placeholder="Search vessel..." oninput="renderDailyFleet()" style="flex:1;min-width:0;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
+        <select id="dailyLaneFilter" onchange="renderDailyFleet()" style="flex:1;min-width:0;">
           <option value="">All Lanes</option>
         </select>
-        <input type="text" id="dailySearch" placeholder="Search vessel..." oninput="renderDailyFleet()"/>
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
         <label style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:3px;">
@@ -988,6 +1003,7 @@
       <button class="dm-tab active" data-tab="ports" onclick="switchDmTab('ports')">Ports</button>
       <button class="dm-tab" data-tab="vessels" onclick="switchDmTab('vessels')">Vessels</button>
       <button class="dm-tab" data-tab="distances" onclick="switchDmTab('distances')">Distances</button>
+      <button class="dm-tab" data-tab="lanes" onclick="switchDmTab('lanes')">Lanes</button>
     </div>
 
     <!-- PORTS TAB -->
@@ -1068,6 +1084,29 @@
             </tr>
           </thead>
           <tbody id="dmDistBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LANES TAB -->
+    <div class="dm-tab-content" id="dmTabLanes">
+      <div class="dm-toolbar">
+        <input class="dm-search" id="dmLaneSearch" placeholder="Search lane code or name..." oninput="renderDmLanes()"/>
+        <button class="dm-btn dm-btn-primary" onclick="addDmLane()">+ Add Lane</button>
+        <button class="dm-btn dm-btn-export" onclick="exportDmCSV('lanes')">📥 Export JSON</button>
+        <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('lanes')">⬆ Commit</button>
+      </div>
+      <div class="dm-table-wrap">
+        <table class="dm-table" id="dmLaneTable">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Lane Code</th>
+              <th>Lane Name</th>
+              <th style="width:100px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dmLaneBody"></tbody>
         </table>
       </div>
     </div>
@@ -2712,6 +2751,7 @@ function openDataManager(){
   renderDmPorts();
   renderDmVessels();
   renderDmDists();
+  renderDmLanes();
   updateDmStatus();
   updateTokenBtn();
   setCommitStatus('');
@@ -2728,8 +2768,8 @@ function switchDmTab(tab){
 }
 
 function updateDmStatus(){
-  const np=PORTS_DATA.length, nv=VESSELS_DATA.length, nd=DIST_RAW.length;
-  document.getElementById('dmStatus').textContent = np+' ports | '+nv+' vessel tiers | '+nd+' distances';
+  const np=PORTS_DATA.length, nv=VESSELS_DATA.length, nd=DIST_RAW.length, nl=LANES_DATA.length;
+  document.getElementById('dmStatus').textContent = np+' ports | '+nv+' vessels | '+nd+' distances | '+nl+' lanes';
 }
 
 // ========== PORTS ==========
@@ -2922,6 +2962,60 @@ function addDmDist(){
   showToast('New distance added – edit the row');
 }
 function filterDmDists(){ renderDmDists(document.getElementById('dmDistSearch').value); }
+
+// ==================== LANES MANAGEMENT ====================
+function renderDmLanes(){
+  const search = (document.getElementById('dmLaneSearch')?.value || '').toLowerCase().trim();
+  const tbody = document.getElementById('dmLaneBody');
+  let html = '';
+  LANES_DATA.forEach((l, i) => {
+    if(search && !l.code.toLowerCase().includes(search) && !l.name.toLowerCase().includes(search)) return;
+    html += `<tr>
+      <td style="color:var(--muted);font-size:.72rem;">${i+1}</td>
+      <td><input type="text" value="${esc(l.code)}" onchange="updateDmLane(${i},'code',this.value)" style="width:80px;font-weight:600;text-transform:uppercase;"/></td>
+      <td><input type="text" value="${esc(l.name)}" onchange="updateDmLane(${i},'name',this.value)" style="width:100%;"/></td>
+      <td><button class="dm-btn dm-btn-danger" onclick="deleteDmLane(${i})" title="Delete">✕</button></td>
+    </tr>`;
+  });
+  tbody.innerHTML = html || '<tr><td colspan="4" class="dm-empty">No lanes</td></tr>';
+  updateDmStatus();
+}
+
+function addDmLane(){
+  LANES_DATA.push({ code: '', name: '' });
+  document.getElementById('dmLaneSearch').value = '';
+  renderDmLanes();
+  requestAnimationFrame(() => {
+    const tbody = document.getElementById('dmLaneBody');
+    const firstRow = tbody?.lastElementChild;
+    if(firstRow) {
+      firstRow.classList.add('dm-row-new');
+      firstRow.scrollIntoView({behavior:'smooth', block:'nearest'});
+      firstRow.querySelector('input')?.focus();
+    }
+  });
+  showToast('New lane added – fill in code and name');
+}
+
+function updateDmLane(i, field, value){
+  if(!LANES_DATA[i]) return;
+  LANES_DATA[i][field] = field === 'code' ? value.toUpperCase().trim() : value.trim();
+  // Refresh daily page dropdowns
+  populateLaneFilter();
+  if(dailyComboboxInited){
+    dailySelectedLaneCode = '';
+    populateDailyVoyFilter();
+    renderDailyFleet();
+  }
+}
+
+function deleteDmLane(i){
+  if(!confirm('Delete lane ' + LANES_DATA[i].code + ' – ' + LANES_DATA[i].name + '?')) return;
+  LANES_DATA.splice(i, 1);
+  renderDmLanes();
+  populateLaneFilter();
+  showToast('Lane deleted');
+}
 
 // ========== DIAODUBAO LINK ==========
 // 调度宝 URL base - opens diaodubao for manual distance lookup
@@ -3204,12 +3298,15 @@ function exportDmCSV(type){
     csv = 'vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day\n';
     VESSELS_DATA.forEach(v=>{ csv += [v.code,v.name,v.speed,v.lsfo,v.hsfo,v.mgo,v.ps_lsfo||0,v.ps_mgo||0].join(',')+'\n'; });
     filename = 'vessels.csv';
+  } else if(type==='lanes'){
+    csv = JSON.stringify(LANES_DATA, null, 2);
+    filename = 'lanes.json';
   } else {
     csv = 'from_port,to_port,distance_nm,source\n';
     DIST_RAW.forEach(r=>{ csv += r.join(',')+'\n'; });
     filename = 'distances.csv';
   }
-  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const blob = new Blob([csv],{type: type==='lanes'?'application/json':'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();
@@ -3264,6 +3361,9 @@ function buildCSV(type){
   } else if(type==='vessels'){
     csv = 'vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day\n';
     VESSELS_DATA.forEach(v=>{ csv += [v.code,v.name,v.speed,v.lsfo,v.hsfo,v.mgo,v.ps_lsfo||0,v.ps_mgo||0].join(',')+'\n'; });
+  } else if(type==='lanes'){
+    // lanes is JSON, not CSV
+    return JSON.stringify(LANES_DATA, null, 2);
   } else {
     csv = 'from_port,to_port,distance_nm,source\n';
     DIST_RAW.forEach(r=>{ csv += r.join(',')+'\n'; });
@@ -3272,7 +3372,8 @@ function buildCSV(type){
 }
 
 function csvFilename(type){
-  return {ports:'ports.csv', vessels:'vessels.csv', distances:'distances.csv'}[type];
+  const map = {ports:'ports.csv', vessels:'vessels.csv', distances:'distances.csv', lanes:'lanes.json'};
+  return map[type];
 }
 
 // Set commit status text
@@ -3372,7 +3473,7 @@ async function commitAllToGitHub(){
   }
 
   const btnAll = document.getElementById('btnCommitAll');
-  const types = ['ports', 'vessels', 'distances'];
+  const types = ['ports', 'vessels', 'distances', 'lanes'];
   let ok = 0, fail = 0;
 
   btnAll.classList.add('loading');
@@ -3465,7 +3566,72 @@ async function initDailyPage(){
   if(!FLEET_DATA.vessels.length || FLEET_DATA.vessels.length === 0){
     await loadFleetSchedule();
   }
+  initDailyComboboxes();
   renderDailyFleet();
+}
+
+let dailyComboboxInited = false;
+function initDailyComboboxes(){
+  if(dailyComboboxInited) return;
+  dailyComboboxInited = true;
+
+  // Vessel combobox
+  const uniqueVessels = getUniqueVessels();
+  const vesselItems = uniqueVessels.map(v => ({
+    code: v.code,
+    search: v.code + ' ' + v.name,
+    display: `${v.code} – ${v.name}`,
+    html: `<span class="opt-code">${v.code}</span> ${v.name}`
+  }));
+  initCombobox('dailyVesselInput', 'dailyVesselDropdown', vesselItems, (item) => {
+    dailySelectedVesselCode = item.code;
+    populateDailyVoyFilter();
+    renderDailyFleet();
+  });
+
+  // Lane combobox
+  const laneItems = LANES_DATA.map(l => ({
+    code: l.code,
+    search: l.code + ' ' + l.name,
+    display: `${l.code} – ${l.name}`,
+    html: `<span class="opt-code">${l.code}</span> ${l.name}`
+  }));
+  initCombobox('dailyLaneInput', 'dailyLaneDropdown', laneItems, (item) => {
+    dailySelectedLaneCode = item.code;
+    populateDailyVoyFilter();
+    renderDailyFleet();
+  });
+
+  // Voyage filter change
+  document.getElementById('dailyVoyFilter').addEventListener('change', () => {
+    dailySelectedVoyNo = document.getElementById('dailyVoyFilter').value;
+    renderDailyFleet();
+  });
+}
+
+let dailySelectedVesselCode = '';
+let dailySelectedLaneCode = '';
+let dailySelectedVoyNo = '';
+
+function populateDailyVoyFilter(){
+  const sel = document.getElementById('dailyVoyFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部航次</option>';
+  // Gather all voyage numbers for the selected vessel (and optionally lane)
+  let voyNos = new Set();
+  FLEET_DATA.vessels.forEach(v => {
+    if(dailySelectedVesselCode && v.code !== dailySelectedVesselCode) return;
+    (v.voyages || []).forEach(voy => {
+      if(dailySelectedLaneCode && voy.lane !== dailySelectedLaneCode) return;
+      if(voy.voyNo) voyNos.add(voy.voyNo);
+    });
+  });
+  [...voyNos].sort().forEach(vn => {
+    const opt = document.createElement('option');
+    opt.value = vn; opt.textContent = vn;
+    sel.appendChild(opt);
+  });
+  sel.value = cur;
 }
 
 async function loadLanesData(){
@@ -3542,10 +3708,26 @@ function renderDailyFleet(){
 
   let vessels = getUniqueVesselList();
 
-  // Filter by lane
-  if(laneFilter){
+  // Filter by combobox vessel selection
+  if(dailySelectedVesselCode){
+    vessels = vessels.filter(v => v.code === dailySelectedVesselCode);
+  }
+  // Filter by combobox lane selection
+  if(dailySelectedLaneCode){
+    vessels = vessels.filter(v =>
+      v.voyages.some(voy => voy.lane === dailySelectedLaneCode)
+    );
+  }
+  // Filter by legacy lane dropdown (if used)
+  if(!dailySelectedLaneCode && laneFilter){
     vessels = vessels.filter(v =>
       v.voyages.some(voy => voy.lane === laneFilter)
+    );
+  }
+  // Filter by voyage number
+  if(dailySelectedVoyNo){
+    vessels = vessels.filter(v =>
+      v.voyages.some(voy => voy.voyNo === dailySelectedVoyNo)
     );
   }
   // Filter by search
@@ -3566,39 +3748,51 @@ function renderDailyFleet(){
 
   let html = '';
   vessels.forEach(v => {
-    // Show current voyage (first non-completed, or latest)
-    let currentVoy = v.voyages.find(voy => voy.status !== 'completed') || v.voyages[0];
-    if(!currentVoy) return;
+    // Filter voyages by lane/voyNo
+    let voyages = v.voyages;
+    if(dailySelectedLaneCode){
+      voyages = voyages.filter(voy => voy.lane === dailySelectedLaneCode);
+    }
+    if(dailySelectedVoyNo){
+      voyages = voyages.filter(voy => voy.voyNo === dailySelectedVoyNo);
+    }
+    if(laneFilter && !dailySelectedLaneCode){
+      voyages = voyages.filter(voy => voy.lane === laneFilter);
+    }
 
-    const isSelected = dailySelectedVessel && dailySelectedVessel.code === v.code;
-    const isChecked = dailyCheckedVessels.has(v.code + '|' + (currentVoy._vIdx));
+    // Show one card per voyage (grouped by vessel)
+    voyages.forEach(voy => {
+      const isSelected = dailySelectedVessel && dailySelectedVessel.code === v.code && dailySelectedVessel.voyIdx === voy._vIdx;
+      const isChecked = dailyCheckedVessels.has(v.code + '|' + voy._vIdx);
 
-    const ports = currentVoy.ports || [];
-    const summary = ports.length > 0
-      ? ports.map(p => { const pp = PORT_MAP[p.code]; return (pp?pp.cn:pp?pp.en:p.code); }).join(' → ')
-      : 'No ports';
+      const ports = voy.ports || [];
+      const summary = ports.length > 0
+        ? ports.map(p => { const pp = PORT_MAP[p.code]; return (pp?pp.cn:pp?pp.en:p.code); }).join(' → ')
+        : 'No ports';
 
-    const summaryShort = summary.length > 50 ? summary.slice(0,50) + '…' : summary;
-    const statusCls = currentVoy.status === 'completed' ? 'completed' : 'current';
-    const statusText = currentVoy.status === 'completed' ? 'Completed' : 'Active';
+      const summaryShort = summary.length > 50 ? summary.slice(0,50) + '…' : summary;
+      const statusCls = voy.status === 'completed' ? 'completed' : 'current';
+      const statusText = voy.status === 'completed' ? 'Completed' : 'Active';
 
-    html += `<div class="daily-vessel-card${isSelected?' selected':''}" onclick="selectDailyVessel('${v.code}',${currentVoy._vIdx})">
-      <div class="vc-header">
-        <div>
-          <span class="vc-code">${esc(v.code)}</span>
-          <span style="font-size:.78rem;color:var(--muted);margin-left:6px;">${esc(v.name)}</span>
+      html += `<div class="daily-vessel-card${isSelected?' selected':''}" onclick="selectDailyVessel('${v.code}',${voy._vIdx})">
+        <div class="vc-header">
+          <div>
+            <span class="vc-code">${esc(v.code)}</span>
+            <span style="font-size:.78rem;color:var(--muted);margin-left:6px;">${esc(v.name)}</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="checkbox" ${isChecked?'checked':''} onclick="event.stopPropagation();toggleDailyCheck('${v.code}',${voy._vIdx},this.checked)" title="Select for export"/>
+            <span class="vc-lane">${esc(voy.lane||'—')}</span>
+          </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input type="checkbox" ${isChecked?'checked':''} onclick="event.stopPropagation();toggleDailyCheck('${v.code}',${currentVoy._vIdx},this.checked)" title="Select for export"/>
-          <span class="vc-lane">${esc(currentVoy.lane||'—')}</span>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px;">
+          <span style="font-size:.75rem;font-weight:600;color:var(--primary);">${esc(voy.voyNo||'—')}</span>
+          <span class="vc-status ${statusCls}">${statusText}</span>
         </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px;">
-        <span style="font-size:.75rem;font-weight:600;color:var(--primary);">${esc(currentVoy.voyNo||'—')}</span>
-        <span class="vc-status ${statusCls}">${statusText}</span>
-      </div>
-      <div class="vc-summary">${esc(summaryShort)}</div>
-    </div>`;
+        <div class="vc-summary">${esc(summaryShort)}</div>
+      </div>`;
+    });
+  });
   });
   container.innerHTML = html;
 }
