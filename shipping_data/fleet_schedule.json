@@ -102,6 +102,76 @@
           "modifiedBy": "anonymous"
         }
       ]
+    },
+    {
+      "code": "CUBK",
+      "name": "CUL BANGKOK",
+      "voyages": [
+        {
+          "voyNo": "2601W",
+          "lane": "REX",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-04-09T00:00:00.000Z",
+              "etb": "2026-04-09T03:00:00.000Z",
+              "etd": "2026-04-10T03:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 19
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-04-10T08:00:00.000Z",
+              "etb": "2026-04-10T11:00:00.000Z",
+              "etd": "2026-04-11T11:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 6447
+            },
+            {
+              "code": "EGSOK",
+              "name": "SOKHNA",
+              "eta": "2026-05-04T00:00:00.000Z",
+              "etb": "2026-05-04T03:00:00.000Z",
+              "etd": "2026-05-05T03:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 621
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-05-07T10:00:00.000Z",
+              "etb": "2026-05-07T13:00:00.000Z",
+              "etd": "2026-05-08T13:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 5853
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-29T00:00:00.000Z",
+              "etb": "2026-05-29T03:00:00.000Z",
+              "etd": "2026-05-30T03:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 0
+            }
+          ],
+          "lastModified": "2026-04-08T09:25:52.531Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
     }
   ],
   "lastSync": "2026-04-08T08:56:18.813Z"
