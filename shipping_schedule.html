@@ -708,6 +708,12 @@
   }
   .vc-status.current { background: #d4edda; color: #155724; }
   .vc-status.completed { background: #e2e3e5; color: #383d41; }
+  .daily-vessel-card.past { opacity: .55; }
+  .daily-vessel-card.past:hover { opacity: .75; }
+  .daily-vessel-card.past.selected { background: #f0f0f0; border-left-color: #aaa; }
+  .daily-vessel-card.past .vc-code { color: #888; }
+  .daily-past-row { color: #999 !important; background: #fafafa; }
+  .daily-past-row input { color: #999; background: #fafafa; }
 
   /* Daily Right Panel */
   .daily-right {
@@ -4762,8 +4768,10 @@ function renderDailyFleet(){
       const summaryShort = summary.length > 50 ? summary.slice(0,50) + '…' : summary;
       const statusCls = voy.status === 'completed' ? 'completed' : 'current';
       const statusText = voy.status === 'completed' ? 'Completed' : 'Active';
+      const lastPort = ports.length > 0 ? ports[ports.length - 1] : null;
+      const isPast = lastPort && lastPort.etd && new Date(lastPort.etd) < new Date();
 
-      html += `<div class="daily-vessel-card${isSelected?' selected':''}" onclick="selectDailyVessel('${v.code}',${voy._vIdx})">
+      html += `<div class="daily-vessel-card${isSelected?' selected':''}${isPast?' past':''}" onclick="selectDailyVessel('${v.code}',${voy._vIdx})">
         <div class="vc-header">
           <div>
             <span class="vc-code">${esc(v.code)}</span>
@@ -4948,9 +4956,10 @@ function renderDailyDetail(){
         const rowSpeed = p.speed != null ? p.speed : voySpeed;
         const seaHrs = (rowSpeed > 0 && p.dist > 0) ? (p.dist / rowSpeed) : 0;
         const portVoyNo = p.voyNo || defaultVoyNo;
+        const isPast = p.etd && new Date(p.etd) < new Date();
 
         if(isEditable){
-          portsHtml += '<tr draggable="true" ondragstart="onPortDragStart(event,' + i + ')" ondragover="onPortDragOver(event)" ondrop="onPortDrop(event,\'' + vessel.code + '\',' + voyIdx + ',' + i + ')" ondragend="onPortDragEnd(event)" style="cursor:grab;">';
+          portsHtml += '<tr draggable="true" ondragstart="onPortDragStart(event,' + i + ')" ondragover="onPortDragOver(event)" ondrop="onPortDrop(event,\'' + vessel.code + '\',' + voyIdx + ',' + i + ')" ondragend="onPortDragEnd(event)" style="cursor:grab;" class="' + (isPast ? 'daily-past-row' : '') + '">';
           DAILY_COLUMNS.forEach(function(c){
             if(isDailyColHidden(c.key)) return;
             switch(c.key){
@@ -4973,7 +4982,7 @@ function renderDailyDetail(){
           portsHtml += '</tr>';
         } else {
           // Read-only rows for other voyages in the group
-          portsHtml += '<tr style="opacity:.88;">';
+          portsHtml += '<tr style="opacity:.88;" class="' + (isPast ? 'daily-past-row' : '') + '">';
           DAILY_COLUMNS.forEach(function(c){
             if(isDailyColHidden(c.key)) return;
             switch(c.key){
@@ -5018,7 +5027,8 @@ function renderDailyDetail(){
         const rowSpeed = p.speed != null ? p.speed : voySpeed;
         const seaHrs = (rowSpeed > 0 && p.dist > 0) ? (p.dist / rowSpeed) : 0;
         const portVoyNo = p.voyNo || defaultVoyNo;
-        portsHtml += '<tr draggable="true" ondragstart="onPortDragStart(event,' + i + ')" ondragover="onPortDragOver(event)" ondrop="onPortDrop(event,\'' + vessel.code + '\',' + curIdx + ',' + i + ')" ondragend="onPortDragEnd(event)" style="cursor:grab;">';
+        const isPast = p.etd && new Date(p.etd) < new Date();
+        portsHtml += '<tr draggable="true" ondragstart="onPortDragStart(event,' + i + ')" ondragover="onPortDragOver(event)" ondrop="onPortDrop(event,\'' + vessel.code + '\',' + curIdx + ',' + i + ')" ondragend="onPortDragEnd(event)" style="cursor:grab;" class="' + (isPast ? 'daily-past-row' : '') + '">';
         DAILY_COLUMNS.forEach(function(c){
           if(isDailyColHidden(c.key)) return;
           switch(c.key){
