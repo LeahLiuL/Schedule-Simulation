@@ -1966,10 +1966,10 @@ function parseCSV(text){
 
 // Fetch CSV: GitHub (source of truth) → localStorage cache (post-commit) → local file → bundled data
 async function fetchCSV(filename){
-  // 1. GitHub is the source of truth — always try it first (no-cache via timestamp)
+  // 1. GitHub is the source of truth — always try it first (no-cache via timestamp + cache: no-store)
   try {
     const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
-    const resp = await fetch(githubUrl);
+    const resp = await fetch(githubUrl, { cache: 'no-store' });
     if(resp.ok){
       const text = await resp.text();
       // Cache to localStorage so offline/commit flows stay in sync
@@ -3733,7 +3733,7 @@ function setCommitStatus(msg){
 async function reloadCommittedData(type){
   const filename = csvFilename(type);
   const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
-  const resp = await fetch(githubUrl);
+  const resp = await fetch(githubUrl, { cache: 'no-store' });
   if(!resp.ok) throw new Error('Failed to fetch ' + filename);
   const rows = parseCSV(await resp.text());
 
@@ -4133,7 +4133,7 @@ async function loadLanesData(){
   // GitHub first (source of truth)
   try {
     const url = CSV_GITHUB + '/lanes.json?t=' + Date.now();
-    const resp = await fetch(url);
+    const resp = await fetch(url, { cache: 'no-store' });
     if(resp.ok){ LANES_DATA = await resp.json(); populateLaneFilter(); return; }
   } catch(e) {}
   // Fallback to local file
@@ -4157,7 +4157,7 @@ async function loadFleetSchedule(){
   try {
     // GitHub first (source of truth)
     try {
-      const resp = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now());
+      const resp = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
       if(resp.ok){
         const remoteData = await resp.json();
         if(remoteData && remoteData.vessels && remoteData.vessels.length > 0){
