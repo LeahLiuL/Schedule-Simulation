@@ -2,9 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Voyage Schedule Simulator</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="searoute-browser.js"></script>
 <style>
   :root {
@@ -142,6 +147,8 @@
     z-index: 99999;
     display: none;
     box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    pointer-events: auto;
+    touch-action: manipulation;
   }
   .combobox-dropdown.show { display: block; }
   .combobox-option {
@@ -149,6 +156,9 @@
     font-size: .82rem;
     cursor: pointer;
     transition: background .1s;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
   }
   .combobox-option:hover, .combobox-option.active {
     background: #e8f0fe;
@@ -318,6 +328,14 @@
   .dm-btn-danger { background:#dc3545; color:#fff; }
   .dm-btn-sm { padding:4px 10px; font-size:.75rem; }
   .dm-btn-export { background:#6c757d; color:#fff; }
+  .dm-btn-import { background:#198754; color:#fff; }
+  .dm-btn-import:hover { background:#157347; }
+  .dm-btn-undo { background:#6c757d; color:#fff; }
+  .dm-btn-undo:hover:not(:disabled) { background:#5a6268; }
+  .dm-btn-undo:disabled { opacity:.4; cursor:default; }
+  .dm-btn-redo { background:#6c757d; color:#fff; }
+  .dm-btn-redo:hover:not(:disabled) { background:#5a6268; }
+  .dm-btn-redo:disabled { opacity:.4; cursor:default; }
   .dm-btn-commit { background:#0d6efd; color:#fff; font-weight:700; }
   @keyframes dmFlashNew {
     0% { background:#fff3cd; }
@@ -354,6 +372,40 @@
   .dm-body { flex:1; overflow:auto; padding:0; }
   .dm-tab-content { display:none; height:100%; }
   .dm-tab-content.active { display:flex; flex-direction:column; }
+
+  /* ===== NEW VOYAGE MODAL ===== */
+  .nv-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:700;
+    justify-content:center; align-items:center;
+  }
+  .nv-overlay.open { display:flex; }
+  .nv-modal {
+    background:#fff; border-radius:14px; width:520px; max-width:94vw;
+    box-shadow:0 20px 60px rgba(0,0,0,.3); font-size:.88rem; overflow:hidden;
+  }
+  .nv-header {
+    background:var(--primary); color:#fff; padding:16px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .nv-header h3 { margin:0; font-size:1rem; font-weight:700; }
+  .nv-header button { background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer; opacity:.8; line-height:1; }
+  .nv-header button:hover { opacity:1; }
+  .nv-body { padding:20px 24px; }
+  .nv-field { margin-bottom:14px; }
+  .nv-field label { display:block; font-size:.78rem; font-weight:600; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.04em; }
+  .nv-field input, .nv-field select {
+    width:100%; box-sizing:border-box; padding:8px 12px;
+    border:1px solid var(--border); border-radius:7px; font-size:.88rem;
+    outline:none; transition:border-color .15s;
+  }
+  .nv-field input:focus, .nv-field select:focus { border-color:var(--primary); }
+  .nv-field .nv-hint { font-size:.73rem; color:var(--muted); margin-top:3px; }
+  .nv-field .nv-vessel-combo { position:relative; }
+  .nv-footer {
+    padding:14px 24px; border-top:1px solid var(--border);
+    display:flex; justify-content:flex-end; gap:8px; background:#fafafa;
+  }
+  .nv-footer .dm-btn { min-width:80px; }
   .dm-table-wrap { flex:1; overflow:auto; }
   .dm-table {
     width:100%; border-collapse:collapse; font-size:.8rem;
@@ -601,9 +653,22 @@
     width: 380px; min-width: 320px; background: var(--card);
     border-right: 1px solid var(--border); display: flex; flex-direction: column;
   }
+  .daily-quick-search {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .daily-quick-search input {
+    width: 100%; box-sizing: border-box; padding: 7px 12px 7px 34px;
+    border: 1px solid var(--border); border-radius: 6px; font-size: .82rem;
+    background: var(--row-alt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") 10px center/16px no-repeat;
+    outline: none; transition: border-color .15s;
+  }
+  .daily-quick-search input:focus {
+    border-color: var(--primary); background-color: #fff;
+  }
   .daily-filter {
-    padding: 14px 16px; border-bottom: 1px solid var(--border);
-    display: flex; flex-direction: column; gap: 8px;
+    padding: 8px 16px; border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 6px;
   }
   .daily-filter-row {
     display: flex; gap: 8px; align-items: center;
@@ -680,6 +745,8 @@
   }
   .daily-schedule-table tr:nth-child(even) { background: var(--row-alt); }
   .daily-schedule-table tr:hover { background: #e8f0fe; }
+  .daily-schedule-table tr[draggable="true"] { transition: opacity .15s; }
+  .daily-schedule-table tr.dragging { opacity: 0.4 !important; }
   .daily-schedule-table .port-code { font-weight: 700; color: var(--primary); }
   .daily-schedule-table input[type="datetime-local"] {
     padding: 3px 5px; border: 1px solid var(--border); border-radius: 3px;
@@ -701,6 +768,125 @@
     flex-direction: column; gap: 8px;
   }
   .daily-empty .icon { font-size: 2rem; opacity: .5; }
+  .daily-add-port-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 0 4px; margin-top: 4px;
+  }
+  .daily-add-port-bar input {
+    flex: 1; padding: 6px 30px 6px 10px;
+    border: 1px solid var(--border); border-radius: 6px;
+    font-size: .83rem; outline: none;
+  }
+  .daily-add-port-bar input:focus { border-color: var(--primary); }
+  .daily-empty-ports {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 40px 20px; text-align: center;
+  }
+
+  /* ===== LINKED VOYAGES MODAL ===== */
+  .lv-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:750;
+    justify-content:center; align-items:center;
+  }
+  .lv-overlay.open { display:flex; }
+  .lv-modal {
+    background:#fff; border-radius:14px; width:440px; max-width:94vw;
+    box-shadow:0 20px 60px rgba(0,0,0,.3); font-size:.85rem; overflow:hidden;
+  }
+  .lv-header {
+    background:var(--primary); color:#fff; padding:14px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .lv-header h3 { margin:0; font-size:.95rem; font-weight:700; }
+  .lv-header button { background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer; opacity:.8; line-height:1; }
+  .lv-header button:hover { opacity:1; }
+  .lv-body { padding:16px 20px; }
+  .lv-voy-list { display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; }
+  .lv-voy-item {
+    display:flex; align-items:center; gap:8px; padding:8px 12px;
+    border:1px solid var(--border); border-radius:6px; background:var(--row-alt);
+    cursor:pointer; transition: background .15s;
+  }
+  .lv-voy-item:hover { background:#e8f0fe; }
+  .lv-voy-item.selected { background:#d0e4ff; border-color:var(--accent); }
+  .lv-voy-item .lv-idx {
+    width:22px; height:22px; border-radius:50%; background:var(--muted);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:.72rem; font-weight:700; flex-shrink:0;
+  }
+  .lv-voy-item.selected .lv-idx { background:var(--accent); }
+  .lv-voy-item .lv-info { flex:1; }
+  .lv-voy-item .lv-voyno { font-weight:700; color:var(--primary); font-size:.82rem; }
+  .lv-voy-item .lv-lane { font-size:.72rem; color:var(--muted); }
+  .lv-hint { font-size:.72rem; color:var(--muted); margin-bottom:10px; line-height:1.5; }
+  .lv-footer {
+    padding:12px 20px; border-top:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center; background:#fafafa;
+  }
+
+  /* ===== CONTINUOUS VIEW STYLES ===== */
+  .cv-voyage-separator {
+    display:flex; align-items:center; gap:10px; margin:8px 0;
+    color:var(--muted); font-size:.75rem; font-weight:600;
+  }
+  .cv-voyage-separator::before,
+  .cv-voyage-separator::after {
+    content:''; flex:1; height:2px; border-radius:1px;
+  }
+  .cv-voyage-separator.cv-sep-1::before, .cv-voyage-separator.cv-sep-1::after { background: #4dabf7; }
+  .cv-voyage-separator.cv-sep-2::before, .cv-voyage-separator.cv-sep-2::after { background: #51cf66; }
+  .cv-voyage-separator.cv-sep-3::before, .cv-voyage-separator.cv-sep-3::after { background: #ffa94d; }
+  .cv-voyage-separator.cv-sep-4::before, .cv-voyage-separator.cv-sep-4::after { background: #cc5de8; }
+  .cv-voyage-label {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 10px; border-radius:4px; font-weight:700; white-space:nowrap;
+  }
+  .cv-sep-1 .cv-voyage-label { background:#e7f5ff; color:#1971c2; }
+  .cv-sep-2 .cv-voyage-label { background:#ebfbee; color:#2b8a3e; }
+  .cv-sep-3 .cv-voyage-label { background:#fff4e6; color:#e67700; }
+  .cv-sep-4 .cv-voyage-label { background:#f8f0fc; color:#9c36b5; }
+
+  .cv-active {
+    background:linear-gradient(135deg, #e7f5ff, #d0e8ff) !important;
+    color:var(--accent) !important;
+    border-color:var(--accent) !important;
+    font-weight:700 !important;
+  }
+  .daily-link-btn {
+    background:none; border:none; cursor:pointer; font-size:.85rem; padding:2px 4px;
+    border-radius:4px; transition:background .15s; opacity:.6;
+  }
+  .daily-link-btn:hover { background:#e8f0fe; opacity:1; }
+  .daily-link-btn.linked { opacity:1; }
+  .cv-badge {
+    display:inline-block; padding:1px 6px; border-radius:3px; font-size:.65rem;
+    font-weight:700; background:#e7f5ff; color:#1971c2; margin-left:4px;
+  }
+
+  /* ===== Cross-voyage transition info ===== */
+  .cv-transition-info {
+    display:flex; align-items:center; gap:10px; padding:6px 16px 10px;
+    font-size:.78rem; flex-wrap:wrap; border-bottom:1px solid var(--border);
+    background:var(--row-alt);
+  }
+  .cv-transition-info.cv-trans-suggest {
+    background:#fff9db;
+    border-bottom-color:#f08c00;
+  }
+  .cv-trans-route {
+    font-weight:700; color:var(--text); margin-right:4px;
+  }
+  .cv-trans-stat {
+    display:inline-flex; align-items:center; gap:2px;
+    padding:1px 8px; border-radius:4px; background:#e9ecef; color:#495057;
+    font-size:.72rem; font-weight:600;
+  }
+  .cv-trans-gap {
+    background:#d0ebff; color:#1971c2;
+  }
+  .cv-trans-hint {
+    background:#fff3bf; color:#e67700; font-weight:600;
+  }
 </style>
 </head>
 <body>
@@ -934,30 +1120,26 @@
 <div class="daily-layout">
   <!-- Left: Fleet list -->
   <div class="daily-left">
+    <div class="daily-quick-search">
+      <input type="text" id="dailyQuickSearch" placeholder="搜索 船名/航次/航线，如 CUBK2601W" oninput="onQuickSearch(this.value)"/>
+      <button onclick="clearDailyFilters()" title="清除所有筛选条件" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--muted);padding:2px 4px;line-height:1;">✕</button>
+    </div>
     <div class="daily-filter">
       <div class="daily-filter-row" style="gap:6px;align-items:center;">
         <div class="combobox-wrap" id="dailyVesselCombobox" style="flex:1;min-width:0;">
-          <input type="text" id="dailyVesselInput" placeholder="选择船名..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
+          <input type="text" id="dailyVesselInput" placeholder="船名..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
           <span class="combobox-arrow">&#9662;</span>
           <div class="combobox-dropdown" id="dailyVesselDropdown"></div>
         </div>
+        <input type="text" id="dailyVoyFilter" placeholder="航次..." style="flex:1;min-width:0;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
         <div class="combobox-wrap" id="dailyLaneCombobox" style="flex:1;min-width:0;">
-          <input type="text" id="dailyLaneInput" placeholder="选择航线..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
+          <input type="text" id="dailyLaneInput" placeholder="航线..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
           <span class="combobox-arrow">&#9662;</span>
           <div class="combobox-dropdown" id="dailyLaneDropdown"></div>
         </div>
-        <select id="dailyVoyFilter" style="flex:1;min-width:0;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;">
-          <option value="">全部航次</option>
-        </select>
-      </div>
-      <div class="daily-filter-row" style="gap:6px;align-items:center;">
-        <input type="text" id="dailySearch" placeholder="Search vessel..." oninput="renderDailyFleet()" style="flex:1;min-width:0;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
-        <select id="dailyLaneFilter" onchange="renderDailyFleet()" style="flex:1;min-width:0;">
-          <option value="">All Lanes</option>
-        </select>
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <label style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:3px;">
+        <label style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:3px;" title="Select all voyages for batch export">
           <input type="checkbox" id="dailySelectAll" onchange="toggleAllDailyVessels(this.checked)"/> Select All
         </label>
         <span style="font-size:.7rem;color:var(--muted);" id="dailyVesselCount"></span>
@@ -965,8 +1147,10 @@
     </div>
     <div class="daily-actions">
       <button class="dm-btn dm-btn-commit" onclick="commitFleetSchedule()">⬆ Commit</button>
-      <button class="dm-btn dm-btn-export" onclick="exportFleetExcel()">📥 Export Excel</button>
+      <button class="dm-btn dm-btn-export" id="dailyExportBtn" onclick="exportFleetPDF()">📄 Export PDF</button>
       <button class="dm-btn dm-btn-primary" onclick="addNewVoyage()">+ New Voyage</button>
+      <button class="dm-btn dm-btn-import" onclick="document.getElementById('importExcelInput').click()" title="Import schedule from Excel">📤 Import</button>
+      <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;" onchange="handleImportExcel(this)"/>
       <span class="commit-status" id="dailyCommitStatus"></span>
     </div>
     <div class="daily-fleet-list" id="dailyFleetList">
@@ -986,7 +1170,67 @@
 </div>
 </div>
 
+<!-- LINKED VOYAGES MODAL -->
+<div class="lv-overlay" id="lvOverlay" onclick="if(event.target===this)closeLinkVoyagesModal()">
+  <div class="lv-modal">
+    <div class="lv-header">
+      <h3>🔗 链接航次</h3>
+      <button onclick="closeLinkVoyagesModal()">✕</button>
+    </div>
+    <div class="lv-body">
+      <div class="lv-hint">选择要连续显示的航次（可多选），点击「保存」后右侧详情面板可开启连续视图。<br/>选中的航次将按顺序串联显示港口时间线。</div>
+      <div class="lv-voy-list" id="lvVoyList"></div>
+    </div>
+    <div class="lv-footer">
+      <button class="dm-btn" onclick="clearLinkedVoyages()">清除链接</button>
+      <button class="dm-btn dm-btn-primary" onclick="saveLinkedVoyages()">✓ 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW VOYAGE MODAL -->
+<div class="nv-overlay" id="nvOverlay" onclick="if(event.target===this)closeNewVoyageModal()">
+  <div class="nv-modal">
+    <div class="nv-header">
+      <h3>🚢 新建航次</h3>
+      <button onclick="closeNewVoyageModal()">✕</button>
+    </div>
+    <div class="nv-body">
+      <div class="nv-field">
+        <label>Vessel Code <span style="color:#e74c3c">*</span></label>
+        <div class="combobox-wrap nv-vessel-combo" style="position:relative;">
+          <input type="text" id="nvVesselInput" placeholder="输入船名代码，如 CUBK" autocomplete="off"
+            oninput="nvVesselSearch(this.value)" onblur="setTimeout(()=>nvVesselClose(),200)"/>
+          <span class="combobox-arrow" onclick="nvVesselToggle()">&#9662;</span>
+          <div class="combobox-dropdown" id="nvVesselDropdown" style="top:100%;left:0;right:0;"></div>
+        </div>
+        <div class="nv-hint">从已有船舶列表中选择，或直接输入新船代码</div>
+      </div>
+      <div class="nv-field">
+        <label>Voyage No <span style="color:#e74c3c">*</span></label>
+        <input type="text" id="nvVoyNo" placeholder="例如 001W、026E" autocomplete="off" style="text-transform:uppercase"/>
+        <div class="nv-hint">航次号，通常为数字 + 方向字母（W/E/N/S）</div>
+      </div>
+      <div class="nv-field">
+        <label>Lane <span style="color:#e74c3c">*</span></label>
+        <div class="combobox-wrap" style="position:relative;">
+          <input type="text" id="nvLaneInput" placeholder="输入航线代码，如 CT2" autocomplete="off"
+            oninput="nvLaneSearch(this.value)" onblur="setTimeout(()=>nvLaneClose(),200)"/>
+          <span class="combobox-arrow" onclick="nvLaneToggle()">&#9662;</span>
+          <div class="combobox-dropdown" id="nvLaneDropdown" style="top:100%;left:0;right:0;"></div>
+        </div>
+        <div class="nv-hint">选择该航次所属的航线</div>
+      </div>
+    </div>
+    <div class="nv-footer">
+      <button class="dm-btn" onclick="closeNewVoyageModal()">取消</button>
+      <button class="dm-btn dm-btn-primary" onclick="submitNewVoyage()">✓ 创建航次</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
+
 <div class="toast" id="toast"></div>
 
 <!-- DATA MANAGER MODAL -->
@@ -1161,8 +1405,28 @@
 </div>
 
 <script>
+// ==================== IE11 ERROR DEBUG ====================
+window.onerror = function(msg, url, line, col, error) {
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:#fff;padding:10px 16px;font-size:14px;z-index:999999;font-family:monospace;white-space:pre-wrap;cursor:pointer;';
+  d.textContent = 'JS ERROR: ' + msg + ' (line ' + line + ')';
+  d.title = 'Click to dismiss';
+  d.onclick = function(){ d.parentNode.removeChild(d); };
+  document.body.appendChild(d);
+  return false;
+};
+// Force no-cache for this page
+(function(){
+  var metas = document.querySelectorAll('meta[http-equiv]');
+  for(var i=0;i<metas.length;i++){ if(metas[i].getAttribute('http-equiv')==='Cache-Control') metas[i].parentNode.removeChild(metas[i]); }
+  var m = document.createElement('meta');
+  m.setAttribute('http-equiv','Cache-Control');
+  m.setAttribute('content','no-cache, no-store, must-revalidate');
+  document.head.appendChild(m);
+})();
+
 // ==================== DATA LOADER ====================
-// CSV data paths: try local first, fallback to GitHub
+// CSV data paths: GitHub is source of truth, local files as offline fallback
 const CSV_LOCAL = './shipping_data';
 const CSV_GITHUB = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data';
 
@@ -1691,26 +1955,54 @@ function parseCSV(text){
     const obj = {};
     headers.forEach((h,i)=>{ obj[h] = vals[i]||''; });
     return obj;
-  }).filter(r=>Object.values(r).some(v=>v!==''));
+  }).filter(function(r){ for(var k in r){ if(r.hasOwnProperty(k)&&r[k]!=='') return true; } return false; });
 }
 
-// Fetch CSV: try local first, fallback to GitHub, then bundled data
+// Fetch CSV: GitHub (source of truth) → localStorage cache (post-commit) → local file → bundled data
 async function fetchCSV(filename){
-  // Try local path first
+  // 1. GitHub is the source of truth — always try it first (no-cache via timestamp)
+  try {
+    const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
+    const resp = await fetch(githubUrl);
+    if(resp.ok){
+      const text = await resp.text();
+      // Cache to localStorage so offline/commit flows stay in sync
+      localStorage.setItem('csv_cache_' + filename, JSON.stringify({ content: text, ts: Date.now() }));
+      return parseCSV(text);
+    }
+  } catch(e) { /* GitHub failed */ }
+
+  // 2. localStorage cache (data saved after a commit, before page reload)
+  const lsKey = 'csv_cache_' + filename;
+  const lsEntry = localStorage.getItem(lsKey);
+  if(lsEntry){
+    try { return parseCSV(JSON.parse(lsEntry).content); } catch(e){ localStorage.removeItem(lsKey); }
+  }
+
+  // 3. Local file (offline fallback)
   try {
     const localUrl = CSV_LOCAL + '/' + filename + '?t=' + Date.now();
     const resp = await fetch(localUrl);
     if(resp.ok) return parseCSV(await resp.text());
-  } catch(e) { /* local failed, try GitHub */ }
-  // Fallback to GitHub
-  try {
-    const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
-    const resp = await fetch(githubUrl);
-    if(resp.ok) return parseCSV(await resp.text());
-  } catch(e) { /* GitHub failed, use bundled */ }
-  // Final fallback: use bundled data
+  } catch(e) { /* local failed */ }
+
+  // 4. Bundled default data
   if(BUNDLED_CSV[filename]) return parseCSV(BUNDLED_CSV[filename]);
   throw new Error('Failed to load ' + filename + ' from all sources');
+}
+
+// Save CSV content to localStorage after commit
+function saveLocalCSV(type, content){
+  const filename = csvFilename(type);
+  localStorage.setItem('csv_cache_' + filename, JSON.stringify({
+    content: content,
+    timestamp: Date.now()
+  }));
+}
+
+// Clear localStorage CSV cache (useful for debugging)
+function clearCSVCache(){
+  Object.keys(localStorage).filter(k=>k.startsWith('csv_cache_')).forEach(k=>localStorage.removeItem(k));
 }
 
 // Data containers (populated async)
@@ -1787,7 +2079,7 @@ function buildPortMap(){
   PORTS_DATA.forEach(([code,en,cn,manIn,portstay])=>{
     PORT_MAP[code]={code,en,cn,
       manIn: manIn ? parseFloat(manIn) : DEFAULT_MAN_IN,
-      portstay: portstay ? parseFloat(portstay) : 12
+      portstay: portstay ? parseFloat(portstay) : 24
     };
   });
 }
@@ -1795,7 +2087,7 @@ function buildPortMap(){
 // Get man_in hours for a port (from data or default)
 function getPortManIn(code){ return (PORT_MAP[code]||{}).manIn || DEFAULT_MAN_IN; }
 // Get portstay hours for a port (from data or default)
-function getPortStay(code){ return (PORT_MAP[code]||{}).portstay || 12; }
+function getPortStay(code){ return (PORT_MAP[code]||{}).portstay || 24; }
 
 // Port display
 function portLabel(code){
@@ -1810,16 +2102,31 @@ function portShortLabel(code){
 }
 
 // ==================== COMBOBOX ====================
-function initCombobox(inputId, dropdownId, items, onSelect) {
+// Uses mousedown+preventDefault on dropdown items to prevent input blur,
+// plus a document-level mousedown listener for outside-click dismissal.
+function initCombobox(inputId, dropdownId, items, onSelect, onInputChange) {
   const input = document.getElementById(inputId);
-  // Move dropdown to body so it's never clipped by overflow:auto ancestors
   const dropdown = document.getElementById(dropdownId);
-  if(dropdown.parentElement !== document.body) {
+  // Keep a ref to the original wrap BEFORE moving dropdown to body
+  const wrap = input.closest('.combobox-wrap') || input.parentElement;
+  // Move dropdown to body so it's never clipped by overflow:auto ancestors
+  if (dropdown.parentElement !== document.body) {
     document.body.appendChild(dropdown);
   }
+
+  // Store current items in a mutable container so refreshComboboxItems can update them
+  let currentItems = items.slice();
+  input._comboboxRefresh = function(newItems){
+    currentItems = newItems.slice();
+  };
+  // Flag to skip onInputChange when user selected an option (value is set programmatically)
+  let skipInputChange = false;
+
   let activeIdx = -1;
-  let filteredItems = [...items];
-  let mousedownOnDropdown = false;
+  let filteredItems = items.slice();
+  let isOpen = false;
+  // Flag to suppress blur-triggered close when user is clicking an option
+  let ignoreClose = false;
 
   function positionDropdown() {
     const rect = input.getBoundingClientRect();
@@ -1832,82 +2139,120 @@ function initCombobox(inputId, dropdownId, items, onSelect) {
     filteredItems = list;
     activeIdx = -1;
     dropdown.innerHTML = '';
-    if(list.length === 0){ dropdown.classList.remove('show'); return; }
+    if (list.length === 0) {
+      isOpen = false;
+      dropdown.classList.remove('show');
+      return;
+    }
     positionDropdown();
+
     list.forEach((item, idx) => {
       const div = document.createElement('div');
       div.className = 'combobox-option';
       div.innerHTML = item.html;
-      // Use mousedown to select BEFORE blur fires
+
+      // mousedown with preventDefault prevents the input from losing focus.
+      // This is the canonical cross-browser technique.
       div.addEventListener('mousedown', (e) => {
-        e.preventDefault(); // Prevent input from losing focus
-        mousedownOnDropdown = true;
+        e.preventDefault();  // stop input blur
+        ignoreClose = true;
+      });
+
+      // Also handle mouseup as a fallback — some environments
+      // may suppress click after a prevented mousedown.
+      div.addEventListener('mouseup', (e) => {
+        ignoreClose = true;
+      });
+
+      div.addEventListener('click', (e) => {
+        e.stopPropagation();
+        ignoreClose = false;  // reset now that we handled the selection
+        skipInputChange = true;
         input.value = item.display;
         onSelect(item);
-        dropdown.classList.remove('show');
-        mousedownOnDropdown = false;
+        closeDropdown();
         input.focus();
       });
+
       div.addEventListener('mouseenter', () => {
-        dropdown.querySelectorAll('.combobox-option.active').forEach(e=>e.classList.remove('active'));
+        dropdown.querySelectorAll('.combobox-option.active').forEach(el => el.classList.remove('active'));
         div.classList.add('active');
         activeIdx = idx;
       });
+
       dropdown.appendChild(div);
     });
+
+    isOpen = true;
     dropdown.classList.add('show');
   }
 
-  function filter(q) {
-    if(!q) return [...items];
-    const lq = q.toLowerCase();
-    return items.filter(item => item.search.toLowerCase().includes(lq));
+  function closeDropdown() {
+    isOpen = false;
+    dropdown.classList.remove('show');
+    activeIdx = -1;
   }
+
+  function filter(q) {
+    if (!q) return currentItems.slice();
+    const lq = q.toLowerCase();
+    return currentItems.filter(item => item.search.toLowerCase().includes(lq));
+  }
+
+  // --- Input event handlers ---
 
   input.addEventListener('focus', () => {
     showDropdown(filter(input.value));
   });
+
   input.addEventListener('input', () => {
     showDropdown(filter(input.value));
+    if (onInputChange && !skipInputChange) onInputChange(input.value);
+    skipInputChange = false;
   });
+
+  // On blur, delay close so a click on the dropdown can fire first
   input.addEventListener('blur', () => {
-    if(!mousedownOnDropdown) {
-      dropdown.classList.remove('show');
-    }
+    setTimeout(() => {
+      if (!ignoreClose) closeDropdown();
+      ignoreClose = false;
+    }, 200);
   });
-  input.addEventListener('keydown', e => {
+
+  input.addEventListener('keydown', (e) => {
     const opts = dropdown.querySelectorAll('.combobox-option');
-    if(e.key === 'ArrowDown'){
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
-      activeIdx = Math.min(activeIdx+1, opts.length-1);
-      opts.forEach((o,i)=>o.classList.toggle('active',i===activeIdx));
-      if(opts[activeIdx]) opts[activeIdx].scrollIntoView({block:'nearest'});
-    } else if(e.key === 'ArrowUp'){
+      activeIdx = Math.min(activeIdx + 1, opts.length - 1);
+      for(var _i=0;_i<opts.length;_i++){ if(_i===activeIdx) opts[_i].classList.add('active'); else opts[_i].classList.remove('active'); }
+      if (opts[activeIdx]) opts[activeIdx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      activeIdx = Math.max(activeIdx-1, 0);
-      opts.forEach((o,i)=>o.classList.toggle('active',i===activeIdx));
-      if(opts[activeIdx]) opts[activeIdx].scrollIntoView({block:'nearest'});
-    } else if(e.key === 'Enter'){
+      activeIdx = Math.max(activeIdx - 1, 0);
+      for(var _j=0;_j<opts.length;_j++){ if(_j===activeIdx) opts[_j].classList.add('active'); else opts[_j].classList.remove('active'); }
+      if (opts[activeIdx]) opts[activeIdx].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
       e.preventDefault();
-      if(activeIdx >= 0 && filteredItems[activeIdx]){
+      if (activeIdx >= 0 && filteredItems[activeIdx]) {
+        skipInputChange = true;
         input.value = filteredItems[activeIdx].display;
         onSelect(filteredItems[activeIdx]);
-        dropdown.classList.remove('show');
+        closeDropdown();
       }
-    } else if(e.key === 'Escape'){
-      dropdown.classList.remove('show');
+    } else if (e.key === 'Escape') {
+      closeDropdown();
     }
   });
 
-  // Close on outside click
-  document.addEventListener('click', e => {
-    if(!e.target.closest('.combobox-wrap') && e.target !== dropdown && !dropdown.contains(e.target)){
-      dropdown.classList.remove('show');
-    }
+  // --- Outside click: close when clicking anywhere except wrap or dropdown ---
+  document.addEventListener('mousedown', (e) => {
+    if (!isOpen) return;
+    if (wrap.contains(e.target) || dropdown.contains(e.target)) return;
+    closeDropdown();
   });
 
-  // Reposition on scroll/resize
-  const reposition = () => { if(dropdown.classList.contains('show')) positionDropdown(); };
+  // --- Reposition on scroll / resize ---
+  const reposition = () => { if (isOpen) positionDropdown(); };
   document.addEventListener('scroll', reposition, true);
   window.addEventListener('resize', reposition);
 }
@@ -1991,13 +2336,15 @@ function fmtDt(d){
 // ==================== VESSEL COMBOBOX ====================
 // Get unique vessel list (first tier as default) for combobox
 function getUniqueVessels(){
-  const map = new Map();
-  VESSELS_DATA.forEach(v=>{
-    if(!map.has(v.code)){
-      map.set(v.code, {code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo, ps_lsfo:v.ps_lsfo||0, ps_mgo:v.ps_mgo||0});
+  var map = {};
+  var result = [];
+  VESSELS_DATA.forEach(function(v){
+    if(!map[v.code]){
+      map[v.code] = {code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo, ps_lsfo:v.ps_lsfo||0, ps_mgo:v.ps_mgo||0};
+      result.push(map[v.code]);
     }
   });
-  return Array.from(map.values());
+  return result;
 }
 
 // Find fuel rates for a vessel code at a given speed (exact or nearest)
@@ -2405,7 +2752,7 @@ function buildRow(i, p, voyNo, eta, etb, etd, dist, runHrs, speed, vessel, manIn
     etb: new Date(etb),
     etd: new Date(etd),
     runHrs: +runHrs.toFixed(2),
-    stayHrs: +(stayHrs||p.stayHours||12),
+    stayHrs: +(stayHrs||p.stayHours||24),
     dist: +dist.toFixed(1),
     speed,
     etaDelay: 0,
@@ -2965,7 +3312,8 @@ function filterDmDists(){ renderDmDists(document.getElementById('dmDistSearch').
 
 // ==================== LANES MANAGEMENT ====================
 function renderDmLanes(){
-  const search = (document.getElementById('dmLaneSearch')?.value || '').toLowerCase().trim();
+  var _el = document.getElementById('dmLaneSearch');
+  const search = (_el ? _el.value : '').toLowerCase().trim();
   const tbody = document.getElementById('dmLaneBody');
   let html = '';
   LANES_DATA.forEach((l, i) => {
@@ -2985,13 +3333,14 @@ function addDmLane(){
   LANES_DATA.push({ code: '', name: '' });
   document.getElementById('dmLaneSearch').value = '';
   renderDmLanes();
-  requestAnimationFrame(() => {
-    const tbody = document.getElementById('dmLaneBody');
-    const firstRow = tbody?.lastElementChild;
+  requestAnimationFrame(function() {
+    var tbody = document.getElementById('dmLaneBody');
+    var firstRow = tbody ? tbody.lastElementChild : null;
     if(firstRow) {
       firstRow.classList.add('dm-row-new');
       firstRow.scrollIntoView({behavior:'smooth', block:'nearest'});
-      firstRow.querySelector('input')?.focus();
+      var _inp = firstRow.querySelector('input');
+      if(_inp) _inp.focus();
     }
   });
   showToast('New lane added – fill in code and name');
@@ -3004,7 +3353,6 @@ function updateDmLane(i, field, value){
   populateLaneFilter();
   if(dailyComboboxInited){
     dailySelectedLaneCode = '';
-    populateDailyVoyFilter();
     renderDailyFleet();
   }
 }
@@ -3247,18 +3595,11 @@ async function fetchSearouteDistance(fromCode, toCode){
       return {distance: routeResult.distance_nm};
     }
 
-    // Fallback to great-circle distance if searoute fails
-    const gcDist = Math.round(haversineNM(c1.lat, c1.lng, c2.lat, c2.lng));
-    return {distance: gcDist};
+    // Searoute failed — do NOT estimate, require manual input
+    return {error: 'searoute 无法计算该航线距离，请在 Data Manager 中手动填写'};
   } catch(err){
     console.warn('Distance lookup failed:', err);
-    // Fallback to haversine on error
-    try {
-      const c1 = await lookupPortCoords(fromCode);
-      const c2 = await lookupPortCoords(toCode);
-      if(c1 && c2) return {distance: Math.round(haversineNM(c1.lat, c1.lng, c2.lat, c2.lng))};
-    } catch(e){}
-    return {error: err.message};
+    return {error: '距离查询失败（' + err.message + '），请手动填写 Dist 列'};
   }
 }
 
@@ -3382,6 +3723,33 @@ function setCommitStatus(msg){
   if(el) el.textContent = msg;
 }
 
+// Reload a specific CSV type from GitHub into memory
+async function reloadCommittedData(type){
+  const filename = csvFilename(type);
+  const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
+  const resp = await fetch(githubUrl);
+  if(!resp.ok) throw new Error('Failed to fetch ' + filename);
+  const rows = parseCSV(await resp.text());
+
+  if(type === 'ports'){
+    PORTS_DATA = rows.map(r=>[r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||'']);
+    buildPortMap();
+  } else if(type === 'vessels'){
+    VESSELS_DATA = rows.map(r=>({
+      code: r.vessel_code, name: r.vessel_name, speed: parseFloat(r.speed_knots)||0,
+      lsfo: parseFloat(r.lsfo_mt_day)||0, hsfo: parseFloat(r.hsfo_mt_day)||0,
+      mgo: parseFloat(r.mgo_mt_day)||0,
+      ps_lsfo: parseFloat(r.portstay_lsfo_mt_day)||0,
+      ps_mgo: parseFloat(r.portstay_mgo_mt_day)||0
+    }));
+  } else if(type === 'distances'){
+    DIST_RAW = rows.map(r=>[r.from_port||r.from||'', r.to_port||r.to||'', parseFloat(r.distance_nm||r.distance||0), r.source||'']);
+    buildDistMap();
+  } else if(type === 'lanes'){
+    LANES_DATA = rows;
+  }
+}
+
 // Commit a single CSV file to GitHub via Contents API
 async function commitToGitHub(type){
   const token = getGhToken();
@@ -3454,12 +3822,64 @@ async function commitToGitHub(type){
     const result = await putResp.json();
     setCommitStatus('✓ Committed: ' + result.commit.sha.slice(0,7));
     showToast(filename + ' committed to GitHub ✓', 'success');
+
+    // Save updated content to local storage so fetchCSV reads the latest version
+    saveLocalCSV(type, content);
+
+    // Reload data from GitHub to update in-memory state
+    try {
+      await reloadCommittedData(type);
+    } catch(e){ console.warn('Failed to reload data:', e); }
+
+    // If distances were committed, sync to Fleet schedule
+    if(type === 'distances'){
+      syncDistancesToFleet();
+    }
   } catch(err){
     console.error('GitHub commit error:', err);
     setCommitStatus('✗ Error: ' + err.message);
     showToast('Commit failed: ' + err.message, 'warning');
   } finally {
     btns.forEach(b=>b.classList.remove('loading'));
+  }
+}
+
+// Sync updated DIST_MAP values to Fleet schedule ports and recalculate dates
+function syncDistancesToFleet(){
+  let updated = 0;
+  const vessels = FLEET_DATA.vessels || [];
+  const needRecalc = []; // track which vessels/voyages need date recalc
+  vessels.forEach((v, vIdx) => {
+    (v.voyages || []).forEach((voy, vi) => {
+      let voyUpdated = false;
+      const ports = voy.ports || [];
+      for(let i = 0; i < ports.length - 1; i++){
+        const from = ports[i].code;
+        const to = ports[i + 1].code;
+        const newDist = getDistance(from, to);
+        if(newDist > 0 && ports[i].dist !== newDist){
+          ports[i].dist = newDist;
+          updated++;
+          voyUpdated = true;
+        }
+      }
+      if(voyUpdated){
+        recalcDailyFromPort(v, vi, 0);
+        voy.lastModified = new Date().toISOString();
+        needRecalc.push({vIdx, vi});
+      }
+    });
+  });
+  if(updated > 0){
+    autoSaveFleet();
+    // Re-render fleet summary
+    renderDailyFleet();
+    // Re-render if currently viewing a vessel detail
+    const detailEl = document.getElementById('dailyRightPanel');
+    if(detailEl && detailEl.querySelector('.daily-detail-body')){
+      renderDailyDetail();
+    }
+    showToast('✓ 已同步 ' + updated + ' 条距离到 Fleet 调度，日期已重算', 'success');
   }
 }
 
@@ -3520,6 +3940,7 @@ async function commitAllToGitHub(){
       }
 
       ok++;
+      saveLocalCSV(type, content);
     } catch(err){
       console.error('Commit error for ' + filename + ':', err);
       fail++;
@@ -3530,6 +3951,10 @@ async function commitAllToGitHub(){
   if(fail === 0){
     setCommitStatus('✓ All ' + ok + ' files committed');
     showToast('All ' + ok + ' CSV files committed to GitHub ✓', 'success');
+    // Reload all data from GitHub
+    try { await loadAllData(); buildPortMap(); buildDistMap(); } catch(e){ console.warn('Failed to reload:', e); }
+    // Sync distances to fleet if distances were in the batch
+    syncDistancesToFleet();
   } else {
     setCommitStatus('⚠ ' + ok + ' ok, ' + fail + ' failed');
     showToast(ok + ' committed, ' + fail + ' failed', 'warning');
@@ -3543,7 +3968,11 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').r
 let currentAppTab = 'simulator';
 function switchAppTab(tab){
   currentAppTab = tab;
-  document.querySelectorAll('.app-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  var _tabs = document.querySelectorAll('.app-tab');
+  for(var _t=0;_t<_tabs.length;_t++){
+    if(_tabs[_t].dataset.tab===tab) _tabs[_t].classList.add('active');
+    else _tabs[_t].classList.remove('active');
+  }
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active','block'));
   const el = document.getElementById(tab==='simulator'?'tabSimulator':'tabDaily');
   el.classList.add('active','block');
@@ -3555,7 +3984,13 @@ let FLEET_DATA = { vessels: [], lastSync: null };
 let FLEET_SHA = null; // GitHub file SHA for optimistic locking
 let LANES_DATA = []; // [{code, name}]
 let dailySelectedVessel = null; // {code, name, voyIdx}
-let dailyCheckedVessels = new Set(); // Set of "code|voyIdx" for multi-select
+var dailyCheckedVessels = {}; // Object as Set replacement: "code|voyIdx" -> true
+
+// Linked Voyages: continuous view
+// Structure: { vesselCode: [[voyIdx1, voyIdx2, ...], [voyIdx3, voyIdx4, ...]] }
+let linkedVoyageGroups = {};
+let continuousViewActive = false; // toggle for right panel
+let _linkModalVesselCode = null; // which vessel is being configured
 
 const FLEET_FILE = 'shipping_data/fleet_schedule.json';
 const LANES_FILE = 'shipping_data/lanes.json';
@@ -3566,123 +4001,517 @@ async function initDailyPage(){
   if(!FLEET_DATA.vessels.length || FLEET_DATA.vessels.length === 0){
     await loadFleetSchedule();
   }
+  loadLinkedGroups(); // Load linked voyage groups from localStorage
   initDailyComboboxes();
   renderDailyFleet();
+
+  // Keyboard shortcuts for undo/redo
+  document.addEventListener('keydown', function(e){
+    // Only active when daily tab is visible
+    const dailyTab = document.getElementById('tabDaily');
+    if(!dailyTab || dailyTab.style.display === 'none') return;
+    // Don't intercept if user is typing in an input
+    const tag = document.activeElement ? document.activeElement.tagName : '';
+    if(tag === 'INPUT' && document.activeElement.type === 'text') return;
+
+    if((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey){
+      e.preventDefault();
+      undoDailyEdit();
+    } else if((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))){
+      e.preventDefault();
+      redoDailyEdit();
+    }
+  });
 }
 
 let dailyComboboxInited = false;
+
+// Rebuild combobox item lists from current FLEET_DATA + static data
+function getDailyVesselItems(){
+  // Merge VESSELS_DATA (static master list) and FLEET_DATA (active fleet)
+  const map = {};
+  VESSELS_DATA.forEach(v => { map[v.code] = { code: v.code, name: v.name || '', search: v.code + ' ' + (v.name||''), display: v.code + ' – ' + (v.name||''), html: '<span class="opt-code">' + esc(v.code) + '</span> ' + esc(v.name||'') }; });
+  FLEET_DATA.vessels.forEach(v => {
+    if(!map[v.code]){
+      map[v.code] = { code: v.code, name: v.name || '', search: v.code + ' ' + (v.name||''), display: v.code + ' – ' + (v.name||''), html: '<span class="opt-code">' + esc(v.code) + '</span> ' + esc(v.name||'') };
+    } else {
+      // Prefer FLEET_DATA name if static data has no name
+      if(!map[v.code].name && v.name) {
+        map[v.code].name = v.name;
+        map[v.code].search = v.code + ' ' + v.name;
+        map[v.code].display = v.code + ' – ' + v.name;
+        map[v.code].html = '<span class="opt-code">' + esc(v.code) + '</span> ' + esc(v.name);
+      }
+    }
+  });
+  return Object.values(map).sort((a, b) => a.code.localeCompare(b.code));
+}
+
+function getDailyLaneItems(){
+  // Merge LANES_DATA (static) and lanes used in FLEET_DATA
+  const map = {};
+  LANES_DATA.forEach(l => { map[l.code] = { code: l.code, name: l.name || '', search: l.code + ' ' + (l.name||''), display: l.code + ' – ' + (l.name||''), html: '<span class="opt-code">' + esc(l.code) + '</span> ' + esc(l.name||'') }; });
+  FLEET_DATA.vessels.forEach(v => {
+    (v.voyages || []).forEach(voy => {
+      const lc = (voy.lane || '').toUpperCase();
+      if(lc && !map[lc]){
+        map[lc] = { code: lc, name: '', search: lc, display: lc, html: '<span class="opt-code">' + esc(lc) + '</span>' };
+      }
+    });
+  });
+  return Object.values(map).sort((a, b) => a.code.localeCompare(b.code));
+}
+
 function initDailyComboboxes(){
-  if(dailyComboboxInited) return;
-  dailyComboboxInited = true;
+  const vesselItems = getDailyVesselItems();
+  const laneItems = getDailyLaneItems();
 
-  // Vessel combobox
-  const uniqueVessels = getUniqueVessels();
-  const vesselItems = uniqueVessels.map(v => ({
-    code: v.code,
-    search: v.code + ' ' + v.name,
-    display: `${v.code} – ${v.name}`,
-    html: `<span class="opt-code">${v.code}</span> ${v.name}`
-  }));
-  initCombobox('dailyVesselInput', 'dailyVesselDropdown', vesselItems, (item) => {
-    dailySelectedVesselCode = item.code;
-    populateDailyVoyFilter();
-    renderDailyFleet();
-  });
+  if(!dailyComboboxInited){
+    dailyComboboxInited = true;
 
-  // Lane combobox
-  const laneItems = LANES_DATA.map(l => ({
-    code: l.code,
-    search: l.code + ' ' + l.name,
-    display: `${l.code} – ${l.name}`,
-    html: `<span class="opt-code">${l.code}</span> ${l.name}`
-  }));
-  initCombobox('dailyLaneInput', 'dailyLaneDropdown', laneItems, (item) => {
-    dailySelectedLaneCode = item.code;
-    populateDailyVoyFilter();
-    renderDailyFleet();
-  });
+    // Vessel combobox
+    initCombobox('dailyVesselInput', 'dailyVesselDropdown', vesselItems, (item) => {
+      dailySelectedVesselCode = item.code;
+      renderDailyFleet();
+    }, (value) => {
+      // Real-time filter as user types in vessel combobox
+      dailySelectedVesselCode = (value || '').trim().toUpperCase();
+      renderDailyFleet();
+    });
 
-  // Voyage filter change
-  document.getElementById('dailyVoyFilter').addEventListener('change', () => {
-    dailySelectedVoyNo = document.getElementById('dailyVoyFilter').value;
-    renderDailyFleet();
-  });
+    // Lane combobox
+    initCombobox('dailyLaneInput', 'dailyLaneDropdown', laneItems, (item) => {
+      dailySelectedLaneCode = item.code;
+      renderDailyFleet();
+    }, (value) => {
+      // Real-time filter as user types in lane combobox
+      dailySelectedLaneCode = (value || '').trim().toUpperCase();
+      renderDailyFleet();
+    });
+
+    // Voyage filter change (now a text input)
+    document.getElementById('dailyVoyFilter').addEventListener('input', () => {
+      dailySelectedVoyNo = document.getElementById('dailyVoyFilter').value;
+      renderDailyFleet();
+    });
+  } else {
+    // Re-initialize: destroy old dropdowns and re-bind with fresh items
+    refreshComboboxItems('dailyVesselInput', 'dailyVesselDropdown', vesselItems);
+    refreshComboboxItems('dailyLaneInput', 'dailyLaneDropdown', laneItems);
+  }
+}
+
+// Refresh items of an already-initialized combobox (without re-creating event listeners)
+function refreshComboboxItems(inputId, dropdownId, newItems){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+  // The combobox stores items in closure; we need a way to update them.
+  // Simplest approach: store the refresh function on the input element
+  if(input._comboboxRefresh){
+    input._comboboxRefresh(newItems);
+  }
 }
 
 let dailySelectedVesselCode = '';
 let dailySelectedLaneCode = '';
 let dailySelectedVoyNo = '';
 
-function populateDailyVoyFilter(){
-  const sel = document.getElementById('dailyVoyFilter');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">全部航次</option>';
-  // Gather all voyage numbers for the selected vessel (and optionally lane)
-  let voyNos = new Set();
-  FLEET_DATA.vessels.forEach(v => {
-    if(dailySelectedVesselCode && v.code !== dailySelectedVesselCode) return;
-    (v.voyages || []).forEach(voy => {
-      if(dailySelectedLaneCode && voy.lane !== dailySelectedLaneCode) return;
-      if(voy.voyNo) voyNos.add(voy.voyNo);
-    });
-  });
-  [...voyNos].sort().forEach(vn => {
-    const opt = document.createElement('option');
-    opt.value = vn; opt.textContent = vn;
-    sel.appendChild(opt);
-  });
-  sel.value = cur;
-}
-
 async function loadLanesData(){
+  // GitHub first (source of truth)
+  try {
+    const url = CSV_GITHUB + '/lanes.json?t=' + Date.now();
+    const resp = await fetch(url);
+    if(resp.ok){ LANES_DATA = await resp.json(); populateLaneFilter(); return; }
+  } catch(e) {}
+  // Fallback to local file
   try {
     const url = CSV_LOCAL + '/lanes.json?t=' + Date.now();
     const resp = await fetch(url);
-    if(resp.ok){ LANES_DATA = await resp.json(); }
-    else throw new Error('local not found');
-  } catch(e){
-    const url2 = CSV_GITHUB + '/lanes.json?t=' + Date.now();
-    const resp2 = await fetch(url2);
-    if(resp2.ok) LANES_DATA = await resp2.json();
-  }
+    if(resp.ok) LANES_DATA = await resp.json();
+  } catch(e){}
   populateLaneFilter();
 }
 
 function populateLaneFilter(){
-  const sel = document.getElementById('dailyLaneFilter');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">All Lanes</option>';
-  LANES_DATA.forEach(l => {
-    const opt = document.createElement('option');
-    opt.value = l.code; opt.textContent = l.code + ' – ' + l.name;
-    sel.appendChild(opt);
-  });
-  sel.value = cur;
+  // No longer needed - lane filtering uses combobox instead of select
+  // Kept as no-op for backward compatibility
 }
 
 async function loadFleetSchedule(){
   const token = getGhToken();
   const path = FLEET_FILE;
+  FLEET_DATA = { vessels: [], lastSync: null };
   try {
-    // Try local first
+    // GitHub first (source of truth)
+    try {
+      const resp = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now());
+      if(resp.ok){
+        const remoteData = await resp.json();
+        if(remoteData && remoteData.vessels && remoteData.vessels.length > 0){
+          FLEET_DATA = remoteData;
+          console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub');
+          return;
+        }
+      }
+    } catch(e){}
+    // Fallback to local file
     try {
       const resp = await fetch(CSV_LOCAL + '/fleet_schedule.json?t=' + Date.now());
       if(resp.ok){
-        FLEET_DATA = await resp.json();
-        return;
+        const localData = await resp.json();
+        if(localData && localData.vessels && localData.vessels.length > 0){
+          FLEET_DATA = localData;
+          console.log('Loaded ' + localData.vessels.length + ' vessel(s) from local JSON');
+          return;
+        }
       }
     } catch(e){}
-    // GitHub raw
-    const resp = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now());
-    if(resp.ok){
-      FLEET_DATA = await resp.json();
-    } else {
-      FLEET_DATA = { vessels: [], lastSync: null };
-    }
   } catch(e){
     console.error('Load fleet error:', e);
-    FLEET_DATA = { vessels: [], lastSync: null };
   }
+
+  // If remote loaded nothing, try localStorage fallback
+  if(FLEET_DATA.vessels.length === 0){
+    const saved = localStorage.getItem('fleet_schedule_local');
+    if(saved){
+      try {
+        FLEET_DATA = JSON.parse(saved);
+        console.log('Restored fleet data from localStorage');
+      } catch(e){}
+    }
+  }
+}
+
+// ===== Auto-save to localStorage =====
+const FLEET_LOCALSTORAGE_KEY = 'fleet_schedule_local';
+let _autoSaveTimer = null;
+
+function autoSaveFleet(){
+  if(_autoSaveTimer) clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(function(){
+    try {
+      localStorage.setItem(FLEET_LOCALSTORAGE_KEY, JSON.stringify(FLEET_DATA));
+    } catch(e){
+      console.warn('Auto-save to localStorage failed:', e);
+    }
+  }, 1000);
+}
+
+// ===== Linked Voyage Groups Management =====
+const LINKED_GROUPS_KEY = 'fleet_linked_groups';
+
+function loadLinkedGroups(){
+  try {
+    const saved = localStorage.getItem(LINKED_GROUPS_KEY);
+    if(saved) linkedVoyageGroups = JSON.parse(saved);
+  } catch(e){}
+}
+
+function saveLinkedGroups(){
+  try {
+    localStorage.setItem(LINKED_GROUPS_KEY, JSON.stringify(linkedVoyageGroups));
+  } catch(e){}
+}
+
+// Get the linked group indices for a vessel, return null if none
+function getLinkedGroup(vesselCode, voyIdx){
+  const groups = linkedVoyageGroups[vesselCode];
+  if(!groups || !groups.length) return null;
+  // Find the group that contains voyIdx
+  for(let i = 0; i < groups.length; i++){
+    if(groups[i].indexOf(voyIdx) >= 0) return groups[i];
+  }
+  return null;
+}
+
+// Check if a vessel has any linked groups
+function hasLinkedGroup(vesselCode){
+  const groups = linkedVoyageGroups[vesselCode];
+  return groups && groups.length > 0 && groups[0].length > 1;
+}
+
+// Check if a voyage is the last in its linked group (to show arrow indicator)
+function isLastInLinkedGroup(vesselCode, voyIdx){
+  const group = getLinkedGroup(vesselCode, voyIdx);
+  if(!group) return false;
+  return group[group.length - 1] === voyIdx;
+}
+
+// ===== Linked Voyages Modal =====
+function openLinkVoyagesModal(vesselCode, e){
+  if(e) e.stopPropagation();
+  _linkModalVesselCode = vesselCode;
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel) return;
+
+  const container = document.getElementById('lvVoyList');
+  const voyages = vessel.voyages || [];
+  const currentGroup = getLinkedGroup(vesselCode, dailySelectedVessel ? dailySelectedVessel.voyIdx : 0) || [];
+
+  let html = '';
+  voyages.forEach(function(voy, idx){
+    const isSelected = currentGroup.indexOf(idx) >= 0;
+    html += '<div class="lv-voy-item' + (isSelected ? ' selected' : '') + '" onclick="toggleLinkVoyItem(this,' + idx + ')">' +
+      '<div class="lv-idx">' + (isSelected ? '✓' : (idx + 1)) + '</div>' +
+      '<div class="lv-info">' +
+        '<div class="lv-voyno">' + esc(voy.voyNo || '?') + '</div>' +
+        '<div class="lv-lane">' + esc(voy.lane || '') + (voy.status === 'completed' ? ' – Completed' : ' – Active') + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  if(!voyages.length){
+    html = '<div style="text-align:center;color:var(--muted);padding:20px;">该船暂无航次</div>';
+  }
+
+  container.innerHTML = html;
+  document.getElementById('lvOverlay').classList.add('open');
+}
+
+function closeLinkVoyagesModal(){
+  document.getElementById('lvOverlay').classList.remove('open');
+  _linkModalVesselCode = null;
+}
+
+function toggleLinkVoyItem(el, idx){
+  el.classList.toggle('selected');
+  const isSelected = el.classList.contains('selected');
+  el.querySelector('.lv-idx').textContent = isSelected ? '✓' : (idx + 1);
+}
+
+function saveLinkedVoyages(){
+  if(!_linkModalVesselCode) return;
+  const items = document.querySelectorAll('#lvVoyList .lv-voy-item.selected');
+  const indices = [];
+  items.forEach(function(el, i){
+    // Get the idx from the onclick attribute
+    const onclickStr = el.getAttribute('onclick');
+    const match = onclickStr.match(/toggleLinkVoyItem\(this,(\d+)\)/);
+    if(match) indices.push(parseInt(match[1]));
+  });
+
+  if(indices.length <= 1){
+    // No need for a group with only 1 voyage
+    delete linkedVoyageGroups[_linkModalVesselCode];
+    showToast('需要选择至少2个航次才能链接', 'warning');
+  } else {
+    // Sort by index
+    indices.sort(function(a, b){ return a - b; });
+    linkedVoyageGroups[_linkModalVesselCode] = [indices];
+    showToast('✓ 已链接 ' + indices.length + ' 个航次', 'success');
+
+    // Auto-fill cross-voyage distances and cascade
+    const vessel = FLEET_DATA.vessels.find(v => v.code === _linkModalVesselCode);
+    if(vessel){
+      for(let g = 0; g < indices.length - 1; g++){
+        const prevVoy = vessel.voyages[indices[g]];
+        const nextVoy = vessel.voyages[indices[g + 1]];
+        if(!prevVoy || !nextVoy || !prevVoy.ports || !nextVoy.ports || !prevVoy.ports.length || !nextVoy.ports.length) continue;
+        const lastPort = prevVoy.ports[prevVoy.ports.length - 1];
+        const firstPort = nextVoy.ports[0];
+
+        // If no dist set, try to calculate from ETD→ETA gap
+        if(!lastPort.dist || lastPort.dist <= 0){
+          if(lastPort.etd && firstPort.eta){
+            const etdDt = new Date(lastPort.etd);
+            const etaDt = new Date(firstPort.eta);
+            if(!isNaN(etdDt.getTime()) && !isNaN(etaDt.getTime())){
+              const gapHrs = (etaDt.getTime() - etdDt.getTime()) / 3600000;
+              const manIn = firstPort.manIn != null ? firstPort.manIn : getPortManIn(firstPort.code);
+              const seaHrs = gapHrs - manIn;
+              if(seaHrs > 0){
+                const speed = (lastPort.speed != null && lastPort.speed > 0) ? lastPort.speed : getDailySpeed(vessel, indices[g]);
+                if(speed > 0){
+                  lastPort.dist = Math.round(seaHrs * speed);
+                }
+              }
+            }
+          }
+        }
+
+        // If dist is now set, cascade into next voyage
+        if(lastPort.dist > 0){
+          recalcCrossVoyageCascade(vessel, indices[g], prevVoy.ports.length - 1);
+        }
+      }
+      autoSaveFleet();
+    }
+  }
+
+  saveLinkedGroups();
+  closeLinkVoyagesModal();
+  renderDailyFleet();
+  renderDailyDetail();
+}
+
+function clearLinkedVoyages(){
+  if(!_linkModalVesselCode) return;
+  if(!confirm('确定清除该船的所有航次链接？')) return;
+  delete linkedVoyageGroups[_linkModalVesselCode];
+  saveLinkedGroups();
+  continuousViewActive = false;
+  closeLinkVoyagesModal();
+  renderDailyFleet();
+  renderDailyDetail();
+  showToast('已清除航次链接', 'success');
+}
+
+function toggleContinuousView(){
+  continuousViewActive = !continuousViewActive;
+  if(continuousViewActive && dailySelectedVessel){
+    const group = getLinkedGroup(dailySelectedVessel.code, dailySelectedVessel.voyIdx);
+    if(!group || group.length <= 1){
+      continuousViewActive = false;
+      showToast('当前航次未链接其他航次，请先在左侧卡片点击🔗配置链接', 'warning');
+      return;
+    }
+  }
+  renderDailyDetail();
+}
+
+// ===== Cross-voyage transition calculation =====
+// Calculate the connection info between last port of prev voyage and first port of next voyage
+function getCrossVoyageInfo(vessel, prevVoyIdx, nextVoyIdx){
+  const prevVoy = vessel.voyages[prevVoyIdx];
+  const nextVoy = vessel.voyages[nextVoyIdx];
+  if(!prevVoy || !nextVoy || !prevVoy.ports || !nextVoy.ports || !prevVoy.ports.length || !nextVoy.ports.length){
+    return null;
+  }
+
+  const lastPort = prevVoy.ports[prevVoy.ports.length - 1];
+  const firstPort = nextVoy.ports[0];
+  const prevSpeed = (lastPort.speed != null && lastPort.speed > 0) ? lastPort.speed : getDailySpeed(vessel, prevVoyIdx);
+
+  const result = {
+    lastPort: lastPort,
+    firstPort: firstPort,
+    lastPortCode: lastPort.code,
+    firstPortCode: firstPort.code,
+    lastEtd: lastPort.etd || '',
+    firstEta: firstPort.eta || '',
+    dist: lastPort.dist || 0,
+    speed: prevSpeed,
+    seaHrs: 0,
+    gapHrs: 0,
+    gapText: '',
+    hasData: false
+  };
+
+  // Check if we have enough data
+  if(result.dist > 0 && prevSpeed > 0){
+    result.seaHrs = result.dist / prevSpeed;
+    result.hasData = true;
+  }
+
+  // Calculate gap between last ETD and first ETA
+  if(result.lastEtd && result.firstEta){
+    const etdDt = new Date(result.lastEtd);
+    const etaDt = new Date(result.firstEta);
+    if(!isNaN(etdDt.getTime()) && !isNaN(etaDt.getTime())){
+      const gapMs = etaDt.getTime() - etdDt.getTime();
+      result.gapHrs = gapMs / 3600000;
+      if(result.gapHrs > 0){
+        const gapDays = Math.floor(result.gapHrs / 24);
+        const remainHrs = Math.round(result.gapHrs % 24);
+        result.gapText = gapDays > 0 ? (gapDays + 'd ' + remainHrs + 'h') : (Math.round(result.gapHrs) + 'h');
+      } else if(result.gapHrs === 0){
+        result.gapText = '0h';
+      } else {
+        result.gapText = '⚠️ 时间冲突';
+      }
+    }
+  }
+
+  // If dist is 0 but both times exist, suggest distance
+  if(result.dist === 0 && result.gapHrs > 0 && prevSpeed > 0){
+    result.suggestedDist = Math.round(result.gapHrs * prevSpeed);
+    result.suggestedSeaHrs = result.gapHrs;
+  }
+
+  return result;
+}
+
+// Apply suggested cross-voyage distance to the last port of the previous voyage
+function applyCrossVoyageDist(vesselCode, prevVoyIdx, nextVoyIdx, dist){
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel) return;
+  const prevVoy = vessel.voyages[prevVoyIdx];
+  if(!prevVoy || !prevVoy.ports || !prevVoy.ports.length) return;
+
+  // Save undo snapshot
+  pushDailyUndo(vesselCode, prevVoyIdx);
+
+  const lastPort = prevVoy.ports[prevVoy.ports.length - 1];
+  lastPort.dist = dist;
+
+  // Cascade: recalc from last port of prev voyage into all linked subsequent voyages
+  recalcCrossVoyageCascade(vessel, prevVoyIdx, prevVoy.ports.length - 1);
+
+  autoSaveFleet();
+  renderDailyDetail();
+  updateUndoRedoButtons();
+  showToast('✓ 已设置跨航次距离: ' + dist + ' nm，已级联更新后续航次时间', 'success');
+}
+
+// ===== Cross-voyage cascade recalculation =====
+// After recalculating within a voyage, if the last port's ETD changed
+// and this voyage is linked to a subsequent one, continue into that next voyage.
+// Called with the voyage that just finished recalculating, and the last port index within it.
+function recalcCrossVoyageCascade(vessel, voyIdx, lastAffectedPortIdx){
+  const voy = vessel.voyages[voyIdx];
+  if(!voy || !voy.ports) return;
+
+  // If we haven't reached the last port yet, nothing to cascade
+  // (the regular recalcDailyFromPort handled everything within this voyage)
+  if(lastAffectedPortIdx < voy.ports.length - 1) return;
+
+  // Get the last port
+  const lastPort = voy.ports[voy.ports.length - 1];
+  if(!lastPort.etd || !lastPort.dist || lastPort.dist <= 0) return;
+
+  // Find the linked group containing this voyage
+  const group = getLinkedGroup(vessel.code, voyIdx);
+  if(!group || group.length <= 1) return;
+
+  // Find position of current voyage in the group
+  const posInGroup = group.indexOf(voyIdx);
+  if(posInGroup < 0 || posInGroup >= group.length - 1) return; // not in group or last in group
+
+  // Get the next voyage in the linked group
+  const nextVoyIdx = group[posInGroup + 1];
+  const nextVoy = vessel.voyages[nextVoyIdx];
+  if(!nextVoy || !nextVoy.ports || !nextVoy.ports.length) return;
+
+  // Calculate the cross-voyage transition
+  const lastSpeed = (lastPort.speed != null && lastPort.speed > 0) ? lastPort.speed : getDailySpeed(vessel, voyIdx);
+  if(lastSpeed <= 0) return;
+
+  const firstPort = nextVoy.ports[0];
+  const seaHrs = lastPort.dist / lastSpeed;
+  const manIn = firstPort.manIn != null ? firstPort.manIn : getPortManIn(firstPort.code);
+  const runHrs = seaHrs + manIn;
+  const prevEtdDt = new Date(lastPort.etd);
+  if(isNaN(prevEtdDt.getTime())) return;
+
+  // Recalculate first port's ETA/ETB/ETD
+  const etaDt = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+  round6Min(etaDt);
+  const waitHrs = firstPort.waitHrs || 0;
+  const stayHrs = firstPort.stayHrs != null ? firstPort.stayHrs : getPortStay(firstPort.code);
+  const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
+  round6Min(etbDt);
+  const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
+  round6Min(etdDt);
+
+  firstPort.eta = toDatetimeLocal(etaDt);
+  firstPort.etb = toDatetimeLocal(etbDt);
+  firstPort.etd = toDatetimeLocal(etdDt);
+
+  // Now continue recalculating within the next voyage from its port[1] onward
+  recalcDailyFromPort(vessel, nextVoyIdx, 1);
+
+  // Recursively cascade if next voyage is also linked to another
+  recalcCrossVoyageCascade(vessel, nextVoyIdx, nextVoy.ports.length - 1);
 }
 
 function getLaneName(code){
@@ -3690,59 +4519,213 @@ function getLaneName(code){
   return l ? l.name : code;
 }
 
+// ===== Undo/Redo Stack =====
+const DAILY_UNDO_MAX = 5;
+let dailyUndoStack = []; // array of { vesselCode, voyIdx, portsSnapshot }
+let dailyRedoStack = [];
+let dailyUndoContext = null; // { vesselCode, voyIdx } - track current editing context
+
+function deepCopyPorts(ports){
+  return JSON.parse(JSON.stringify(ports));
+}
+
+function pushUndoSnapshot(vesselCode, voyIdx){
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel || !vessel.voyages[voyIdx]) return;
+  const snapshot = deepCopyPorts(vessel.voyages[voyIdx].ports);
+  dailyUndoStack.push({ vesselCode, voyIdx, ports: snapshot });
+  if(dailyUndoStack.length > DAILY_UNDO_MAX) dailyUndoStack.shift();
+  dailyRedoStack = []; // clear redo on new edit
+  updateUndoRedoButtons();
+}
+
+function undoDailyEdit(){
+  if(!dailyUndoStack.length) return;
+  const snap = dailyUndoStack.pop();
+  const vessel = FLEET_DATA.vessels.find(v => v.code === snap.vesselCode);
+  if(!vessel || !vessel.voyages[snap.voyIdx]) return;
+
+  // Push current state to redo
+  dailyRedoStack.push({
+    vesselCode: snap.vesselCode,
+    voyIdx: snap.voyIdx,
+    ports: deepCopyPorts(vessel.voyages[snap.voyIdx].ports)
+  });
+
+  // Restore snapshot
+  vessel.voyages[snap.voyIdx].ports = deepCopyPorts(snap.ports);
+  vessel.voyages[snap.voyIdx].lastModified = new Date().toISOString();
+  vessel.voyages[snap.voyIdx].modifiedBy = 'Undo';
+
+  renderDailyDetail();
+  autoSaveFleet();
+  updateUndoRedoButtons();
+  showToast('Undo successful', 'success');
+}
+
+function redoDailyEdit(){
+  if(!dailyRedoStack.length) return;
+  const snap = dailyRedoStack.pop();
+  const vessel = FLEET_DATA.vessels.find(v => v.code === snap.vesselCode);
+  if(!vessel || !vessel.voyages[snap.voyIdx]) return;
+
+  // Push current state to undo
+  dailyUndoStack.push({
+    vesselCode: snap.vesselCode,
+    voyIdx: snap.voyIdx,
+    ports: deepCopyPorts(vessel.voyages[snap.voyIdx].ports)
+  });
+
+  // Restore
+  vessel.voyages[snap.voyIdx].ports = deepCopyPorts(snap.ports);
+  vessel.voyages[snap.voyIdx].lastModified = new Date().toISOString();
+  vessel.voyages[snap.voyIdx].modifiedBy = 'Redo';
+
+  renderDailyDetail();
+  autoSaveFleet();
+  updateUndoRedoButtons();
+  showToast('Redo successful', 'success');
+}
+
+function clearUndoRedo(){
+  dailyUndoStack = [];
+  dailyRedoStack = [];
+  dailyUndoContext = null;
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons(){
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  if(undoBtn){
+    undoBtn.disabled = dailyUndoStack.length === 0;
+    undoBtn.textContent = dailyUndoStack.length > 0 ? '↩ Undo (' + dailyUndoStack.length + ')' : '↩ Undo';
+  }
+  if(redoBtn){
+    redoBtn.disabled = dailyRedoStack.length === 0;
+    redoBtn.textContent = dailyRedoStack.length > 0 ? '↪ Redo (' + dailyRedoStack.length + ')' : '↪ Redo';
+  }
+}
+
+// ===== Quick Search =====
+// Fuzzy search across FLEET_DATA: matches vessel code/name, voyage No, lane code
+let dailyQuickFilter = '';
+
+function onQuickSearch(value){
+  dailyQuickFilter = (value || '').trim().toUpperCase();
+  renderDailyFleet();
+}
+
+function clearDailyFilters(){
+  dailyQuickFilter = '';
+  dailySelectedVesselCode = '';
+  dailySelectedLaneCode = '';
+  dailySelectedVoyNo = '';
+  const qs = document.getElementById('dailyQuickSearch');
+  if(qs) qs.value = '';
+  const vi = document.getElementById('dailyVesselInput');
+  if(vi) vi.value = '';
+  const li = document.getElementById('dailyLaneInput');
+  if(li) li.value = '';
+  const yf = document.getElementById('dailyVoyFilter');
+  if(yf) yf.value = '';
+  renderDailyFleet();
+}
+
+
 function getUniqueVesselList(){
   const map = {};
-  FLEET_DATA.vessels.forEach(v => {
-    if(!map[v.code]) map[v.code] = { code: v.code, name: v.name, voyages: [] };
-    v.voyages.forEach((voy, idx) => {
-      map[v.code].voyages.push({ ...voy, _vIdx: idx });
+  const result = [];
+  FLEET_DATA.vessels.forEach(function(v) {
+    if(!map[v.code]) { map[v.code] = { code: v.code, name: v.name, voyages: [] }; result.push(map[v.code]); }
+    v.voyages.forEach(function(voy, idx) {
+      var copy = {};
+      for(var k in voy) { if(voy.hasOwnProperty(k)) copy[k]=voy[k]; }
+      copy._vIdx = idx;
+      map[v.code].voyages.push(copy);
     });
   });
-  return Object.values(map);
+  return result;
 }
 
 function renderDailyFleet(){
   const container = document.getElementById('dailyFleetList');
-  const laneFilter = document.getElementById('dailyLaneFilter').value;
-  const search = document.getElementById('dailySearch').value.toLowerCase().trim();
+  const voyFilter = (document.getElementById('dailyVoyFilter').value || '').toLowerCase().trim();
+
+  // Debug: show current filter state
+  console.log('[renderDailyFleet] FLEET_DATA.vessels:', FLEET_DATA.vessels.length,
+    '| quickFilter:', dailyQuickFilter,
+    '| vesselCode:', dailySelectedVesselCode,
+    '| laneCode:', dailySelectedLaneCode,
+    '| voyFilter:', voyFilter);
 
   let vessels = getUniqueVesselList();
 
-  // Filter by combobox vessel selection
+  // Quick search: fuzzy match across vessel code/name, voyage No, lane
+  // Supports compound match: "CUBK2601W" matches vessel "CUBK" + voyageNo "2601W"
+  if(dailyQuickFilter){
+    const qf = dailyQuickFilter;
+    vessels = vessels.filter(v => {
+      // 1. Whole-string match on any field
+      if(v.code.toUpperCase().includes(qf)) return true;
+      if((v.name||'').toUpperCase().includes(qf)) return true;
+      if(v.voyages.some(voy =>
+        (voy.voyNo||'').toUpperCase().includes(qf) ||
+        (voy.lane||'').toUpperCase().includes(qf)
+      )) return true;
+
+      // 2. Compound: vessel code + voyageNo拼接匹配
+      // e.g. query "CUBK2601W" → vessel "CUBK" + voyageNo "2601W"
+      const vc = v.code.toUpperCase();
+      if(qf.startsWith(vc)){
+        const rest = qf.slice(vc.length);
+        if(!rest) return true;
+        return v.voyages.some(voy =>
+          (voy.voyNo||'').toUpperCase().includes(rest)
+        );
+      }
+      // Also try voyageNo prefix + vessel code suffix (less common)
+      if(qf.endsWith(vc)){
+        const rest = qf.slice(0, qf.length - vc.length);
+        if(!rest) return true;
+        return v.voyages.some(voy =>
+          (voy.voyNo||'').toUpperCase().includes(rest)
+        );
+      }
+
+      return false;
+    });
+  }
+
+  // Filter by combobox vessel selection (supports partial match when typing)
   if(dailySelectedVesselCode){
-    vessels = vessels.filter(v => v.code === dailySelectedVesselCode);
+    const vCode = dailySelectedVesselCode.toUpperCase();
+    vessels = vessels.filter(v => v.code.toUpperCase().includes(vCode) || (v.name||'').toUpperCase().includes(vCode));
   }
-  // Filter by combobox lane selection
+  // Filter by combobox lane selection (supports partial match when typing)
   if(dailySelectedLaneCode){
+    const lCode = dailySelectedLaneCode.toUpperCase();
     vessels = vessels.filter(v =>
-      v.voyages.some(voy => voy.lane === dailySelectedLaneCode)
+      v.voyages.some(voy => (voy.lane||'').toUpperCase().includes(lCode))
     );
   }
-  // Filter by legacy lane dropdown (if used)
-  if(!dailySelectedLaneCode && laneFilter){
+  // Filter by voyage number (text input)
+  if(voyFilter){
     vessels = vessels.filter(v =>
-      v.voyages.some(voy => voy.lane === laneFilter)
-    );
-  }
-  // Filter by voyage number
-  if(dailySelectedVoyNo){
-    vessels = vessels.filter(v =>
-      v.voyages.some(voy => voy.voyNo === dailySelectedVoyNo)
-    );
-  }
-  // Filter by search
-  if(search){
-    vessels = vessels.filter(v =>
-      v.code.toLowerCase().includes(search) ||
-      v.name.toLowerCase().includes(search) ||
-      v.voyages.some(voy => (voy.voyNo||'').toLowerCase().includes(search))
+      v.voyages.some(voy => (voy.voyNo||'').toLowerCase().includes(voyFilter))
     );
   }
 
   document.getElementById('dailyVesselCount').textContent = vessels.length + ' vessel(s)';
 
   if(!vessels.length){
-    container.innerHTML = '<div class="daily-empty"><div class="icon">📋</div><div>No matching vessels.</div></div>';
+    const totalVessels = getUniqueVesselList().length;
+    const hasFilter = dailyQuickFilter || dailySelectedVesselCode || dailySelectedLaneCode || voyFilter;
+    if(totalVessels === 0){
+      container.innerHTML = '<div class="daily-empty"><div class="icon">📭</div><div>No fleet data yet.<br/>Use <b>+ New Voyage</b> to create one, or <b>📤 Import</b> to import from Excel.</div></div>';
+    } else {
+      container.innerHTML = '<div class="daily-empty"><div class="icon">🔍</div><div>No matching vessels for current filters.<br/><span style="font-size:.75rem;color:var(--muted);">Try clearing filters (click ✕ in search box) — ' + totalVessels + ' voyage(s) in total.</span></div></div>';
+    }
     return;
   }
 
@@ -3751,19 +4734,18 @@ function renderDailyFleet(){
     // Filter voyages by lane/voyNo
     let voyages = v.voyages;
     if(dailySelectedLaneCode){
-      voyages = voyages.filter(voy => voy.lane === dailySelectedLaneCode);
+      const lCode = dailySelectedLaneCode.toUpperCase();
+      voyages = voyages.filter(voy => (voy.lane||'').toUpperCase().includes(lCode));
     }
     if(dailySelectedVoyNo){
-      voyages = voyages.filter(voy => voy.voyNo === dailySelectedVoyNo);
-    }
-    if(laneFilter && !dailySelectedLaneCode){
-      voyages = voyages.filter(voy => voy.lane === laneFilter);
+      const vf = dailySelectedVoyNo.toLowerCase();
+      voyages = voyages.filter(voy => (voy.voyNo||'').toLowerCase().includes(vf));
     }
 
     // Show one card per voyage (grouped by vessel)
     voyages.forEach(voy => {
       const isSelected = dailySelectedVessel && dailySelectedVessel.code === v.code && dailySelectedVessel.voyIdx === voy._vIdx;
-      const isChecked = dailyCheckedVessels.has(v.code + '|' + voy._vIdx);
+      const isChecked = !!dailyCheckedVessels[v.code + '|' + voy._vIdx];
 
       const ports = voy.ports || [];
       const summary = ports.length > 0
@@ -3781,6 +4763,7 @@ function renderDailyFleet(){
             <span style="font-size:.78rem;color:var(--muted);margin-left:6px;">${esc(v.name)}</span>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
+            <button class="daily-link-btn${hasLinkedGroup(v.code)?' linked':''}" onclick="openLinkVoyagesModal('${v.code}',event)" title="🔗 链接航次（连续视图配置）">🔗</button>
             <input type="checkbox" ${isChecked?'checked':''} onclick="event.stopPropagation();toggleDailyCheck('${v.code}',${voy._vIdx},this.checked)" title="Select for export"/>
             <span class="vc-lane">${esc(voy.lane||'—')}</span>
           </div>
@@ -3788,16 +4771,20 @@ function renderDailyFleet(){
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px;">
           <span style="font-size:.75rem;font-weight:600;color:var(--primary);">${esc(voy.voyNo||'—')}</span>
           <span class="vc-status ${statusCls}">${statusText}</span>
+          ${hasLinkedGroup(v.code) ? '<span class="cv-badge">🔗已链接</span>' : ''}
         </div>
         <div class="vc-summary">${esc(summaryShort)}</div>
       </div>`;
     });
   });
-  });
   container.innerHTML = html;
 }
 
 function selectDailyVessel(code, voyIdx){
+  // Clear undo/redo when switching to a different voyage
+  if(!dailyUndoContext || dailyUndoContext.vesselCode !== code || dailyUndoContext.voyIdx !== voyIdx){
+    clearUndoRedo();
+  }
   dailySelectedVessel = { code, voyIdx };
   renderDailyFleet();
   renderDailyDetail();
@@ -3805,20 +4792,29 @@ function selectDailyVessel(code, voyIdx){
 
 function toggleDailyCheck(code, voyIdx, checked){
   const key = code + '|' + voyIdx;
-  if(checked) dailyCheckedVessels.add(key);
-  else dailyCheckedVessels.delete(key);
+  if(checked) dailyCheckedVessels[key] = true;
+  else delete dailyCheckedVessels[key];
+  updateExportBtnLabel();
 }
 
 function toggleAllDailyVessels(checked){
   const vessels = getUniqueVesselList();
-  dailyCheckedVessels.clear();
+  dailyCheckedVessels = {};
   if(checked){
     vessels.forEach(v => {
       let currentVoy = v.voyages.find(voy => voy.status !== 'completed') || v.voyages[0];
-      if(currentVoy) dailyCheckedVessels.add(v.code + '|' + currentVoy._vIdx);
+      if(currentVoy) dailyCheckedVessels[v.code + '|' + currentVoy._vIdx] = true;
     });
   }
   renderDailyFleet();
+  updateExportBtnLabel();
+}
+
+function updateExportBtnLabel(){
+  const btn = document.getElementById('dailyExportBtn');
+  if(!btn) return;
+  const count = Object.keys(dailyCheckedVessels).length;
+  btn.textContent = count > 0 ? '📄 Export PDF (' + count + ')' : '📄 Export PDF';
 }
 
 function renderDailyDetail(){
@@ -3838,48 +4834,240 @@ function renderDailyDetail(){
   const curIdx = Math.min(dailySelectedVessel.voyIdx, voyages.length - 1);
   const curVoy = voyages[curIdx];
 
+  // Check if continuous view should show
+  const linkedGroup = getLinkedGroup(vessel.code, curIdx);
+  const showContinuous = continuousViewActive && linkedGroup && linkedGroup.length > 1;
+
   // Voyage selector
   let voyOptions = voyages.map((v, i) =>
     `<option value="${i}"${i===curIdx?' selected':''}>${esc(v.voyNo||'?')} – ${esc(v.lane||'')} (${v.status==='completed'?'Completed':'Active'})</option>`
   ).join('');
 
-  // Ports table
+  // Continuous view toggle button
+  const cvBtnLabel = showContinuous ? '🔗 连续视图 (ON)' : '🔗 连续视图';
+  const cvBtnCls = showContinuous ? 'dm-btn dm-btn-primary cv-active' : 'dm-btn';
+  const cvBtnDisabled = !hasLinkedGroup(vessel.code) ? ' disabled title="请先在左侧卡片配置航次链接"' : '';
+
+  // Build ports HTML
   let portsHtml = '';
-  if(curVoy && curVoy.ports && curVoy.ports.length){
-    portsHtml = '<table class="daily-schedule-table"><thead><tr>' +
-      '<th>#</th><th>Port</th><th>ETA</th><th>ETB</th><th>ETD</th><th>Stay</th><th>Man In</th><th>Wait</th><th>Dist</th>' +
+  // Add port row (only in single voyage mode, not continuous view)
+  const addPortRow = `
+    <div class="daily-add-port-bar">
+      <div class="combobox-wrap" style="position:relative;flex:1;max-width:260px;">
+        <input type="text" id="dailyAddPortInput" placeholder="输入港口代码或名称" autocomplete="off"
+          oninput="dailyPortSearch(this.value,'${vessel.code}',${curIdx})"
+          onblur="setTimeout(()=>document.getElementById('dailyAddPortDropdown').style.display='none',200)"
+          onkeydown="if(event.key==='Enter')dailyAddPortConfirm('${vessel.code}',${curIdx})"/>
+        <span class="combobox-arrow" onclick="dailyPortSearchToggle('${vessel.code}',${curIdx})">&#9662;</span>
+        <div class="combobox-dropdown" id="dailyAddPortDropdown" style="top:100%;left:0;right:0;z-index:50;"></div>
+      </div>
+      <button class="dm-btn dm-btn-primary" style="padding:5px 14px;font-size:.8rem;" onclick="dailyAddPortConfirm('${vessel.code}',${curIdx})">＋ Add Port</button>
+    </div>`;
+
+  if(showContinuous){
+    // ===== CONTINUOUS VIEW: render multiple linked voyages =====
+    const sepColors = ['cv-sep-1', 'cv-sep-2', 'cv-sep-3', 'cv-sep-4'];
+    let globalPortNum = 0;
+    portsHtml = '<table class="daily-schedule-table" id="dailyPortsTable"><thead><tr>' +
+      DAILY_COLUMNS.map(function(c, ci) {
+        if(isDailyColHidden(c.key)) return '';
+        const style = ci === 0 ? ' style="width:28px;"' : (c.key === 'voyNo' ? ' style="white-space:nowrap;"' : '');
+        return '<th' + style + '>' + c.label + '</th>';
+      }).join('') +
       '</tr></thead><tbody>';
-    curVoy.ports.forEach((p, i) => {
-      const pp = PORT_MAP[p.code] || {};
-      const portDisplay = (pp.cn || pp.en || p.code);
-      portsHtml += `<tr>
-        <td>${i+1}</td>
-        <td class="port-code">${esc(p.code)}<br/><span style="font-size:.7rem;color:var(--muted);font-weight:400;">${esc(portDisplay)}</span></td>
-        <td><input type="datetime-local" value="${esc(p.eta||'')}" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'eta',this.value)"/></td>
-        <td><input type="datetime-local" value="${esc(p.etb||'')}" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'etb',this.value)"/></td>
-        <td><input type="datetime-local" value="${esc(p.etd||'')}" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'etd',this.value)"/></td>
-        <td><input type="number" value="${p.stayHrs||0}" min="0" step="1" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'stayHrs',this.value)"/></td>
-        <td><input type="number" value="${p.manIn||0}" min="0" step="0.5" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'manIn',this.value)"/></td>
-        <td><input type="number" value="${p.waitHrs||0}" min="0" step="1" onchange="onDailyPortEdit('${vessel.code}',${curIdx},${i},'waitHrs',this.value)"/></td>
-        <td>${p.dist?p.dist+' nm':'—'}</td>
-      </tr>`;
+
+    linkedGroup.forEach(function(voyIdx, groupPos){
+      const voy = voyages[voyIdx];
+      if(!voy || !voy.ports) return;
+      const isCurrentVoy = (voyIdx === curIdx);
+      const sepClass = sepColors[groupPos % sepColors.length];
+
+      // Voyage separator header row (except for the first voyage)
+      if(groupPos > 0){
+        const prevVoyIdx = linkedGroup[groupPos - 1];
+        const cvInfo = getCrossVoyageInfo(vessel, prevVoyIdx, voyIdx);
+
+        let transitionHtml = '';
+        if(cvInfo){
+          const prevVoy = voyages[prevVoyIdx];
+          const fromLabel = cvInfo.lastPortCode + (prevVoy ? ' (' + esc(prevVoy.voyNo || '?') + ')' : '');
+          const toLabel = cvInfo.firstPortCode + ' (' + esc(voy.voyNo || '?') + ')';
+
+          if(cvInfo.dist > 0){
+            // Has distance data - show full info
+            transitionHtml =
+              '<div class="cv-transition-info">' +
+                '<span class="cv-trans-route">🚢 ' + esc(fromLabel) + ' → ' + esc(toLabel) + '</span>' +
+                '<span class="cv-trans-stat">📏 ' + cvInfo.dist + ' nm</span>' +
+                '<span class="cv-trans-stat">⚡ ' + cvInfo.speed + ' kn</span>' +
+                '<span class="cv-trans-stat">🌊 ' + cvInfo.seaHrs.toFixed(1) + ' h</span>' +
+                (cvInfo.gapText ? '<span class="cv-trans-stat cv-trans-gap">⏱ ' + cvInfo.gapText + '</span>' : '') +
+              '</div>';
+          } else if(cvInfo.suggestedDist){
+            // No distance but can suggest from time gap
+            transitionHtml =
+              '<div class="cv-transition-info cv-trans-suggest">' +
+                '<span class="cv-trans-route">🚢 ' + esc(fromLabel) + ' → ' + esc(toLabel) + '</span>' +
+                '<span class="cv-trans-stat">⏱ ' + cvInfo.gapText + '</span>' +
+                '<span class="cv-trans-stat cv-trans-hint">💡 建议 ' + cvInfo.suggestedDist + ' nm / ' + cvInfo.suggestedSeaHrs.toFixed(1) + 'h</span>' +
+                '<button class="dm-btn dm-btn-primary" style="padding:2px 10px;font-size:.72rem;margin-left:8px;" onclick="applyCrossVoyageDist(\'' + vessel.code + '\',' + prevVoyIdx + ',' + voyIdx + ',' + cvInfo.suggestedDist + ')">应用</button>' +
+              '</div>';
+          } else {
+            // No data at all
+            transitionHtml =
+              '<div class="cv-transition-info cv-trans-suggest">' +
+                '<span class="cv-trans-route">🚢 ' + esc(fromLabel) + ' → ' + esc(toLabel) + '</span>' +
+                '<span class="cv-trans-stat cv-trans-hint">⚠️ 跨航次距离未设置，请在前航次末港填写 Dist(nm)</span>' +
+              '</div>';
+          }
+        }
+
+        portsHtml += '<tr><td colspan="' + DAILY_COLUMNS.filter(function(c){return !isDailyColHidden(c.key);}).length + '" style="padding:0;border:none;">' +
+          '<div class="cv-voyage-separator ' + sepClass + '">' +
+            '<span class="cv-voyage-label">Voyage ' + esc(voy.voyNo || '?') + ' – ' + esc(voy.lane || '') + '</span>' +
+          '</div>' +
+          (transitionHtml || '') +
+        '</td></tr>';
+      }
+
+      const voySpeed = getDailySpeed(vessel, voyIdx);
+      const defaultVoyNo = voy.voyNo || '';
+      const isEditable = isCurrentVoy; // Only current voyage is editable
+
+      voy.ports.forEach(function(p, i){
+        globalPortNum++;
+        const pp = PORT_MAP[p.code] || {};
+        const portDisplay = (pp.cn || pp.en || p.code);
+        const rowSpeed = p.speed != null ? p.speed : voySpeed;
+        const seaHrs = (rowSpeed > 0 && p.dist > 0) ? (p.dist / rowSpeed) : 0;
+        const portVoyNo = p.voyNo || defaultVoyNo;
+
+        if(isEditable){
+          portsHtml += '<tr draggable="true" ondragstart="onPortDragStart(event,' + i + ')" ondragover="onPortDragOver(event)" ondrop="onPortDrop(event,\'' + vessel.code + '\',' + voyIdx + ',' + i + ')" ondragend="onPortDragEnd(event)" style="cursor:grab;">';
+          DAILY_COLUMNS.forEach(function(c){
+            if(isDailyColHidden(c.key)) return;
+            switch(c.key){
+              case 'drag': portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.85rem;cursor:grab;" title="拖拽排序">⠿</td>'; break;
+              case 'num':  portsHtml += '<td>' + globalPortNum + '</td>'; break;
+              case 'port': portsHtml += '<td class="port-code">' + esc(p.code) + '<br/><span style="font-size:.7rem;color:var(--muted);font-weight:400;">' + esc(portDisplay) + '</span></td>'; break;
+              case 'manIn': portsHtml += '<td><input type="number" value="' + (p.manIn||0) + '" min="0" step="0.5" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'manIn\',this.value)"/></td>'; break;
+              case 'wait': portsHtml += '<td><input type="number" value="' + (p.waitHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'waitHrs\',this.value)"/></td>'; break;
+              case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="此港口所属航次号" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
+              case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.eta||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
+              case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etb||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
+              case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etd||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
+              case 'stay': portsHtml += '<td><input type="number" value="' + (p.stayHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'stayHrs\',this.value)"/></td>'; break;
+              case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="航速（节）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
+              case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="海上航行时间">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
+              case 'dist': portsHtml += '<td><input type="number" value="' + (p.dist||0) + '" min="0" step="1" style="width:64px;" title="到下一港距离（海里）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'dist\',this.value)"/></td>'; break;
+              case 'del':  portsHtml += '<td><button class="dm-btn" style="padding:2px 8px;font-size:.72rem;background:#e74c3c;color:#fff;border:none;" title="删除此港口" onclick="deleteDailyPort(\'' + vessel.code + '\',' + voyIdx + ',' + i + ')">✕</button></td>'; break;
+            }
+          });
+          portsHtml += '</tr>';
+        } else {
+          // Read-only rows for other voyages in the group
+          portsHtml += '<tr style="opacity:.88;">';
+          DAILY_COLUMNS.forEach(function(c){
+            if(isDailyColHidden(c.key)) return;
+            switch(c.key){
+              case 'drag': portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.85rem;">—</td>'; break;
+              case 'num':  portsHtml += '<td>' + globalPortNum + '</td>'; break;
+              case 'port': portsHtml += '<td class="port-code">' + esc(p.code) + '<br/><span style="font-size:.7rem;color:var(--muted);font-weight:400;">' + esc(portDisplay) + '</span></td>'; break;
+              case 'manIn': portsHtml += '<td style="text-align:center;">' + (p.manIn||0) + '</td>'; break;
+              case 'wait': portsHtml += '<td style="text-align:center;">' + (p.waitHrs||0) + '</td>'; break;
+              case 'voyNo': portsHtml += '<td style="font-weight:700;color:var(--accent2);font-size:.78rem;">' + esc(portVoyNo) + '</td>'; break;
+              case 'eta':  portsHtml += '<td>' + esc(p.eta||'—') + '</td>'; break;
+              case 'etb':  portsHtml += '<td>' + esc(p.etb||'—') + '</td>'; break;
+              case 'etd':  portsHtml += '<td>' + esc(p.etd||'—') + '</td>'; break;
+              case 'stay': portsHtml += '<td style="text-align:center;">' + (p.stayHrs||0) + '</td>'; break;
+              case 'speed': portsHtml += '<td style="text-align:right;">' + rowSpeed + '</td>'; break;
+              case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
+              case 'dist': portsHtml += '<td style="text-align:right;">' + (p.dist||0) + '</td>'; break;
+              case 'del':  portsHtml += '<td></td>'; break;
+            }
+          });
+          portsHtml += '</tr>';
+        }
+      });
     });
+
     portsHtml += '</tbody></table>';
+    // No add port row in continuous view
   } else {
-    portsHtml = '<div style="color:var(--muted);padding:20px;">No port data for this voyage.</div>';
+    // ===== SINGLE VOYAGE VIEW (original) =====
+    if(curVoy && curVoy.ports && curVoy.ports.length){
+      const voySpeed = getDailySpeed(vessel, curIdx);
+      const defaultVoyNo = curVoy.voyNo || '';
+      portsHtml = '<table class="daily-schedule-table" id="dailyPortsTable"><thead><tr>' +
+        DAILY_COLUMNS.map(function(c, ci) {
+          if(isDailyColHidden(c.key)) return '';
+          const style = ci === 0 ? ' style="width:28px;"' : (c.key === 'voyNo' ? ' style="white-space:nowrap;"' : '');
+          return '<th' + style + '>' + c.label + '</th>';
+        }).join('') +
+        '</tr></thead><tbody>';
+      curVoy.ports.forEach((p, i) => {
+        const pp = PORT_MAP[p.code] || {};
+        const portDisplay = (pp.cn || pp.en || p.code);
+        const rowSpeed = p.speed != null ? p.speed : voySpeed;
+        const seaHrs = (rowSpeed > 0 && p.dist > 0) ? (p.dist / rowSpeed) : 0;
+        const portVoyNo = p.voyNo || defaultVoyNo;
+        portsHtml += '<tr draggable="true" ondragstart="onPortDragStart(event,' + i + ')" ondragover="onPortDragOver(event)" ondrop="onPortDrop(event,\'' + vessel.code + '\',' + curIdx + ',' + i + ')" ondragend="onPortDragEnd(event)" style="cursor:grab;">';
+        DAILY_COLUMNS.forEach(function(c){
+          if(isDailyColHidden(c.key)) return;
+          switch(c.key){
+            case 'drag': portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.85rem;cursor:grab;" title="拖拽排序">⠿</td>'; break;
+            case 'num':  portsHtml += '<td>' + (i+1) + '</td>'; break;
+            case 'port': portsHtml += '<td class="port-code">' + esc(p.code) + '<br/><span style="font-size:.7rem;color:var(--muted);font-weight:400;">' + esc(portDisplay) + '</span></td>'; break;
+            case 'manIn': portsHtml += '<td><input type="number" value="' + (p.manIn||0) + '" min="0" step="0.5" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'manIn\',this.value)"/></td>'; break;
+            case 'wait': portsHtml += '<td><input type="number" value="' + (p.waitHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'waitHrs\',this.value)"/></td>'; break;
+            case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="此港口所属航次号，修改后 commit 生效" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
+            case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.eta||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
+            case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etb||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
+            case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etd||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
+            case 'stay': portsHtml += '<td><input type="number" value="' + (p.stayHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'stayHrs\',this.value)"/></td>'; break;
+            case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="本港出发到下一港的航速（节）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
+            case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="海上航行时间 = 距离 ÷ 速度">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
+            case 'dist': portsHtml += '<td><input type="number" value="' + (p.dist||0) + '" min="0" step="1" style="width:64px;" title="到下一港距离（海里）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'dist\',this.value)"/></td>'; break;
+            case 'del':  portsHtml += '<td><button class="dm-btn" style="padding:2px 8px;font-size:.72rem;background:#e74c3c;color:#fff;border:none;" title="删除此港口" onclick="deleteDailyPort(\'' + vessel.code + '\',' + curIdx + ',' + i + ')">✕</button></td>'; break;
+          }
+        });
+        portsHtml += '</tr>';
+      });
+      portsHtml += '</tbody></table>';
+      portsHtml += addPortRow;
+    } else {
+      portsHtml = `<div class="daily-empty-ports">
+        <div style="font-size:2rem;margin-bottom:8px;">⚓</div>
+        <div style="font-weight:600;color:var(--primary);margin-bottom:4px;">此航次暂无港口数据</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px;">可在下方搜索并添加港口，建立完整的靠泊计划</div>
+        ${addPortRow}
+      </div>`;
+    }
   }
 
-  const laneName = getLaneName(curVoy?.lane || '');
-  const modifiedBy = curVoy?.modifiedBy || '';
-  const lastMod = curVoy?.lastModified ? new Date(curVoy.lastModified).toLocaleString('zh-CN') : '';
+  // Build header meta for continuous view
+  let headerMeta = '';
+  if(showContinuous){
+    const voyLabels = linkedGroup.map(function(idx){
+      const v = voyages[idx];
+      return v ? esc(v.voyNo || '?') : '?';
+    }).join(' → ');
+    headerMeta = `<span>🔗 ${voyLabels}</span>
+        <span>📍 ${esc(curVoy?(curVoy.lane||'—'):'—')} – ${esc(getLaneName(curVoy ? curVoy.lane : ''))}</span>
+        <span class="vc-status ${curVoy&&curVoy.status==='completed'?'completed':'current'}">${curVoy&&curVoy.status==='completed'?'Completed':'Active'}</span>`;
+  } else {
+    headerMeta = `<span>📍 ${esc(curVoy?(curVoy.lane||'—'):'—')} – ${esc(getLaneName(curVoy ? curVoy.lane : ''))}</span>
+        <span>🔄 ${esc(curVoy?(curVoy.voyNo||'—'):'—')}</span>
+        <span class="vc-status ${curVoy&&curVoy.status==='completed'?'completed':'current'}">${curVoy&&curVoy.status==='completed'?'Completed':'Active'}</span>`;
+  }
+  const modifiedBy = curVoy ? (curVoy.modifiedBy || '') : '';
+  const lastMod = curVoy && curVoy.lastModified ? new Date(curVoy.lastModified).toLocaleString('zh-CN') : '';
 
   panel.innerHTML = `
     <div class="daily-detail-header">
       <h2>${esc(vessel.code)} – ${esc(vessel.name)}</h2>
       <div class="dd-meta">
-        <span>📍 ${esc(curVoy?.lane||'—')} – ${esc(laneName)}</span>
-        <span>🔄 ${esc(curVoy?.voyNo||'—')}</span>
-        <span class="vc-status ${curVoy?.status==='completed'?'completed':'current'}">${curVoy?.status==='completed'?'Completed':'Active'}</span>
+        ${headerMeta}
         ${modifiedBy ? '<span>✏️ '+esc(modifiedBy)+'</span>' : ''}
         ${lastMod ? '<span>🕐 '+lastMod+'</span>' : ''}
       </div>
@@ -3887,7 +5075,19 @@ function renderDailyDetail(){
     <div class="daily-voyage-selector">
       <label>Voyage:</label>
       <select onchange="selectDailyVessel('${vessel.code}',parseInt(this.value))">${voyOptions}</select>
-      <button class="dm-btn" onclick="archiveCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;" ${curVoy?.status==='completed'?'disabled':''}>📦 Archive</button>
+      <button class="${cvBtnCls}" onclick="toggleContinuousView()" ${cvBtnDisabled}>${cvBtnLabel}</button>
+      <button class="dm-btn dm-btn-undo" id="undoBtn" onclick="undoDailyEdit()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+      <button class="dm-btn dm-btn-redo" id="redoBtn" onclick="redoDailyEdit()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
+      <button class="dm-btn" onclick="archiveCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;background:#198754;color:#fff;" ${curVoy&&curVoy.status==='completed'?'disabled':''} title="标记当前航次为已完成">✅ Complete</button>
+      <div style="position:relative;display:inline-block;">
+        <button class="dm-btn" onclick="toggleColVisDropdown()" title="显示/隐藏列">☰ 列</button>
+        <div id="colVisDropdown" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 0;min-width:140px;box-shadow:0 4px 12px rgba(0,0,0,.15);">
+          ${DAILY_COLUMNS.filter(c => c.hideable).map(c =>
+            '<label style="display:flex;align-items:center;gap:6px;padding:4px 12px;font-size:.78rem;cursor:pointer;white-space:nowrap;">' +
+            '<input type="checkbox" ' + (isDailyColHidden(c.key) ? '' : 'checked') + ' onchange="toggleDailyCol(\'' + c.key + '\')"/> ' + c.label + '</label>'
+          ).join('')}
+        </div>
+      </div>
     </div>
     <div class="daily-detail-body">${portsHtml}</div>
     <div class="daily-detail-footer">
@@ -3903,14 +5103,490 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
   if(!vessel || !vessel.voyages[voyIdx]) return;
   const port = vessel.voyages[voyIdx].ports[portIdx];
   if(!port) return;
-  if(field === 'stayHrs' || field === 'manIn' || field === 'waitHrs' || field === 'dist'){
+
+  // Push undo snapshot before modification (debounce: only once per context switch)
+  if(!dailyUndoContext || dailyUndoContext.vesselCode !== vesselCode || dailyUndoContext.voyIdx !== voyIdx){
+    pushUndoSnapshot(vesselCode, voyIdx);
+    dailyUndoContext = { vesselCode, voyIdx };
+  }
+
+  if(field === 'stayHrs' || field === 'manIn' || field === 'waitHrs' || field === 'dist' || field === 'speed'){
     port[field] = parseFloat(value) || 0;
   } else {
     port[field] = value;
   }
+
+  // ===== 级联重算后续日期 =====
+  const ports = vessel.voyages[voyIdx].ports;
+  const speed = getDailySpeed(vessel, voyIdx);
+
+  if(field === 'eta'){
+    // 修改了本港 ETA → 重算本港的 ETB/ETD，以及后续各港
+    if(port.eta){
+      const etaDt = new Date(port.eta);
+      if(!isNaN(etaDt.getTime())){
+        const manIn = port.manIn != null ? port.manIn : getPortManIn(port.code);
+        const waitHrs = port.waitHrs || 0;
+        const stayHrs = port.stayHrs != null ? port.stayHrs : getPortStay(port.code);
+        const etb = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
+        round6Min(etb);
+        const etd = new Date(etb.getTime() + stayHrs * 3600000);
+        round6Min(etd);
+        port.etb = toDatetimeLocal(etb);
+        port.etd = toDatetimeLocal(etd);
+        // 级联推算后续
+        recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
+      }
+    }
+  } else if(field === 'etb'){
+    // 修改了 ETB → 重算本港 ETD（ETB + stayHrs），以及后续
+    if(port.etb){
+      const etbDt = new Date(port.etb);
+      if(!isNaN(etbDt.getTime())){
+        const stayHrs = port.stayHrs != null ? port.stayHrs : getPortStay(port.code);
+        const etd = new Date(etbDt.getTime() + stayHrs * 3600000);
+        round6Min(etd);
+        port.etd = toDatetimeLocal(etd);
+        recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
+      }
+    }
+  } else if(field === 'etd'){
+    // 修改了 ETD → 直接级联推算后续港口
+    recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
+  } else if(field === 'stayHrs'){
+    // 修改了 Stay → 重算本港 ETD，以及后续
+    if(port.etb){
+      const etbDt = new Date(port.etb);
+      if(!isNaN(etbDt.getTime())){
+        const etd = new Date(etbDt.getTime() + port.stayHrs * 3600000);
+        round6Min(etd);
+        port.etd = toDatetimeLocal(etd);
+        recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
+      }
+    }
+  } else if(field === 'manIn' || field === 'waitHrs'){
+    // 修改了 ManIn 或 Wait → 重算本港 ETB/ETD，以及后续
+    if(port.eta){
+      const etaDt = new Date(port.eta);
+      if(!isNaN(etaDt.getTime())){
+        const manIn = port.manIn != null ? port.manIn : getPortManIn(port.code);
+        const waitHrs = port.waitHrs || 0;
+        const stayHrs = port.stayHrs != null ? port.stayHrs : getPortStay(port.code);
+        const etb = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
+        round6Min(etb);
+        const etd = new Date(etb.getTime() + stayHrs * 3600000);
+        round6Min(etd);
+        port.etb = toDatetimeLocal(etb);
+        port.etd = toDatetimeLocal(etd);
+        recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
+      }
+    }
+  } else if(field === 'dist'){
+    // 修改了本港 dist（到下一港的距离）→ 级联推算下一港起的日期
+    recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
+  } else if(field === 'speed'){
+    // 修改了本港的出发速度 → 级联推算下一港起的日期
+    recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
+  }
+
   // Track modification
   vessel.voyages[voyIdx].lastModified = new Date().toISOString();
   vessel.voyages[voyIdx].modifiedBy = localStorage.getItem('gh_username') || 'anonymous';
+  autoSaveFleet();
+  // Re-render to show updated dates
+  renderDailyDetail();
+  // 恢复 Undo/Redo 按钮状态（render 重建 DOM 后按钮会回到 disabled）
+  updateUndoRedoButtons();
+}
+
+// 修改航次速度 → 全局重算所有港口日期
+function onDailySpeedChange(vesselCode, voyIdx, value){
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel || !vessel.voyages[voyIdx]) return;
+  const speed = parseFloat(value) || 14;
+  const oldSpeed = vessel.voyages[voyIdx].speed || 14;
+  vessel.voyages[voyIdx].speed = speed;
+  pushUndoSnapshot(vesselCode, voyIdx);
+  // 将所有港口中 speed 等于旧航次速度（即未单独调整过）的行，同步更新为新速度
+  (vessel.voyages[voyIdx].ports || []).forEach(p => {
+    if(p.speed == null || p.speed === oldSpeed) p.speed = speed;
+  });
+  recalcDailyFromPort(vessel, voyIdx, 0);
+  vessel.voyages[voyIdx].lastModified = new Date().toISOString();
+  vessel.voyages[voyIdx].modifiedBy = localStorage.getItem('gh_username') || 'anonymous';
+  autoSaveFleet();
+  renderDailyDetail();
+  updateUndoRedoButtons();
+  showToast('✓ 速度已更新：' + speed + ' kn，已重算后续港口日期', 'success');
+}
+
+// ===== Daily: Add / Delete Port =====
+function dailyPortSearch(val, vesselCode, voyIdx){
+  val = val.trim().toUpperCase();
+  const dd = document.getElementById('dailyAddPortDropdown');
+  if(!dd) return;
+  // PORTS_DATA format: [code, name_en, name_cn, man_in, portstay_time]
+  const items = PORTS_DATA.filter(p =>
+    (p[0]||'').toUpperCase().includes(val) || (p[1]||'').toUpperCase().includes(val) || (p[2]||'').toUpperCase().includes(val)
+  ).slice(0, 20);
+  if(!items.length || !val){ dd.style.display='none'; return; }
+  dd.innerHTML = items.map(p =>
+    `<div class="combobox-item" onmousedown="dailyAddPortPick('${esc(p[0])}','${esc(vesselCode)}',${voyIdx})">
+      <strong>${esc(p[0])}</strong> <span style="color:var(--muted);font-size:.8em;">${esc(p[2]||p[1]||'')}</span>
+    </div>`
+  ).join('');
+  dd.style.display = 'block';
+}
+function dailyPortSearchToggle(vesselCode, voyIdx){
+  const inp = document.getElementById('dailyAddPortInput');
+  if(inp){ dailyPortSearch(inp.value, vesselCode, voyIdx); inp.focus(); }
+}
+function dailyAddPortPick(portCode, vesselCode, voyIdx){
+  const inp = document.getElementById('dailyAddPortInput');
+  if(inp) inp.value = portCode;
+  const dd = document.getElementById('dailyAddPortDropdown');
+  if(dd) dd.style.display = 'none';
+}
+// ===== Fleet Daily: 获取航次速度（优先 voyage.speed，其次 VESSELS_DATA，默认14） =====
+function getDailySpeed(vessel, voyIdx){
+  const voy = vessel && vessel.voyages && vessel.voyages[voyIdx];
+  if(voy && voy.speed) return parseFloat(voy.speed);
+  const vd = VESSELS_DATA.find(v => v.code === vessel.code);
+  return (vd && vd.speed) ? vd.speed : 14;
+}
+
+// ===== Fleet Daily: 将 Date 格式化为 datetime-local 字符串 =====
+function toDatetimeLocal(d){
+  if(!d || isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+// ===== Fleet Daily: 将 Date 的分钟四舍五入到 6 的倍数（0.1小时精度） =====
+function round6Min(d){
+  if(!d || isNaN(d.getTime())) return d;
+  const ms = d.getSeconds() * 1000 + d.getMilliseconds();
+  const totalMin = d.getMinutes() + ms / 60000;
+  const rounded = Math.round(totalMin / 6) * 6;
+  const overflow = Math.floor(rounded / 60);
+  d.setMinutes(rounded % 60, 0, 0);
+  if(overflow > 0) d.setHours(d.getHours() + overflow);
+  return d;
+}
+
+// ===== Fleet Daily: 列可见性配置 =====
+const DAILY_COLUMNS = [
+  { key: 'drag',   label: '',             hideable: false },
+  { key: 'num',    label: '#',            hideable: false },
+  { key: 'port',   label: 'Port',         hideable: false },
+  { key: 'manIn',  label: 'ManIn(h)',     hideable: true },
+  { key: 'wait',   label: 'Wait(h)',      hideable: true },
+  { key: 'voyNo',  label: 'Voyage No.',   hideable: true },
+  { key: 'eta',    label: 'ETA',          hideable: true },
+  { key: 'etb',    label: 'ETB',          hideable: true },
+  { key: 'etd',    label: 'ETD',          hideable: true },
+  { key: 'stay',   label: 'Stay(h)',      hideable: true },
+  { key: 'speed',  label: 'Speed(kn)',    hideable: true },
+  { key: 'sea',    label: 'Sea(h)',       hideable: true },
+  { key: 'dist',   label: 'Dist(nm)',     hideable: true },
+  { key: 'del',    label: '',             hideable: false },
+];
+let dailyHiddenCols = JSON.parse(localStorage.getItem('dailyHiddenCols') || '[]');
+
+function isDailyColHidden(key){
+  return dailyHiddenCols.indexOf(key) >= 0;
+}
+function toggleDailyCol(key){
+  const idx = dailyHiddenCols.indexOf(key);
+  if(idx >= 0) dailyHiddenCols.splice(idx, 1);
+  else dailyHiddenCols.push(key);
+  localStorage.setItem('dailyHiddenCols', JSON.stringify(dailyHiddenCols));
+  renderDailyDetail();
+}
+function getVisibleColKeys(){
+  return DAILY_COLUMNS.filter(c => c.hideable && !isDailyColHidden(c.key)).map(c => c.key);
+}
+function toggleColVisDropdown(){
+  const dd = document.getElementById('colVisDropdown');
+  if(!dd) return;
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e){
+  const dd = document.getElementById('colVisDropdown');
+  if(dd && !e.target.closest('#colVisDropdown') && !e.target.closest('[onclick*="toggleColVisDropdown"]')){
+    dd.style.display = 'none';
+  }
+});
+
+// ===== Fleet Daily: 从上一港 ETD 推算本港 ETA/ETB/ETD =====
+// prevPort: {etd, dist(到本港距离)} | null
+// thisPort: {code}
+// speed: knots
+function calcDailyPortTimes(prevPort, thisPortCode, speed){
+  const manIn = getPortManIn(thisPortCode);
+  const stayHrs = getPortStay(thisPortCode);
+  let eta = null, etb = null, etd = null;
+  if(prevPort && prevPort.etd){
+    const prevEtdDt = new Date(prevPort.etd);
+    if(!isNaN(prevEtdDt.getTime()) && prevPort.dist > 0 && speed > 0){
+      const seaHrs = prevPort.dist / speed;
+      const runHrs = seaHrs + manIn; // 单船逻辑：runHrs 含下一港 manIn
+      eta = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+      // round to nearest 6-min
+      round6Min(eta);
+    }
+  }
+  if(eta){
+    etb = new Date(eta.getTime() + (manIn) * 3600000);
+    round6Min(etb);
+    etd = new Date(etb.getTime() + stayHrs * 3600000);
+    round6Min(etd);
+  }
+  return { manIn, stayHrs, waitHrs: 0,
+    eta: eta ? toDatetimeLocal(eta) : '',
+    etb: etb ? toDatetimeLocal(etb) : '',
+    etd: etd ? toDatetimeLocal(etd) : ''
+  };
+}
+
+// ===== Fleet Daily: 级联重算从 fromIdx 开始后续所有港口的 ETA/ETB/ETD =====
+// 不重算 manIn/stayHrs/waitHrs/dist（用户可能已手动修改），只推算日期
+function recalcDailyFromPort(vessel, voyIdx, fromIdx){
+  const voy = vessel.voyages[voyIdx];
+  if(!voy || !voy.ports || fromIdx >= voy.ports.length) return;
+  const voySpeed = getDailySpeed(vessel, voyIdx); // 航次默认速度（兜底）
+  for(let i = fromIdx; i < voy.ports.length; i++){
+    const p = voy.ports[i];
+    if(i === 0){
+      // 第一港：若有 ETA 则基于 ETA 推算 ETB/ETD，否则跳过
+      if(p.eta){
+        const etaDt = new Date(p.eta);
+        if(!isNaN(etaDt.getTime())){
+          const manIn = p.manIn != null ? p.manIn : getPortManIn(p.code);
+          const waitHrs = p.waitHrs || 0;
+          const stayHrs = p.stayHrs != null ? p.stayHrs : getPortStay(p.code);
+          const etb = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
+          round6Min(etb);
+          const etd = new Date(etb.getTime() + stayHrs * 3600000);
+          round6Min(etd);
+          p.etb = toDatetimeLocal(etb);
+          p.etd = toDatetimeLocal(etd);
+        }
+      }
+      continue;
+    }
+    // i > 0：由上一港 ETD + 上一港 dist + 上一港 speed 推算
+    const prev = voy.ports[i - 1];
+    if(!prev.etd || !prev.dist || prev.dist <= 0) continue;
+    const prevEtdDt = new Date(prev.etd);
+    if(isNaN(prevEtdDt.getTime())) continue;
+    // 每段使用上一港自己的 speed（上一港出发的速度），兜底用航次速度
+    const segSpeed = (prev.speed != null && prev.speed > 0) ? prev.speed : voySpeed;
+    if(segSpeed <= 0) continue;
+    const manIn = p.manIn != null ? p.manIn : getPortManIn(p.code);
+    const waitHrs = p.waitHrs || 0;
+    const stayHrs = p.stayHrs != null ? p.stayHrs : getPortStay(p.code);
+    const seaHrs = prev.dist / segSpeed;
+    const runHrs = seaHrs + manIn; // 与单船逻辑一致
+    const etaDt = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+    round6Min(etaDt);
+    const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
+    round6Min(etbDt);
+    const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
+    round6Min(etdDt);
+    p.eta = toDatetimeLocal(etaDt);
+    p.etb = toDatetimeLocal(etbDt);
+    p.etd = toDatetimeLocal(etdDt);
+  }
+
+  // ===== Cross-voyage cascade =====
+  // If we recalculated all the way to the last port and this voyage is linked,
+  // cascade into the next linked voyage
+  recalcCrossVoyageCascade(vessel, voyIdx, voy.ports.length - 1);
+}
+
+async function dailyAddPortConfirm(vesselCode, voyIdx){
+  const inp = document.getElementById('dailyAddPortInput');
+  if(!inp) return;
+  const portCode = inp.value.trim().toUpperCase();
+  if(!portCode){ showToast('请输入港口代码', 'warning'); return; }
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel || !vessel.voyages[voyIdx]) return;
+
+  const pp = PORT_MAP[portCode] || {};
+  const manIn = pp.manIn != null ? pp.manIn : DEFAULT_MAN_IN;
+  const stayHrs = pp.portstay || 24;
+
+  pushUndoSnapshot(vesselCode, voyIdx);
+
+  const ports = vessel.voyages[voyIdx].ports;
+  const prevPort = ports.length > 0 ? ports[ports.length - 1] : null;
+  const speed = getDailySpeed(vessel, voyIdx);
+
+  // 先计算出到本港的距离（上一港 → 本港）
+  let dist = 0;
+  if(prevPort){
+    const cachedDist = getDistance(prevPort.code, portCode);
+    if(cachedDist > 0){
+      dist = cachedDist;
+      // 更新上一港 dist 字段
+      prevPort.dist = dist;
+    }
+  }
+
+  // 推算 ETA/ETB/ETD（使用上一港的 dist 到本港）
+  let etaStr = '', etbStr = '', etdStr = '';
+  if(prevPort && prevPort.etd && prevPort.dist > 0 && speed > 0){
+    const prevEtdDt = new Date(prevPort.etd);
+    if(!isNaN(prevEtdDt.getTime())){
+      const seaHrs = prevPort.dist / speed;
+      const runHrs = seaHrs + manIn;
+      const etaDt = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+      round6Min(etaDt);
+      const etbDt = new Date(etaDt.getTime() + manIn * 3600000);
+      round6Min(etbDt);
+      const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
+      round6Min(etdDt);
+      etaStr = toDatetimeLocal(etaDt);
+      etbStr = toDatetimeLocal(etbDt);
+      etdStr = toDatetimeLocal(etdDt);
+    }
+  }
+
+  ports.push({
+    code: portCode,
+    name: pp.en || portCode,
+    eta: etaStr, etb: etbStr, etd: etdStr,
+    stayHrs: stayHrs, manIn: manIn, waitHrs: 0, dist: 0,
+    speed: speed  // 默认继承航次速度，用户可逐行修改
+  });
+
+  vessel.voyages[voyIdx].lastModified = new Date().toISOString();
+  vessel.voyages[voyIdx].modifiedBy = localStorage.getItem('gh_username') || 'anonymous';
+  autoSaveFleet();
+  renderDailyDetail();
+  updateUndoRedoButtons();
+
+  // Re-focus the add port input for quick continuous entry
+  setTimeout(() => {
+    const newInp = document.getElementById('dailyAddPortInput');
+    if(newInp){ newInp.value = ''; newInp.focus(); }
+  }, 50);
+
+  showToast('✓ 港口已添加：' + portCode + (dist > 0 ? '（距离已从缓存填入）' : ''), 'success');
+
+  // 若本地缓存中没有距离，异步查询 searoute
+  if(prevPort && (!dist || dist === 0)){
+    showToast('🔍 正在查询 ' + prevPort.code + ' → ' + portCode + ' 的航行距离...', 'info', 3000);
+    try {
+      const result = await fetchSearouteDistance(prevPort.code, portCode);
+      if(result && result.distance > 0){
+        // 回填到上一港 dist
+        const vessel2 = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+        if(vessel2 && vessel2.voyages[voyIdx]){
+          const ports2 = vessel2.voyages[voyIdx].ports;
+          const prevIdx = ports2.length - 2;
+          if(prevIdx >= 0){
+            ports2[prevIdx].dist = Math.round(result.distance);
+            // 同时更新 DIST_MAP 缓存
+            const k = distKey(prevPort.code, portCode);
+            DIST_MAP[k] = Math.round(result.distance);
+            // 级联重算本港（最后一港）的日期
+            recalcDailyFromPort(vessel2, voyIdx, prevIdx);
+            vessel2.voyages[voyIdx].lastModified = new Date().toISOString();
+            autoSaveFleet();
+            renderDailyDetail();
+            updateUndoRedoButtons();
+            showToast('✓ ' + prevPort.code + ' → ' + portCode + ' 距离：' + Math.round(result.distance) + ' nm', 'success');
+          }
+        }
+      } else {
+        showToast('⚠️ 未能自动查询到距离，请手动填写 Dist 列', 'warning');
+      }
+    } catch(e){
+      console.warn('Searoute query failed:', e);
+      showToast('⚠️ 距离查询失败，请手动填写 Dist 列', 'warning');
+    }
+  }
+}
+// ===== Port Drag & Drop Reordering =====
+let _dragPortIdx = null;
+
+function onPortDragStart(event, portIdx){
+  _dragPortIdx = portIdx;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', String(portIdx));
+  // Add visual feedback after a short delay (so the drag image isn't affected)
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#dailyPortsTable tbody tr');
+    if(rows[portIdx]) rows[portIdx].style.opacity = '0.4';
+  }, 0);
+}
+
+function onPortDragOver(event){
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  // Highlight the drop target row
+  const targetRow = event.target.closest('tr');
+  if(targetRow){
+    // Remove highlight from all rows
+    document.querySelectorAll('#dailyPortsTable tbody tr').forEach(r => r.style.borderTop = '');
+    targetRow.style.borderTop = '3px solid var(--primary)';
+  }
+}
+
+function onPortDrop(event, vesselCode, voyIdx, targetIdx){
+  event.preventDefault();
+  // Clean up styles
+  document.querySelectorAll('#dailyPortsTable tbody tr').forEach(r => {
+    r.style.opacity = '';
+    r.style.borderTop = '';
+  });
+
+  if(_dragPortIdx === null || _dragPortIdx === targetIdx) return;
+
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel || !vessel.voyages[voyIdx]) return;
+
+  pushUndoSnapshot(vesselCode, voyIdx);
+
+  const ports = vessel.voyages[voyIdx].ports;
+  const [movedPort] = ports.splice(_dragPortIdx, 1);
+  ports.splice(targetIdx, 0, movedPort);
+
+  vessel.voyages[voyIdx].lastModified = new Date().toISOString();
+  vessel.voyages[voyIdx].modifiedBy = localStorage.getItem('gh_username') || 'anonymous';
+
+  autoSaveFleet();
+  renderDailyDetail();
+  updateUndoRedoButtons();
+  showToast('港口顺序已调整', 'success');
+  _dragPortIdx = null;
+}
+
+function onPortDragEnd(event){
+  // Clean up all drag styles
+  document.querySelectorAll('#dailyPortsTable tbody tr').forEach(r => {
+    r.style.opacity = '';
+    r.style.borderTop = '';
+  });
+  _dragPortIdx = null;
+}
+
+function deleteDailyPort(vesselCode, voyIdx, portIdx){
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel || !vessel.voyages[voyIdx]) return;
+  const portCode = vessel.voyages[voyIdx].ports[portIdx] ? vessel.voyages[voyIdx].ports[portIdx].code : '';
+  if(!confirm('确认删除港口 ' + portCode + '？')) return;
+  pushUndoSnapshot(vesselCode, voyIdx);
+  vessel.voyages[voyIdx].ports.splice(portIdx, 1);
+  vessel.voyages[voyIdx].lastModified = new Date().toISOString();
+  vessel.voyages[voyIdx].modifiedBy = localStorage.getItem('gh_username') || 'anonymous';
+  autoSaveFleet();
+  renderDailyDetail();
+  updateUndoRedoButtons();
+  showToast('港口已删除：' + portCode, 'success');
 }
 
 async function commitFleetSchedule(){
@@ -3990,6 +5666,9 @@ async function commitFleetSchedule(){
     FLEET_DATA.lastSync = new Date().toISOString();
     setStatus('✓ Committed: ' + result.commit.sha.slice(0,7));
     showToast('Fleet schedule committed to GitHub ✓', 'success');
+    clearUndoRedo();
+    autoSaveFleet();
+    initDailyComboboxes(); // Refresh combobox lists
     renderDailyDetail();
   } catch(err){
     console.error('Fleet commit error:', err);
@@ -4002,10 +5681,10 @@ function archiveCurrentVoyage(vesselCode, voyIdx){
   const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
   if(!vessel || !vessel.voyages[voyIdx]) return;
   if(vessel.voyages[voyIdx].status === 'completed') return;
-  if(!confirm('Archive voyage ' + vessel.voyages[voyIdx].voyNo + '? It will be marked as completed.')) return;
+  if(!confirm('确认完成航次 ' + vessel.voyages[voyIdx].voyNo + '？完成后将不再显示在默认列表中。')) return;
   vessel.voyages[voyIdx].status = 'completed';
   vessel.voyages[voyIdx].lastModified = new Date().toISOString();
-  showToast('Voyage archived as completed', 'success');
+  showToast('航次 ' + vessel.voyages[voyIdx].voyNo + ' 已标记为完成', 'success');
   renderDailyFleet();
   renderDailyDetail();
 }
@@ -4018,7 +5697,8 @@ function syncToDaily(){
   }
 
   const vesselCode = currentVessel.code || document.getElementById('vesselInput').value.trim().split('–')[0].trim();
-  const vesselName = currentVessel.name || document.getElementById('vesselInput').value.trim().split('–')[1]?.trim() || vesselCode;
+  var _nameParts = document.getElementById('vesselInput').value.trim().split('–');
+  const vesselName = currentVessel.name || (_nameParts[1] ? _nameParts[1].trim() : '') || vesselCode;
   const voyNo = document.getElementById('voyNoInput').value || '001W';
 
   if(!vesselCode){ showToast('Please select a vessel first', 'warning'); return; }
@@ -4038,7 +5718,7 @@ function syncToDaily(){
   // Build voyage ports from scheduleRows
   const ports = scheduleRows.map(row => ({
     code: row.port,
-    name: PORT_MAP[row.port]?.en || row.port,
+    name: (PORT_MAP[row.port] ? PORT_MAP[row.port].en : null) || row.port,
     eta: row.eta || '',
     etb: row.etb || '',
     etd: row.etd || '',
@@ -4074,6 +5754,7 @@ function syncToDaily(){
   }
 
   showToast('✓ Schedule synced to Daily — ' + vesselCode + ' / ' + voyNo, 'success');
+  autoSaveFleet();
 
   // Ask to commit immediately
   if(confirm('Commit to GitHub now?')){
@@ -4083,54 +5764,138 @@ function syncToDaily(){
 }
 
 function addNewVoyage(){
-  const vesselCode = prompt('Enter Vessel Code (e.g. CUBK):');
-  if(!vesselCode) return;
+  // Open the New Voyage modal
+  const overlay = document.getElementById('nvOverlay');
+  if(!overlay) return;
+  // Reset fields
+  document.getElementById('nvVesselInput').value = '';
+  document.getElementById('nvVoyNo').value = '';
+  document.getElementById('nvLaneInput').value = '';
+  overlay.classList.add('open');
+  setTimeout(() => document.getElementById('nvVesselInput').focus(), 80);
+}
 
-  let laneCode = '';
-  if(LANES_DATA.length){
-    const options = LANES_DATA.map(l => l.code + ' – ' + l.name).join('\n');
-    laneCode = prompt('Enter Lane Code:\n' + options);
-    if(!laneCode) return;
-    laneCode = laneCode.split('–')[0].trim().toUpperCase();
-  } else {
-    laneCode = prompt('Enter Lane Code:');
-  }
+function closeNewVoyageModal(){
+  document.getElementById('nvOverlay').classList.remove('open');
+}
 
-  const voyNo = prompt('Enter Voyage Number (e.g. 001W):', '001W');
-  if(!voyNo) return;
+// ---- Vessel combobox in NV modal ----
+function nvVesselSearch(val){
+  val = val.trim().toUpperCase();
+  const dd = document.getElementById('nvVesselDropdown');
+  const items = VESSELS_DATA.filter(v =>
+    v.code.toUpperCase().includes(val) || (v.name||'').toUpperCase().includes(val)
+  ).slice(0, 20);
+  if(!items.length){ dd.style.display='none'; return; }
+  dd.innerHTML = items.map(v =>
+    `<div class="combobox-item" onmousedown="nvVesselPick('${esc(v.code)}')">
+      <strong>${esc(v.code)}</strong> <span style="color:var(--muted);font-size:.8em;">${esc(v.name||'')}</span>
+    </div>`
+  ).join('');
+  dd.style.display = 'block';
+}
+function nvVesselPick(code){
+  document.getElementById('nvVesselInput').value = code;
+  document.getElementById('nvVesselDropdown').style.display = 'none';
+}
+function nvVesselClose(){
+  document.getElementById('nvVesselDropdown').style.display = 'none';
+}
+function nvVesselToggle(){
+  const inp = document.getElementById('nvVesselInput');
+  nvVesselSearch(inp.value);
+  inp.focus();
+}
 
-  const vesselName = VESSELS_DATA.find(v=>v.code===vesselCode.toUpperCase())?.name || vesselCode;
-  const code = vesselCode.toUpperCase();
+// ---- Lane combobox in NV modal ----
+function nvLaneSearch(val){
+  val = val.trim().toUpperCase();
+  const dd = document.getElementById('nvLaneDropdown');
+  const items = LANES_DATA.filter(l =>
+    l.code.toUpperCase().includes(val) || (l.name||'').toUpperCase().includes(val)
+  ).slice(0, 20);
+  if(!items.length){ dd.style.display='none'; return; }
+  dd.innerHTML = items.map(l =>
+    `<div class="combobox-item" onmousedown="nvLanePick('${esc(l.code)}')">
+      <strong>${esc(l.code)}</strong> <span style="color:var(--muted);font-size:.8em;">${esc(l.name||'')}</span>
+    </div>`
+  ).join('');
+  dd.style.display = 'block';
+}
+function nvLanePick(code){
+  document.getElementById('nvLaneInput').value = code;
+  document.getElementById('nvLaneDropdown').style.display = 'none';
+}
+function nvLaneClose(){
+  document.getElementById('nvLaneDropdown').style.display = 'none';
+}
+function nvLaneToggle(){
+  const inp = document.getElementById('nvLaneInput');
+  nvLaneSearch(inp.value);
+  inp.focus();
+}
 
-  let vessel = FLEET_DATA.vessels.find(v => v.code === code);
+function submitNewVoyage(){
+  const vesselCode = document.getElementById('nvVesselInput').value.trim().toUpperCase();
+  const voyNo = document.getElementById('nvVoyNo').value.trim().toUpperCase();
+  const laneCode = document.getElementById('nvLaneInput').value.trim().toUpperCase();
+
+  if(!vesselCode){ showToast('请输入船名代码', 'warning'); document.getElementById('nvVesselInput').focus(); return; }
+  if(!voyNo){ showToast('请输入航次号', 'warning'); document.getElementById('nvVoyNo').focus(); return; }
+  if(!laneCode){ showToast('请输入航线代码', 'warning'); document.getElementById('nvLaneInput').focus(); return; }
+
+  const _vMatch = VESSELS_DATA.find(v => v.code === vesselCode);
+  const vesselName = _vMatch ? _vMatch.name : vesselCode;
+
+  let vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
   if(!vessel){
-    vessel = { code, name: vesselName, voyages: [] };
+    vessel = { code: vesselCode, name: vesselName, voyages: [] };
     FLEET_DATA.vessels.push(vessel);
+  } else {
+    vessel.name = vessel.name || vesselName;
   }
 
-  vessel.voyages.push({
-    voyNo, lane: laneCode, status: 'current',
-    ports: [], lastModified: new Date().toISOString(),
-    modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
-  });
+  // Check duplicate
+  const existIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
+  if(existIdx >= 0){
+    if(!confirm('航次 ' + voyNo + ' 已存在，是否覆盖？')) return;
+    vessel.voyages[existIdx] = {
+      voyNo, lane: laneCode, status: 'current',
+      ports: [], lastModified: new Date().toISOString(),
+      modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
+    };
+    dailySelectedVessel = { code: vesselCode, voyIdx: existIdx };
+  } else {
+    vessel.voyages.push({
+      voyNo, lane: laneCode, status: 'current',
+      ports: [], lastModified: new Date().toISOString(),
+      modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
+    });
+    dailySelectedVessel = { code: vesselCode, voyIdx: vessel.voyages.length - 1 };
+  }
 
-  dailySelectedVessel = { code, voyIdx: vessel.voyages.length - 1 };
+  closeNewVoyageModal();
+  clearUndoRedo();
+  initDailyComboboxes(); // Refresh vessel/lane lists
   renderDailyFleet();
   renderDailyDetail();
-  showToast('New voyage added: ' + code + ' / ' + voyNo, 'success');
+  autoSaveFleet();
+  showToast('✓ 航次已创建：' + vesselCode + ' / ' + voyNo + '，请添加港口', 'success');
 }
 
 // ===== Export Fleet to Excel =====
 function exportFleetExcel(){
   let vesselsToExport = [];
 
-  if(dailyCheckedVessels.size > 0){
+  var _checkedKeys = Object.keys(dailyCheckedVessels);
+  if(_checkedKeys.length > 0){
     // Export selected
-    dailyCheckedVessels.forEach(key => {
-      const [code, vIdx] = key.split('|');
-      const vessel = FLEET_DATA.vessels.find(v => v.code === code);
+    _checkedKeys.forEach(function(key) {
+      var parts = key.split('|');
+      var code = parts[0], vIdx = parts[1];
+      const vessel = FLEET_DATA.vessels.find(function(v){return v.code === code;});
       if(vessel && vessel.voyages[vIdx]){
-        vesselsToExport.push({ vessel, voyage: vessel.voyages[vIdx] });
+        vesselsToExport.push({ vessel: vessel, voyage: vessel.voyages[vIdx] });
       }
     });
   } else if(dailySelectedVessel){
@@ -4157,31 +5922,636 @@ function exportFleetExcel(){
   vesselsToExport.forEach(({vessel, voyage}) => {
     const sheetName = (vessel.code + '_' + voyage.voyNo).replace(/[^A-Za-z0-9_]/g, '').slice(0, 31);
     const rows = [];
-    const header = ['Vessel', 'Vessel Name', 'Lane', 'Lane Name', 'Voyage No', 'Status',
-                    'Port', 'Port Name', 'ETA', 'ETB', 'ETD', 'Stay Hrs', 'Man In', 'Wait Hrs', 'Dist (NM)'];
+
+    // Define all columns with keys for visibility filtering
+    const allCols = [
+      { key: null,    label: 'Vessel' },
+      { key: null,    label: 'Vessel Name' },
+      { key: null,    label: 'Lane' },
+      { key: null,    label: 'Lane Name' },
+      { key: null,    label: 'Voyage No' },
+      { key: null,    label: 'Status' },
+      { key: null,    label: 'Port' },
+      { key: null,    label: 'Port Name' },
+      { key: 'manIn', label: 'ManIn(h)' },
+      { key: 'wait',  label: 'Wait(h)' },
+      { key: 'voyNo', label: 'Port Voy.No' },
+      { key: 'eta',   label: 'ETA' },
+      { key: 'etb',   label: 'ETB' },
+      { key: 'etd',   label: 'ETD' },
+      { key: 'stay',  label: 'Stay(h)' },
+      { key: 'speed', label: 'Speed(kn)' },
+      { key: 'sea',   label: 'Sea(h)' },
+      { key: 'dist',  label: 'Dist(nm)' },
+    ];
+    const visCols = allCols.filter(function(c){ return !c.key || !isDailyColHidden(c.key); });
+    const header = visCols.map(function(c){ return c.label; });
     rows.push(header);
 
     (voyage.ports || []).forEach((p, i) => {
       const pp = PORT_MAP[p.code] || {};
-      rows.push([
-        vessel.code, vessel.name, voyage.lane, getLaneName(voyage.lane), voyage.voyNo, voyage.status,
-        p.code, pp.cn || pp.en || p.code,
-        p.eta ? new Date(p.eta).toLocaleString('zh-CN') : '',
-        p.etb ? new Date(p.etb).toLocaleString('zh-CN') : '',
-        p.etd ? new Date(p.etd).toLocaleString('zh-CN') : '',
-        p.stayHrs || 0, p.manIn || 0, p.waitHrs || 0, p.dist || 0
-      ]);
+      const rowSpeed = p.speed != null ? p.speed : (voyage.speed || 14);
+      const seaHrs = (rowSpeed > 0 && p.dist > 0) ? +(p.dist / rowSpeed).toFixed(1) : 0;
+
+      // Build all cell values keyed by key
+      const allVals = {
+        'Vessel': vessel.code,
+        'Vessel Name': vessel.name,
+        'Lane': voyage.lane,
+        'Lane Name': getLaneName(voyage.lane),
+        'Voyage No': voyage.voyNo,
+        'Status': voyage.status,
+        'Port': p.code,
+        'Port Name': pp.cn || pp.en || p.code,
+        'ManIn(h)': p.manIn || 0,
+        'Wait(h)': p.waitHrs || 0,
+        'Port Voy.No': p.voyNo || voyage.voyNo || '',
+        'ETA': p.eta ? new Date(p.eta).toLocaleString('zh-CN') : '',
+        'ETB': p.etb ? new Date(p.etb).toLocaleString('zh-CN') : '',
+        'ETD': p.etd ? new Date(p.etd).toLocaleString('zh-CN') : '',
+        'Stay(h)': p.stayHrs || 0,
+        'Speed(kn)': rowSpeed,
+        'Sea(h)': seaHrs,
+        'Dist(nm)': p.dist || 0,
+      };
+      rows.push(visCols.map(function(c){ return allVals[c.label]; }));
     });
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     // Auto column widths
-    ws['!cols'] = header.map((h, i) => ({ wch: i < 6 ? 14 : i < 9 ? 10 : 18 }));
+    ws['!cols'] = header.map(function(h, i){ return { wch: h.length > 12 ? 18 : (h.length > 6 ? 14 : 10) }; });
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
   });
 
   const filename = 'Fleet_Schedule_' + new Date().toISOString().slice(0,10) + '.xlsx';
   XLSX.writeFile(wb, filename);
   showToast('Exported ' + vesselsToExport.length + ' voyage(s) to ' + filename, 'success');
+}
+
+// ===== PDF Export: native jsPDF table drawing with auto-pagination =====
+function exportFleetPDF(){
+  let exportItems = [];
+
+  var _checkedKeys = Object.keys(dailyCheckedVessels);
+  if(_checkedKeys.length > 0){
+    const grouped = {};
+    _checkedKeys.forEach(function(key){
+      var parts = key.split('|');
+      var code = parts[0], vIdx = parseInt(parts[1]);
+      if(!grouped[code]) grouped[code] = [];
+      grouped[code].push(vIdx);
+    });
+    Object.keys(grouped).forEach(function(code){
+      const vessel = FLEET_DATA.vessels.find(v => v.code === code);
+      if(!vessel) return;
+      if(continuousViewActive && dailySelectedVessel && dailySelectedVessel.code === code){
+        const curIdx = dailySelectedVessel.voyIdx;
+        const group = getLinkedGroup(code, curIdx);
+        if(group && group.length > 1){
+          exportItems.push({ vessel, voyages: group.slice().sort((a,b) => a - b) });
+          return;
+        }
+      }
+      exportItems.push({ vessel, voyages: grouped[code].sort((a,b) => a - b) });
+    });
+  } else if(dailySelectedVessel){
+    const vessel = FLEET_DATA.vessels.find(v => v.code === dailySelectedVessel.code);
+    if(!vessel) { showToast('No vessel selected', 'warning'); return; }
+    const curIdx = dailySelectedVessel.voyIdx;
+    if(continuousViewActive){
+      const group = getLinkedGroup(vessel.code, curIdx);
+      if(group && group.length > 1){
+        exportItems.push({ vessel, voyages: group.slice().sort((a,b) => a - b) });
+      } else {
+        exportItems.push({ vessel, voyages: [curIdx] });
+      }
+    } else {
+      exportItems.push({ vessel, voyages: [curIdx] });
+    }
+  } else {
+    FLEET_DATA.vessels.forEach(v => {
+      if(!v.voyages || !v.voyages.length) return;
+      const cur = v.voyages.findIndex(voy => voy.status !== 'completed');
+      const idx = cur >= 0 ? cur : 0;
+      exportItems.push({ vessel: v, voyages: [idx] });
+    });
+  }
+
+  if(!exportItems.length){
+    showToast('No data to export', 'warning');
+    return;
+  }
+
+  showToast('Generating PDF...', 'info');
+
+  // Use setTimeout to let toast show
+  setTimeout(function(){
+    try {
+      buildPdfNative(exportItems);
+    } catch(err){
+      console.error('PDF export error:', err);
+      showToast('PDF export failed: ' + err.message, 'danger');
+    }
+  }, 100);
+}
+
+function buildPdfNative(exportItems){
+  const { jsPDF } = window.jspdf;
+
+  // A3 landscape for more column space
+  const pdf = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a3'
+  });
+
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const marginL = 12, marginR = 12, marginT = 12, marginB = 18;
+  const usableW = pageW - marginL - marginR;
+
+  // Color palette
+  const C = {
+    navy:     [26, 58, 92],
+    navyLt:   [44, 95, 138],
+    white:    [255, 255, 255],
+    black:    [33, 37, 41],
+    muted:    [108, 117, 125],
+    altRow:   [247, 250, 253],
+    teal:     [23, 162, 184],
+    green:    [26, 107, 60],
+    red:      [139, 26, 26],
+    blue:     [44, 90, 160],
+    amber:    [139, 94, 0],
+    headerBg: [232, 237, 243],
+    line:     [208, 217, 228],
+    lineBold: [192, 200, 212],
+    footerBg: [243, 246, 249],
+    sepBg:    [240, 244, 248],
+  };
+
+  // Column definitions: [key, label, width_mm, align]
+  // Use proportional widths that add up to usableW
+  const totalColWeight = 100;
+  const colDefs = [
+    { key: 'num',   label: '#',           w: 3.5, align: 'center' },
+    { key: 'port',  label: 'Port',        w: 10,  align: 'left' },
+    { key: 'manIn', label: 'ManIn(h)',    w: 5,   align: 'center' },
+    { key: 'wait',  label: 'Wait(h)',     w: 5,   align: 'center' },
+    { key: 'voyNo', label: 'Voy.No',      w: 7,   align: 'center' },
+    { key: 'eta',   label: 'ETA',         w: 10,  align: 'center' },
+    { key: 'etb',   label: 'ETB',         w: 10,  align: 'center' },
+    { key: 'etd',   label: 'ETD',         w: 10,  align: 'center' },
+    { key: 'stay',  label: 'Stay(h)',     w: 5.5, align: 'center' },
+    { key: 'speed', label: 'Speed(kn)',   w: 6.5, align: 'center' },
+    { key: 'sea',   label: 'Sea(h)',      w: 6.5, align: 'center' },
+    { key: 'dist',  label: 'Dist(nm)',    w: 6.5, align: 'center' },
+    { key: 'remark',label: 'Remark',      w: 14.5,align: 'left' },
+  ];
+
+  // Filter out hidden columns (only hideable ones)
+  const visibleColDefs = colDefs.filter(function(c){ return !isDailyColHidden(c.key); });
+
+  // Calculate actual widths in mm
+  const totalWeight = visibleColDefs.reduce((s, c) => s + c.w, 0);
+  visibleColDefs.forEach(c => { c.widthMm = (c.w / totalWeight) * usableW; });
+
+  // Accumulate x positions
+  let xPos = marginL;
+  visibleColDefs.forEach(c => { c.x = xPos; xPos += c.widthMm; });
+
+  // Now = { jsPDF instance, y cursor, pageNum }
+  let y = marginT;
+  let pageNum = 0;
+
+  function newPage(){
+    if(pageNum > 0) pdf.addPage();
+    pageNum++;
+    y = marginT;
+    // Page border / header line
+    pdf.setDrawColor(...C.line);
+    pdf.setLineWidth(0.3);
+    pdf.line(marginL, marginT - 2, pageW - marginR, marginT - 2);
+  }
+
+  function ensureSpace(needed){
+    if(y + needed > pageH - marginB){
+      newPage();
+      return true;
+    }
+    return false;
+  }
+
+  function applyFont(size, style){
+    pdf.setFont('helvetica', style || 'normal');
+    pdf.setFontSize(size);
+  }
+
+  function applyTextColor(r, g, b){
+    pdf.setTextColor(r, g, b);
+  }
+
+  function applyBgColor(r, g, b){
+    pdf.setFillColor(r, g, b);
+  }
+
+  function drawRoundedRect(x, yy, w, h, r){
+    pdf.setDrawColor(...C.navy);
+    pdf.setLineWidth(0.4);
+    pdf.roundedRect(x, yy, w, h, r, r, 'FD');
+  }
+
+  // ===== DOCUMENT TITLE =====
+  newPage();
+
+  // Title
+  applyFont(18, 'bold');
+  applyTextColor(...C.navy);
+  pdf.text('Fleet Schedule', pageW / 2, y + 8, { align: 'center' });
+  y += 6;
+
+  // Subtitle - date
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit' });
+  const timeStr = now.toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
+  applyFont(9, 'normal');
+  applyTextColor(...C.muted);
+  pdf.text('Generated: ' + dateStr + ' ' + timeStr, pageW / 2, y + 5, { align: 'center' });
+  y += 12;
+
+  // ===== DRAW EACH VESSEL =====
+  exportItems.forEach(function(item, blockIdx){
+    const vessel = item.vessel;
+    const voyages = item.voyages;
+    const firstVoy = vessel.voyages[voyages[0]];
+    const lane = firstVoy ? (firstVoy.lane || '') : '';
+    const laneName = lane ? getLaneName(lane) : '';
+    const isContinuous = voyages.length > 1;
+    const voyLabels = voyages.map(function(idx){
+      const v = vessel.voyages[idx];
+      return v ? (v.voyNo || '?') : '?';
+    }).join(' \u2192 ');
+
+    // --- Vessel header block ---
+    ensureSpace(22);
+    const headerH = isContinuous ? 20 : 16;
+
+    // Gradient-like header using two rectangles
+    applyBgColor(...C.navy);
+    pdf.roundedRect(marginL, y, usableW, headerH, 3, 3, 'F');
+
+    // Vessel info
+    applyFont(12, 'bold');
+    applyTextColor(...C.white);
+    pdf.text(vessel.code + '  ' + (vessel.name || ''), marginL + 10, y + 7);
+
+    applyFont(8.5, 'normal');
+    applyTextColor(...C.white);
+    pdf.setTextColor(200, 215, 230);
+    pdf.text('Lane: ' + lane + (laneName ? ' (' + laneName + ')' : ''), marginL + 10, y + 12.5);
+    if(isContinuous){
+      pdf.text('Voyage: ' + voyLabels, marginL + 10, y + 16.5);
+    }
+
+    // Date on the right
+    applyFont(8, 'normal');
+    pdf.setTextColor(180, 200, 220);
+    pdf.text(dateStr + ' ' + timeStr, marginL + usableW - 10, y + 7, { align: 'right' });
+
+    y += headerH + 2;
+
+    // --- Table header ---
+    ensureSpace(10);
+    applyBgColor(...C.headerBg);
+    const thH = 8;
+    pdf.rect(marginL, y, usableW, thH, 'F');
+
+    // Bottom border for header
+    pdf.setDrawColor(...C.navy);
+    pdf.setLineWidth(0.6);
+    pdf.line(marginL, y + thH, marginL + usableW, y + thH);
+
+    visibleColDefs.forEach(function(c){
+      applyFont(7.5, 'bold');
+      applyTextColor(...C.navy);
+      const align = (c.align === 'center' || c.align === 'right') ? c.align : 'left';
+      const tx = c.align === 'right' ? c.x + c.widthMm - 3 : (c.align === 'center' ? c.x + c.widthMm / 2 : c.x + 2);
+      pdf.text(c.label, tx, y + thH / 2 + 2.5, { align: align });
+    });
+
+    // Vertical lines in header
+    pdf.setDrawColor(...C.line);
+    pdf.setLineWidth(0.15);
+    visibleColDefs.forEach(function(c){
+      pdf.line(c.x, y, c.x, y + thH);
+    });
+    pdf.line(marginL + usableW, y, marginL + usableW, y + thH);
+
+    y += thH;
+
+    // --- Table rows ---
+    let globalPortNum = 0;
+    let lastVoyNo = '';
+
+    voyages.forEach(function(voyIdx, groupPos){
+      const voy = vessel.voyages[voyIdx];
+      if(!voy || !voy.ports) return;
+
+      // Voyage separator for continuous view
+      if(isContinuous && groupPos > 0){
+        const prevVoyIdx = voyages[groupPos - 1];
+        const cvInfo = getCrossVoyageInfo(vessel, prevVoyIdx, voyIdx);
+        let transitionText = '';
+        if(cvInfo && cvInfo.dist > 0){
+          const fromPort = cvInfo.lastPortCode + ' (' + (vessel.voyages[prevVoyIdx] ? (vessel.voyages[prevVoyIdx].voyNo || '?') : '?') + ')';
+          const toPort = cvInfo.firstPortCode + ' (' + (voy.voyNo || '?') + ')';
+          transitionText = fromPort + ' -> ' + toPort + '  |  ' + cvInfo.dist + ' nm  |  ' + cvInfo.speed + ' kn  |  ' + cvInfo.seaHrs.toFixed(1) + 'h';
+        }
+        ensureSpace(12);
+        applyBgColor(...C.sepBg);
+        const sepH = transitionText ? 11 : 7;
+        pdf.rect(marginL, y, usableW, sepH, 'F');
+        pdf.setDrawColor(...C.lineBold);
+        pdf.setLineWidth(0.4);
+        pdf.line(marginL, y + sepH, marginL + usableW, y + sepH);
+        applyFont(8, 'bold');
+        applyTextColor(...C.navy);
+        pdf.text('Voyage ' + (voy.voyNo || '?') + ' \u2013 ' + (voy.lane || ''), marginL + 4, y + 5);
+        if(transitionText){
+          applyFont(7, 'normal');
+          applyTextColor(73, 80, 87);
+          pdf.text(transitionText, marginL + 4, y + 9.5);
+        }
+        y += sepH;
+      }
+
+      const voySpeed = getDailySpeed(vessel, voyIdx);
+      const defaultVoyNo = voy.voyNo || '';
+      const rowH = 6.5;
+
+      voy.ports.forEach(function(p, i){
+        ensureSpace(rowH + 2);
+
+        globalPortNum++;
+        const pp = PORT_MAP[p.code] || {};
+        const portDisplay = pp.cn || pp.en || p.code;
+        const rowSpeed = (p.speed != null && p.speed > 0) ? p.speed : voySpeed;
+        const seaHrs = (rowSpeed > 0 && p.dist > 0) ? (p.dist / rowSpeed) : 0;
+        const portVoyNo = p.voyNo || defaultVoyNo;
+        lastVoyNo = portVoyNo;
+
+        const isAlt = (globalPortNum % 2 === 0);
+        if(isAlt){
+          applyBgColor(...C.altRow);
+          pdf.rect(marginL, y, usableW, rowH, 'F');
+        }
+
+        // Build cell values (keyed by col key)
+        const allCells = {
+          num:    { val: String(globalPortNum), color: C.muted, bold: false },
+          port:   { val: p.code + ' ' + portDisplay, color: C.navy, bold: true },
+          manIn:  { val: String(p.manIn || 0), color: C.black, bold: false },
+          wait:   { val: String(p.waitHrs || 0), color: C.black, bold: false },
+          voyNo:  { val: portVoyNo, color: C.teal, bold: true },
+          eta:    { val: formatDtPdfNative(p.eta), color: C.green, bold: false },
+          etb:    { val: formatDtPdfNative(p.etb), color: C.green, bold: false },
+          etd:    { val: formatDtPdfNative(p.etd), color: C.red, bold: false },
+          stay:   { val: String(p.stayHrs || 0), color: C.black, bold: false },
+          speed:  { val: String(rowSpeed), color: C.black, bold: false },
+          sea:    { val: seaHrs > 0 ? seaHrs.toFixed(1) : '\u2014', color: C.blue, bold: false },
+          dist:   { val: String(p.dist || 0), color: C.amber, bold: false },
+          remark: { val: p.remark || '', color: C.muted, bold: false },
+        };
+
+        visibleColDefs.forEach(function(c){
+          const val = allCells[c.key];
+          if(!val) return;
+          applyFont(7, val.bold ? 'bold' : 'normal');
+          applyTextColor(...val.color);
+          const align = c.align || 'left';
+          const tx = c.align === 'right' ? c.x + c.widthMm - 2 : (c.align === 'center' ? c.x + c.widthMm / 2 : c.x + 1.5);
+          pdf.text(val.val, tx, y + rowH / 2 + 2.3, { align: align });
+        });
+
+        // Horizontal line
+        pdf.setDrawColor(...C.line);
+        pdf.setLineWidth(0.1);
+        pdf.line(marginL, y + rowH, marginL + usableW, y + rowH);
+
+        // Vertical lines
+        pdf.setLineWidth(0.06);
+        visibleColDefs.forEach(function(c){
+          pdf.line(c.x, y, c.x, y + rowH);
+        });
+        pdf.line(marginL + usableW, y, marginL + usableW, y + rowH);
+
+        y += rowH;
+      });
+    });
+
+    // Table bottom border
+    pdf.setDrawColor(...C.navy);
+    pdf.setLineWidth(0.4);
+    pdf.line(marginL, y, marginL + usableW, y);
+    y += 8;
+  });
+
+  // ===== FOOTER =====
+  // Draw footer on all pages
+  for(let p = 1; p <= pageNum; p++){
+    pdf.setPage(p);
+    const footY = pageH - 10;
+    applyBgColor(...C.footerBg);
+    pdf.rect(0, footY - 2, pageW, 14, 'F');
+    pdf.setDrawColor(...C.line);
+    pdf.setLineWidth(0.2);
+    pdf.line(marginL, footY - 2, pageW - marginR, footY - 2);
+
+    applyFont(7, 'normal');
+    applyTextColor(...C.muted);
+    pdf.text('Voyage Schedule Simulator  |  ' + dateStr + ' ' + timeStr, marginL, footY + 3);
+    pdf.text('Page ' + p + ' / ' + pageNum, pageW - marginR, footY + 3, { align: 'right' });
+  }
+
+  // Save
+  const filename = 'Fleet_Schedule_' + new Date().toISOString().slice(0,10) + '.pdf';
+  pdf.save(filename);
+  showToast('PDF exported: ' + filename, 'success');
+}
+
+function formatDtPdfNative(dtStr){
+  if(!dtStr) return '\u2014';
+  try {
+    const d = new Date(dtStr);
+    if(isNaN(d.getTime())) return dtStr;
+    const Y = String(d.getFullYear());
+    const M = String(d.getMonth()+1).padStart(2,'0');
+    const D = String(d.getDate()).padStart(2,'0');
+    const h = String(d.getHours()).padStart(2,'0');
+    const m = String(d.getMinutes()).padStart(2,'0');
+    return M + '-' + D + ' ' + h + ':' + m;
+  } catch(e) { return dtStr; }
+}
+
+// Keep old buildPdfHtml as fallback reference (unused)
+function buildPdfHtml(exportItems){
+  // Deprecated - replaced by buildPdfNative
+  return '<div>Use buildPdfNative instead</div>';
+}
+
+// Keep old formatDtPdf as fallback (unused)
+function formatDtPdf(dtStr){
+  return formatDtPdfNative(dtStr);
+}
+
+// ===== Import Excel =====
+function handleImportExcel(input){
+  if(!input || !input.files || !input.files.length) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array', cellDates: true });
+      let imported = 0;
+
+      wb.SheetNames.forEach(function(sheetName){
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        if(rows.length < 2) return; // need header + at least 1 data row
+
+        const header = rows[0].map(function(h){ return String(h).trim().toLowerCase(); });
+        // Find column indices
+        const colMap = {};
+        header.forEach(function(h, i){
+          if(h.includes('vessel') && !h.includes('name') && !colMap.vessel) colMap.vessel = i;
+          else if(h.includes('vessel') && h.includes('name') && !colMap.vesselName) colMap.vesselName = i;
+          else if(h.includes('lane') && !h.includes('name') && !colMap.lane) colMap.lane = i;
+          else if(h.includes('lane') && h.includes('name') && !colMap.laneName) colMap.laneName = i;
+          else if(h.includes('voyage') && !colMap.voyNo) colMap.voyNo = i;
+          else if(h.includes('status') && !colMap.status) colMap.status = i;
+          else if((h === 'port' || h === 'port code') && !colMap.port) colMap.port = i;
+          else if((h.includes('port') && h.includes('name')) && !colMap.portName) colMap.portName = i;
+          else if(h.includes('port') && h.includes('voy') && !colMap.portVoyNo) colMap.portVoyNo = i;
+          else if(h === 'eta' && !colMap.eta) colMap.eta = i;
+          else if(h === 'etb' && !colMap.etb) colMap.etb = i;
+          else if(h === 'etd' && !colMap.etd) colMap.etd = i;
+          else if(h.includes('stay') && !colMap.stay) colMap.stay = i;
+          else if(h.includes('man') && h.includes('in') && !colMap.manIn) colMap.manIn = i;
+          else if(h.includes('wait') && !colMap.wait) colMap.wait = i;
+          else if(h.includes('dist') && !colMap.dist) colMap.dist = i;
+        });
+
+        // Required: vessel, lane, voyNo, port
+        if(colMap.vessel === undefined || colMap.port === undefined){
+          console.warn('Sheet "' + sheetName + '": missing Vessel/Port columns, skipping');
+          return;
+        }
+
+        // Parse rows into voyage data
+        const voyageMap = {}; // key: vessel|lane|voyNo
+        for(let r = 1; r < rows.length; r++){
+          const row = rows[r];
+          if(!row || !row.length) continue;
+
+          const vesselCode = String(row[colMap.vessel] || '').trim();
+          const portCode = String(row[colMap.port] || '').trim();
+          if(!vesselCode || !portCode) continue;
+
+          const lane = colMap.lane !== undefined ? String(row[colMap.lane] || '').trim().toUpperCase() : '';
+          const voyNo = colMap.voyNo !== undefined ? String(row[colMap.voyNo] || '').trim() : '';
+          const status = colMap.status !== undefined ? String(row[colMap.status] || '').trim().toLowerCase() : '';
+
+          const key = vesselCode + '|' + lane + '|' + voyNo;
+          if(!voyageMap[key]){
+            voyageMap[key] = {
+              vesselCode: vesselCode,
+              vesselName: colMap.vesselName !== undefined ? String(row[colMap.vesselName] || '').trim() : '',
+              lane: lane,
+              laneName: colMap.laneName !== undefined ? String(row[colMap.laneName] || '').trim() : '',
+              voyNo: voyNo,
+              status: status === 'completed' ? 'completed' : 'active',
+              ports: []
+            };
+          }
+
+          // Parse date fields
+          function parseDate(val){
+            if(!val) return '';
+            if(val instanceof Date && !isNaN(val)) return val.toISOString().slice(0,16);
+            const d = new Date(val);
+            if(!isNaN(d)) return d.toISOString().slice(0,16);
+            return String(val);
+          }
+
+          voyageMap[key].ports.push({
+            code: portCode,
+            name: colMap.portName !== undefined ? String(row[colMap.portName] || '').trim() : '',
+            eta: parseDate(row[colMap.eta]),
+            etb: parseDate(row[colMap.etb]),
+            etd: parseDate(row[colMap.etd]),
+            stayHrs: colMap.stay !== undefined ? parseFloat(row[colMap.stay]) || 0 : 0,
+            manIn: colMap.manIn !== undefined ? parseFloat(row[colMap.manIn]) || 0 : 0,
+            waitHrs: colMap.wait !== undefined ? parseFloat(row[colMap.wait]) || 0 : 0,
+            dist: colMap.dist !== undefined ? parseFloat(row[colMap.dist]) || 0 : 0,
+            voyNo: colMap.portVoyNo !== undefined ? String(row[colMap.portVoyNo] || '').trim() : ''
+          });
+        }
+
+        // Merge into FLEET_DATA
+        Object.values(voyageMap).forEach(function(voy){
+          // Find or create vessel
+          let vessel = FLEET_DATA.vessels.find(function(v){ return v.code === voy.vesselCode; });
+          if(!vessel){
+            vessel = { code: voy.vesselCode, name: voy.vesselName || voy.vesselCode, voyages: [] };
+            FLEET_DATA.vessels.push(vessel);
+          }
+          if(voy.vesselName) vessel.name = voy.vesselName;
+
+          // Check if voyage already exists (same vessel + lane + voyNo)
+          let existingVoy = vessel.voyages.find(function(v){ return v.voyNo === voy.voyNo && v.lane === voy.lane; });
+          if(existingVoy){
+            // Update ports
+            existingVoy.ports = voy.ports;
+            existingVoy.status = voy.status;
+            existingVoy.lastModified = new Date().toISOString();
+            existingVoy.modifiedBy = 'Excel Import';
+          } else {
+            vessel.voyages.push({
+              lane: voy.lane,
+              voyNo: voy.voyNo,
+              status: voy.status,
+              ports: voy.ports,
+              lastModified: new Date().toISOString(),
+              modifiedBy: 'Excel Import'
+            });
+          }
+          imported++;
+        });
+      });
+
+      if(imported > 0){
+        renderDailyFleet();
+        // Auto-select the first imported vessel
+        if(FLEET_DATA.vessels.length > 0 && FLEET_DATA.vessels[0].voyages.length > 0){
+          const v = FLEET_DATA.vessels[0];
+          selectDailyVessel(v.code, 0);
+        }
+        initDailyComboboxes(); // Refresh combobox lists with new vessels/lanes
+        showToast('Imported ' + imported + ' voyage(s) from ' + file.name, 'success');
+        clearUndoRedo();
+        autoSaveFleet();
+      } else {
+        showToast('No valid schedule data found in ' + file.name, 'warning');
+      }
+    } catch(err){
+      console.error('Import error:', err);
+      showToast('Import failed: ' + err.message, 'warning');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  // Reset input so same file can be re-imported
+  input.value = '';
 }
 </script>
 </body>
