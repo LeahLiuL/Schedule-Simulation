@@ -3789,8 +3789,10 @@ async function commitToGitHub(type){
       throw new Error('GitHub API error: ' + getResp.status + (err.message ? ' - ' + err.message : ''));
     }
 
-    const fileData = getResp.status === 200 ? await getResp.json() : null;
-    const sha = fileData ? fileData.sha : null;
+    if(getResp.status === 200){
+      const fileData = await getResp.json();
+      sha = fileData.sha;
+    }
 
     // Step 2: Create or update file
     setCommitStatus('Committing ' + filename + '...');
