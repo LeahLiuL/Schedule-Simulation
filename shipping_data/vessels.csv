@@ -1,4 +1,5 @@
 vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day
+H728,HONG DA XIN 728,11,20,0,0,1,0
 CSJ7,CHANG SHENG JI 7,11,12,0,1.5,0,0
 CUBK,CUL BANGKOK,12,15,0,0,0,0
 CUBK,CUL BANGKOK,12.5,15.5,0,0,0,0
