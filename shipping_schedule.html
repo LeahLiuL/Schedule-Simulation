@@ -1964,37 +1964,13 @@ function parseCSV(text){
   }).filter(function(r){ for(var k in r){ if(r.hasOwnProperty(k)&&r[k]!=='') return true; } return false; });
 }
 
-// Fetch CSV: GitHub (source of truth) → localStorage cache (post-commit) → local file → bundled data
+// Fetch CSV: GitHub main branch ONLY — single source of truth
 async function fetchCSV(filename){
-  // 1. GitHub is the source of truth — always try it first (no-cache via timestamp + cache: no-store)
-  try {
-    const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
-    const resp = await fetch(githubUrl, { cache: 'no-store' });
-    if(resp.ok){
-      const text = await resp.text();
-      // Cache to localStorage so offline/commit flows stay in sync
-      localStorage.setItem('csv_cache_' + filename, JSON.stringify({ content: text, ts: Date.now() }));
-      return parseCSV(text);
-    }
-  } catch(e) { /* GitHub failed */ }
-
-  // 2. localStorage cache (data saved after a commit, before page reload)
-  const lsKey = 'csv_cache_' + filename;
-  const lsEntry = localStorage.getItem(lsKey);
-  if(lsEntry){
-    try { return parseCSV(JSON.parse(lsEntry).content); } catch(e){ localStorage.removeItem(lsKey); }
-  }
-
-  // 3. Local file (offline fallback)
-  try {
-    const localUrl = CSV_LOCAL + '/' + filename + '?t=' + Date.now();
-    const resp = await fetch(localUrl);
-    if(resp.ok) return parseCSV(await resp.text());
-  } catch(e) { /* local failed */ }
-
-  // 4. Bundled default data
-  if(BUNDLED_CSV[filename]) return parseCSV(BUNDLED_CSV[filename]);
-  throw new Error('Failed to load ' + filename + ' from all sources');
+  const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
+  const resp = await fetch(githubUrl, { cache: 'no-store' });
+  if(!resp.ok) throw new Error('Failed to load ' + filename + ' from GitHub (status ' + resp.status + ')');
+  const text = await resp.text();
+  return parseCSV(text);
 }
 
 // Save CSV content to localStorage after commit
@@ -4130,18 +4106,12 @@ let dailySelectedLaneCode = '';
 let dailySelectedVoyNo = '';
 
 async function loadLanesData(){
-  // GitHub first (source of truth)
+  // GitHub main branch ONLY
   try {
     const url = CSV_GITHUB + '/lanes.json?t=' + Date.now();
     const resp = await fetch(url, { cache: 'no-store' });
-    if(resp.ok){ LANES_DATA = await resp.json(); populateLaneFilter(); return; }
-  } catch(e) {}
-  // Fallback to local file
-  try {
-    const url = CSV_LOCAL + '/lanes.json?t=' + Date.now();
-    const resp = await fetch(url);
-    if(resp.ok) LANES_DATA = await resp.json();
-  } catch(e){}
+    if(resp.ok){ LANES_DATA = await resp.json(); }
+  } catch(e) { console.warn('Failed to load lanes from GitHub'); }
   populateLaneFilter();
 }
 
@@ -4151,47 +4121,19 @@ function populateLaneFilter(){
 }
 
 async function loadFleetSchedule(){
-  const token = getGhToken();
   const path = FLEET_FILE;
   FLEET_DATA = { vessels: [], lastSync: null };
   try {
-    // GitHub first (source of truth)
-    try {
-      const resp = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
-      if(resp.ok){
-        const remoteData = await resp.json();
-        if(remoteData && remoteData.vessels && remoteData.vessels.length > 0){
-          FLEET_DATA = remoteData;
-          console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub');
-          return;
-        }
+    const resp = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
+    if(resp.ok){
+      const remoteData = await resp.json();
+      if(remoteData && remoteData.vessels){
+        FLEET_DATA = remoteData;
+        console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub');
       }
-    } catch(e){}
-    // Fallback to local file
-    try {
-      const resp = await fetch(CSV_LOCAL + '/fleet_schedule.json?t=' + Date.now());
-      if(resp.ok){
-        const localData = await resp.json();
-        if(localData && localData.vessels && localData.vessels.length > 0){
-          FLEET_DATA = localData;
-          console.log('Loaded ' + localData.vessels.length + ' vessel(s) from local JSON');
-          return;
-        }
-      }
-    } catch(e){}
+    }
   } catch(e){
     console.error('Load fleet error:', e);
-  }
-
-  // If remote loaded nothing, try localStorage fallback
-  if(FLEET_DATA.vessels.length === 0){
-    const saved = localStorage.getItem('fleet_schedule_local');
-    if(saved){
-      try {
-        FLEET_DATA = JSON.parse(saved);
-        console.log('Restored fleet data from localStorage');
-      } catch(e){}
-    }
   }
 }
 
