@@ -3774,13 +3774,11 @@ async function commitToGitHub(type){
       headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
     });
 
+    let sha = null;
     if(getResp.status === 404){
-      showToast('File not found in repo: ' + path, 'warning');
-      setCommitStatus('');
-      btns.forEach(b=>b.classList.remove('loading'));
-      return;
-    }
-    if(getResp.status === 401){
+      // File doesn't exist yet — we'll create it (sha = null tells GitHub to create)
+      console.log('File not found, will create: ' + path);
+    } else if(getResp.status === 401){
       showToast('Invalid or expired token', 'warning');
       setCommitStatus('Auth failed');
       btns.forEach(b=>b.classList.remove('loading'));
@@ -3791,13 +3789,20 @@ async function commitToGitHub(type){
       throw new Error('GitHub API error: ' + getResp.status + (err.message ? ' - ' + err.message : ''));
     }
 
-    const fileData = await getResp.json();
-    const sha = fileData.sha;
+    const fileData = getResp.status === 200 ? await getResp.json() : null;
+    const sha = fileData ? fileData.sha : null;
 
-    // Step 2: Update file with new content
+    // Step 2: Create or update file
     setCommitStatus('Committing ' + filename + '...');
     const base64Content = btoa(unescape(encodeURIComponent(content)));
     const message = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
+
+    const bodyPayload = {
+      message: message,
+      content: base64Content,
+      branch: 'main'
+    };
+    if(sha) bodyPayload.sha = sha;
 
     const putResp = await fetch(GH_REPO_API + '/' + path, {
       method: 'PUT',
@@ -3806,12 +3811,7 @@ async function commitToGitHub(type){
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        message: message,
-        content: base64Content,
-        sha: sha,
-        branch: 'main'
-      })
+      body: JSON.stringify(bodyPayload)
     });
 
     if(!putResp.ok){
@@ -3915,14 +3915,19 @@ async function commitAllToGitHub(){
         setCommitStatus('✗ Auth failed');
         break;
       }
-      if(!getResp.ok){
-        throw new Error(getResp.status);
-      }
 
-      const fileData = await getResp.json();
-      const sha = fileData.sha;
+      let sha = null;
+      if(getResp.status === 200){
+        const fileData = await getResp.json();
+        sha = fileData.sha;
+      }
+      // 404 = file doesn't exist yet, will create it (sha stays null)
+
       const base64Content = btoa(unescape(encodeURIComponent(content)));
       const message = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
+
+      const bodyPayload = { message, content: base64Content, branch: 'main' };
+      if(sha) bodyPayload.sha = sha;
 
       const putResp = await fetch(GH_REPO_API + '/' + path, {
         method: 'PUT',
@@ -3931,7 +3936,7 @@ async function commitAllToGitHub(){
           'Accept': 'application/vnd.github.v3+json',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message, content: base64Content, sha, branch: 'main' })
+        body: JSON.stringify(bodyPayload)
       });
 
       if(!putResp.ok){
