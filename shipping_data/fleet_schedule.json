@@ -172,6 +172,87 @@
           "modifiedBy": "anonymous"
         }
       ]
+    },
+    {
+      "code": "EVHA",
+      "name": "EVERLASTING HARVEST",
+      "voyages": [
+        {
+          "voyNo": "001W",
+          "lane": "EVHA",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-04-10T00:00:00.000Z",
+              "etb": "2026-04-10T03:00:00.000Z",
+              "etd": "2026-04-11T03:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 708
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-04-12T21:00:00.000Z",
+              "etb": "2026-04-13T00:00:00.000Z",
+              "etd": "2026-04-14T00:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 19
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-04-14T05:00:00.000Z",
+              "etb": "2026-04-14T08:00:00.000Z",
+              "etd": "2026-04-15T08:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 6452
+            },
+            {
+              "code": "EGSOK",
+              "name": "SOKHNA",
+              "eta": "2026-04-30T00:00:00.000Z",
+              "etb": "2026-04-30T03:00:00.000Z",
+              "etd": "2026-05-01T03:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 621
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-05-02T16:00:00.000Z",
+              "etb": "2026-05-02T19:00:00.000Z",
+              "etd": "2026-05-03T19:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 6457
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-05-18T12:00:00.000Z",
+              "etb": "2026-05-18T15:00:00.000Z",
+              "etd": "2026-05-19T15:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 0
+            }
+          ],
+          "lastModified": "2026-04-09T05:49:07.254Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
     }
   ],
   "lastSync": "2026-04-08T08:56:18.813Z"
