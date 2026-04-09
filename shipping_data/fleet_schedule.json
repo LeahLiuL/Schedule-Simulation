@@ -1,380 +1,178 @@
 {
   "vessels": [
     {
+      "code": "H728",
+      "name": "HONG DA XIN 728",
+      "voyages": [
+        {
+          "voyNo": "2611W",
+          "lane": "REX",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-03-19T03:42",
+              "etb": "2026-03-26T06:30",
+              "etd": "2026-03-26T20:48",
+              "stayHrs": 24,
+              "manIn": 1,
+              "waitHrs": 0,
+              "dist": 462
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-03-28T17:48",
+              "etb": "2026-03-28T20:48",
+              "etd": "2026-03-29T20:48",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 754
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-04-01T20:18",
+              "etb": "2026-04-01T23:18",
+              "etd": "2026-04-02T23:18",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 1443
+            },
+            {
+              "code": "SGSIN",
+              "name": "SINGAPORE",
+              "eta": "2026-04-08T13:30",
+              "etb": "2026-04-08T16:30",
+              "etd": "2026-04-09T16:30",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 205
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-04-10T14:06",
+              "etb": "2026-04-10T17:06",
+              "etd": "2026-04-11T17:06",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 4766
+            },
+            {
+              "code": "EGSOK",
+              "name": "SOKHNA",
+              "eta": "2026-04-29T21:24",
+              "etb": "2026-04-30T00:24",
+              "etd": "2026-05-01T00:24",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 621
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-05-03T11:54",
+              "etb": "2026-05-03T14:54",
+              "etd": "2026-05-04T14:54",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 4216
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-05-20T17:12",
+              "etb": "2026-05-20T20:12",
+              "etd": "2026-05-21T20:12",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 0
+            }
+          ],
+          "lastModified": "2026-04-08T08:57:45.538Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
+    },
+    {
       "code": "CUBK",
       "name": "CUL BANGKOK",
       "voyages": [
         {
-          "voyNo": "2602W",
+          "voyNo": "2601W",
           "lane": "REX",
           "status": "current",
           "ports": [
             {
               "code": "CNNAS",
               "name": "NANSHA",
-              "eta": "2026-04-07T12:08",
-              "etb": "2026-04-07T15:00",
-              "etd": "2026-04-08T03:00",
-              "stayHrs": 12,
+              "eta": "2026-04-09T00:00:00.000Z",
+              "etb": "2026-04-09T03:00:00.000Z",
+              "etd": "2026-04-10T03:00:00.000Z",
+              "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
-              "dist": 19,
-              "speed": 12
+              "dist": 19
             },
             {
               "code": "CNSHK",
               "name": "SHEKOU",
-              "eta": "2026-04-08T07:00",
-              "etb": "2026-04-08T10:00",
-              "etd": "2026-04-08T22:00",
-              "stayHrs": 12,
+              "eta": "2026-04-10T08:00:00.000Z",
+              "etb": "2026-04-10T11:00:00.000Z",
+              "etd": "2026-04-11T11:00:00.000Z",
+              "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
-              "dist": 6447,
-              "speed": 12
+              "dist": 6447
             },
             {
               "code": "EGSOK",
               "name": "SOKHNA",
-              "eta": "2026-05-01T10:00",
-              "etb": "2026-05-01T13:00",
-              "etd": "2026-05-02T01:00",
-              "stayHrs": 12,
+              "eta": "2026-05-04T00:00:00.000Z",
+              "etb": "2026-05-04T03:00:00.000Z",
+              "etd": "2026-05-05T03:00:00.000Z",
+              "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
-              "dist": 621,
-              "speed": 12,
-              "voyNo": "2602E"
+              "dist": 621
             },
             {
               "code": "SAJED",
               "name": "JEDDAH",
-              "eta": "2026-05-04T07:00",
-              "etb": "2026-05-04T10:00",
-              "etd": "2026-05-04T22:00",
-              "stayHrs": 12,
+              "eta": "2026-05-07T10:00:00.000Z",
+              "etb": "2026-05-07T13:00:00.000Z",
+              "etd": "2026-05-08T13:00:00.000Z",
+              "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
-              "dist": 0,
-              "speed": 12,
-              "voyNo": "2602E"
-            }
-          ],
-          "lastModified": "2026-04-07T06:34:03.654Z",
-          "modifiedBy": "anonymous"
-        }
-      ]
-    },
-    {
-      "code": "CUHP",
-      "name": "CUL HAIPHONG",
-      "voyages": [
-        {
-          "voyNo": "2610W",
-          "lane": "ST3",
-          "status": "current",
-          "ports": [
-            {
-              "code": "TWKEL",
-              "name": "KEELUNG",
-              "eta": "2026-04-08T15:00",
-              "etb": "2026-04-08T18:00",
-              "etd": "2026-04-09T06:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 112,
-              "speed": 9.4
-            },
-            {
-              "code": "TWTXG",
-              "name": "TAICHUNG",
-              "eta": "2026-04-09T20:00",
-              "etb": "2026-04-09T23:00",
-              "etd": "2026-04-10T11:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 131,
-              "speed": 9.4
-            },
-            {
-              "code": "TWKHH",
-              "name": "KAOHSIUNG",
-              "eta": "2026-04-11T03:00",
-              "etb": "2026-04-11T06:00",
-              "etd": "2026-04-11T18:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 203,
-              "speed": 9.4
-            },
-            {
-              "code": "CNSWA",
-              "name": "SHANTOU",
-              "eta": "2026-04-12T18:00",
-              "etb": "2026-04-12T21:00",
-              "etd": "2026-04-13T09:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 206,
-              "speed": 9.4,
-              "voyNo": "2610E"
+              "dist": 5853
             },
             {
               "code": "CNNAS",
               "name": "NANSHA",
-              "eta": "2026-04-14T09:00",
-              "etb": "2026-04-14T12:00",
-              "etd": "2026-04-15T00:00",
-              "stayHrs": 12,
+              "eta": "2026-05-29T00:00:00.000Z",
+              "etb": "2026-05-29T03:00:00.000Z",
+              "etd": "2026-05-30T03:00:00.000Z",
+              "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
-              "dist": 19,
-              "speed": 9.4,
-              "voyNo": "2610E"
-            },
-            {
-              "code": "CNSHK",
-              "name": "SHEKOU",
-              "eta": "2026-04-15T05:00",
-              "etb": "2026-04-15T08:00",
-              "etd": "2026-04-15T20:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 517,
-              "speed": 9.4,
-              "voyNo": "2610E"
+              "dist": 0
             }
           ],
-          "lastModified": "2026-04-07T08:31:23.683Z",
-          "modifiedBy": "anonymous"
-        },
-        {
-          "voyNo": "2611W",
-          "lane": "ST3",
-          "status": "current",
-          "ports": [
-            {
-              "code": "TWKEL",
-              "name": "KEELUNG",
-              "eta": "2026-04-18T06:00",
-              "etb": "2026-04-18T09:00",
-              "etd": "2026-04-18T21:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 112,
-              "speed": 9.4
-            },
-            {
-              "code": "TWTXG",
-              "name": "TAICHUNG",
-              "eta": "2026-04-19T11:00",
-              "etb": "2026-04-19T14:00",
-              "etd": "2026-04-20T02:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 131,
-              "speed": 9.4
-            },
-            {
-              "code": "TWKHH",
-              "name": "KAOHSIUNG",
-              "eta": "2026-04-20T18:00",
-              "etb": "2026-04-20T21:00",
-              "etd": "2026-04-21T09:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 203,
-              "speed": 9.4
-            },
-            {
-              "code": "CNSWA",
-              "name": "SHANTOU",
-              "eta": "2026-04-22T09:00",
-              "etb": "2026-04-22T12:00",
-              "etd": "2026-04-23T00:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 206,
-              "speed": 9.4,
-              "voyNo": "2611E"
-            },
-            {
-              "code": "CNNAS",
-              "name": "NANSHA",
-              "eta": "2026-04-24T00:00",
-              "etb": "2026-04-24T03:00",
-              "etd": "2026-04-24T15:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 19,
-              "speed": 9.4,
-              "voyNo": "2611E"
-            },
-            {
-              "code": "CNSHK",
-              "name": "SHEKOU",
-              "eta": "2026-04-24T20:00",
-              "etb": "2026-04-24T23:00",
-              "etd": "2026-04-25T11:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 0,
-              "speed": 9.4,
-              "voyNo": "2611E"
-            }
-          ],
-          "lastModified": "2026-04-07T07:10:02.452Z",
-          "modifiedBy": "anonymous"
-        }
-      ]
-    },
-    {
-      "code": "HAMD",
-      "name": "HAIAN MIND",
-      "voyages": [
-        {
-          "voyNo": "2604W",
-          "lane": "REX",
-          "status": "current",
-          "ports": [
-            {
-              "code": "CNNGB",
-              "name": "NINGBO",
-              "eta": "2026-03-15T14:24",
-              "etb": "2026-03-15T17:00",
-              "etd": "2026-03-16T05:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 708,
-              "speed": 11
-            },
-            {
-              "code": "CNSHK",
-              "name": "SHEKOU",
-              "eta": "2026-03-19T00:00",
-              "etb": "2026-03-19T03:00",
-              "etd": "2026-03-19T15:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 19,
-              "speed": 11
-            },
-            {
-              "code": "CNNAS",
-              "name": "NANSHA",
-              "eta": "2026-03-19T19:00",
-              "etb": "2026-03-19T22:00",
-              "etd": "2026-03-20T10:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 1659,
-              "speed": 11
-            },
-            {
-              "code": "MYPKG",
-              "name": "PORT KLANG",
-              "eta": "2026-03-26T19:00",
-              "etb": "2026-03-26T22:00",
-              "etd": "2026-03-27T10:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 4766,
-              "speed": 11
-            },
-            {
-              "code": "EGSOK",
-              "name": "SOKHNA",
-              "eta": "2026-04-14T14:00",
-              "etb": "2026-04-14T17:00",
-              "etd": "2026-04-15T05:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 621,
-              "speed": 11,
-              "voyNo": "2604E"
-            },
-            {
-              "code": "SAJED",
-              "name": "JEDDAH",
-              "eta": "2026-04-17T16:00",
-              "etb": "2026-04-17T19:00",
-              "etd": "2026-04-18T07:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 2277,
-              "speed": 11,
-              "voyNo": "2604E"
-            }
-          ],
-          "lastModified": "2026-04-07T08:43:38.031Z",
-          "modifiedBy": "anonymous"
-        },
-        {
-          "voyNo": "2615W",
-          "lane": "REX",
-          "status": "current",
-          "ports": [
-            {
-              "code": "MYPKG",
-              "name": "PORT KLANG",
-              "eta": "2026-04-27T01:00",
-              "etb": "2026-04-27T04:00",
-              "etd": "2026-04-27T16:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 4216,
-              "speed": 11
-            },
-            {
-              "code": "SAJED",
-              "name": "JEDDAH",
-              "eta": "2026-05-13T18:00",
-              "etb": "2026-05-13T21:00",
-              "etd": "2026-05-14T09:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 621,
-              "speed": 11,
-              "voyNo": "2615E"
-            },
-            {
-              "code": "EGSOK",
-              "name": "SOKHNA",
-              "eta": "2026-05-16T20:00",
-              "etb": "2026-05-16T23:00",
-              "etd": "2026-05-17T11:00",
-              "stayHrs": 12,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 0,
-              "speed": 11,
-              "voyNo": "2615E"
-            }
-          ],
-          "lastModified": "2026-04-07T08:44:28.062Z",
+          "lastModified": "2026-04-08T09:25:52.531Z",
           "modifiedBy": "anonymous"
         }
       ]
     }
   ],
-  "lastSync": "2026-04-08T04:21:21.471Z"
+  "lastSync": "2026-04-08T08:56:18.813Z"
 }

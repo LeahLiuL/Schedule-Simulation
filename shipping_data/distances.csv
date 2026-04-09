@@ -1,4 +1,7 @@
 from_port,to_port,distance_nm,source
+SADMM,PKKHI,938,auto
+AEJEA,SADMM,252,auto
+PKKHI,AEJEA,707,auto
 CNZOS,EGALY,7420,auto
 CNTYU,INJDP,5462,auto
 CNHUA,CNTYU,1479,auto
