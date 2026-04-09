@@ -1,4 +1,9 @@
 vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day
+TBJJ,TB JINJIANG,11,15,0,0,2.5,0
+TBJJ,TB JINJIANG,12,18,0,0,2.5,0
+TBJJ,TB JINJIANG,13,21,0,0,2.5,0
+TBJJ,TB JINJIANG,13.5,25,0,0,2.5,0
+TBJJ,TB JINJIANG,14,26.5,0,0,2.5,0
 ZGNN,ZHONG GU NAN NING,14.5,46,0,0,5,0
 ZGNN,ZHONG GU NAN NING,15,51,0,0,5,0
 ZGNN,ZHONG GU NAN NING,10,18.8,0,0,5,0
