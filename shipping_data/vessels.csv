@@ -1,10 +1,4 @@
 vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day
-ZGXA,ZHONG GU XIONG AN ,10,13,0,0,5,0
-ZGXA,ZHONG GU XIONG AN ,11,16,0,0,5,0
-ZGXA,ZHONG GU XIONG AN ,12,20,0,0,5,0
-ZGXA,ZHONG GU XIONG AN ,13,24,0,0,5,0
-ZGXA,ZHONG GU XIONG AN ,14.5,32,0,0,5,0
-ZGXA,ZHONG GU XIONG AN ,14,27,0,0,5,0
 ZGNN,ZHONG GU NAN NING,14.5,46,0,0,5,0
 ZGNN,ZHONG GU NAN NING,15,51,0,0,5,0
 ZGNN,ZHONG GU NAN NING,10,18.8,0,0,5,0
