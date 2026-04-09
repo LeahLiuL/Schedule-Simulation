@@ -283,25 +283,40 @@
 
   /* ===== DATA MANAGER MODAL ===== */
   .dm-overlay {
-    display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500;
-    justify-content:center; align-items:center;
+    display:none; position:fixed; inset:0; z-index:500;
   }
-  .dm-overlay.open { display:flex; }
+  .dm-overlay.open { display:block; }
   .dm-modal {
     background:#fff; border-radius:14px; width:92vw; max-width:1100px; height:80vh;
     display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3);
-    font-size:.85rem;
+    font-size:.85rem; position:absolute;
+    /* default centered — overridden by JS drag */
+    top:50%; left:50%; transform:translate(-50%,-50%);
+    resize:both; overflow:hidden; min-width:500px; min-height:350px;
   }
+  /* Drag handle: header + tabs area */
   .dm-header {
     display:flex; align-items:center; justify-content:space-between;
-    padding:16px 24px; border-bottom:1px solid var(--border);
+    padding:12px 24px; border-bottom:1px solid var(--border);
+    cursor:grab; user-select:none; flex-shrink:0;
+    background:#fff; z-index:2;
   }
+  .dm-header:active { cursor:grabbing; }
   .dm-header h2 { margin:0; font-size:1.1rem; color:var(--text); }
+  /* Resize handle indicator */
+  .dm-modal::after {
+    content:''; position:absolute; bottom:0; right:0; width:18px; height:18px;
+    cursor:nwse-resize; pointer-events:auto;
+    background:linear-gradient(135deg,transparent 40%,#ccc 40%,#ccc 50%,transparent 50%,transparent 65%,#ccc 65%,#ccc 75%,transparent 75%);
+    border-radius:0 0 14px 0; opacity:.5;
+  }
   .dm-close { background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--muted); padding:4px 8px; border-radius:6px; }
   .dm-close:hover { background:#f0f0f0; color:var(--text); }
   .dm-tabs {
     display:flex; gap:0; border-bottom:2px solid var(--border); padding:0 24px; background:#fafbfc;
+    cursor:grab; user-select:none; flex-shrink:0; z-index:2;
   }
+  .dm-tabs:active { cursor:grabbing; }
   .dm-tab {
     padding:10px 22px; border:none; background:none; cursor:pointer; font-size:.82rem;
     font-weight:600; color:var(--muted); border-bottom:2px solid transparent;
@@ -370,7 +385,7 @@
   }
   .token-modal .token-actions { display:flex; gap:8px; justify-content:flex-end; }
   .dm-body { flex:1; overflow:auto; padding:0; }
-  .dm-tab-content { display:none; height:100%; }
+  .dm-tab-content { display:none; flex:1; min-height:0; overflow:hidden; }
   .dm-tab-content.active { display:flex; flex-direction:column; }
 
   /* ===== NEW VOYAGE MODAL ===== */
@@ -443,6 +458,19 @@
     transition:background .15s;
   }
   .btn-dm:hover { background:rgba(255,255,255,.35); }
+
+  /* Sync banner in schedule table */
+  .sync-banner {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 16px; background:#e8f4fd; border:1px solid #bee5eb;
+    border-radius:8px; margin-bottom:12px;
+  }
+  .sync-banner-info {
+    display:flex; align-items:center; gap:16px; font-size:.9rem; color:#0c5460;
+  }
+  .sync-banner-info strong {
+    background:#0d6efd; color:#fff; padding:4px 10px; border-radius:4px; font-size:.85rem;
+  }
 
   /* ===== RIGHT PANEL ===== */
   .right-panel {
@@ -681,6 +709,23 @@
   .daily-actions {
     padding: 10px 16px; border-bottom: 1px solid var(--border);
     display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  }
+  /* Time range filter bar */
+  .daily-time-filter {
+    padding: 7px 16px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 5px; align-items: center; background: #f8fafc;
+  }
+  .time-filter-label {
+    font-size: .72rem; color: var(--muted); white-space: nowrap; margin-right: 2px;
+  }
+  .time-filter-btn {
+    padding: 3px 10px; border: 1px solid var(--border); border-radius: 12px;
+    background: #fff; color: var(--muted); font-size: .72rem; cursor: pointer;
+    transition: all .15s; white-space: nowrap;
+  }
+  .time-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .time-filter-btn.active {
+    background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600;
   }
   .daily-actions .dm-btn { font-size: .75rem; padding: 4px 10px; }
   .daily-fleet-list {
@@ -1157,7 +1202,16 @@
       <button class="dm-btn dm-btn-primary" onclick="addNewVoyage()">+ New Voyage</button>
       <button class="dm-btn dm-btn-import" onclick="document.getElementById('importExcelInput').click()" title="Import schedule from Excel">📤 Import</button>
       <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;" onchange="handleImportExcel(this)"/>
+      <button class="dm-btn" onclick="showBackupMenu()" title="数据备份与恢复" style="background:rgba(255,193,7,.25);color:#856404;">🛡 备份</button>
       <span class="commit-status" id="dailyCommitStatus"></span>
+    </div>
+    <!-- Time range filter bar -->
+    <div class="daily-time-filter">
+      <span class="time-filter-label">📅 显示范围：</span>
+      <button class="time-filter-btn" data-range="3m" onclick="setDailyTimeRange('3m')">近3个月</button>
+      <button class="time-filter-btn" data-range="6m" onclick="setDailyTimeRange('6m')">近6个月</button>
+      <button class="time-filter-btn" data-range="1y" onclick="setDailyTimeRange('1y')">近1年</button>
+      <button class="time-filter-btn" data-range="all" onclick="setDailyTimeRange('all')">全部</button>
     </div>
     <div class="daily-fleet-list" id="dailyFleetList">
       <div class="daily-empty">
@@ -1241,7 +1295,7 @@
 
 <!-- DATA MANAGER MODAL -->
 <div class="dm-overlay" id="dmOverlay">
-  <div class="dm-modal">
+  <div class="dm-modal" id="dmModal">
     <div class="dm-header">
       <h2>⚙ Data Manager</h2>
       <div style="display:flex;align-items:center;gap:8px;">
@@ -2770,6 +2824,22 @@ const COL_DEFS = [
 
 function renderTable(){
   const container = document.getElementById('scheduleTableContainer');
+  container.innerHTML='';
+
+  // Add save banner at top
+  const banner = document.createElement('div');
+  banner.className = 'sync-banner';
+  banner.innerHTML = `
+    <div class="sync-banner-info">
+      <strong>📋 ${currentVessel.code || document.getElementById('vesselInput').value.split('–')[0].trim()}</strong>
+      <span>航次: <input type="text" id="syncVoyNoInput" value="${document.getElementById('voyNoInput').value || '001W'}" style="width:70px;padding:2px 6px;border:1px solid #ccc;border-radius:4px;font-size:.85rem;"/></span>
+    </div>
+    <button class="btn-dm" onclick="syncToDailyWithInput()" style="padding:6px 16px;font-size:.85rem;">
+      💾 保存到 Daily 船期
+    </button>
+  `;
+  container.appendChild(banner);
+
   const tbl = document.createElement('table');
   tbl.id='schedTable';
 
@@ -3075,8 +3145,69 @@ function showToast(msg, type='', duration=3000){
 // ==================== DATA MANAGER ====================
 let dmEditIdx = -1; // -1 = not editing
 
+// ===== DRAGGABLE DATA MANAGER =====
+(function(){
+  let dmModal = null;
+  let dragging = false, dragOffX = 0, dragOffY = 0;
+
+  document.addEventListener('mousedown', function(e){
+    if(!dmModal) dmModal = document.getElementById('dmModal');
+    if(!dmModal || !document.getElementById('dmOverlay').classList.contains('open')) return;
+    // Only drag from header or tabs area
+    const hdr = dmModal.querySelector('.dm-header');
+    const tabs = dmModal.querySelector('.dm-tabs');
+    if(!hdr || !tabs) return;
+    const target = e.target;
+    if(target.closest('.dm-close') || target.closest('.dm-btn') || target.closest('input')) return;
+    if(!target.closest('.dm-header') && !target.closest('.dm-tabs')) return;
+    dragging = true;
+    const rect = dmModal.getBoundingClientRect();
+    dragOffX = e.clientX - rect.left;
+    dragOffY = e.clientY - rect.top;
+    // Switch to absolute pixel positioning
+    dmModal.style.transform = 'none';
+    dmModal.style.left = rect.left + 'px';
+    dmModal.style.top = rect.top + 'px';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!dragging || !dmModal) return;
+    let x = e.clientX - dragOffX;
+    let y = e.clientY - dragOffY;
+    // Keep within viewport
+    const w = dmModal.offsetWidth, h = dmModal.offsetHeight;
+    if(x < 0) x = 0;
+    if(y < 0) y = 0;
+    if(x + w > window.innerWidth) x = window.innerWidth - w;
+    if(y + h > window.innerHeight) y = window.innerHeight - h;
+    dmModal.style.left = x + 'px';
+    dmModal.style.top = y + 'px';
+  });
+  document.addEventListener('mouseup', function(){
+    dragging = false;
+  });
+
+  // Double-click header to re-center
+  document.addEventListener('dblclick', function(e){
+    if(!dmModal) dmModal = document.getElementById('dmModal');
+    if(!dmModal || !document.getElementById('dmOverlay').classList.contains('open')) return;
+    if(!e.target.closest('.dm-header')) return;
+    if(e.target.closest('.dm-btn') || e.target.closest('input')) return;
+    const w = dmModal.offsetWidth, h = dmModal.offsetHeight;
+    dmModal.style.left = Math.max(0, (window.innerWidth - w) / 2) + 'px';
+    dmModal.style.top = Math.max(0, (window.innerHeight - h) / 2) + 'px';
+    dmModal.style.transform = 'none';
+  });
+})();
+
 function openDataManager(){
-  document.getElementById('dmOverlay').classList.add('open');
+  const overlay = document.getElementById('dmOverlay');
+  const modal = document.getElementById('dmModal');
+  // Reset to centered position
+  modal.style.top = '50%';
+  modal.style.left = '50%';
+  modal.style.transform = 'translate(-50%,-50%)';
+  overlay.classList.add('open');
   renderDmPorts();
   renderDmVessels();
   renderDmDists();
@@ -3992,6 +4123,10 @@ async function initDailyPage(){
   }
   loadLinkedGroups(); // Load linked voyage groups from localStorage
   initDailyComboboxes();
+  // Restore active time range button state
+  document.querySelectorAll('.time-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.range === dailyTimeRangeFilter);
+  });
   renderDailyFleet();
 
   // Keyboard shortcuts for undo/redo
@@ -4104,6 +4239,49 @@ function refreshComboboxItems(inputId, dropdownId, newItems){
 let dailySelectedVesselCode = '';
 let dailySelectedLaneCode = '';
 let dailySelectedVoyNo = '';
+
+// ===== Time Range Filter for Pagination =====
+// '3m' = last 3 months, '6m' = last 6 months, '1y' = last 1 year, 'all' = all time
+let dailyTimeRangeFilter = localStorage.getItem('dailyTimeRangeFilter') || '6m';
+
+function setDailyTimeRange(range){
+  dailyTimeRangeFilter = range;
+  localStorage.setItem('dailyTimeRangeFilter', range);
+  renderDailyFleet();
+  // Update UI
+  document.querySelectorAll('.time-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.range === range);
+  });
+}
+
+// Get the cutoff date based on current time range filter
+function getTimeRangeCutoff(){
+  const now = new Date();
+  switch(dailyTimeRangeFilter){
+    case '3m': return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    case '6m': return new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+    case '1y': return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    case 'all': return null;
+    default: return new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+  }
+}
+
+// Check if a voyage should be shown based on time filter
+function isVoyageInTimeRange(voy){
+  const cutoff = getTimeRangeCutoff();
+  if(!cutoff) return true; // 'all' mode
+  
+  // Check if voyage has any ports within the time range
+  const ports = voy.ports || [];
+  if(ports.length === 0) return true; // Show voyages without ports
+  
+  // Show if any port's ETA or ETD is after the cutoff
+  return ports.some(p => {
+    if(p.eta && new Date(p.eta) >= cutoff) return true;
+    if(p.etd && new Date(p.etd) >= cutoff) return true;
+    return false;
+  });
+}
 
 async function loadLanesData(){
   // GitHub main branch ONLY
@@ -4685,13 +4863,32 @@ function renderDailyFleet(){
     );
   }
 
-  document.getElementById('dailyVesselCount').textContent = vessels.length + ' vessel(s)';
+  // ===== Time Range Filter =====
+  // Apply time range filter to voyages (hide voyages outside the window)
+  // But always show vessels with at least one matching voyage
+  if(dailyTimeRangeFilter !== 'all'){
+    vessels = vessels.filter(v =>
+      v.voyages.some(voy => isVoyageInTimeRange(voy))
+    );
+  }
+
+  // Count total visible voyages across all filtered vessels
+  let totalVisibleVoyages = 0;
+  vessels.forEach(v => {
+    let voys = v.voyages;
+    if(dailyTimeRangeFilter !== 'all') voys = voys.filter(isVoyageInTimeRange);
+    totalVisibleVoyages += voys.length;
+  });
+
+  document.getElementById('dailyVesselCount').textContent = vessels.length + ' vessel(s) / ' + totalVisibleVoyages + ' voyage(s)';
 
   if(!vessels.length){
     const totalVessels = getUniqueVesselList().length;
     const hasFilter = dailyQuickFilter || dailySelectedVesselCode || dailySelectedLaneCode || voyFilter;
     if(totalVessels === 0){
       container.innerHTML = '<div class="daily-empty"><div class="icon">📭</div><div>No fleet data yet.<br/>Use <b>+ New Voyage</b> to create one, or <b>📤 Import</b> to import from Excel.</div></div>';
+    } else if(dailyTimeRangeFilter !== 'all'){
+      container.innerHTML = '<div class="daily-empty"><div class="icon">📅</div><div>当前时间范围内无船期数据。<br/><span style="font-size:.75rem;color:var(--muted);">点击 <b>全部</b> 查看所有 ' + totalVessels + ' 艘船的历史数据。</span></div></div>';
     } else {
       container.innerHTML = '<div class="daily-empty"><div class="icon">🔍</div><div>No matching vessels for current filters.<br/><span style="font-size:.75rem;color:var(--muted);">Try clearing filters (click ✕ in search box) — ' + totalVessels + ' voyage(s) in total.</span></div></div>';
     }
@@ -4700,7 +4897,7 @@ function renderDailyFleet(){
 
   let html = '';
   vessels.forEach(v => {
-    // Filter voyages by lane/voyNo
+    // Filter voyages by lane/voyNo and time range
     let voyages = v.voyages;
     if(dailySelectedLaneCode){
       const lCode = dailySelectedLaneCode.toUpperCase();
@@ -4709,6 +4906,10 @@ function renderDailyFleet(){
     if(dailySelectedVoyNo){
       const vf = dailySelectedVoyNo.toLowerCase();
       voyages = voyages.filter(voy => (voy.voyNo||'').toLowerCase().includes(vf));
+    }
+    // Apply time range filter per-voyage
+    if(dailyTimeRangeFilter !== 'all'){
+      voyages = voyages.filter(isVoyageInTimeRange);
     }
 
     // Show one card per voyage (grouped by vessel)
@@ -5094,37 +5295,59 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
   const speed = getDailySpeed(vessel, voyIdx);
 
   if(field === 'eta'){
-    // 修改了本港 ETA → 重算本港的 ETB/ETD，以及后续各港
-    if(port.eta){
+    // 修改了本港 ETA → 反算 stayHrs（根据 ETB-ETA），以及重算后续
+    if(port.eta && port.etb){
       const etaDt = new Date(port.eta);
-      if(!isNaN(etaDt.getTime())){
+      const etbDt = new Date(port.etb);
+      if(!isNaN(etaDt.getTime()) && !isNaN(etbDt.getTime())){
+        // 反算 waitHrs = ETB - ETA - manIn
         const manIn = port.manIn != null ? port.manIn : getPortManIn(port.code);
-        const waitHrs = port.waitHrs || 0;
-        const stayHrs = port.stayHrs != null ? port.stayHrs : getPortStay(port.code);
-        const etb = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
-        round6Min(etb);
-        const etd = new Date(etb.getTime() + stayHrs * 3600000);
-        round6Min(etd);
-        port.etb = toDatetimeLocal(etb);
-        port.etd = toDatetimeLocal(etd);
+        const waitHrs = Math.max(0, (etbDt - etaDt) / 3600000 - manIn);
+        port.waitHrs = Math.round(waitHrs * 10) / 10;
+        // 如果有 ETD，反算 stayHrs
+        if(port.etd){
+          const etdDt = new Date(port.etd);
+          if(!isNaN(etdDt.getTime())){
+            port.stayHrs = Math.round((etdDt - etbDt) / 3600000 * 10) / 10;
+          }
+        }
         // 级联推算后续
         recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
       }
     }
   } else if(field === 'etb'){
-    // 修改了 ETB → 重算本港 ETD（ETB + stayHrs），以及后续
+    // 修改了 ETB → 反算 waitHrs（ETB-ETA-manIn）和 stayHrs（ETD-ETB）
     if(port.etb){
       const etbDt = new Date(port.etb);
       if(!isNaN(etbDt.getTime())){
-        const stayHrs = port.stayHrs != null ? port.stayHrs : getPortStay(port.code);
-        const etd = new Date(etbDt.getTime() + stayHrs * 3600000);
-        round6Min(etd);
-        port.etd = toDatetimeLocal(etd);
+        // 反算 waitHrs
+        if(port.eta){
+          const etaDt = new Date(port.eta);
+          if(!isNaN(etaDt.getTime())){
+            const manIn = port.manIn != null ? port.manIn : getPortManIn(port.code);
+            const waitHrs = Math.max(0, (etbDt - etaDt) / 3600000 - manIn);
+            port.waitHrs = Math.round(waitHrs * 10) / 10;
+          }
+        }
+        // 反算 stayHrs
+        if(port.etd){
+          const etdDt = new Date(port.etd);
+          if(!isNaN(etdDt.getTime())){
+            port.stayHrs = Math.round((etdDt - etbDt) / 3600000 * 10) / 10;
+          }
+        }
         recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
       }
     }
   } else if(field === 'etd'){
-    // 修改了 ETD → 直接级联推算后续港口
+    // 修改了 ETD → 反算 stayHrs，以及级联推算后续
+    if(port.etd && port.etb){
+      const etdDt = new Date(port.etd);
+      const etbDt = new Date(port.etb);
+      if(!isNaN(etdDt.getTime()) && !isNaN(etbDt.getTime())){
+        port.stayHrs = Math.round((etdDt - etbDt) / 3600000 * 10) / 10;
+      }
+    }
     recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
   } else if(field === 'stayHrs'){
     // 修改了 Stay → 重算本港 ETD，以及后续
@@ -5351,9 +5574,41 @@ function recalcDailyFromPort(vessel, voyIdx, fromIdx){
     }
     // i > 0：由上一港 ETD + 上一港 dist + 上一港 speed 推算
     const prev = voy.ports[i - 1];
-    if(!prev.etd || !prev.dist || prev.dist <= 0) continue;
+    if(!prev.etd) continue;
     const prevEtdDt = new Date(prev.etd);
     if(isNaN(prevEtdDt.getTime())) continue;
+
+    // 如果下一港已有 ETA，优先反推 seaHrs 和 speed
+    if(p.eta){
+      const etaDt = new Date(p.eta);
+      if(!isNaN(etaDt.getTime())){
+        const manIn = p.manIn != null ? p.manIn : getPortManIn(p.code);
+        // runHrs = ETA - ETD
+        const runHrs = (etaDt - prevEtdDt) / 3600000;
+        const seaHrs = Math.max(0, runHrs - manIn);
+        // 反推 dist 或 speed
+        if(prev.dist && prev.dist > 0){
+          // 有 dist，反推 speed
+          prev.speed = Math.round((prev.dist / seaHrs) * 10) / 10;
+        } else if(prev.speed && prev.speed > 0){
+          // 有 speed，反推 dist
+          prev.dist = Math.round(seaHrs * prev.speed);
+        }
+        // 继续推算本港 ETB/ETD
+        const waitHrs = p.waitHrs || 0;
+        const stayHrs = p.stayHrs != null ? p.stayHrs : getPortStay(p.code);
+        const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
+        round6Min(etbDt);
+        const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
+        round6Min(etdDt);
+        p.etb = toDatetimeLocal(etbDt);
+        p.etd = toDatetimeLocal(etdDt);
+        continue;
+      }
+    }
+
+    // 正向推算（原有逻辑）
+    if(!prev.dist || prev.dist <= 0) continue;
     // 每段使用上一港自己的 speed（上一港出发的速度），兜底用航次速度
     const segSpeed = (prev.speed != null && prev.speed > 0) ? prev.speed : voySpeed;
     if(segSpeed <= 0) continue;
@@ -5662,6 +5917,15 @@ function archiveCurrentVoyage(vesselCode, voyIdx){
   renderDailyDetail();
 }
 
+// Quick save from banner input
+function syncToDailyWithInput(){
+  const voyNoInput = document.getElementById('syncVoyNoInput');
+  if(voyNoInput){
+    document.getElementById('voyNoInput').value = voyNoInput.value;
+  }
+  syncToDaily();
+}
+
 // ===== Sync from Simulator to Daily =====
 function syncToDaily(){
   if(!scheduleRows.length){
@@ -5669,12 +5933,40 @@ function syncToDaily(){
     return;
   }
 
+  // IMPORTANT: If FLEET_DATA is empty (e.g., after page refresh), try to recover from localStorage first
+  if(!FLEET_DATA.vessels || FLEET_DATA.vessels.length === 0){
+    const saved = localStorage.getItem(FLEET_LOCALSTORAGE_KEY);
+    if(saved){
+      try {
+        const localData = JSON.parse(saved);
+        if(localData && localData.vessels && localData.vessels.length > 0){
+          FLEET_DATA = localData;
+          console.log('Recovered ' + localData.vessels.length + ' vessel(s) from localStorage before sync');
+        }
+      } catch(e){
+        console.warn('Failed to recover from localStorage:', e);
+      }
+    }
+  }
+
   const vesselCode = currentVessel.code || document.getElementById('vesselInput').value.trim().split('–')[0].trim();
   var _nameParts = document.getElementById('vesselInput').value.trim().split('–');
   const vesselName = currentVessel.name || (_nameParts[1] ? _nameParts[1].trim() : '') || vesselCode;
-  const voyNo = document.getElementById('voyNoInput').value || '001W';
+  const defaultVoyNo = document.getElementById('voyNoInput').value || '001W';
 
   if(!vesselCode){ showToast('Please select a vessel first', 'warning'); return; }
+
+  // Warn if FLEET_DATA is still empty (no local data to recover)
+  if(!FLEET_DATA.vessels || FLEET_DATA.vessels.length === 0){
+    if(!confirm('⚠️ Warning: No existing fleet data found in memory or localStorage.\n\nThis may happen if you refreshed the page.\nClicking OK will create a new fleet schedule (any previous data on GitHub will not be affected until you commit).\n\nDo you want to continue?')){
+      return;
+    }
+  }
+
+  // Ask for voyage number (editable)
+  let voyNo = prompt('Enter Voyage Number:', defaultVoyNo);
+  if(!voyNo) return;
+  voyNo = voyNo.trim().toUpperCase();
 
   // Ask for lane
   let laneCode = '';
@@ -5854,6 +6146,175 @@ function submitNewVoyage(){
   renderDailyDetail();
   autoSaveFleet();
   showToast('✓ 航次已创建：' + vesselCode + ' / ' + voyNo + '，请添加港口', 'success');
+}
+
+// ===== Data Backup & Recovery System =====
+// 多层备份策略：
+//   1. 每次 autoSaveFleet 时自动滚动备份（保留最近5个快照）
+//   2. 用户手动导出 JSON 备份文件
+//   3. 用户手动导入 JSON 备份恢复
+
+const BACKUP_KEY_PREFIX = 'fleet_backup_';
+const BACKUP_SLOTS = 5; // 最多保留5个自动快照
+const BACKUP_META_KEY = 'fleet_backup_meta'; // 备份元数据（时间戳列表）
+
+// 自动快照（在 autoSaveFleet 调用后触发，节流：每10分钟最多一次）
+let _lastAutoBackupTime = 0;
+function tryAutoBackup(){
+  const now = Date.now();
+  if(now - _lastAutoBackupTime < 10 * 60 * 1000) return; // 10 分钟内不重复
+  if(!FLEET_DATA.vessels || FLEET_DATA.vessels.length === 0) return;
+  _lastAutoBackupTime = now;
+
+  try {
+    // 读取现有备份元数据
+    let meta = [];
+    try { meta = JSON.parse(localStorage.getItem(BACKUP_META_KEY) || '[]'); } catch(e){}
+
+    // 生成新备份 key 和时间戳
+    const ts = new Date().toISOString();
+    const key = BACKUP_KEY_PREFIX + now;
+    localStorage.setItem(key, JSON.stringify({ ts, vessels: FLEET_DATA.vessels.length, data: FLEET_DATA }));
+
+    // 加入元数据，保留最新 BACKUP_SLOTS 个
+    meta.push({ key, ts, vessels: FLEET_DATA.vessels.length });
+    if(meta.length > BACKUP_SLOTS){
+      const removed = meta.splice(0, meta.length - BACKUP_SLOTS);
+      removed.forEach(m => { try { localStorage.removeItem(m.key); } catch(e){} });
+    }
+    localStorage.setItem(BACKUP_META_KEY, JSON.stringify(meta));
+    console.log('[AutoBackup] Saved snapshot at', ts, '| Total snapshots:', meta.length);
+  } catch(e){
+    console.warn('[AutoBackup] Failed:', e);
+  }
+}
+
+// 手动导出 JSON 备份文件
+function exportBackupJSON(){
+  try {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      exportedBy: localStorage.getItem('gh_username') || 'unknown',
+      version: 1,
+      data: FLEET_DATA
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
+    a.href = url;
+    a.download = 'fleet_backup_' + dateStr + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ 备份文件已导出：fleet_backup_' + dateStr + '.json', 'success');
+  } catch(e){
+    showToast('❌ 导出备份失败：' + e.message, 'warning');
+  }
+}
+
+// 从文件恢复备份
+function importBackupJSON(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const parsed = JSON.parse(e.target.result);
+      let restored;
+      if(parsed.data && parsed.data.vessels){
+        restored = parsed.data; // 带 metadata 的格式
+      } else if(parsed.vessels){
+        restored = parsed; // 直接是 FLEET_DATA 格式
+      } else {
+        throw new Error('不是有效的备份文件格式');
+      }
+      const vesselCount = restored.vessels ? restored.vessels.length : 0;
+      const exportedAt = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleString('zh-CN') : '未知';
+      if(!confirm(
+        '⚠️ 确认从备份恢复？\n\n' +
+        '备份时间：' + exportedAt + '\n' +
+        '包含 ' + vesselCount + ' 艘船的数据\n\n' +
+        '当前内存中的未提交数据将被覆盖。\n' +
+        '确定继续？'
+      )) return;
+      FLEET_DATA = restored;
+      autoSaveFleet();
+      renderDailyFleet();
+      if(dailySelectedVessel) renderDailyDetail();
+      showToast('✅ 备份恢复成功！共 ' + vesselCount + ' 艘船。请记得点 Commit 同步到 GitHub。', 'success');
+    } catch(err){
+      showToast('❌ 备份文件解析失败：' + err.message, 'warning');
+    }
+    input.value = ''; // reset file input
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+// 从自动快照恢复
+function restoreFromSnapshot(key){
+  try {
+    const raw = localStorage.getItem(key);
+    if(!raw) { showToast('快照不存在', 'warning'); return; }
+    const snap = JSON.parse(raw);
+    const vesselCount = snap.data && snap.data.vessels ? snap.data.vessels.length : 0;
+    const tsStr = snap.ts ? new Date(snap.ts).toLocaleString('zh-CN') : '未知';
+    if(!confirm(
+      '确认恢复到此快照？\n\n' +
+      '快照时间：' + tsStr + '\n' +
+      '包含 ' + vesselCount + ' 艘船\n\n' +
+      '当前内存数据将被此快照覆盖。'
+    )) return;
+    FLEET_DATA = snap.data;
+    autoSaveFleet();
+    renderDailyFleet();
+    if(dailySelectedVessel) renderDailyDetail();
+    closeBackupModal();
+    showToast('✅ 已恢复到快照：' + tsStr + '。请记得点 Commit 同步到 GitHub。', 'success');
+  } catch(e){
+    showToast('❌ 快照恢复失败：' + e.message, 'warning');
+  }
+}
+
+// 显示备份管理面板
+function showBackupMenu(){
+  let meta = [];
+  try { meta = JSON.parse(localStorage.getItem(BACKUP_META_KEY) || '[]'); } catch(e){}
+  meta = meta.slice().reverse(); // 最新的显示在前
+
+  let snapshotsHtml = '';
+  if(meta.length === 0){
+    snapshotsHtml = '<div style="color:var(--muted);font-size:.82rem;padding:8px 0;">暂无自动快照（系统每10分钟自动保存一次）</div>';
+  } else {
+    snapshotsHtml = meta.map((m, i) => {
+      const timeStr = new Date(m.ts).toLocaleString('zh-CN');
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #eee;">
+        <div>
+          <span style="font-size:.82rem;font-weight:600;">#${meta.length - i}</span>
+          <span style="font-size:.8rem;color:var(--muted);margin-left:10px;">${timeStr}</span>
+          <span style="font-size:.78rem;color:var(--accent);margin-left:8px;">${m.vessels} 艘船</span>
+        </div>
+        <button class="dm-btn dm-btn-primary" style="padding:3px 10px;font-size:.75rem;" onclick="restoreFromSnapshot('${m.key}')">恢复</button>
+      </div>`;
+    }).join('');
+  }
+
+  // Calculate localStorage usage
+  let usedKB = 0;
+  try {
+    let total = 0;
+    for(let k in localStorage){ if(localStorage.hasOwnProperty(k)) total += (localStorage[k].length + k.length) * 2; }
+    usedKB = Math.round(total / 1024);
+  } catch(e){}
+
+  const modal = document.getElementById('backupModal');
+  document.getElementById('backupSnapshotList').innerHTML = snapshotsHtml;
+  document.getElementById('backupStorageInfo').textContent = '本地存储已用约 ' + usedKB + ' KB（上限约 5120 KB）';
+  modal.style.display = 'flex';
+}
+
+function closeBackupModal(){
+  document.getElementById('backupModal').style.display = 'none';
 }
 
 // ===== Export Fleet to Excel =====
