@@ -1,4 +1,11 @@
 from_port,to_port,distance_nm,source
+EGSUZ,SAJED,643,manual
+TRMER,EGSUZ,453,manual
+TRIST,TRMER,798,manual
+TRALI,TRIST,257,auto
+EGALY,TRALI,554,manual
+EGSUZ,EGALY,257,manual
+SAJED,EGSUZ,436,auto
 SADMM,PKKHI,938,auto
 AEJEA,SADMM,252,auto
 PKKHI,AEJEA,707,auto
