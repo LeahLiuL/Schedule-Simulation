@@ -216,6 +216,21 @@
     transition: background .15s;
   }
   .btn-add-port:hover { background: #0b5ed7; }
+  .btn-clear-ports {
+    background: #f8f9fa;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: .7rem;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all .15s;
+  }
+  .btn-clear-ports:hover {
+    background: #ffeaea;
+    color: var(--danger);
+    border-color: var(--danger);
+  }
 
   /* speed grid */
   .speed-grid {
@@ -1032,7 +1047,10 @@
 
     <!-- Ports -->
     <div class="panel-section" style="flex:1;">
-      <div class="section-title">Port Rotation</div>
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Port Rotation</span>
+        <button class="btn-clear-ports" onclick="clearAllPorts()" id="btnClearPorts" title="Clear all ports" style="display:none;">🗑 Clear All</button>
+      </div>
       <div class="port-list" id="portList"></div>
       <div class="port-add-row">
         <div class="combobox-wrap" id="portCombobox">
@@ -1315,8 +1333,7 @@
       <div class="dm-toolbar">
         <input class="dm-search" id="dmPortSearch" placeholder="Search port code or name..." oninput="filterDmPorts()"/>
         <button class="dm-btn dm-btn-primary" onclick="addDmPort()">+ Add Port</button>
-        <button class="dm-btn dm-btn-export" onclick="exportDmCSV('ports')">📥 Export CSV</button>
-        <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('ports')">⬆ Commit</button>
+        <button class="dm-btn" onclick="openLaneQuickAdd()" style="background:#6f42c1;color:#fff;">📥 From Lane</button>
       </div>
       <div class="dm-table-wrap">
         <table class="dm-table" id="dmPortTable">
@@ -1397,6 +1414,7 @@
       <div class="dm-toolbar">
         <input class="dm-search" id="dmLaneSearch" placeholder="Search lane code or name..." oninput="renderDmLanes()"/>
         <button class="dm-btn dm-btn-primary" onclick="addDmLane()">+ Add Lane</button>
+        <button class="dm-btn" onclick="openBulkImportLanes()" style="background:#28a745;color:#fff;">📋 Bulk Import</button>
         <button class="dm-btn dm-btn-export" onclick="exportDmCSV('lanes')">📥 Export JSON</button>
         <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('lanes')">⬆ Commit</button>
       </div>
@@ -1421,6 +1439,49 @@
         <span id="commitStatus" class="commit-status"></span>
         <button class="dm-btn dm-btn-commit" id="btnCommitAll" onclick="commitAllToGitHub()">⬆ Commit All to GitHub</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- LANE QUICK ADD MODAL -->
+<div class="token-overlay" id="laneQuickAddOverlay">
+  <div class="token-modal" style="width:500px;">
+    <h3>📥 从 Lane 导入 Ports</h3>
+    <p class="token-hint">选择一个 Lane，自动将航线中的所有港口添加到 Ports 列表</p>
+    
+    <div style="margin:16px 0;">
+      <label style="display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;">选择 Lane</label>
+      <select id="lqaLaneSelect" onchange="updateLaneQuickAddPreview()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.88rem;">
+        <option value="">-- 选择一条 Lane --</option>
+      </select>
+    </div>
+    
+    <div id="lqaPreview" style="display:none;margin:16px 0;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #e9ecef;">
+      <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px;">预览：</div>
+      <div id="lqaPreviewContent"></div>
+    </div>
+    
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button class="dm-btn" onclick="closeLaneQuickAdd()">取消</button>
+      <button class="dm-btn dm-btn-primary" id="lqaAddBtn" onclick="executeLaneQuickAdd()" disabled>导入 Ports</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK IMPORT LANES MODAL -->
+<div class="token-overlay" id="bulkImportLanesOverlay">
+  <div class="token-modal" style="width:600px;">
+    <h3>📋 批量导入 Lanes</h3>
+    <p class="token-hint">每行一个 Lane，格式：<code>CODE	Name</code>（制表符分隔）</p>
+    
+    <textarea id="bulkLanesInput" rows="15" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;font-family:monospace;resize:vertical;" placeholder="AIS	ASIA INDIA SUB-CONTINENT SERVICE
+BC2	RCL BANGKOK CHINA SERVICE
+BDX	South China Haiphone Service
+..."></textarea>
+    
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button class="dm-btn" onclick="closeBulkImportLanes()">取消</button>
+      <button class="dm-btn dm-btn-primary" onclick="executeBulkImportLanes()">导入 Lanes</button>
     </div>
   </div>
 </div>
@@ -2018,8 +2079,24 @@ function parseCSV(text){
   }).filter(function(r){ for(var k in r){ if(r.hasOwnProperty(k)&&r[k]!=='') return true; } return false; });
 }
 
-// Fetch CSV: GitHub main branch ONLY — single source of truth
+// Fetch CSV: GitHub API (no CDN cache) → fallback to raw CDN
 async function fetchCSV(filename){
+  const token = getGhToken();
+  try {
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    if(token) headers['Authorization'] = 'token ' + token;
+    const apiUrl = GH_REPO_API + '/shipping_data/' + filename;
+    const resp = await fetch(apiUrl, { headers, cache: 'no-store' });
+    if(resp.ok){
+      const fileInfo = await resp.json();
+      // GitHub API returns base64-encoded content
+      const text = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,''))));
+      return parseCSV(text);
+    }
+  } catch(e){
+    console.warn('GitHub API fetchCSV failed, falling back to raw CDN:', e);
+  }
+  // Fallback: raw CDN (may have up to ~5min cache delay)
   const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
   const resp = await fetch(githubUrl, { cache: 'no-store' });
   if(!resp.ok) throw new Error('Failed to load ' + filename + ' from GitHub (status ' + resp.status + ')');
@@ -2530,9 +2607,24 @@ function removePort(idx){
   updateFuelEstimate();
 }
 
+function clearAllPorts(){
+  if(selectedPorts.length === 0) return;
+  if(!confirm('Clear all ' + selectedPorts.length + ' port(s)?')) return;
+  selectedPorts = [];
+  renderPortList();
+  updateFuelEstimate();
+}
+
 function renderPortList(){
   const list = document.getElementById('portList');
+  const clearBtn = document.getElementById('btnClearPorts');
   list.innerHTML='';
+  
+  // Show/hide clear all button
+  if(clearBtn){
+    clearBtn.style.display = selectedPorts.length > 0 ? 'inline-block' : 'none';
+  }
+  
   selectedPorts.forEach((p,i)=>{
     const item = document.createElement('div');
     item.className='port-item';
@@ -2801,32 +2893,67 @@ function buildRow(i, p, voyNo, eta, etb, etd, dist, runHrs, speed, vessel, manIn
 
 // ==================== RENDER TABLE ====================
 const COL_DEFS = [
-  {key:'port',        label:'PORT',              cls:'col-port',  editable:false},
-  {key:'manIn',       label:'Man In(hr)',        cls:'col-num',   editable:true},
-  {key:'wait',        label:'Wait(hr)',          cls:'col-num',   editable:true},
-  {key:'proformaEta', label:'Proforma ETA',      cls:'col-eta',   editable:false, fmt:'dt'},
-  {key:'ltsEtb',      label:'LTS ETB',           cls:'col-etb',   editable:false, fmt:'dt'},
-  {key:'ltsEtd',      label:'LTS ETD',           cls:'col-etd',   editable:false, fmt:'dt'},
-  {key:'voyNo',       label:'VOY.NO',            cls:'col-voy',   editable:true},
-  {key:'date',        label:'Date',              cls:'col-day',   editable:false, fmt:'weekday'},
-  {key:'eta',         label:'ETA',               cls:'col-eta',   editable:true,  fmt:'dt'},
-  {key:'etb',         label:'ETB',               cls:'col-etb',   editable:true,  fmt:'dt'},
-  {key:'etd',         label:'ETD',               cls:'col-etd',   editable:true,  fmt:'dt'},
-  {key:'runHrs',      label:'Run(hr)',           cls:'col-run',   editable:true},
-  {key:'stayHrs',     label:'Port Stay(hr)',     cls:'col-stay',  editable:true},
-  {key:'dist',        label:'FSP Distance',       cls:'col-dist',  editable:true},
-  {key:'speed',       label:'Speed(kn)',          cls:'col-speed', editable:true},
-  {key:'etaDelay',    label:'ETA Delay/Ahead',    cls:'col-delay', editable:false, fmt:'delay'},
-  {key:'etdDelay',    label:'ETD Delay/Ahead',    cls:'col-delay', editable:false, fmt:'delay'},
-  {key:'fuelSea',     label:'Fuel(LSFO mt)',      cls:'col-fuel',  editable:false},
-  {key:'remark',      label:'Remark',             cls:'col-remark',editable:true},
+  {key:'port',        label:'PORT',              cls:'col-port',  editable:false, hideable:true},
+  {key:'manIn',       label:'Man In(hr)',        cls:'col-num',   editable:true,  hideable:true},
+  {key:'wait',        label:'Wait(hr)',          cls:'col-num',   editable:true,  hideable:true},
+  {key:'proformaEta', label:'Proforma ETA',      cls:'col-eta',   editable:false, fmt:'dt', hideable:true},
+  {key:'ltsEtb',      label:'LTS ETB',           cls:'col-etb',   editable:false, fmt:'dt', hideable:true},
+  {key:'ltsEtd',      label:'LTS ETD',           cls:'col-etd',   editable:false, fmt:'dt', hideable:true},
+  {key:'voyNo',       label:'VOY.NO',            cls:'col-voy',   editable:true,  hideable:true},
+  {key:'date',        label:'Date',              cls:'col-day',   editable:false, fmt:'weekday', hideable:false},
+  {key:'eta',         label:'ETA',               cls:'col-eta',   editable:true,  fmt:'dt', hideable:true},
+  {key:'etb',         label:'ETB',               cls:'col-etb',   editable:true,  fmt:'dt', hideable:true},
+  {key:'etd',         label:'ETD',               cls:'col-etd',   editable:true,  fmt:'dt', hideable:true},
+  {key:'runHrs',      label:'Run(hr)',           cls:'col-run',   editable:true,  hideable:true},
+  {key:'stayHrs',     label:'Port Stay(hr)',     cls:'col-stay',  editable:true,  hideable:true},
+  {key:'dist',        label:'FSP Distance',       cls:'col-dist',  editable:true,  hideable:true},
+  {key:'speed',       label:'Speed(kn)',          cls:'col-speed', editable:true,  hideable:true},
+  {key:'etaDelay',    label:'ETA Delay/Ahead',    cls:'col-delay', editable:false, fmt:'delay', hideable:true},
+  {key:'etdDelay',    label:'ETD Delay/Ahead',    cls:'col-delay', editable:false, fmt:'delay', hideable:true},
+  {key:'fuelSea',     label:'Fuel(LSFO mt)',      cls:'col-fuel',  editable:false, hideable:true},
+  {key:'remark',      label:'Remark',             cls:'col-remark',editable:true,  hideable:true},
 ];
+
+// ===== Single Vessel Column Visibility (mirrors DAILY_COLUMNS system) =====
+let svHiddenCols = JSON.parse(localStorage.getItem('svHiddenCols') || '[]');
+
+function isSVColHidden(key){
+  return svHiddenCols.indexOf(key) >= 0;
+}
+function toggleSVCol(key){
+  const idx = svHiddenCols.indexOf(key);
+  if(idx >= 0) svHiddenCols.splice(idx, 1);
+  else svHiddenCols.push(key);
+  localStorage.setItem('svHiddenCols', JSON.stringify(svHiddenCols));
+  renderTable();
+  // Also re-render fuel summary after column visibility change
+  updateFuelFromSchedule();
+}
+function getVisibleSVCols(){
+  return COL_DEFS.filter(c => !c.hideable || !isSVColHidden(c.key));
+}
+
+function toggleSVColPanel(){
+  const panel = document.getElementById('svColPanel');
+  if(!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close col panel when clicking outside
+document.addEventListener('click', function(e){
+  const panel = document.getElementById('svColPanel');
+  const btn = panel && panel.previousElementSibling;
+  if(panel && btn && !btn.contains(e.target) && !panel.contains(e.target)){
+    panel.style.display = 'none';
+  }
+});
 
 function renderTable(){
   const container = document.getElementById('scheduleTableContainer');
   container.innerHTML='';
 
   // Add save banner at top
+  const visCols = getVisibleSVCols();
   const banner = document.createElement('div');
   banner.className = 'sync-banner';
   banner.innerHTML = `
@@ -2834,9 +2961,22 @@ function renderTable(){
       <strong>📋 ${currentVessel.code || document.getElementById('vesselInput').value.split('–')[0].trim()}</strong>
       <span>航次: <input type="text" id="syncVoyNoInput" value="${document.getElementById('voyNoInput').value || '001W'}" style="width:70px;padding:2px 6px;border:1px solid #ccc;border-radius:4px;font-size:.85rem;"/></span>
     </div>
-    <button class="btn-dm" onclick="syncToDailyWithInput()" style="padding:6px 16px;font-size:.85rem;">
-      💾 保存到 Daily 船期
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div style="position:relative;">
+        <button class="btn-dm" onclick="toggleSVColPanel()" style="padding:6px 14px;font-size:.82rem;">
+          ☰ 列
+        </button>
+        <div id="svColPanel" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:9999;min-width:160px;padding:6px 0;max-height:320px;overflow-y:auto;">
+          ${COL_DEFS.filter(c=>c.hideable).map(c=>
+            '<label style="display:flex;align-items:center;gap:6px;padding:4px 14px;font-size:.78rem;cursor:pointer;white-space:nowrap;">' +
+            '<input type="checkbox" ' + (isSVColHidden(c.key)?'':'checked') + ' onchange="toggleSVCol(\'' + c.key + '\')"/> ' + c.label + '</label>'
+          ).join('')}
+        </div>
+      </div>
+      <button class="btn-dm" onclick="syncToDailyWithInput()" style="padding:6px 16px;font-size:.85rem;">
+        💾 保存到 Daily 船期
+      </button>
+    </div>
   `;
   container.appendChild(banner);
 
@@ -2845,7 +2985,7 @@ function renderTable(){
 
   const thead = tbl.createTHead();
   const hr = thead.insertRow();
-  COL_DEFS.forEach(col=>{
+  visCols.forEach(col=>{
     const th=document.createElement('th');
     th.textContent=col.label;
     hr.appendChild(th);
@@ -2857,7 +2997,7 @@ function renderTable(){
     tr.dataset.idx=ri;
     if(row.modified) tr.classList.add('modified');
 
-    COL_DEFS.forEach((col,ci)=>{
+    visCols.forEach((col,ci)=>{
       const td=tr.insertCell();
       td.className=col.cls;
       td.dataset.col=col.key;
@@ -2902,9 +3042,10 @@ function renderTable(){
 }
 
 function findNextEditable(tr, curColIdx){
+  const visCols = getVisibleSVCols();
   let ci = curColIdx+1;
-  while(ci<COL_DEFS.length){
-    if(COL_DEFS[ci].editable) return tr.cells[ci];
+  while(ci<visCols.length){
+    if(visCols[ci].editable) return tr.cells[ci];
     ci++;
   }
   return null;
@@ -3088,9 +3229,10 @@ function exportExcel(){
   const vesselDisplay = currentVessel.code || document.getElementById('vesselInput').value.trim();
   const voyNo = document.getElementById('voyNoInput').value||'001W';
 
-  const headers = COL_DEFS.map(c=>c.label);
+  const visCols = getVisibleSVCols();
+  const headers = visCols.map(c=>c.label);
   const data = scheduleRows.map(row=>{
-    return COL_DEFS.map(col=>{
+    return visCols.map(col=>{
       const v = row[col.key];
       if(['eta','etb','etd','ltsEtb','ltsEtd','proformaEta','proformaEtd','date'].includes(col.key)){
         return fmtDt(v);
@@ -3107,7 +3249,7 @@ function exportExcel(){
   const wb = XLSX.utils.book_new();
   const wsData = [headers, ...data];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws['!cols'] = COL_DEFS.map(c=>({wch: c.fmt==='dt'?18:Math.max(c.label.length,12)}));
+  ws['!cols'] = visCols.map(c=>({wch: c.fmt==='dt'?18:Math.max(c.label.length,12)}));
   XLSX.utils.book_append_sheet(wb, ws, 'Voyage Schedule');
 
   const speed = document.getElementById('speedInput').value;
@@ -3286,6 +3428,117 @@ function addDmPort(){
   showToast('New port added – edit the row');
 }
 function filterDmPorts(){ renderDmPorts(document.getElementById('dmPortSearch').value); }
+
+// ========== LANE QUICK ADD ==========
+function openLaneQuickAdd(){
+  // Populate lane select
+  const select = document.getElementById('lqaLaneSelect');
+  let options = '<option value="">-- 选择一条 Lane --</option>';
+  LANES_DATA.forEach(l => {
+    options += `<option value="${l.code}">${l.code} - ${l.name}</option>`;
+  });
+  select.innerHTML = options;
+  
+  // Reset preview
+  document.getElementById('lqaPreview').style.display = 'none';
+  document.getElementById('lqaAddBtn').disabled = true;
+  
+  document.getElementById('laneQuickAddOverlay').classList.add('open');
+}
+
+function closeLaneQuickAdd(){
+  document.getElementById('laneQuickAddOverlay').classList.remove('open');
+}
+
+function updateLaneQuickAddPreview(){
+  const laneCode = document.getElementById('lqaLaneSelect').value;
+  const previewDiv = document.getElementById('lqaPreview');
+  const previewContent = document.getElementById('lqaPreviewContent');
+  const addBtn = document.getElementById('lqaAddBtn');
+  
+  if(!laneCode){
+    previewDiv.style.display = 'none';
+    addBtn.disabled = true;
+    return;
+  }
+  
+  // Find lane in LANES_DATA
+  const lane = LANES_DATA.find(l => l.code === laneCode);
+  if(!lane){
+    previewDiv.style.display = 'none';
+    addBtn.disabled = true;
+    return;
+  }
+  
+  // Get ports from this lane's portRotation
+  const rotation = lane.portRotation || [];
+  const existingCodes = new Set(PORTS_DATA.map(r => r[0]));
+  
+  let newPorts = [];
+  let existingPorts = [];
+  
+  rotation.forEach(item => {
+    const portCode = item.portCode || item.code;
+    if(existingCodes.has(portCode)){
+      existingPorts.push(portCode);
+    } else {
+      newPorts.push(portCode);
+    }
+  });
+  
+  let html = '';
+  if(newPorts.length > 0){
+    html += '<div style="margin-bottom:8px;"><span style="color:#28a745;font-weight:600;">新增：</span> ';
+    html += newPorts.map(c => `<span style="display:inline-block;padding:2px 8px;background:#d4edda;color:#155724;border-radius:4px;font-size:.78rem;margin:2px;">${c}</span>`).join('');
+    html += '</div>';
+  }
+  if(existingPorts.length > 0){
+    html += '<div><span style="color:#6c757d;font-weight:600;">已存在：</span> ';
+    html += existingPorts.map(c => `<span style="display:inline-block;padding:2px 8px;background:#e9ecef;color:#6c757d;border-radius:4px;font-size:.78rem;margin:2px;">${c}</span>`).join('');
+    html += '</div>';
+  }
+  if(newPorts.length === 0 && existingPorts.length === 0){
+    html = '<div style="color:var(--muted);">该 Lane 没有港口配置</div>';
+  }
+  
+  previewContent.innerHTML = html;
+  previewDiv.style.display = 'block';
+  addBtn.disabled = newPorts.length === 0;
+  addBtn.textContent = newPorts.length > 0 ? `导入 ${newPorts.length} 个新 Port` : '导入 Ports';
+}
+
+function executeLaneQuickAdd(){
+  const laneCode = document.getElementById('lqaLaneSelect').value;
+  if(!laneCode) return;
+  
+  const lane = LANES_DATA.find(l => l.code === laneCode);
+  if(!lane) return;
+  
+  const rotation = lane.portRotation || [];
+  const existingCodes = new Set(PORTS_DATA.map(r => r[0]));
+  
+  let addedCount = 0;
+  rotation.forEach(item => {
+    const portCode = item.portCode || item.code;
+    const portName = item.portName || item.name || '';
+    if(!existingCodes.has(portCode)){
+      // Add new port: [code, name_en, name_cn, man_in, portstay_time]
+      PORTS_DATA.push([portCode, portName, '', '', '']);
+      addedCount++;
+    }
+  });
+  
+  if(addedCount > 0){
+    buildPortMap();
+    initPortCombobox();
+    renderDmPorts(document.getElementById('dmPortSearch').value);
+    showToast(`已从 Lane "${laneCode}" 导入 ${addedCount} 个新 Port`, 'success');
+  } else {
+    showToast('所有 Port 已存在，无需导入', 'info');
+  }
+  
+  closeLaneQuickAdd();
+}
 
 // ========== VESSELS ==========
 function renderDmVessels(filter=''){
@@ -3476,6 +3729,65 @@ function deleteDmLane(i){
   renderDmLanes();
   populateLaneFilter();
   showToast('Lane deleted');
+}
+
+// ========== BULK IMPORT LANES ==========
+function openBulkImportLanes(){
+  document.getElementById('bulkLanesInput').value = '';
+  document.getElementById('bulkImportLanesOverlay').classList.add('open');
+}
+
+function closeBulkImportLanes(){
+  document.getElementById('bulkImportLanesOverlay').classList.remove('open');
+}
+
+function executeBulkImportLanes(){
+  const input = document.getElementById('bulkLanesInput').value.trim();
+  if(!input){
+    showToast('请输入 Lane 数据', 'warning');
+    return;
+  }
+  
+  const lines = input.split('\n');
+  const existingCodes = new Set(LANES_DATA.map(l => l.code));
+  let added = 0;
+  let skipped = 0;
+  
+  lines.forEach(line => {
+    line = line.trim();
+    if(!line) return;
+    
+    // Split by tab or multiple spaces
+    const parts = line.split(/\t|\s{2,}/);
+    const code = (parts[0] || '').trim().toUpperCase();
+    const name = (parts[1] || '').trim();
+    
+    if(!code){
+      skipped++;
+      return;
+    }
+    
+    if(existingCodes.has(code)){
+      // Update name if exists
+      const lane = LANES_DATA.find(l => l.code === code);
+      if(lane) lane.name = name;
+      skipped++;
+    } else {
+      LANES_DATA.push({ code: code, name: name });
+      existingCodes.add(code);
+      added++;
+    }
+  });
+  
+  renderDmLanes();
+  populateLaneFilter();
+  closeBulkImportLanes();
+  
+  if(added > 0){
+    showToast(`已导入 ${added} 个新 Lane${skipped > 0 ? '，跳过 ' + skipped + ' 个已存在' : ''}`, 'success');
+  } else {
+    showToast('所有 Lane 已存在，无需导入', 'info');
+  }
 }
 
 // ========== DIAODUBAO LINK ==========
@@ -3841,7 +4153,32 @@ async function reloadCommittedData(type){
   const filename = csvFilename(type);
   const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
   const resp = await fetch(githubUrl, { cache: 'no-store' });
-  if(!resp.ok) throw new Error('Failed to fetch ' + filename);
+  if(!resp.ok){
+    console.warn('Failed to fetch ' + filename + ', keeping local data');
+    return; // Don't overwrite local data on failure
+  }
+  
+  // lanes.json is JSON, not CSV - handle separately
+  // Merge with local data instead of replacing (to preserve defaults)
+  if(type === 'lanes'){
+    try {
+      const data = JSON.parse(await resp.text());
+      const githubLanes = Array.isArray(data) ? data : (data.lanes || []);
+      // Merge: add GitHub lanes that don't exist locally
+      const localCodes = new Set(LANES_DATA.map(l => l.code));
+      githubLanes.forEach(l => {
+        if(!localCodes.has(l.code)){
+          LANES_DATA.push(l);
+          localCodes.add(l.code);
+        }
+      });
+    } catch(e) {
+      console.error('Failed to parse lanes.json:', e);
+      // Keep local data on parse error
+    }
+    return;
+  }
+  
   const rows = parseCSV(await resp.text());
 
   if(type === 'ports'){
@@ -3858,8 +4195,6 @@ async function reloadCommittedData(type){
   } else if(type === 'distances'){
     DIST_RAW = rows.map(r=>[r.from_port||r.from||'', r.to_port||r.to||'', parseFloat(r.distance_nm||r.distance||0), r.source||'']);
     buildDistMap();
-  } else if(type === 'lanes'){
-    LANES_DATA = rows;
   }
 }
 
@@ -3892,17 +4227,23 @@ async function commitToGitHub(type){
       // File doesn't exist yet — we'll create it (sha = null tells GitHub to create)
       console.log('File not found, will create: ' + path);
     } else if(getResp.status === 401){
-      showToast('Invalid or expired token', 'warning');
-      setCommitStatus('Auth failed');
+      showToast('⚠️ GitHub Token 已失效或无权限，请重新设置 Token！', 'warning');
+      setCommitStatus('✗ Token 已失效，请重新设置');
       btns.forEach(b=>b.classList.remove('loading'));
+      openTokenSetup();
       return;
-    }
-    if(!getResp.ok){
+    } else if(getResp.status === 403){
+      showToast('⚠️ GitHub Token 无写入权限（需要 repo 权限），请检查 Token 设置！', 'warning');
+      setCommitStatus('✗ 权限不足（需要 repo scope）');
+      btns.forEach(b=>b.classList.remove('loading'));
+      openTokenSetup();
+      return;
+    } else if(!getResp.ok){
+      // Any error other than 404/401 is a real error
       const err = await getResp.json().catch(()=>({}));
       throw new Error('GitHub API error: ' + getResp.status + (err.message ? ' - ' + err.message : ''));
-    }
-
-    if(getResp.status === 200){
+    } else {
+      // 200: file exists, read its SHA
       const fileData = await getResp.json();
       sha = fileData.sha;
     }
@@ -4026,8 +4367,15 @@ async function commitAllToGitHub(){
       });
 
       if(getResp.status === 401){
-        showToast('Invalid or expired token', 'warning');
-        setCommitStatus('✗ Auth failed');
+        showToast('⚠️ GitHub Token 已失效，请重新设置！', 'warning');
+        setCommitStatus('✗ Token 已失效，请重新设置');
+        openTokenSetup();
+        break;
+      }
+      if(getResp.status === 403){
+        showToast('⚠️ GitHub Token 无写入权限（需要 repo 权限）！', 'warning');
+        setCommitStatus('✗ 权限不足（需要 repo scope）');
+        openTokenSetup();
         break;
       }
 
@@ -4102,7 +4450,79 @@ function switchAppTab(tab){
 // ==================== DAILY FLEET SCHEDULE ====================
 let FLEET_DATA = { vessels: [], lastSync: null };
 let FLEET_SHA = null; // GitHub file SHA for optimistic locking
-let LANES_DATA = []; // [{code, name}]
+let LANES_DATA = [
+  {code:'AIS', name:'ASIA INDIA SUB-CONTINENT SERVICE'},
+  {code:'BC2', name:'RCL BANGKOK CHINA SERVICE'},
+  {code:'BDX', name:'South China Haiphone Service'},
+  {code:'CBS', name:'CHINA BRAZIL SERVICE'},
+  {code:'CH1', name:'China Haiphong I Service'},
+  {code:'CH2', name:'China Hochiminh II Service'},
+  {code:'CH6', name:'China Hochiminh VI Service'},
+  {code:'CI1', name:'CHINA INDIA SERVICE'},
+  {code:'CI2', name:'CHINA INDIA SERVICE 2'},
+  {code:'CI3', name:'China India III Service'},
+  {code:'CI5', name:'China-India-Pakistan V service'},
+  {code:'CI6', name:'Far East/India East coast VI Express'},
+  {code:'CI7', name:'Far East India Express VII Service'},
+  {code:'CI8', name:'North East China India Service'},
+  {code:'CIX', name:'CHINA INDIA EXPRESS SERVICE'},
+  {code:'CJX', name:'China-Middle East'},
+  {code:'CL3', name:'China Thailand III service'},
+  {code:'CL5', name:'CHINA THAILAND V SERVICE'},
+  {code:'CP2', name:'MANILA SHANGHAI SERVICE (SITC)'},
+  {code:'CP3', name:'China-Philippine III service'},
+  {code:'CP8', name:'China Philippines 8 Service'},
+  {code:'CSX', name:'CHINA SUB-CONTINENT EXPRESS'},
+  {code:'CT1', name:'CHINA TAIWAN SERVICE'},
+  {code:'CT2', name:'CHINA THAILAND SERVICE II'},
+  {code:'CT3', name:'CHINA THAILAND SERVICE III'},
+  {code:'CTE', name:'CHINA TAIWAN EXPRESS SERVICE'},
+  {code:'CV3', name:'CHINA VIETNAM 3'},
+  {code:'CVC', name:'CHINA VIETNAM SERVICE 2-C'},
+  {code:'CVK', name:'CHINA VIETNAM KAMPUCHEA SERVICE'},
+  {code:'CVN', name:'CHINA VIETNAM SERVICE 2-N'},
+  {code:'CWS', name:'CHINA WEST COAST INDIA'},
+  {code:'CX1', name:'Xiamen Manila Service'},
+  {code:'FCS', name:'FAR EAST CHENNAI SERVICE'},
+  {code:'FIV', name:'FAR EAST INDIA VIETNAM SERVICE'},
+  {code:'FME', name:'Far East Madras Express'},
+  {code:'GLX', name:'East Asia - Middle East Service II'},
+  {code:'HHX', name:'East China Haiphong Service'},
+  {code:'HLS', name:'THAILAND INDIA SERVICE'},
+  {code:'HLX', name:'HERCULES SERVICE'},
+  {code:'HPX', name:'HAIPHONG PUSAN EXPRESS'},
+  {code:'ICI', name:'North East China India Service'},
+  {code:'IMS', name:'INDIA MEDITERRANEAN SERVICE'},
+  {code:'IQH', name:'Incheon Qingdao Haiphong Service'},
+  {code:'JCT', name:'Japan China Thailand Service'},
+  {code:'JFX', name:'JEBEL ALI - FAR EAST X-PRESS'},
+  {code:'JPX', name:'JAPAN SINGAPORE PORTKLANG SERVICE'},
+  {code:'JTV', name:'JAPAN TAIWAN VIETNAM EXPRESS SERVICE'},
+  {code:'JTX', name:'JAPAN-TAIWAN SERVICE (CNC)'},
+  {code:'KGS', name:'Karichi Gulf Service'},
+  {code:'KHX', name:'Korea Haiphong Express'},
+  {code:'MES', name:'MEDITERRANEAN EXPRESS SERVICE'},
+  {code:'MFX', name:'MOMBASA FAR EAST X-PRESS'},
+  {code:'MGA', name:'MIDDLE EAST GULF ASIA SERVICE'},
+  {code:'PKX', name:'Port Kelang-Kolkata Express'},
+  {code:'SGS', name:'S.E.A GULF SERVICE'},
+  {code:'SH1', name:'SHANGHAI 1'},
+  {code:'SHE', name:'SHANGHAI-HAIPHONG EXPRESS SERVICE'},
+  {code:'SK2', name:'HUADONG TAIWAN SERVICE'},
+  {code:'SKX', name:'Straits Kolkata Express'},
+  {code:'SMX', name:'SOUTH CHINA MIDDLE EAST'},
+  {code:'SP1', name:'South China Philippines Service'},
+  {code:'ST2', name:'SOUTH CHINA TAIWAN EXPRESS II'},
+  {code:'SV1', name:'South China Vietnam Service'},
+  {code:'SVG', name:'SOUTH CHINA VIETNAM SERVICE'},
+  {code:'SVP', name:'South China-Philippines Service'},
+  {code:'TH3', name:'TAIWAN HONGKONG SERVICE 3'},
+  {code:'THA', name:'TAIWAN HOCHIMINH EXPRESS A'},
+  {code:'THB', name:'TAIWAN HOCHIMINH EXPRESS B'},
+  {code:'TV1', name:'Taiwan Vietnam I Service'},
+  {code:'TV2', name:'Taiwan Vietnam II Service'},
+  {code:'TVT', name:'TAIWAN VIETNAM THAILAND'}
+]; // [{code, name}]
 let dailySelectedVessel = null; // {code, name, voyIdx}
 var dailyCheckedVessels = {}; // Object as Set replacement: "code|voyIdx" -> true
 
@@ -4302,12 +4722,32 @@ async function loadFleetSchedule(){
   const path = FLEET_FILE;
   FLEET_DATA = { vessels: [], lastSync: null };
   try {
-    const resp = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
+    // Use GitHub API (not raw CDN) to avoid ~5-min CDN cache delay after commit
+    const token = getGhToken();
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    if(token) headers['Authorization'] = 'token ' + token;
+    const resp = await fetch(GH_REPO_API + '/shipping_data/' + FLEET_FILE, { headers, cache: 'no-store' });
     if(resp.ok){
-      const remoteData = await resp.json();
+      const fileInfo = await resp.json();
+      // GitHub API returns content as base64
+      const jsonText = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,''))));
+      const remoteData = JSON.parse(jsonText);
       if(remoteData && remoteData.vessels){
         FLEET_DATA = remoteData;
-        console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub');
+        console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub API (no-cache)');
+      }
+    } else if(resp.status === 404){
+      console.log('fleet_schedule.json not found on GitHub, starting fresh');
+    } else {
+      // Fallback to raw CDN if API fails
+      console.warn('GitHub API load failed (' + resp.status + '), falling back to raw CDN');
+      const fallback = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
+      if(fallback.ok){
+        const remoteData = await fallback.json();
+        if(remoteData && remoteData.vessels){
+          FLEET_DATA = remoteData;
+          console.log('Loaded from raw CDN (fallback): ' + remoteData.vessels.length + ' vessel(s)');
+        }
       }
     }
   } catch(e){
@@ -5826,9 +6266,8 @@ async function commitFleetSchedule(){
   }
 
   const setStatus = (msg) => {
-    const el1 = document.getElementById('dailyCommitStatus');
-    const el2 = document.getElementById('dailyCommitStatus');
-    if(el1) el1.textContent = msg;
+    const el = document.getElementById('dailyCommitStatus');
+    if(el) el.textContent = msg;
   };
 
   setStatus('Fetching current file...');
@@ -5843,8 +6282,14 @@ async function commitFleetSchedule(){
       // File doesn't exist yet, create it
       FLEET_SHA = null;
     } else if(getResp.status === 401){
-      showToast('Invalid or expired token', 'warning');
-      setStatus('✗ Auth failed');
+      showToast('⚠️ GitHub Token 已失效或无权限，请重新设置 Token！', 'warning');
+      setStatus('✗ Token 已失效');
+      openTokenSetup();
+      return;
+    } else if(getResp.status === 403){
+      showToast('⚠️ GitHub Token 无写入权限（需要 repo 权限），请检查 Token！', 'warning');
+      setStatus('✗ 权限不足');
+      openTokenSetup();
       return;
     } else if(!getResp.ok){
       throw new Error('GitHub API error: ' + getResp.status);
