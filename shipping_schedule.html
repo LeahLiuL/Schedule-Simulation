@@ -1549,7 +1549,8 @@ window.onerror = function(msg, url, line, col, error) {
 // ==================== DATA LOADER ====================
 // CSV data paths: GitHub is source of truth, local files as offline fallback
 const CSV_LOCAL = './shipping_data';
-const CSV_GITHUB = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data';
+// Use GitHub Pages URL for public access (no token required)
+const CSV_GITHUB = 'https://leahliul.github.io/Schedule-Simulation/shipping_data';
 
 // Bundled default CSV data (used as final fallback when both local and GitHub fetch fail)
 const BUNDLED_CSV = {
