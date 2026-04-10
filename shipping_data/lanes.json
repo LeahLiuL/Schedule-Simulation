@@ -285,6 +285,122 @@
   },
   {
     "code": "REX",
-    "name": ""
+    "name": "Red sea Service"
+  },
+  {
+    "code": "AEM",
+    "name": "Asia-East Mediterranean Sea Service"
+  },
+  {
+    "code": "AEX",
+    "name": "ASIA EUROPE EXPRESS SERVICE"
+  },
+  {
+    "code": "AG2",
+    "name": "Asia Gulf Express II"
+  },
+  {
+    "code": "AG3",
+    "name": "Asia Gulf Express III"
+  },
+  {
+    "code": "CES",
+    "name": "CHINA EUROPE EXPRESS SERVICE"
+  },
+  {
+    "code": "CMX",
+    "name": "CHINA-MALAYSIA EXPRESS"
+  },
+  {
+    "code": "CNX",
+    "name": "Short Hual Adhoc Service"
+  },
+  {
+    "code": "CPX",
+    "name": "CHINA PHILIPPINE EXPRESS"
+  },
+  {
+    "code": "CST",
+    "name": "CUL SouthChina Thailand service"
+  },
+  {
+    "code": "CV5",
+    "name": "CHINA VIETNAM EXPRESS III"
+  },
+  {
+    "code": "HDT",
+    "name": "HUA DONG TAIWAN SERVICE"
+  },
+  {
+    "code": "JPS",
+    "name": "Jeddah Port Sudan"
+  },
+  {
+    "code": "SCT",
+    "name": "SOUTH CHINA THAILAND SERVICE"
+  },
+  {
+    "code": "SEG",
+    "name": "South China / Manila Service"
+  },
+  {
+    "code": "SGX",
+    "name": "SINGAPORE EXTRA LOAD"
+  },
+  {
+    "code": "SH2",
+    "name": "South China Hochiminh II Express"
+  },
+  {
+    "code": "SH3",
+    "name": "South China Haiphong III service"
+  },
+  {
+    "code": "SJA",
+    "name": "Sokhna Jeddah Aden"
+  },
+  {
+    "code": "SL1",
+    "name": "South China Thailand I service"
+  },
+  {
+    "code": "ST1",
+    "name": "NEW SOUTH CHINA TAIWAN EXPRESS SERVICE"
+  },
+  {
+    "code": "ST3",
+    "name": "SOUTH CHINA TAIWAN SERVICE 3"
+  },
+  {
+    "code": "STD",
+    "name": "SOUTH CHINA TAIWAN DIRECT SERVICE"
+  },
+  {
+    "code": "STX",
+    "name": "SOUTH CHINA THAILAND EXPRESS II"
+  },
+  {
+    "code": "SV2",
+    "name": "SOUTH CHINA HAIPHONG SERVICE II"
+  },
+  {
+    "code": "TP1",
+    "name": "Trans Pacific West coast I Service"
+  },
+  {
+    "code": "TPC",
+    "name": "Transpacific Loop 1"
+  },
+  {
+    "code": "TPN",
+    "name": "TRANSPACIFIC EXPRESS III"
+  },
+  {
+    "code": "TPX",
+    "name": "TRANS PACIFIC EXPRESS"
+  },
+  {
+    "code": "TST",
+    "name": "TEST"
   }
 ]
