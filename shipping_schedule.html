@@ -170,6 +170,17 @@
     color: var(--primary);
     margin-right: 4px;
   }
+  .combobox-item {
+    padding: 6px 10px;
+    font-size: .82rem;
+    cursor: pointer;
+    transition: background .1s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .combobox-item:hover { background: #e8f0fe; }
+  .combobox-item.no-ports { opacity: 0.6; }
 
   /* port list */
   .port-list {
@@ -1049,7 +1060,10 @@
     <div class="panel-section" style="flex:1;">
       <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
         <span>Port Rotation</span>
-        <button class="btn-clear-ports" onclick="clearAllPorts()" id="btnClearPorts" title="Clear all ports" style="display:none;">🗑 Clear All</button>
+        <div style="display:flex;gap:6px;">
+          <button class="dm-btn" onclick="openLanePortSelector()" style="padding:3px 10px;font-size:.72rem;background:#3498db;color:#fff;">🚢 Lane</button>
+          <button class="btn-clear-ports" onclick="clearAllPorts()" id="btnClearPorts" title="Clear all ports" style="display:none;">🗑 Clear All</button>
+        </div>
       </div>
       <div class="port-list" id="portList"></div>
       <div class="port-add-row">
@@ -1482,6 +1496,41 @@ BDX	South China Haiphone Service
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
       <button class="dm-btn" onclick="closeBulkImportLanes()">取消</button>
       <button class="dm-btn dm-btn-primary" onclick="executeBulkImportLanes()">导入 Lanes</button>
+    </div>
+  </div>
+</div>
+
+<!-- LANE PORT SELECTOR MODAL (for single vessel scheduling) -->
+<div class="token-overlay" id="lanePortSelectorOverlay">
+  <div class="token-modal" style="width:500px;">
+    <h3>🚢 Add Ports from Lane</h3>
+    <p class="token-hint">Select a Lane to automatically add all its ports to the current voyage's Port Rotation</p>
+    
+    <div style="margin:16px 0;">
+      <label style="display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;">Select Lane</label>
+      <div class="combobox-wrap" style="position:relative;">
+        <input type="text" id="lpsLaneInput" placeholder="Type or select lane code..." autocomplete="off"
+          onfocus="lpsLaneSearch(this.value)" oninput="lpsLaneSearch(this.value)" onblur="setTimeout(()=>lpsLaneClose(),300)"/>
+        <span class="combobox-arrow" onclick="lpsLaneToggle()">&#9662;</span>
+        <div class="combobox-dropdown" id="lpsLaneDropdown" style="top:100%;left:0;right:0;max-height:250px;overflow-y:auto;"></div>
+      </div>
+    </div>
+    
+    <div id="lpsPreview" style="display:none;margin:12px 0;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #e9ecef;">
+      <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px;">Ports Preview:</div>
+      <div id="lpsPreviewContent" style="font-size:.8rem;"></div>
+    </div>
+    
+    <div id="lpsAddAllRow" style="display:none;margin:12px 0;padding:10px;background:#e8f5e9;border-radius:6px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;">
+        <input type="checkbox" id="lpsAddAll" checked/>
+        <span>Add <strong id="lpsPortCount">0</strong> ports from this Lane</span>
+      </label>
+    </div>
+    
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button class="dm-btn" onclick="closeLanePortSelector()">Cancel</button>
+      <button class="dm-btn dm-btn-primary" id="lpsAddBtn" onclick="executeLanePortSelector()" disabled>Add Ports</button>
     </div>
   </div>
 </div>
@@ -2184,7 +2233,157 @@ function estimateDistance(a,b){
   return Math.abs(ra-rb)*450+300+Math.random()*100;
 }
 
+
 var DEFAULT_MAN_IN = 3; // hours (var to avoid TDZ issues)
+var lpsSelectedLane = null;
+
+// Parse lane ports: supports both formats
+// 1. Array format: [{portCode: "CNSHA", portName: "Shanghai"}, ...]
+// 2. String format: [{portCode: "CNSHA-CNHKG-TWKHH", portName: "..."}] - hyphen-separated
+function parseLanePorts(lane){
+  if(!lane || !lane.ports || !lane.ports.length) return [];
+  const result = [];
+  lane.ports.forEach(p => {
+    if(typeof p === 'string'){
+      result.push(p);
+    } else if(p.portCode){
+      if(p.portCode.includes('-')){
+        p.portCode.split('-').forEach(code => {
+          code = code.trim();
+          if(code) result.push(code);
+        });
+      } else {
+        result.push(p.portCode);
+      }
+    }
+  });
+  return result;
+}
+
+function openLanePortSelector(){
+  lpsSelectedLane = null;
+  document.getElementById('lpsLaneInput').value = '';
+  document.getElementById('lpsPreview').style.display = 'none';
+  document.getElementById('lpsAddAllRow').style.display = 'none';
+  document.getElementById('lpsAddBtn').disabled = true;
+  document.getElementById('lanePortSelectorOverlay').classList.add('open');
+}
+
+function closeLanePortSelector(){
+  document.getElementById('lanePortSelectorOverlay').classList.remove('open');
+}
+
+function lpsLaneSearch(val){
+  val = val.trim().toUpperCase();
+  const dd = document.getElementById('lpsLaneDropdown');
+  
+  // Show all lanes if input is empty, filter if has text
+  let items;
+  if(!val){
+    items = LANES_DATA.slice(0, 30);
+  } else {
+    items = LANES_DATA.filter(l =>
+      l.code.toUpperCase().includes(val) || (l.name||'').toUpperCase().includes(val)
+    ).slice(0, 20);
+  }
+  
+  if(!items.length){ dd.style.display='none'; return; }
+  
+  dd.innerHTML = items.map(l => {
+    const portCount = (l.ports || []).length;
+    const hasPorts = portCount > 0;
+    return `<div class="combobox-item ${hasPorts ? '' : 'no-ports'}" onmousedown="lpsLanePick('${esc(l.code)}')">
+      <strong>${esc(l.code)}</strong> <span style="color:var(--muted);font-size:.8em;">${esc(l.name||'')}</span>
+      ${hasPorts 
+        ? `<span style="color:#27ae60;font-size:.7rem;margin-left:6px;">✓ ${portCount} ports</span>` 
+        : `<span style="color:#e74c3c;font-size:.7rem;margin-left:6px;">no ports</span>`}
+    </div>`;
+  }).join('');
+  dd.style.display = 'block';
+  
+  // Auto-select if input exactly matches a lane code
+  if(val.length >= 2){
+    const exactMatch = LANES_DATA.find(l => l.code.toUpperCase() === val);
+    if(exactMatch){
+      lpsLanePick(exactMatch.code);
+    }
+  }
+}
+
+function lpsLanePick(code){
+  lpsSelectedLane = LANES_DATA.find(l => l.code === code);
+  document.getElementById('lpsLaneInput').value = code;
+  document.getElementById('lpsLaneDropdown').style.display = 'none';
+  
+  // Show preview
+  const previewDiv = document.getElementById('lpsPreview');
+  const previewContent = document.getElementById('lpsPreviewContent');
+  const addAllRow = document.getElementById('lpsAddAllRow');
+  const addBtn = document.getElementById('lpsAddBtn');
+  const portCountSpan = document.getElementById('lpsPortCount');
+  
+  if(lpsSelectedLane && lpsSelectedLane.ports && lpsSelectedLane.ports.length > 0){
+    const portCodes = parseLanePorts(lpsSelectedLane);
+    const existingCodes = new Set(selectedPorts.map(p => p.code));
+    const newPorts = portCodes.filter(code => !existingCodes.has(code));
+    
+    previewContent.innerHTML = portCodes.map(code => {
+      const name = getPortName(code);
+      const isNew = !existingCodes.has(code);
+      return `<span style="display:inline-block;padding:2px 6px;margin:2px;border-radius:4px;font-size:.72rem;${isNew ? 'background:#c8e6c9;color:#2e7d32;' : 'background:#eceff1;color:#546e7a;'}">${code}${isNew ? ' (new)' : ' (exists)'}</span>`;
+    }).join(' ');
+    
+    portCountSpan.textContent = newPorts.length;
+    previewDiv.style.display = 'block';
+    addAllRow.style.display = portCodes.length > 0 ? 'block' : 'none';
+    addBtn.disabled = newPorts.length === 0;
+    addBtn.textContent = newPorts.length > 0 ? `Add ${newPorts.length} New Port(s)` : 'No New Ports';
+  } else {
+    previewDiv.style.display = 'none';
+    addAllRow.style.display = 'none';
+    addBtn.disabled = true;
+    addBtn.textContent = 'This Lane Has No Ports';
+  }
+}
+
+function lpsLaneClose(){
+  document.getElementById('lpsLaneDropdown').style.display = 'none';
+}
+
+function lpsLaneToggle(){
+  const inp = document.getElementById('lpsLaneInput');
+  lpsLaneSearch(inp.value);
+  inp.focus();
+}
+
+function executeLanePortSelector(){
+  if(!lpsSelectedLane || !lpsSelectedLane.ports || lpsSelectedLane.ports.length === 0) return;
+  
+  const addAll = document.getElementById('lpsAddAll').checked;
+  const portCodes = parseLanePorts(lpsSelectedLane);
+  const existingCodes = new Set(selectedPorts.map(p => p.code));
+  
+  let addedCount = 0;
+  portCodes.forEach(code => {
+    if(addAll || !existingCodes.has(code)){
+      if(!existingCodes.has(code)){
+        selectedPorts.push({
+          code: code,
+          stayHours: getPortStay(code)
+        });
+        addedCount++;
+        existingCodes.add(code);
+      }
+    }
+  });
+  
+  if(addedCount > 0){
+    renderPortList();
+    showToast(`Added ${addedCount} port(s) from Lane "${lpsSelectedLane.code}"`, 'success');
+  }
+  
+  closeLanePortSelector();
+}
 
 // Build port lookup
 let PORT_MAP = {};
