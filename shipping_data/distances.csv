@@ -1,4 +1,6 @@
 from_port,to_port,distance_nm,source
+INCCU,MYPKG,1440,manual
+MYPKG,INCCU,1440,manual
 IDBLW,MYPKG,172,manual
 EGSUZ,SAJED,643,manual
 TRMER,EGSUZ,453,manual
