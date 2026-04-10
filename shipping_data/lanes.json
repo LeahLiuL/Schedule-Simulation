@@ -295,7 +295,69 @@
   },
   {
     "code": "AEM",
-    "name": "Asia-East Mediterranean Sea Service"
+    "name": "Asia-East Mediterranean Sea Service",
+    "ports": [
+      {
+        "portCode": "CNTAO",
+        "portName": "QINGDAO"
+      },
+      {
+        "portCode": "CNSHA",
+        "portName": "SHANGHAI"
+      },
+      {
+        "portCode": "CNNGB",
+        "portName": "NINGBO"
+      },
+      {
+        "portCode": "CNNAS",
+        "portName": "NANSHA"
+      },
+      {
+        "portCode": "SAJED",
+        "portName": "JEDDAH"
+      },
+      {
+        "portCode": "EGSUZ",
+        "portName": "SUEZ CANAL"
+      },
+      {
+        "portCode": "EGALY",
+        "portName": "ALEXANDRIA"
+      },
+      {
+        "portCode": "TRALI",
+        "portName": "ALIAGA"
+      },
+      {
+        "portCode": "TRIST",
+        "portName": "ISTANBUL"
+      },
+      {
+        "portCode": "TRMER",
+        "portName": "MERSIN"
+      },
+      {
+        "portCode": "EGSUZ",
+        "portName": "SUEZ CANAL"
+      },
+      {
+        "portCode": "SAJED",
+        "portName": "JEDDAH"
+      },
+      {
+        "portCode": "SAJED",
+        "portName": "JEDDAH"
+      },
+      {
+        "portCode": "MYPKG",
+        "portName": "PORT KLANG"
+      },
+      {
+        "portCode": "CNTAO",
+        "portName": "QINGDAO"
+      }
+    ]
   },
   {
     "code": "AEX",
@@ -378,8 +440,32 @@
     "name": "SOUTH CHINA TAIWAN SERVICE 3",
     "ports": [
       {
-        "portCode": "TWKEL-TWTXG-TWKHH-CNSWA-CNNAS-CNSHK",
-        "portName": "TWKEL-TWTXG-TWKHH-CNSWA-CNNAS-CNSHK"
+        "portCode": "TWKEL",
+        "portName": "KEELUNG"
+      },
+      {
+        "portCode": "TWTXG",
+        "portName": "TAICHUNG"
+      },
+      {
+        "portCode": "TWKHH",
+        "portName": "KAOHSIUNG"
+      },
+      {
+        "portCode": "CNSWA",
+        "portName": "SHANTOU"
+      },
+      {
+        "portCode": "CNNAS",
+        "portName": "NANSHA"
+      },
+      {
+        "portCode": "CNSHK",
+        "portName": "SHEKOU"
+      },
+      {
+        "portCode": "TWKEL",
+        "portName": "KEELUNG"
       }
     ]
   },
