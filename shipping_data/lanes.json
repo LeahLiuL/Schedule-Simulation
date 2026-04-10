@@ -1,1 +1,122 @@
-[{"code":"AIS","name":"ASIA INDIA SUB-CONTINENT SERVICE"},{"code":"BC2","name":"RCL BANGKOK CHINA SERVICE"},{"code":"BDX","name":"South China Haiphone Service"},{"code":"CBS","name":"CHINA BRAZIL SERVICE"},{"code":"CH1","name":"China Haiphong I Service"},{"code":"CH2","name":"China Hochiminh II Service"},{"code":"CH6","name":"China Hochiminh VI Service"},{"code":"CI1","name":"CHINA INDIA SERVICE"},{"code":"CI2","name":"CHINA INDIA SERVICE 2"},{"code":"CI3","name":"China India III Service"},{"code":"CI5","name":"China-India-Pakistan V service"},{"code":"CI6","name":"Far East/India East coast VI Express"},{"code":"CI7","name":"Far East India Express VII Service"},{"code":"CI8","name":"North East China India Service"},{"code":"CIX","name":"CHINA INDIA EXPRESS SERVICE"},{"code":"CJX","name":"China-Middle East"},{"code":"CL3","name":"China Thailand III service"},{"code":"CL5","name":"CHINA THAILAND V SERVICE"},{"code":"CP2","name":"MANILA SHANGHAI SERVICE (SITC)"},{"code":"CP3","name":"China-Philippine III service"},{"code":"CP8","name":"China Philippines 8 Service"},{"code":"CSX","name":"CHINA SUB-CONTINENT EXPRESS"},{"code":"CT1","name":"CHINA TAIWAN SERVICE"},{"code":"CT2","name":"CHINA THAILAND SERVICE II"},{"code":"CT3","name":"CHINA THAILAND SERVICE III"},{"code":"CTE","name":"CHINA TAIWAN EXPRESS SERVICE"},{"code":"CV3","name":"CHINA VIETNAM 3"},{"code":"CVC","name":"CHINA VIETNAM SERVICE 2-C"},{"code":"CVK","name":"CHINA VIETNAM KAMPUCHEA SERVICE"},{"code":"CVN","name":"CHINA VIETNAM SERVICE 2-N"},{"code":"CWS","name":"CHINA WEST COAST INDIA"},{"code":"CX1","name":"Xiamen Manila Service"},{"code":"FCS","name":"FAR EAST CHENNAI SERVICE"},{"code":"FIV","name":"FAR EAST INDIA VIETNAM SERVICE"},{"code":"FME","name":"Far East Madras Express"},{"code":"GLX","name":"East Asia - Middle East Service II"},{"code":"HHX","name":"East China Haiphong Service"},{"code":"HLS","name":"THAILAND INDIA SERVICE"},{"code":"HLX","name":"HERCULES SERVICE"},{"code":"HPX","name":"HAIPHONG PUSAN EXPRESS"},{"code":"ICI","name":"North East China India Service"},{"code":"IMS","name":"INDIA MEDITERRANEAN SERVICE"},{"code":"IQH","name":"Incheon Qingdao Haiphong Service"},{"code":"JCT","name":"Japan China Thailand Service"},{"code":"JFX","name":"JEBEL ALI - FAR EAST X-PRESS"},{"code":"JPX","name":"JAPAN SINGAPORE PORTKLANG SERVICE"},{"code":"JTV","name":"JAPAN TAIWAN VIETNAM EXPRESS SERVICE"},{"code":"JTX","name":"JAPAN-TAIWAN SERVICE (CNC)"},{"code":"KGS","name":"Karichi Gulf Service"},{"code":"KHX","name":"Korea Haiphong Express"},{"code":"MES","name":"MEDITERRANEAN EXPRESS SERVICE"},{"code":"MFX","name":"MOMBASA FAR EAST X-PRESS"},{"code":"MGA","name":"MIDDLE EAST GULF ASIA SERVICE"},{"code":"PKX","name":"Port Kelang-Kolkata Express"},{"code":"SGS","name":"S.E.A GULF SERVICE"},{"code":"SH1","name":"SHANGHAI 1"},{"code":"SHE","name":"SHANGHAI-HAIPHONG EXPRESS SERVICE"},{"code":"SK2","name":"HUADONG TAIWAN SERVICE"},{"code":"SKX","name":"Straits Kolkata Express"},{"code":"SMX","name":"SOUTH CHINA MIDDLE EAST"},{"code":"SP1","name":"South China Philippines Service"},{"code":"ST2","name":"SOUTH CHINA TAIWAN EXPRESS II"},{"code":"SV1","name":"South China Vietnam Service"},{"code":"SVG","name":"SOUTH CHINA VIETNAM SERVICE"},{"code":"SVP","name":"South China-Philippines Service"},{"code":"TH3","name":"TAIWAN HONGKONG SERVICE 3"},{"code":"THA","name":"TAIWAN HOCHIMINH EXPRESS A"},{"code":"THB","name":"TAIWAN HOCHIMINH EXPRESS B"},{"code":"TV1","name":"Taiwan Vietnam I Service"},{"code":"TV2","name":"Taiwan Vietnam II Service"},{"code":"TVT","name":"TAIWAN VIETNAM THAILAND"}]
+[
+    {
+        "code":  "AEM",
+        "name":  "Asia-East Mediterranean Sea Service"
+    },
+    {
+        "code":  "AEX",
+        "name":  "ASIA EUROPE EXPRESS SERVICE"
+    },
+    {
+        "code":  "AG2",
+        "name":  "Asia Gulf Express II"
+    },
+    {
+        "code":  "AG3",
+        "name":  "Asia Gulf Express III"
+    },
+    {
+        "code":  "CES",
+        "name":  "CHINA EUROPE EXPRESS SERVICE"
+    },
+    {
+        "code":  "CMX",
+        "name":  "CHINA-MALAYSIA EXPRESS"
+    },
+    {
+        "code":  "CNX",
+        "name":  "Short Hual Adhoc Service"
+    },
+    {
+        "code":  "CPX",
+        "name":  "CHINA PHILIPPINE EXPRESS"
+    },
+    {
+        "code":  "CST",
+        "name":  "CUL SouthChina Thailand service"
+    },
+    {
+        "code":  "CV5",
+        "name":  "CHINA VIETNAM EXPRESS III"
+    },
+    {
+        "code":  "HDT",
+        "name":  "HUA DONG TAIWAN SERVICE"
+    },
+    {
+        "code":  "JPS",
+        "name":  "Jeddah Port Sudan"
+    },
+    {
+        "code":  "REX",
+        "name":  "Red sea Service"
+    },
+    {
+        "code":  "SCT",
+        "name":  "SOUTH CHINA THAILAND SERVICE"
+    },
+    {
+        "code":  "SEG",
+        "name":  "South China / Manila Service"
+    },
+    {
+        "code":  "SGX",
+        "name":  "SINGAPORE EXTRA LOAD"
+    },
+    {
+        "code":  "SH2",
+        "name":  "South China Hochiminh II Express"
+    },
+    {
+        "code":  "SH3",
+        "name":  "South China Haiphong III service"
+    },
+    {
+        "code":  "SJA",
+        "name":  "Sokhna Jeddah Aden"
+    },
+    {
+        "code":  "SL1",
+        "name":  "South China Thailand I service"
+    },
+    {
+        "code":  "ST1",
+        "name":  "NEW SOUTH CHINA TAIWAN EXPRESS SERVICE"
+    },
+    {
+        "code":  "ST3",
+        "name":  "SOUTH CHINA TAIWAN SERVICE 3"
+    },
+    {
+        "code":  "STD",
+        "name":  "SOUTH CHINA TAIWAN DIRECT SERVICE"
+    },
+    {
+        "code":  "STX",
+        "name":  "SOUTH CHINA THAILAND EXPRESS II"
+    },
+    {
+        "code":  "SV2",
+        "name":  "SOUTH CHINA HAIPHONG SERVICE II"
+    },
+    {
+        "code":  "TP1",
+        "name":  "Trans Pacific West coast I Service"
+    },
+    {
+        "code":  "TPC",
+        "name":  "Transpacific Loop 1"
+    },
+    {
+        "code":  "TPN",
+        "name":  "TRANSPACIFIC EXPRESS III"
+    },
+    {
+        "code":  "TPX",
+        "name":  "TRANS PACIFIC EXPRESS"
+    },
+    {
+        "code":  "TST",
+        "name":  "TEST"
+    }
+]
