@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "code": "REX",
+    "name": "Red sea Service"
+  },
+  {
+    "code": "AM1",
+    "name": "Asia Med I service"
+  },
+  {
+    "code": "ST3",
+    "name": "SOUTH CHINA TAIWAN SERVICE 3"
+  },
+  {
+    "code": "ST1",
+    "name": "NEW SOUTH CHINA TAIWAN EXPRESS SERVICE"
+  },
+  {
+    "code": "CI1",
+    "name": "CHINA INDIA SERVICE"
+  },
+  {
+    "code": "CI2",
+    "name": "CHINA INDIA SERVICE 2"
+  },
+  {
+    "code": "CPX",
+    "name": "CHINA PHILIPPINE EXPRESS"
+  },
+  {
+    "code": "CSX",
+    "name": "CHINA SUB-CONTINENT EXPRESS"
+  },
+  {
+    "code": "NP2",
+    "name": "China Philippines Express Service"
+  },
+  {
+    "code": "HDT",
+    "name": "HUA DONG TAIWAN SERVICE"
+  }
+]
