@@ -271,12 +271,85 @@
           "voyNo": "2610W",
           "lane": "ST3",
           "status": "current",
-          "ports": [],
-          "lastModified": "2026-04-10T14:31:47.385Z",
+          "ports": [
+            {
+              "code": "TWKEL",
+              "name": "KEELUNG",
+              "eta": "2026-04-11T10:40",
+              "etb": "2026-04-11T13:42",
+              "etd": "2026-04-12T13:42",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 112,
+              "speed": 9.4
+            },
+            {
+              "code": "TWTXG",
+              "name": "TAICHUNG",
+              "eta": "2026-04-13T04:36",
+              "etb": "2026-04-13T07:36",
+              "etd": "2026-04-14T07:36",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 131,
+              "speed": 9.4
+            },
+            {
+              "code": "TWKHH",
+              "name": "KAOHSIUNG",
+              "eta": "2026-04-15T00:30",
+              "etb": "2026-04-15T03:30",
+              "etd": "2026-04-16T03:30",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 203,
+              "speed": 9.4
+            },
+            {
+              "code": "CNSWA",
+              "name": "SHANTOU",
+              "eta": "2026-04-17T04:06",
+              "etb": "2026-04-17T07:06",
+              "etd": "2026-04-18T07:06",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 206,
+              "speed": 9.4
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-04-19T08:00",
+              "etb": "2026-04-19T11:00",
+              "etd": "2026-04-20T11:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 19,
+              "speed": 9.4
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-04-20T16:00",
+              "etb": "2026-04-20T19:00",
+              "etd": "2026-04-21T19:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 0,
+              "speed": 9.4
+            }
+          ],
+          "lastModified": "2026-04-11T02:46:49.771Z",
           "modifiedBy": "anonymous"
         }
       ]
     }
   ],
-  "lastSync": "2026-04-08T08:56:18.813Z"
+  "lastSync": "2026-04-11T02:26:11.262Z"
 }
