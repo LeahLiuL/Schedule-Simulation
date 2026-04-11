@@ -2358,10 +2358,48 @@ function lpsLaneToggle(){
 }
 
 function executeLanePortSelector(){
-  if(!lpsSelectedLane || !lpsSelectedLane.ports || lpsSelectedLane.ports.length === 0) return;
+  if(!lpsSelectedLane || !lpsSelectedLane.ports || lpsSelectedLane.ports.length === 0){
+    showToast('该航线没有预设港口，请先在 Data Manager 中添加', 'warning');
+    return;
+  }
   
-  const addAll = document.getElementById('lpsAddAll').checked;
   const portCodes = parseLanePorts(lpsSelectedLane);
+  
+  // Check if we're in Daily context
+  if(_dailyLaneSelectorCtx){
+    const { vesselCode, voyIdx } = _dailyLaneSelectorCtx;
+    const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+    if(!vessel) return;
+    const voy = vessel.voyages[voyIdx];
+    if(!voy) return;
+    
+    const existingCodes = new Set((voy.ports || []).map(p => p.portCode));
+    let addedCount = 0;
+    portCodes.forEach(code => {
+      if(!existingCodes.has(code)){
+        if(!voy.ports) voy.ports = [];
+        voy.ports.push({ portCode: code, portName: getPortName(code) });
+        existingCodes.add(code);
+        addedCount++;
+      }
+    });
+    
+    _dailyLaneSelectorCtx = null;
+    
+    if(addedCount > 0){
+      renderDailyDetail();
+      autoSaveFleet();
+      showToast(`已添加 ${addedCount} 个港口`, 'success');
+    } else {
+      showToast('所有港口已存在，无需添加', 'info');
+    }
+    
+    closeLanePortSelector();
+    return;
+  }
+  
+  // Single vessel scheduling mode
+  const addAll = document.getElementById('lpsAddAll').checked;
   const existingCodes = new Set(selectedPorts.map(p => p.code));
   
   let addedCount = 0;
@@ -2384,6 +2422,30 @@ function executeLanePortSelector(){
   }
   
   closeLanePortSelector();
+}
+
+// Fix UTC datetime format (2026-04-09T00:00:00.000Z) to datetime-local format (2026-04-09T00:00)
+function fixFleetDatetimeFormat(data){
+  if(!data || !data.vessels) return;
+  data.vessels.forEach(vessel => {
+    if(!vessel.voyages) return;
+    vessel.voyages.forEach(voy => {
+      if(!voy.ports) return;
+      voy.ports.forEach(port => {
+        ['eta', 'etb', 'etd'].forEach(field => {
+          if(port[field] && typeof port[field] === 'string'){
+            // Convert UTC format like "2026-04-09T00:00:00.000Z" to "2026-04-09T00:00"
+            const s = port[field];
+            if(s.includes('T') && (s.endsWith('Z') || s.includes('.'))){
+              const parts = s.split('T');
+              const timePart = parts[1].replace(/\.\d+Z?$/, '').replace(/:00$/, '');
+              port[field] = parts[0] + 'T' + (timePart.includes(':') ? timePart : timePart + ':00');
+            }
+          }
+        });
+      });
+    });
+  });
 }
 
 // Build port lookup
@@ -4738,8 +4800,9 @@ const LANES_FILE = 'shipping_data/lanes.json';
 
 async function initDailyPage(){
   console.log('[initDailyPage] Starting... FLEET_DATA.vessels:', FLEET_DATA.vessels.length);
-  if(LANES_DATA.length) populateLaneFilter();
-  else await loadLanesData();
+  // Always reload lanes from GitHub to get ports data
+  await loadLanesData();
+  populateLaneFilter();
   if(!FLEET_DATA.vessels.length || FLEET_DATA.vessels.length === 0){
     console.log('[initDailyPage] No vessels, loading from source...');
     await loadFleetSchedule();
@@ -4959,6 +5022,8 @@ async function loadFleetSchedule(){
       const jsonText = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,'')))).replace(/^\uFEFF/, '');
       const remoteData = JSON.parse(jsonText);
       if(remoteData && remoteData.vessels){
+        // Fix UTC datetime format to datetime-local format for display
+        fixFleetDatetimeFormat(remoteData);
         FLEET_DATA = remoteData;
         console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub API (no-cache)');
       }
@@ -4971,6 +5036,8 @@ async function loadFleetSchedule(){
       if(fallback.ok){
         const remoteData = await fallback.json();
         if(remoteData && remoteData.vessels){
+          // Fix UTC datetime format to datetime-local format for display
+          fixFleetDatetimeFormat(remoteData);
           FLEET_DATA = remoteData;
           console.log('Loaded from raw CDN (fallback): ' + remoteData.vessels.length + ' vessel(s)');
         }
@@ -4986,6 +5053,7 @@ async function loadFleetSchedule(){
       try {
         const localData = JSON.parse(saved);
         if(localData && localData.vessels && localData.vessels.length > 0){
+          fixFleetDatetimeFormat(localData);
           FLEET_DATA = localData;
           console.log('Recovered ' + localData.vessels.length + ' vessel(s) from localStorage (GitHub was empty)');
           showToast('⚠ 从本地缓存恢复了船期数据，请点 Commit 同步到 GitHub', 'warning');
@@ -5690,7 +5758,7 @@ function renderDailyDetail(){
   // Add port row (only in single voyage mode, not continuous view)
   const addPortRow = `
     <div class="daily-add-port-bar">
-      <div class="combobox-wrap" style="position:relative;flex:1;max-width:260px;">
+      <div class="combobox-wrap" style="position:relative;flex:1;max-width:200px;">
         <input type="text" id="dailyAddPortInput" placeholder="输入港口代码或名称" autocomplete="off"
           oninput="dailyPortSearch(this.value,'${vessel.code}',${curIdx})"
           onblur="setTimeout(()=>document.getElementById('dailyAddPortDropdown').style.display='none',200)"
@@ -5699,6 +5767,7 @@ function renderDailyDetail(){
         <div class="combobox-dropdown" id="dailyAddPortDropdown" style="top:100%;left:0;right:0;z-index:50;"></div>
       </div>
       <button class="dm-btn dm-btn-primary" style="padding:5px 14px;font-size:.8rem;" onclick="dailyAddPortConfirm('${vessel.code}',${curIdx})">＋ Add Port</button>
+      <button class="dm-btn" style="padding:5px 12px;font-size:.8rem;background:#3498db;color:#fff;" onclick="openDailyLanePortSelector('${vessel.code}',${curIdx})">🚢 Lane</button>
     </div>`;
 
   if(showContinuous){
@@ -6109,6 +6178,15 @@ function dailyAddPortPick(portCode, vesselCode, voyIdx){
   const dd = document.getElementById('dailyAddPortDropdown');
   if(dd) dd.style.display = 'none';
 }
+
+// ===== Fleet Daily: 从 Lane 添加所有 Ports =====
+let _dailyLaneSelectorCtx = null; // { vesselCode, voyIdx }
+
+function openDailyLanePortSelector(vesselCode, voyIdx){
+  _dailyLaneSelectorCtx = { vesselCode, voyIdx };
+  openLanePortSelector();
+}
+
 // ===== Fleet Daily: 获取航次速度（优先 voyage.speed，其次 VESSELS_DATA，默认14） =====
 function getDailySpeed(vessel, voyIdx){
   const voy = vessel && vessel.voyages && vessel.voyages[voyIdx];
@@ -6793,6 +6871,7 @@ function submitNewVoyage(){
 
   // Check duplicate
   const existIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
+  
   if(existIdx >= 0){
     if(!confirm('航次 ' + voyNo + ' 已存在，是否覆盖？')) return;
     vessel.voyages[existIdx] = {
