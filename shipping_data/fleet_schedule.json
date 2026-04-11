@@ -318,7 +318,8 @@
               "manIn": 3,
               "waitHrs": 0,
               "dist": 206,
-              "speed": 9.4
+              "speed": 9.4,
+              "voyNo": "2610E"
             },
             {
               "code": "CNNAS",
@@ -330,7 +331,8 @@
               "manIn": 3,
               "waitHrs": 0,
               "dist": 19,
-              "speed": 9.4
+              "speed": 9.4,
+              "voyNo": "2610E"
             },
             {
               "code": "CNSHK",
@@ -342,14 +344,15 @@
               "manIn": 3,
               "waitHrs": 0,
               "dist": 0,
-              "speed": 9.4
+              "speed": 9.4,
+              "voyNo": "2610E"
             }
           ],
-          "lastModified": "2026-04-11T02:46:49.771Z",
+          "lastModified": "2026-04-11T02:47:13.761Z",
           "modifiedBy": "anonymous"
         }
       ]
     }
   ],
-  "lastSync": "2026-04-11T02:26:11.262Z"
+  "lastSync": "2026-04-11T02:47:00.232Z"
 }
