@@ -5066,20 +5066,9 @@ async function loadFleetSchedule(){
   } catch(e){
     console.error('Load fleet error:', e);
   }
-  // If GitHub returned empty, try localStorage as last resort recovery
+  // 不再使用 localStorage 回退，始终从 GitHub 获取
   if(FLEET_DATA.vessels.length === 0){
-    const saved = localStorage.getItem('fleet_schedule_local');
-    if(saved){
-      try {
-        const localData = JSON.parse(saved);
-        if(localData && localData.vessels && localData.vessels.length > 0){
-          fixFleetDatetimeFormat(localData);
-          FLEET_DATA = localData;
-          console.log('Recovered ' + localData.vessels.length + ' vessel(s) from localStorage (GitHub was empty)');
-          showToast('⚠ 从本地缓存恢复了船期数据，请点 Commit 同步到 GitHub', 'warning');
-        }
-      } catch(e){}
-    }
+    console.log('No vessels on GitHub, starting fresh');
   }
 }
 
