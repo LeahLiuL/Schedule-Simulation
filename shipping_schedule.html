@@ -2373,23 +2373,43 @@ function executeLanePortSelector(){
     const voy = vessel.voyages[voyIdx];
     if(!voy) return;
     
-    const existingCodes = new Set((voy.ports || []).map(p => p.portCode));
+    if(!voy.ports) voy.ports = [];
+    const existingCodes = new Set(voy.ports.map(p => p.code));
     let addedCount = 0;
-    portCodes.forEach(code => {
+    let lastCode = voy.ports.length > 0 ? voy.ports[voy.ports.length - 1].code : null;
+    const newPorts = []; // 收集新添加的港口
+    
+    portCodes.forEach((code, idx) => {
       if(!existingCodes.has(code)){
-        if(!voy.ports) voy.ports = [];
-        voy.ports.push({ portCode: code, portName: getPortName(code) });
+        // 计算到上一个港口的距离
+        const dist = lastCode ? getDistance(lastCode, code) : 0;
+        // 从 PORT_MAP 读取该港口的 manIn（ports.csv 中有数据则使用，否则默认 3h）
+        const manIn = getPortManIn(code);
+        newPorts.push({ code: code, name: getPortName(code), dist: dist, manIn: manIn });
         existingCodes.add(code);
+        lastCode = code;
         addedCount++;
       }
     });
+    
+    // 修复：对于新添加的第一个港口（如果是 voyage 的第一个港口），
+    // 设置其 dist 为到下一个港口的距离，这样输入第一个 ETA 后可以正确级联计算
+    if(newPorts.length > 0){
+      // 如果 voyage 在添加前是空的或新添加的是第一批
+      const wasEmptyBefore = voy.ports.length === 0;
+      if(wasEmptyBefore && newPorts.length > 1){
+        // 第一个港口的 dist 设为到第二个港口的距离（用于级联计算）
+        newPorts[0].dist = getDistance(newPorts[0].code, newPorts[1].code);
+      }
+      voy.ports.push(...newPorts);
+    }
     
     _dailyLaneSelectorCtx = null;
     
     if(addedCount > 0){
       renderDailyDetail();
       autoSaveFleet();
-      showToast(`已添加 ${addedCount} 个港口`, 'success');
+      showToast(`已添加 ${addedCount} 个港口（距离已计算）`, 'success');
     } else {
       showToast('所有港口已存在，无需添加', 'info');
     }
@@ -5857,13 +5877,13 @@ function renderDailyDetail(){
               case 'drag': portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.85rem;cursor:grab;" title="拖拽排序">⠿</td>'; break;
               case 'num':  portsHtml += '<td>' + globalPortNum + '</td>'; break;
               case 'port': portsHtml += '<td class="port-code">' + esc(p.code) + '<br/><span style="font-size:.7rem;color:var(--muted);font-weight:400;">' + esc(portDisplay) + '</span></td>'; break;
-              case 'manIn': portsHtml += '<td><input type="number" value="' + (p.manIn||0) + '" min="0" step="0.5" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'manIn\',this.value)"/></td>'; break;
+              case 'manIn': portsHtml += '<td><input type="number" value="' + (p.manIn != null ? p.manIn : getPortManIn(p.code)) + '" min="0" step="0.5" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'manIn\',this.value)"/></td>'; break;
               case 'wait': portsHtml += '<td><input type="number" value="' + (p.waitHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'waitHrs\',this.value)"/></td>'; break;
               case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="此港口所属航次号" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
               case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.eta||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
               case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etb||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
               case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etd||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
-              case 'stay': portsHtml += '<td><input type="number" value="' + (p.stayHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'stayHrs\',this.value)"/></td>'; break;
+              case 'stay': portsHtml += '<td><input type="number" value="' + (p.stayHrs != null ? p.stayHrs : getPortStay(p.code)) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'stayHrs\',this.value)"/></td>'; break;
               case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="航速（节）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
               case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="海上航行时间">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
               case 'dist': portsHtml += '<td><input type="number" value="' + (p.dist||0) + '" min="0" step="1" style="width:64px;" title="到下一港距离（海里）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'dist\',this.value)"/></td>'; break;
@@ -6030,22 +6050,19 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
   const speed = getDailySpeed(vessel, voyIdx);
 
   if(field === 'eta'){
-    // 修改了本港 ETA → 反算 stayHrs（根据 ETB-ETA），以及重算后续
-    if(port.eta && port.etb){
+    // 修改了本港 ETA → 计算/重算 ETB/ETD，以及重算后续
+    if(port.eta){
       const etaDt = new Date(port.eta);
-      const etbDt = new Date(port.etb);
-      if(!isNaN(etaDt.getTime()) && !isNaN(etbDt.getTime())){
-        // 反算 waitHrs = ETB - ETA - manIn
+      if(!isNaN(etaDt.getTime())){
         const manIn = port.manIn != null ? port.manIn : getPortManIn(port.code);
-        const waitHrs = Math.max(0, (etbDt - etaDt) / 3600000 - manIn);
-        port.waitHrs = Math.round(waitHrs * 10) / 10;
-        // 如果有 ETD，反算 stayHrs
-        if(port.etd){
-          const etdDt = new Date(port.etd);
-          if(!isNaN(etdDt.getTime())){
-            port.stayHrs = Math.round((etdDt - etbDt) / 3600000 * 10) / 10;
-          }
-        }
+        const waitHrs = port.waitHrs || 0;
+        const stayHrs = port.stayHrs != null ? port.stayHrs : getPortStay(port.code);
+        const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
+        round6Min(etbDt);
+        const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
+        round6Min(etdDt);
+        port.etb = toDatetimeLocal(etbDt);
+        port.etd = toDatetimeLocal(etdDt);
         // 级联推算后续
         recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
       }
