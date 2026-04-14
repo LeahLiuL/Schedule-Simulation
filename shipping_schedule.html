@@ -497,6 +497,10 @@
   .sync-banner-info strong {
     background:#0d6efd; color:#fff; padding:4px 10px; border-radius:4px; font-size:.85rem;
   }
+  #svColPanel label:hover {
+    background:#e7f5ff;
+    color:#0d6efd;
+  }
 
   /* ===== RIGHT PANEL ===== */
   .right-panel {
@@ -3249,10 +3253,10 @@ function renderTable(){
         <button class="btn-dm" onclick="toggleSVColPanel()" style="padding:6px 14px;font-size:.82rem;">
           ☰ 列
         </button>
-        <div id="svColPanel" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:9999;min-width:160px;padding:6px 0;max-height:320px;overflow-y:auto;">
+        <div id="svColPanel" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #bbb;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:9999;min-width:160px;padding:6px 0;max-height:320px;overflow-y:auto;">
           ${COL_DEFS.filter(c=>c.hideable).map(c=>
-            '<label style="display:flex;align-items:center;gap:6px;padding:4px 14px;font-size:.78rem;cursor:pointer;white-space:nowrap;">' +
-            '<input type="checkbox" ' + (isSVColHidden(c.key)?'':'checked') + ' onchange="toggleSVCol(\'' + c.key + '\')"/> ' + c.label + '</label>'
+            '<label style="display:flex;align-items:center;gap:8px;padding:5px 14px;font-size:.82rem;cursor:pointer;white-space:nowrap;color:#222;font-weight:500;">' +
+            '<input type="checkbox" ' + (isSVColHidden(c.key)?'':'checked') + ' onchange="toggleSVCol(\'' + c.key + '\')" style="width:14px;height:14px;cursor:pointer;accent-color:#1971c2;"/> ' + c.label + '</label>'
           ).join('')}
         </div>
       </div>
