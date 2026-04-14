@@ -2193,9 +2193,9 @@ async function loadAllData(){
     fetchCSV('distances.csv')
   ]);
 
-  // Parse ports
+// Parse ports
   PORTS_DATA = portsRows.map(r=>[
-    r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||''
+    r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||'', r.wait_time||''
   ]);
 
   // Parse vessels
