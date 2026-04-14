@@ -5202,21 +5202,29 @@ function saveLinkedVoyages(){
     // Trigger cascade from the first voyage — recalcCrossVoyageCascade handles dist calculation internally
     const vessel = FLEET_DATA.vessels.find(v => v.code === _linkModalVesselCode);
     if(vessel && indices.length > 0){
+      console.time('cascade');
       recalcCrossVoyageCascade(vessel, indices[0], vessel.voyages[indices[0]] ? vessel.voyages[indices[0]].ports.length - 1 : 0);
+      console.timeEnd('cascade');
       autoSaveFleet();
     }
   }
 
   saveLinkedGroups();
   closeLinkVoyagesModal();
-  // Use requestAnimationFrame to avoid blocking UI with large DOM updates
-  requestAnimationFrame(function(){
+  // Defer rendering to next tick to allow browser to breathe
+  console.time('saveLinked');
+  setTimeout(function(){
+    console.time('renderFleet');
     renderDailyFleet();
-    requestAnimationFrame(function(){
+    console.timeEnd('renderFleet');
+    setTimeout(function(){
+      console.time('renderDetail');
       renderDailyDetail();
+      console.timeEnd('renderDetail');
       autoSaveFleet();
-    });
-  });
+      console.timeEnd('saveLinked');
+    }, 50);
+  }, 50);
 }
 
 function clearLinkedVoyages(){
