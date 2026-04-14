@@ -5199,38 +5199,37 @@ function saveLinkedVoyages(){
     linkedVoyageGroups[_linkModalVesselCode] = [indices];
     showToast('✓ 已链接 ' + indices.length + ' 个航次', 'success');
 
-    // Auto-fill cross-voyage distances and cascade
+    // Auto-fill cross-voyage distances and cascade (only need to cascade from first voyage)
     const vessel = FLEET_DATA.vessels.find(v => v.code === _linkModalVesselCode);
-    if(vessel){
-      for(let g = 0; g < indices.length - 1; g++){
-        const prevVoy = vessel.voyages[indices[g]];
-        const nextVoy = vessel.voyages[indices[g + 1]];
-        if(!prevVoy || !nextVoy || !prevVoy.ports || !nextVoy.ports || !prevVoy.ports.length || !nextVoy.ports.length) continue;
-        const lastPort = prevVoy.ports[prevVoy.ports.length - 1];
-        const firstPort = nextVoy.ports[0];
-
-        // If no dist set, try to calculate from ETD→ETA gap
-        if(!lastPort.dist || lastPort.dist <= 0){
-          if(lastPort.etd && firstPort.eta){
-            const etdDt = new Date(lastPort.etd);
-            const etaDt = new Date(firstPort.eta);
-            if(!isNaN(etdDt.getTime()) && !isNaN(etaDt.getTime())){
-              const gapHrs = (etaDt.getTime() - etdDt.getTime()) / 3600000;
-              const manIn = firstPort.manIn != null ? firstPort.manIn : getPortManIn(firstPort.code);
-              const seaHrs = gapHrs - manIn;
-              if(seaHrs > 0){
-                const speed = (lastPort.speed != null && lastPort.speed > 0) ? lastPort.speed : getDailySpeed(vessel, indices[g]);
-                if(speed > 0){
-                  lastPort.dist = Math.round(seaHrs * speed);
+    if(vessel && indices.length > 0){
+      const firstVoyIdx = indices[0];
+      const firstVoy = vessel.voyages[firstVoyIdx];
+      if(firstVoy && firstVoy.ports && firstVoy.ports.length > 0){
+        const lastPort = firstVoy.ports[firstVoy.ports.length - 1];
+        // Fill cross-voyage dist from ETD→ETA gap if not set
+        if(indices.length > 1){
+          const nextVoy = vessel.voyages[indices[1]];
+          if(nextVoy && nextVoy.ports && nextVoy.ports.length > 0 && nextVoy.ports[0]){
+            const firstPort = nextVoy.ports[0];
+            if((!lastPort.dist || lastPort.dist <= 0) && lastPort.etd && firstPort.eta){
+              const etdDt = new Date(lastPort.etd);
+              const etaDt = new Date(firstPort.eta);
+              if(!isNaN(etdDt.getTime()) && !isNaN(etaDt.getTime())){
+                const gapHrs = (etaDt.getTime() - etdDt.getTime()) / 3600000;
+                const manIn = firstPort.manIn != null ? firstPort.manIn : getPortManIn(firstPort.code);
+                const seaHrs = gapHrs - manIn;
+                if(seaHrs > 0){
+                  const speed = (lastPort.speed != null && lastPort.speed > 0) ? lastPort.speed : getDailySpeed(vessel, firstVoyIdx);
+                  if(speed > 0){
+                    lastPort.dist = Math.round(seaHrs * speed);
+                  }
                 }
               }
             }
+            if(lastPort.dist > 0){
+              recalcCrossVoyageCascade(vessel, firstVoyIdx, firstVoy.ports.length - 1);
+            }
           }
-        }
-
-        // If dist is now set, cascade into next voyage
-        if(lastPort.dist > 0){
-          recalcCrossVoyageCascade(vessel, indices[g], prevVoy.ports.length - 1);
         }
       }
       autoSaveFleet();
@@ -5239,8 +5238,14 @@ function saveLinkedVoyages(){
 
   saveLinkedGroups();
   closeLinkVoyagesModal();
-  renderDailyFleet();
-  renderDailyDetail();
+  // Use requestAnimationFrame to avoid blocking UI with large DOM updates
+  requestAnimationFrame(function(){
+    renderDailyFleet();
+    requestAnimationFrame(function(){
+      renderDailyDetail();
+      autoSaveFleet();
+    });
+  });
 }
 
 function clearLinkedVoyages(){
