@@ -3107,7 +3107,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
   const firstWait = ports[0].waitHours || 0;
   const firstEtB = new Date(firstEta.getTime() + (firstManIn + firstWait)*3600000);
   firstEtB.setMinutes(0,0,0); // ceil to hour
-  const firstStay = getPortStay(ports[0].code);
+  const firstStay = ports[0].stayHours || getPortStay(ports[0].code);
   const firstEtd = new Date(firstEtB.getTime() + firstStay*3600000);
   firstEtd.setMinutes(0,0,0);
 
@@ -3134,7 +3134,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
     const wait = p.waitHours || 0;
     const etb = new Date(eta.getTime() + (manIn + wait)*3600000);
     etb.setMinutes(0,0,0);
-    const stay = getPortStay(p.code);
+    const stay = p.stayHours || getPortStay(p.code);
     const etd = new Date(etb.getTime() + stay*3600000);
     etd.setMinutes(0,0,0);
 
