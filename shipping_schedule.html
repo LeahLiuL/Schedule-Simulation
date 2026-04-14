@@ -2440,7 +2440,8 @@ function executeLanePortSelector(){
       if(!existingCodes.has(code)){
         selectedPorts.push({
           code: code,
-          stayHours: getPortStay(code)
+          stayHours: getPortStay(code),
+          waitHours: getPortWait(code)
         });
         addedCount++;
         existingCodes.add(code);
@@ -2892,7 +2893,7 @@ function addPortFromCombobox(){
     // Otherwise use the raw input as a custom code
   }
 
-  selectedPorts.push({code, stayHours: getPortStay(code)});
+  selectedPorts.push({code, stayHours: getPortStay(code), waitHours: getPortWait(code)});
   renderPortList();
   input.value='';
   updateFuelEstimate();
@@ -2984,9 +2985,8 @@ function updateFuelEstimate(){
 
   // Port stay fuel: sum of (stayHrs + waitHrs) / 24 * ps rate
   let totalStayHrs = 0, totalWaitHrs = 0;
-  for(const p of selectedPorts){ totalStayHrs += p.stayHours || 0; }
-  // wait is 0 in pre-estimate (actual wait from schedule rows)
-  const totalPortStayDays = totalStayHrs / 24;
+  for(const p of selectedPorts){ totalStayHrs += p.stayHours || 0; totalWaitHrs += p.waitHours || 0; }
+  const totalPortStayDays = (totalStayHrs + totalWaitHrs) / 24;
   const psLsfo = +(totalPortStayDays * (currentVessel.ps_lsfo||0)).toFixed(1);
   const psMgo  = +(totalPortStayDays * (currentVessel.ps_mgo||0)).toFixed(1);
 
@@ -2998,7 +2998,7 @@ function updateFuelEstimate(){
   document.getElementById('fs-mgo').textContent       = mgo+' mt';
   document.getElementById('fs-portstaydays').textContent = totalPortStayDays ? totalPortStayDays.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-stayhrs').textContent   = totalStayHrs ? totalStayHrs+' hr' : '-- hr';
-  document.getElementById('fs-waithrs').textContent   = '-- hr';
+  document.getElementById('fs-waithrs').textContent   = totalWaitHrs ? totalWaitHrs+' hr' : '0 hr';
   document.getElementById('fs-ps-lsfo').textContent   = psLsfo ? psLsfo+' mt' : '0 mt';
   document.getElementById('fs-ps-mgo').textContent    = psMgo  ? psMgo+' mt' : '0 mt';
   document.getElementById('fs-total-lsfo').textContent = +(lsfo + psLsfo).toFixed(1)+' mt';
@@ -3104,7 +3104,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
   // First port: ETD = startDt, ETA = startDt
   const firstEta = ceilToHour(startDt);
   const firstManIn = getPortManIn(ports[0].code);
-  const firstWait = 0;
+  const firstWait = ports[0].waitHours || 0;
   const firstEtB = new Date(firstEta.getTime() + (firstManIn + firstWait)*3600000);
   firstEtB.setMinutes(0,0,0); // ceil to hour
   const firstStay = getPortStay(ports[0].code);
@@ -3131,7 +3131,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
     // ETA = prev ETD + prev.runHrs (which already includes this port's man in)
     const eta = ceilToHour(new Date(prevEtd.getTime() + rows[i-1].runHrs*3600000));
     const manIn = getPortManIn(p.code); // from port data or default
-    const wait = 0;
+    const wait = p.waitHours || 0;
     const etb = new Date(eta.getTime() + (manIn + wait)*3600000);
     etb.setMinutes(0,0,0);
     const stay = getPortStay(p.code);
