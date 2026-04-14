@@ -5996,6 +5996,7 @@ function renderDailyDetail(){
       <button class="dm-btn dm-btn-undo" id="undoBtn" onclick="undoDailyEdit()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
       <button class="dm-btn dm-btn-redo" id="redoBtn" onclick="redoDailyEdit()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
       <button class="dm-btn" onclick="archiveCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;background:#198754;color:#fff;" ${curVoy&&curVoy.status==='completed'?'disabled':''} title="标记当前航次为已完成">✅ Complete</button>
+      <button class="dm-btn" onclick="deleteCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;background:#e74c3c;color:#fff;" title="删除此航次">🗑 Delete</button>
       <div style="position:relative;display:inline-block;">
         <button class="dm-btn" onclick="toggleColVisDropdown()" title="显示/隐藏列">☰ 列</button>
         <div id="colVisDropdown" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 0;min-width:140px;box-shadow:0 4px 12px rgba(0,0,0,.15);">
@@ -6668,6 +6669,28 @@ function archiveCurrentVoyage(vesselCode, voyIdx){
   vessel.voyages[voyIdx].status = 'completed';
   vessel.voyages[voyIdx].lastModified = new Date().toISOString();
   showToast('航次 ' + vessel.voyages[voyIdx].voyNo + ' 已标记为完成', 'success');
+  renderDailyFleet();
+  renderDailyDetail();
+}
+
+function deleteCurrentVoyage(vesselCode, voyIdx){
+  const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+  if(!vessel || !vessel.voyages[voyIdx]) return;
+  const voyNo = vessel.voyages[voyIdx].voyNo || '（未命名）';
+  if(!confirm('确认删除航次 ' + voyNo + '？此操作不可撤销。')) return;
+  vessel.voyages.splice(voyIdx, 1);
+  // If vessel has no voyages left, remove it
+  if(vessel.voyages.length === 0){
+    const vidx = FLEET_DATA.vessels.findIndex(v => v.code === vesselCode);
+    if(vidx !== -1) FLEET_DATA.vessels.splice(vidx, 1);
+    dailySelectedVessel = null;
+  } else {
+    // Select the previous voyage or the first
+    const newIdx = Math.max(0, voyIdx - 1);
+    selectDailyVessel(vesselCode, newIdx);
+  }
+  autoSaveFleet();
+  showToast('航次 ' + voyNo + ' 已删除', 'success');
   renderDailyFleet();
   renderDailyDetail();
 }
