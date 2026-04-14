@@ -7676,17 +7676,26 @@ function handleImportExcel(input){
         let dataStartIdx = 1;
         let fixedVesselCode = '';
         let fixedVesselName = '';
+        let fixedLane = '';
 
         if(!hasVesselInRow0 && hasPortInRow1){
           // Format B: row0 = title (vessel code somewhere), row1 = column headers
           headerRowIdx = 1;
           dataStartIdx = 2;
-          // Extract vessel code from row0: look for 4-5 uppercase letters (like CUHP)
+          // Extract vessel code, lane from row0
           rows[0].forEach(function(cell){
             const s = String(cell||'').trim();
             if(!fixedVesselCode && /^[A-Z]{4,5}$/.test(s)) fixedVesselCode = s;
             // Also grab vessel name (longer text like "CUL HAIPHONG")
             if(!fixedVesselName && s.length > 5 && /[A-Z]/.test(s) && !/^\d/.test(s) && s !== fixedVesselCode) fixedVesselName = s;
+            // Extract lane: e.g. "ST3-CUHP" → lane = "ST3"
+            if(!fixedLane && /^([A-Z]{2,4}\d?)-[A-Z]{4,5}$/.test(s)){
+              fixedLane = s.split('-')[0];
+            }
+            // Or single lane code like "ST3", "PNI", "CPS" (2-4 uppercase letters + optional digit)
+            if(!fixedLane && /^[A-Z]{2,4}\d?$/.test(s) && s !== fixedVesselCode){
+              fixedLane = s;
+            }
           });
           // Fallback: derive from file name
           if(!fixedVesselCode){
@@ -7739,7 +7748,7 @@ function handleImportExcel(input){
 
           // Get voyage number — in Format B, VOY.NO may only appear on some rows
           const voyNo = colMap.voyNo !== undefined ? String(row[colMap.voyNo]||'').trim() : '';
-          const lane  = colMap.lane  !== undefined ? String(row[colMap.lane ]||'').trim().toUpperCase() : '';
+          const lane  = fixedLane || (colMap.lane !== undefined ? String(row[colMap.lane]||'').trim().toUpperCase() : '');
           const status = colMap.status !== undefined ? String(row[colMap.status]||'').trim().toLowerCase() : '';
 
           // In Format B, voyage number carries forward (only set on first port of each voyage)
