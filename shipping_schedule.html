@@ -1175,7 +1175,7 @@
       </div>
       <div class="toolbar-actions">
         <button class="btn-reset" onclick="resetModifications()" id="btnReset" style="display:none">↺ Reset</button>
-        <button class="btn-dm" onclick="syncToDaily()" id="btnSyncDaily" style="display:none" title="Sync current schedule to Daily Fleet page">📋 Sync to Daily</button>
+<button class="btn-sync" onclick="syncToDaily()" id="btnSyncDaily" style="display:none;font-size:.85rem;padding:6px 14px;background:#0d6efd;border:2px solid #0d6efd;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;" title="Sync current schedule to Daily Fleet page">📋 Sync to Daily</button>
         <button class="btn-export" onclick="exportExcel()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -4759,6 +4759,17 @@ async function commitAllToGitHub(){
 // Helper: escape HTML for input values
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// Format Date object for datetime-local input (YYYY-MM-DDTHH:mm)
+function fmtDtLocal(d){
+  if(!d) return '';
+  try {
+    const dt = d instanceof Date ? d : new Date(d);
+    if(isNaN(dt.getTime())) return '';
+    const pad=n=>String(n).padStart(2,'0');
+    return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  } catch(e){ return ''; }
+}
+
 // ==================== APP TAB SWITCHING ====================
 let currentAppTab = 'simulator';
 function switchAppTab(tab){
@@ -5921,9 +5932,9 @@ function renderDailyDetail(){
               case 'manIn': portsHtml += '<td><input type="number" value="' + (p.manIn != null ? p.manIn : getPortManIn(p.code)) + '" min="0" step="0.5" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'manIn\',this.value)"/></td>'; break;
               case 'wait': portsHtml += '<td><input type="number" value="' + (p.waitHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'waitHrs\',this.value)"/></td>'; break;
               case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="此港口所属航次号" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
-              case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.eta||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
-              case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etb||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
-              case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etd||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
+              case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.eta) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
+              case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.etb) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
+              case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.etd) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
               case 'stay': portsHtml += '<td><input type="number" value="' + (p.stayHrs != null ? p.stayHrs : getPortStay(p.code)) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'stayHrs\',this.value)"/></td>'; break;
               case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="航速（节）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
               case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="海上航行时间">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
@@ -5990,9 +6001,9 @@ function renderDailyDetail(){
             case 'manIn': portsHtml += '<td><input type="number" value="' + (p.manIn||0) + '" min="0" step="0.5" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'manIn\',this.value)"/></td>'; break;
             case 'wait': portsHtml += '<td><input type="number" value="' + (p.waitHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'waitHrs\',this.value)"/></td>'; break;
             case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="此港口所属航次号，修改后 commit 生效" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
-            case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.eta||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
-            case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etb||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
-            case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + esc(p.etd||'') + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
+            case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.eta) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
+            case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.etb) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
+            case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.etd) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
             case 'stay': portsHtml += '<td><input type="number" value="' + (p.stayHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'stayHrs\',this.value)"/></td>'; break;
             case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="本港出发到下一港的航速（节）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
             case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="海上航行时间 = 距离 ÷ 速度">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
@@ -6789,21 +6800,23 @@ function syncToDaily(){
 
   // Warn if FLEET_DATA is still empty (no local data to recover)
   if(!FLEET_DATA.vessels || FLEET_DATA.vessels.length === 0){
-    if(!confirm('⚠️ Warning: No existing fleet data found in memory or localStorage.\n\nThis may happen if you refreshed the page.\nClicking OK will create a new fleet schedule (any previous data on GitHub will not be affected until you commit).\n\nDo you want to continue?')){
+    if(!confirm('⚠️ Warning: No existing fleet data found in memory or localStorage.\n\nClicking OK will create a new fleet schedule.\nDo you want to continue?')){
       return;
     }
   }
 
-  // Ask for voyage number (editable)
-  let voyNo = prompt('Enter Voyage Number:', defaultVoyNo);
-  if(!voyNo) return;
-  voyNo = voyNo.trim().toUpperCase();
+  // Use voyNo from input field directly (no prompt)
+  let voyNo = defaultVoyNo.trim().toUpperCase();
+  if(!voyNo) voyNo = '001W';
 
-  // Ask for lane
+  // Ask for lane only (no voyNo prompt)
   let laneCode = '';
   if(LANES_DATA.length === 0){
     laneCode = prompt('Enter Lane Code (e.g. CT2):');
     if(!laneCode) return;
+  } else if(LANES_DATA.length === 1){
+    // Auto-use the only lane
+    laneCode = LANES_DATA[0].code;
   } else {
     const options = LANES_DATA.map(l => l.code + ' – ' + l.name).join('\n');
     laneCode = prompt('Enter Lane Code:\n' + options);
@@ -6849,10 +6862,10 @@ function syncToDaily(){
     });
   }
 
-  showToast('✓ Schedule synced to Daily — ' + vesselCode + ' / ' + voyNo, 'success');
+  showToast('✓ Schedule synced — ' + vesselCode + ' / ' + voyNo + ' / ' + laneCode, 'success');
   autoSaveFleet();
 
-  // Ask to commit immediately
+  // Confirm commit to GitHub
   if(confirm('Commit to GitHub now?')){
     switchAppTab('daily');
     setTimeout(() => commitFleetSchedule(), 300);
