@@ -1368,7 +1368,8 @@
               <th>Name (CN)</th>
               <th style="width:80px">Man-In (hr)</th>
               <th style="width:90px">Stay (hr)</th>
-              <th style="width:100px">Actions</th>
+              <th style="width:90px">Wait (hr)</th>
+              <th style="width:80px">Actions</th>
             </tr>
           </thead>
           <tbody id="dmPortBody"></tbody>
@@ -1864,7 +1865,7 @@ NBST,NOBAL STAR,16,28,0,0.1,0,0
 NBST,NOBAL STAR,15,26,0,0.1,0,0
 NBST,NOBAL STAR,14,21.5,0,0.1,0,0
 NBST,NOBAL STAR,13,17.5,0,0.1,0,0`,
-'ports.csv': `code,name_en,name_cn,man_in,portstay_time
+'ports.csv': `code,name_en,name_cn,man_in,portstay_time,wait_time
 AEAUH,ABU DHABI,,,
 AEDXB,DUBAI,,,
 AEFJR,FUJAIRAH,,,
@@ -2178,7 +2179,7 @@ function clearCSVCache(){
 }
 
 // Data containers (populated async)
-let PORTS_DATA = [];    // [[code, name_en, name_cn, man_in, portstay_time], ...]
+let PORTS_DATA = [];    // [[code, name_en, name_cn, man_in, portstay_time, wait_time], ...]
 let VESSELS_DATA = [];  // [{code, name, speed, lsfo, hsfo, mgo}, ...]
 let DIST_RAW = [];      // [[from, to, distance, source], ...] source: 'auto' | 'manual'
 
@@ -2393,7 +2394,8 @@ function executeLanePortSelector(){
         const dist = lastCode ? getDistance(lastCode, code) : 0;
         // 从 PORT_MAP 读取该港口的 manIn（ports.csv 中有数据则使用，否则默认 3h）
         const manIn = getPortManIn(code);
-        newPorts.push({ code: code, name: getPortName(code), dist: dist, manIn: manIn });
+        const wait = getPortWait(code);
+        newPorts.push({ code: code, name: getPortName(code), dist: dist, manIn: manIn, waitHrs: wait });
         existingCodes.add(code);
         lastCode = code;
         addedCount++;
@@ -2480,10 +2482,11 @@ function fixFleetDatetimeFormat(data){
 let PORT_MAP = {};
 function buildPortMap(){
   PORT_MAP = {};
-  PORTS_DATA.forEach(([code,en,cn,manIn,portstay])=>{
+  PORTS_DATA.forEach(([code,en,cn,manIn,portstay,wait])=>{
     PORT_MAP[code]={code,en,cn,
       manIn: manIn ? parseFloat(manIn) : DEFAULT_MAN_IN,
-      portstay: portstay ? parseFloat(portstay) : 24
+      portstay: portstay ? parseFloat(portstay) : 24,
+      wait: wait ? parseFloat(wait) : 0
     };
   });
 }
@@ -2492,6 +2495,8 @@ function buildPortMap(){
 function getPortManIn(code){ return (PORT_MAP[code]||{}).manIn || DEFAULT_MAN_IN; }
 // Get portstay hours for a port (from data or default)
 function getPortStay(code){ return (PORT_MAP[code]||{}).portstay || 24; }
+// Get wait hours for a port (from data or default)
+function getPortWait(code){ return (PORT_MAP[code]||{}).wait || 0; }
 
 // Port display
 function portLabel(code){
@@ -3670,7 +3675,7 @@ function renderDmPorts(filter=''){
   const f = filter.toLowerCase();
   let html = '';
   PORTS_DATA.forEach((row,i)=>{
-    const code=row[0], en=row[1]||'', cn=row[2]||'', manIn=row[3]||'', stay=row[4]||'';
+    const code=row[0], en=row[1]||'', cn=row[2]||'', manIn=row[3]||'', stay=row[4]||'', wait=row[5]||'';
     if(f && !(code.toLowerCase().includes(f) || en.toLowerCase().includes(f) || cn.includes(f))) return;
     html += `<tr>
       <td>${i+1}</td>
@@ -3679,12 +3684,13 @@ function renderDmPorts(filter=''){
       <td><input value="${esc(cn)}" onchange="editDmPort(${i},2,this.value)"/></td>
       <td><input type="number" value="${manIn}" min="0" max="48" step="0.5" onchange="editDmPort(${i},3,this.value)" style="width:70px"/></td>
       <td><input type="number" value="${stay}" min="0" max="720" step="1" onchange="editDmPort(${i},4,this.value)" style="width:70px"/></td>
+      <td><input type="number" value="${wait}" min="0" max="168" step="1" onchange="editDmPort(${i},5,this.value)" style="width:70px" placeholder="0"/></td>
       <td class="dm-actions-cell">
         <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmPort(${i})">✕</button>
       </td>
     </tr>`;
   });
-  if(!html) html = '<tr><td colspan="7" class="dm-empty">No ports found</td></tr>';
+  if(!html) html = '<tr><td colspan="8" class="dm-empty">No ports found</td></tr>';
   body.innerHTML = html;
   updateDmStatus();
 }
@@ -3702,7 +3708,7 @@ function deleteDmPort(i){
   showToast('Port deleted');
 }
 function addDmPort(){
-  PORTS_DATA.unshift(['NEW','New Port','','','']);
+  PORTS_DATA.unshift(['NEW','New Port','','','','']);
   buildPortMap(); initPortCombobox();
   document.getElementById('dmPortSearch').value = '';
   renderDmPorts('');
@@ -4347,8 +4353,8 @@ async function lookupDistance(rowIdx){
 function exportDmCSV(type){
   let csv = '', filename = '';
   if(type==='ports'){
-    csv = 'code,name_en,name_cn,man_in,portstay_time\n';
-    PORTS_DATA.forEach(r=>{ csv += [r[0],r[1],r[2],r[3],r[4]].map(v=>'"'+(v||'')+'"').join(',')+'\n'; });
+    csv = 'code,name_en,name_cn,man_in,portstay_time,wait_time\n';
+    PORTS_DATA.forEach(r=>{ csv += [r[0],r[1],r[2],r[3],r[4],r[5]||''].map(v=>'"'+(v||'')+'"').join(',')+'\n'; });
     filename = 'ports.csv';
   } else if(type==='vessels'){
     csv = 'vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day\n';
@@ -4412,8 +4418,8 @@ function updateTokenBtn(){
 function buildCSV(type){
   let csv = '';
   if(type==='ports'){
-    csv = 'code,name_en,name_cn,man_in,portstay_time\n';
-    PORTS_DATA.forEach(r=>{ csv += [r[0],r[1],r[2],r[3],r[4]].map(v=>'"'+(v||'')+'"').join(',')+'\n'; });
+    csv = 'code,name_en,name_cn,man_in,portstay_time,wait_time\n';
+    PORTS_DATA.forEach(r=>{ csv += [r[0],r[1],r[2],r[3],r[4],r[5]||''].map(v=>'"'+(v||'')+'"').join(',')+'\n'; });
   } else if(type==='vessels'){
     csv = 'vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day\n';
     VESSELS_DATA.forEach(v=>{ csv += [v.code,v.name,v.speed,v.lsfo,v.hsfo,v.mgo,v.ps_lsfo||0,v.ps_mgo||0].join(',')+'\n'; });
@@ -4472,7 +4478,7 @@ async function reloadCommittedData(type){
   const rows = parseCSV(await resp.text());
 
   if(type === 'ports'){
-    PORTS_DATA = rows.map(r=>[r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||'']);
+    PORTS_DATA = rows.map(r=>[r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||'', r.wait_time||'']);
     buildPortMap();
   } else if(type === 'vessels'){
     VESSELS_DATA = rows.map(r=>({
@@ -6288,6 +6294,7 @@ document.addEventListener('click', function(e){
 function calcDailyPortTimes(prevPort, thisPortCode, speed){
   const manIn = getPortManIn(thisPortCode);
   const stayHrs = getPortStay(thisPortCode);
+  const waitHrs = getPortWait(thisPortCode);
   let eta = null, etb = null, etd = null;
   if(prevPort && prevPort.etd){
     const prevEtdDt = new Date(prevPort.etd);
@@ -6305,7 +6312,7 @@ function calcDailyPortTimes(prevPort, thisPortCode, speed){
     etd = new Date(etb.getTime() + stayHrs * 3600000);
     round6Min(etd);
   }
-  return { manIn, stayHrs, waitHrs: 0,
+  return { manIn, stayHrs, waitHrs,
     eta: eta ? toDatetimeLocal(eta) : '',
     etb: etb ? toDatetimeLocal(etb) : '',
     etd: etd ? toDatetimeLocal(etd) : ''
@@ -6452,7 +6459,7 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
     code: portCode,
     name: pp.en || portCode,
     eta: etaStr, etb: etbStr, etd: etdStr,
-    stayHrs: stayHrs, manIn: manIn, waitHrs: 0, dist: 0,
+    stayHrs: stayHrs, manIn: manIn, waitHrs: getPortWait(portCode), dist: 0,
     speed: speed  // 默认继承航次速度，用户可逐行修改
   });
 
