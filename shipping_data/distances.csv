@@ -1,7 +1,6 @@
 from_port,to_port,distance_nm,source
-OMSOH,AEKLF,70,manual
-INMUN,OMSOH,742,manual
-AEKLF,OMSOH,70,manual
+OMSOH,AEKLF,0,
+INMUN,OMSOH,843,auto
 INCCU,MYPKG,1440,manual
 MYPKG,INCCU,1440,manual
 IDBLW,MYPKG,172,manual
