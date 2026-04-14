@@ -487,6 +487,7 @@
   .btn-dm:hover:not([style*="background:#0d6efd"]) { background:rgba(255,255,255,.35); }
   #svColPanel + button,
   [onclick="toggleSVColPanel()"]:hover { background:#0b5ed7 !important; border-color:#0b5ed7 !important; }
+  [onclick="syncToDailyWithInput()"]:hover { background:#157347 !important; border-color:#157347 !important; }
 
   /* Sync banner in schedule table */
   .sync-banner {
@@ -3263,7 +3264,7 @@ function renderTable(){
           ).join('')}
         </div>
       </div>
-      <button class="btn-dm" onclick="syncToDailyWithInput()" style="padding:6px 16px;font-size:.85rem;">
+      <button class="btn-dm" onclick="syncToDailyWithInput()" style="padding:6px 16px;font-size:.85rem;background:#198754;border-color:#198754;color:#fff;">
         💾 保存到 Daily 船期
       </button>
     </div>
