@@ -2486,7 +2486,7 @@ function buildPortMap(){
     PORT_MAP[code]={code,en,cn,
       manIn: manIn ? parseFloat(manIn) : DEFAULT_MAN_IN,
       portstay: portstay ? parseFloat(portstay) : 24,
-      wait: wait ? parseFloat(wait) : 0
+      wait: (wait != null && wait !== '') ? parseFloat(wait) : 0
     };
   });
 }
@@ -4479,6 +4479,8 @@ async function reloadCommittedData(type){
 
   if(type === 'ports'){
     PORTS_DATA = rows.map(r=>[r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||'', r.wait_time||'']);
+    // Ensure each row has 6 columns
+    PORTS_DATA.forEach(row => { while(row.length < 6) row.push(''); });
     buildPortMap();
   } else if(type === 'vessels'){
     VESSELS_DATA = rows.map(r=>({
