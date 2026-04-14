@@ -9742,42 +9742,77 @@
             {
               "code": "OMSOH",
               "name": "SOHAR, SULTANATE OF OMAN",
-              "eta": "2026-04-15T00:00:00.000Z",
-              "etb": "2026-04-16T03:00:00.000Z",
-              "etd": "2026-04-22T03:00:00.000Z",
+              "eta": "2026-04-14T17:58",
+              "etb": "2026-04-15T21:00",
+              "etd": "2026-04-21T21:00",
               "stayHrs": 144,
               "manIn": 3,
               "waitHrs": 24,
-              "dist": 2231
+              "dist": 2231,
+              "speed": 12
             },
             {
               "code": "SAJED",
               "name": "JEDDAH",
               "eta": "2026-04-29T10:00:00.000Z",
-              "etb": "2026-04-29T13:00:00.000Z",
-              "etd": "2026-04-30T13:00:00.000Z",
+              "etb": "2026-04-29T21:00",
+              "etd": "2026-04-30T21:00",
               "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
-              "dist": 4216
+              "dist": 4216,
+              "speed": 13
             },
             {
               "code": "MYPKG",
               "name": "PORT KLANG",
               "eta": "2026-05-14T05:00:00.000Z",
-              "etb": "2026-05-14T08:00:00.000Z",
-              "etd": "2026-05-15T08:00:00.000Z",
+              "etb": "2026-05-14T16:00",
+              "etd": "2026-05-15T16:00",
               "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
-              "dist": 1659
+              "dist": 1659,
+              "speed": 13
             },
             {
               "code": "CNNAS",
               "name": "NANSHA",
               "eta": "2026-05-20T19:00:00.000Z",
-              "etb": "2026-05-21T10:00:00.000Z",
-              "etd": "2026-05-22T10:00:00.000Z",
+              "etb": "2026-05-21T18:00",
+              "etd": "2026-05-22T18:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 19,
+              "speed": 9.5
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-05-22T15:00:00.000Z",
+              "etb": "2026-05-23T02:00",
+              "etd": "2026-05-24T02:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 0
+            }
+          ],
+          "lastModified": "2026-04-14T09:58:22.331Z",
+          "modifiedBy": "anonymous"
+        },
+        {
+          "voyNo": "001W",
+          "lane": "TEST",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-04-15T00:00:00.000Z",
+              "etb": "2026-04-15T15:00:00.000Z",
+              "etd": "2026-04-16T15:00:00.000Z",
               "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 12,
@@ -9786,20 +9821,20 @@
             {
               "code": "CNSHK",
               "name": "SHEKOU",
-              "eta": "2026-05-22T15:00:00.000Z",
-              "etb": "2026-05-22T18:00:00.000Z",
-              "etd": "2026-05-23T18:00:00.000Z",
+              "eta": "2026-04-16T20:00:00.000Z",
+              "etb": "2026-04-16T23:00:00.000Z",
+              "etd": "2026-04-17T23:00:00.000Z",
               "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
               "dist": 0
             }
           ],
-          "lastModified": "2026-04-14T09:57:44.637Z",
+          "lastModified": "2026-04-14T10:10:21.243Z",
           "modifiedBy": "anonymous"
         }
       ]
     }
   ],
-  "lastSync": "2026-04-14T09:31:58.867Z"
+  "lastSync": "2026-04-14T09:57:50.268Z"
 }
