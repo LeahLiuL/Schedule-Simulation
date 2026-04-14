@@ -5667,6 +5667,7 @@ function renderDailyFleet(){
     voyages.forEach(voy => {
       const isSelected = dailySelectedVessel && dailySelectedVessel.code === v.code && dailySelectedVessel.voyIdx === voy._vIdx;
       const isChecked = !!dailyCheckedVessels[v.code + '|' + voy._vIdx];
+      const thisVoyInGroup = getLinkedGroup(v.code, voy._vIdx);
 
       const ports = voy.ports || [];
       const summary = ports.length > 0
@@ -5686,7 +5687,7 @@ function renderDailyFleet(){
             <span style="font-size:.78rem;color:var(--muted);margin-left:6px;">${esc(v.name)}</span>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
-            <button class="daily-link-btn${hasLinkedGroup(v.code)?' linked':''}" onclick="openLinkVoyagesModal('${v.code}',event)" title="🔗 链接航次（连续视图配置）">🔗</button>
+            <button class="daily-link-btn${thisVoyInGroup?' linked':''}" onclick="openLinkVoyagesModal('${v.code}',event)" title="🔗 链接航次（连续视图配置）">🔗</button>
             <input type="checkbox" ${isChecked?'checked':''} onclick="event.stopPropagation();toggleDailyCheck('${v.code}',${voy._vIdx},this.checked)" title="Select for export"/>
             <span class="vc-lane">${esc(voy.lane||'—')}</span>
           </div>
@@ -5694,7 +5695,7 @@ function renderDailyFleet(){
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px;">
           <span style="font-size:.75rem;font-weight:600;color:var(--primary);">${esc(voy.voyNo||'—')}</span>
           <span class="vc-status ${statusCls}">${statusText}</span>
-          ${hasLinkedGroup(v.code) ? '<span class="cv-badge">🔗已链接</span>' : ''}
+          ${thisVoyInGroup && thisVoyInGroup.length > 1 ? '<span class="cv-badge">🔗已链接</span>' : ''}
         </div>
         <div class="vc-summary">${esc(summaryShort)}</div>
       </div>`;
@@ -5769,7 +5770,7 @@ function renderDailyDetail(){
   // Continuous view toggle button
   const cvBtnLabel = showContinuous ? '🔗 连续视图 (ON)' : '🔗 连续视图';
   const cvBtnCls = showContinuous ? 'dm-btn dm-btn-primary cv-active' : 'dm-btn';
-  const cvBtnDisabled = !hasLinkedGroup(vessel.code) ? ' disabled title="请先在左侧卡片配置航次链接"' : '';
+  const cvBtnDisabled = (!linkedGroup || linkedGroup.length <= 1) ? ' disabled title="请先在左侧卡片配置航次链接"' : '';
 
   // Build ports HTML
   let portsHtml = '';
