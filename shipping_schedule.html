@@ -5199,39 +5199,10 @@ function saveLinkedVoyages(){
     linkedVoyageGroups[_linkModalVesselCode] = [indices];
     showToast('✓ 已链接 ' + indices.length + ' 个航次', 'success');
 
-    // Auto-fill cross-voyage distances and cascade (only need to cascade from first voyage)
+    // Trigger cascade from the first voyage — recalcCrossVoyageCascade handles dist calculation internally
     const vessel = FLEET_DATA.vessels.find(v => v.code === _linkModalVesselCode);
     if(vessel && indices.length > 0){
-      const firstVoyIdx = indices[0];
-      const firstVoy = vessel.voyages[firstVoyIdx];
-      if(firstVoy && firstVoy.ports && firstVoy.ports.length > 0){
-        const lastPort = firstVoy.ports[firstVoy.ports.length - 1];
-        // Fill cross-voyage dist from ETD→ETA gap if not set
-        if(indices.length > 1){
-          const nextVoy = vessel.voyages[indices[1]];
-          if(nextVoy && nextVoy.ports && nextVoy.ports.length > 0 && nextVoy.ports[0]){
-            const firstPort = nextVoy.ports[0];
-            if((!lastPort.dist || lastPort.dist <= 0) && lastPort.etd && firstPort.eta){
-              const etdDt = new Date(lastPort.etd);
-              const etaDt = new Date(firstPort.eta);
-              if(!isNaN(etdDt.getTime()) && !isNaN(etaDt.getTime())){
-                const gapHrs = (etaDt.getTime() - etdDt.getTime()) / 3600000;
-                const manIn = firstPort.manIn != null ? firstPort.manIn : getPortManIn(firstPort.code);
-                const seaHrs = gapHrs - manIn;
-                if(seaHrs > 0){
-                  const speed = (lastPort.speed != null && lastPort.speed > 0) ? lastPort.speed : getDailySpeed(vessel, firstVoyIdx);
-                  if(speed > 0){
-                    lastPort.dist = Math.round(seaHrs * speed);
-                  }
-                }
-              }
-            }
-            if(lastPort.dist > 0){
-              recalcCrossVoyageCascade(vessel, firstVoyIdx, firstVoy.ports.length - 1);
-            }
-          }
-        }
-      }
+      recalcCrossVoyageCascade(vessel, indices[0], vessel.voyages[indices[0]] ? vessel.voyages[indices[0]].ports.length - 1 : 0);
       autoSaveFleet();
     }
   }
@@ -5371,7 +5342,36 @@ function recalcCrossVoyageCascade(vessel, voyIdx, lastAffectedPortIdx){
 
   // Get the last port
   const lastPort = voy.ports[voy.ports.length - 1];
-  if(!lastPort.etd || !lastPort.dist || lastPort.dist <= 0) return;
+  if(!lastPort.etd) return;
+
+  // If no dist, try to calculate from ETD→ETA gap of the next voyage's first port
+  if(!lastPort.dist || lastPort.dist <= 0){
+    const group = getLinkedGroup(vessel.code, voyIdx);
+    if(group && group.length > 1){
+      const posInGroup = group.indexOf(voyIdx);
+      if(posInGroup >= 0 && posInGroup < group.length - 1){
+        const nextVoyIdx = group[posInGroup + 1];
+        const nextVoy = vessel.voyages[nextVoyIdx];
+        if(nextVoy && nextVoy.ports && nextVoy.ports.length > 0 && nextVoy.ports[0] && nextVoy.ports[0].eta){
+          const etdDt = new Date(lastPort.etd);
+          const etaDt = new Date(nextVoy.ports[0].eta);
+          if(!isNaN(etdDt.getTime()) && !isNaN(etaDt.getTime())){
+            const gapHrs = (etaDt.getTime() - etdDt.getTime()) / 3600000;
+            const manIn = nextVoy.ports[0].manIn != null ? nextVoy.ports[0].manIn : getPortManIn(nextVoy.ports[0].code);
+            const seaHrs = gapHrs - manIn;
+            if(seaHrs > 0){
+              const speed = (lastPort.speed != null && lastPort.speed > 0) ? lastPort.speed : getDailySpeed(vessel, voyIdx);
+              if(speed > 0){
+                lastPort.dist = Math.round(seaHrs * speed);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if(!lastPort.dist || lastPort.dist <= 0) return;
 
   // Find the linked group containing this voyage
   const group = getLinkedGroup(vessel.code, voyIdx);
