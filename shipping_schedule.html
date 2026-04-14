@@ -3003,7 +3003,7 @@ function updateFuelFromSchedule(){
   if(!scheduleRows.length) return;
   let totalDist=0, totalRunHrs=0, totalManInHrs=0, totalStayHrs=0, totalWaitHrs=0;
   for(const row of scheduleRows){
-    totalDist += row.dist || 0;
+    totalDist += Number(row.dist) || 0;
     totalRunHrs += row.runHrs || 0;
     totalManInHrs += row.manIn || 0;
     totalStayHrs += row.stayHrs || 0;
@@ -5202,9 +5202,7 @@ function saveLinkedVoyages(){
     // Trigger cascade from the first voyage — recalcCrossVoyageCascade handles dist calculation internally
     const vessel = FLEET_DATA.vessels.find(v => v.code === _linkModalVesselCode);
     if(vessel && indices.length > 0){
-      console.time('cascade');
       recalcCrossVoyageCascade(vessel, indices[0], vessel.voyages[indices[0]] ? vessel.voyages[indices[0]].ports.length - 1 : 0);
-      console.timeEnd('cascade');
       autoSaveFleet();
     }
   }
@@ -5212,17 +5210,11 @@ function saveLinkedVoyages(){
   saveLinkedGroups();
   closeLinkVoyagesModal();
   // Defer rendering to next tick to allow browser to breathe
-  console.time('saveLinked');
   setTimeout(function(){
-    console.time('renderFleet');
     renderDailyFleet();
-    console.timeEnd('renderFleet');
     setTimeout(function(){
-      console.time('renderDetail');
       renderDailyDetail();
-      console.timeEnd('renderDetail');
       autoSaveFleet();
-      console.timeEnd('saveLinked');
     }, 50);
   }, 50);
 }
