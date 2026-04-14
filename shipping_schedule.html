@@ -1357,6 +1357,8 @@
         <input class="dm-search" id="dmPortSearch" placeholder="Search port code or name..." oninput="filterDmPorts()"/>
         <button class="dm-btn dm-btn-primary" onclick="addDmPort()">+ Add Port</button>
         <button class="dm-btn" onclick="openLaneQuickAdd()" style="background:#6f42c1;color:#fff;">📥 From Lane</button>
+        <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('ports')">⬆ Commit</button>
+        <button class="dm-btn" onclick="refreshVoyageWaits()" title="从 ports.csv 刷新所有航次的 Wait 时间" style="background:#e67e22;color:#fff;">🔄 刷新航次 Wait</button>
       </div>
       <div class="dm-table-wrap">
         <table class="dm-table" id="dmPortTable">
@@ -3724,6 +3726,33 @@ function addDmPort(){
   showToast('New port added – edit the row');
 }
 function filterDmPorts(){ renderDmPorts(document.getElementById('dmPortSearch').value); }
+
+// ========== REFRESH VOYAGE WAITS ==========
+function refreshVoyageWaits(){
+  if(!FLEET_DATA || !FLEET_DATA.vessels) return;
+  let count = 0;
+  FLEET_DATA.vessels.forEach(v => {
+    (v.voyages||[]).forEach(voy => {
+      (voy.ports||[]).forEach(p => {
+        const fromData = getPortWait(p.code);
+        if(fromData > 0){
+          p.waitHrs = fromData;
+          count++;
+        }
+      });
+    });
+  });
+  if(count > 0){
+    autoSaveFleet();
+    renderDailyFleet();
+    if(window.dailySelectedVessel){
+      renderDailyDetail();
+    }
+    showToast(`已刷新 ${count} 个港口的 Wait 时间`, 'success');
+  } else {
+    showToast('没有需要刷新的 Wait 值（ports.csv 中 wait_time 都为 0）', 'warning');
+  }
+}
 
 // ========== LANE QUICK ADD ==========
 function openLaneQuickAdd(){
@@ -7783,7 +7812,7 @@ function handleImportExcel(input){
             etd: parseXlsxDate(row[colMap.etd]),
             stayHrs: colMap.stay  !== undefined ? parseFloat(row[colMap.stay])||0 : 0,
             manIn:   colMap.manIn !== undefined ? parseFloat(row[colMap.manIn])||0 : 0,
-            waitHrs: colMap.wait  !== undefined ? parseFloat(row[colMap.wait])||0  : 0,
+            waitHrs: colMap.wait  !== undefined ? parseFloat(row[colMap.wait])||0  : getPortWait(portCode),
             dist:    colMap.dist  !== undefined ? parseFloat(row[colMap.dist])||0  : 0,
             voyNo:   voyNo,
             remark:  colMap.remark !== undefined ? String(row[colMap.remark]||'').trim() : ''
