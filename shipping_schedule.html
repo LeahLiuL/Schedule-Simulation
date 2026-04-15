@@ -4953,6 +4953,13 @@ let dailyTimeRangeFilter = localStorage.getItem('dailyTimeRangeFilter') || '6m';
 function setDailyTimeRange(range){
   dailyTimeRangeFilter = range;
   localStorage.setItem('dailyTimeRangeFilter', range);
+  console.log('[setDailyTimeRange] Selected:', range);
+  const rangeInfo = getTimeRangeCutoff();
+  if(rangeInfo){
+    console.log('[setDailyTimeRange] Date range:', rangeInfo.past.toISOString().substring(0,10), 'to', rangeInfo.future.toISOString().substring(0,10));
+  } else {
+    console.log('[setDailyTimeRange] Showing all time');
+  }
   renderDailyFleet();
   // Update UI
   document.querySelectorAll('.time-filter-btn').forEach(btn => {
@@ -4986,10 +4993,19 @@ function isVoyageInTimeRange(voy){
   const ports = voy.ports || [];
   if(ports.length === 0) return true; // Show voyages without ports
   
+  // Helper to convert date to YYYY-MM-DD string (handles Date objects, ISO strings, and datetime-local strings)
+  function toDateStr(d){
+    if(!d) return null;
+    if(d instanceof Date) return d.toISOString().substring(0, 10);
+    // Already a string: handle ISO (2026-04-01T...) or datetime-local (2026-04-01T00:00)
+    const s = String(d).substring(0, 10);
+    return s; // Already in YYYY-MM-DD format
+  }
+  
   // Show if any port's ETA or ETD date is within [past, future]
   return ports.some(p => {
-    const etaDate = p.eta ? String(p.eta).substring(0, 10) : null;
-    const etdDate = p.etd ? String(p.etd).substring(0, 10) : null;
+    const etaDate = toDateStr(p.eta);
+    const etdDate = toDateStr(p.etd);
     if(etaDate && etaDate >= pastStr && etaDate <= futureStr) return true;
     if(etdDate && etdDate >= pastStr && etdDate <= futureStr) return true;
     return false;
