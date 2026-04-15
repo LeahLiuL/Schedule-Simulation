@@ -6823,8 +6823,22 @@ async function syncToDaily(){
   // IMPORTANT: Always reload from GitHub first to get the latest complete data
   // This prevents using corrupted localStorage data
   showToast('Loading latest data from GitHub...', 'info');
+  const prevVesselCount = FLEET_DATA.vessels ? FLEET_DATA.vessels.length : 0;
   await loadFleetSchedule();
-  showToast('Loaded ' + FLEET_DATA.vessels.length + ' vessel(s) from GitHub', 'success');
+  const loadedCount = FLEET_DATA.vessels ? FLEET_DATA.vessels.length : 0;
+  showToast('Loaded ' + loadedCount + ' vessel(s) from GitHub', 'success');
+
+  // CRITICAL: Check if we successfully loaded data from GitHub
+  // If loadFleetSchedule failed (e.g., token invalid, network error),
+  // FLEET_DATA would be empty. In this case, refuse to save to prevent overwriting!
+  if(loadedCount === 0 && prevVesselCount === 0){
+    showToast('⚠️ Failed to load fleet data from GitHub!\n\nPossible causes:\n1. No GitHub token set (click 🔑 Token)\n2. Token expired or invalid\n3. Network error\n\nPlease fix the issue and try again.', 'error');
+    return;
+  }
+  if(loadedCount === 0 && prevVesselCount > 0){
+    showToast('⚠️ Warning: GitHub data is empty but local had ' + prevVesselCount + ' vessels.\n\nClick OK to create a NEW fleet schedule (this will overwrite GitHub!)\nClick Cancel to abort.', 'warning');
+    // User can still proceed if they confirm
+  }
 
   const vesselCode = currentVessel.code || document.getElementById('vesselInput').value.trim().split('–')[0].trim();
   var _nameParts = document.getElementById('vesselInput').value.trim().split('–');
@@ -6832,13 +6846,6 @@ async function syncToDaily(){
   const defaultVoyNo = document.getElementById('voyNoInput').value || '001W';
 
   if(!vesselCode){ showToast('Please select a vessel first', 'warning'); return; }
-
-  // Warn if FLEET_DATA is still empty (no local data to recover)
-  if(!FLEET_DATA.vessels || FLEET_DATA.vessels.length === 0){
-    if(!confirm('⚠️ Warning: No existing fleet data found in memory or localStorage.\n\nClicking OK will create a new fleet schedule.\nDo you want to continue?')){
-      return;
-    }
-  }
 
   // Use voyNo from input field directly (no prompt)
   let voyNo = defaultVoyNo.trim().toUpperCase();
