@@ -36,6 +36,13 @@ git push 后必须执行：
 - syncToDaily 前会强制从 GitHub 重新加载最新数据
 - 禁止使用 localStorage 作为数据来源
 
+### Lanes 数据加载（2026-04-15 完）
+- LANES_DATA **无静态默认值**，全部从 GitHub 加载
+- `loadAllData()` 在页面加载时调用 `loadLanesData()`
+- `initDailyPage()` 在切换到 Daily 标签时重新加载
+- Data Manager 的 `⬆ Commit` 按钮会提交 lanes.json 到 GitHub
+- `loadLanesData()` 使用 GitHub API（无缓存）
+
 ### 历史 Bug
 | Bug | 原因 | 修复 |
 |-----|------|------|
