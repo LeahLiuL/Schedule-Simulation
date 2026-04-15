@@ -1,5 +1,8 @@
 from_port,to_port,distance_nm,source
-OMSOH,AEKLF,0,
+LYBEN,TRIST,731,auto
+LYMRA,LYBEN,248,manual
+TRALI,LYMRA,704,manual
+OMSOH,AEKLF,70,manual
 INMUN,OMSOH,843,auto
 INCCU,MYPKG,1440,manual
 MYPKG,INCCU,1440,manual
