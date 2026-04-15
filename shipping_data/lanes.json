@@ -369,7 +369,16 @@
   },
   {
     "code": "ST3",
-    "name": "SOUTH CHINA TAIWAN SERVICE 3"
+    "name": "SOUTH CHINA TAIWAN SERVICE 3",
+    "ports": [
+      "TWKEL",
+      "TWTXG",
+      "TWKHH",
+      "CNSWA",
+      "CNNAS",
+      "CNSHK",
+      "TWKEL"
+    ]
   },
   {
     "code": "STD",
