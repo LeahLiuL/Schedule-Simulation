@@ -9698,34 +9698,143 @@
       "voyages": [
         {
           "voyNo": "001W",
-          "lane": "TEXT",
+          "lane": "CGX",
           "status": "current",
           "ports": [
             {
-              "code": "CNNAS",
-              "name": "NANSHA",
-              "eta": "2026-04-14T17:32",
-              "etb": "2026-04-14T20:30",
-              "etd": "2026-04-15T20:30",
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-04-17T23:00",
+              "etb": "2026-04-18T14:00",
+              "etd": "2026-04-19T14:00",
               "stayHrs": 24,
               "manIn": 3,
-              "waitHrs": 0,
-              "dist": 5853,
-              "speed": 19
+              "waitHrs": 12,
+              "dist": 2676
             },
             {
-              "code": "SAJED",
-              "name": "JEDDAH",
-              "eta": "2026-04-28T11:00:00.000Z",
-              "etb": "2026-04-28T22:00",
-              "etd": "2026-04-29T22:00",
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-04-26T17:00",
+              "etb": "2026-04-29T20:00",
+              "etd": "2026-04-30T20:00",
               "stayHrs": 24,
               "manIn": 3,
+              "waitHrs": 72,
+              "dist": 387
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-05-02T02:00",
+              "etb": "2026-05-04T07:00",
+              "etd": "2026-05-05T07:00",
+              "stayHrs": 24,
+              "manIn": 5,
+              "waitHrs": 48,
+              "dist": 147
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-05-05T20:00",
+              "etb": "2026-05-06T11:00",
+              "etd": "2026-05-07T11:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 754
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-09T14:00",
+              "etb": "2026-05-10T05:00",
+              "etd": "2026-05-11T05:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 19
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-05-11T10:00",
+              "etb": "2026-05-12T01:00",
+              "etd": "2026-05-13T01:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 1655
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-05-17T12:00",
+              "etb": "2026-05-18T03:00",
+              "etd": "2026-05-19T03:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2634
+            },
+            {
+              "code": "INMUN",
+              "name": "MUNDRA",
+              "eta": "2026-05-26T03:00",
+              "etb": "2026-05-27T06:00",
+              "etd": "2026-05-28T06:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 24,
+              "dist": 843
+            },
+            {
+              "code": "OMSOH",
+              "name": "SOHAR, SULTANATE OF OMAN",
+              "eta": "2026-05-30T14:00",
+              "etb": "2026-05-31T17:00",
+              "etd": "2026-06-01T17:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 24,
+              "dist": 0
+            },
+            {
+              "code": "AEKLF",
+              "name": "PORT OF KHOR AL FAKKAN",
+              "eta": "2026-06-01T20:00",
+              "etb": "2026-06-01T23:00",
+              "etd": "2026-06-07T23:00",
+              "stayHrs": 144,
+              "manIn": 3,
               "waitHrs": 0,
+              "dist": 3143
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-06-16T07:00",
+              "etb": "2026-06-16T22:00",
+              "etd": "2026-06-17T22:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2676
+            },
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-06-25T01:00",
+              "etb": "2026-06-28T04:00",
+              "etd": "2026-06-29T04:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 72,
               "dist": 0
             }
           ],
-          "lastModified": "2026-04-14T09:32:11.097Z",
+          "lastModified": "2026-04-15T02:24:04.415Z",
           "modifiedBy": "anonymous"
         }
       ]
@@ -9754,7 +9863,7 @@
             {
               "code": "SAJED",
               "name": "JEDDAH",
-              "eta": "2026-04-29T10:00:00.000Z",
+              "eta": "2026-04-29T10:00",
               "etb": "2026-04-29T21:00",
               "etd": "2026-04-30T21:00",
               "stayHrs": 24,
@@ -9766,7 +9875,7 @@
             {
               "code": "MYPKG",
               "name": "PORT KLANG",
-              "eta": "2026-05-14T05:00:00.000Z",
+              "eta": "2026-05-14T05:00",
               "etb": "2026-05-14T16:00",
               "etd": "2026-05-15T16:00",
               "stayHrs": 24,
@@ -9778,7 +9887,7 @@
             {
               "code": "CNNAS",
               "name": "NANSHA",
-              "eta": "2026-05-20T19:00:00.000Z",
+              "eta": "2026-05-20T19:00",
               "etb": "2026-05-21T18:00",
               "etd": "2026-05-22T18:00",
               "stayHrs": 24,
@@ -9790,7 +9899,7 @@
             {
               "code": "CNSHK",
               "name": "SHEKOU",
-              "eta": "2026-05-22T15:00:00.000Z",
+              "eta": "2026-05-22T15:00",
               "etb": "2026-05-23T02:00",
               "etd": "2026-05-24T02:00",
               "stayHrs": 24,
@@ -9810,9 +9919,9 @@
             {
               "code": "CNNAS",
               "name": "NANSHA",
-              "eta": "2026-04-15T00:00:00.000Z",
-              "etb": "2026-04-15T15:00:00.000Z",
-              "etd": "2026-04-16T15:00:00.000Z",
+              "eta": "2026-04-15T00:00",
+              "etb": "2026-04-15T15:00",
+              "etd": "2026-04-16T15:00",
               "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 12,
@@ -9821,9 +9930,9 @@
             {
               "code": "CNSHK",
               "name": "SHEKOU",
-              "eta": "2026-04-16T20:00:00.000Z",
-              "etb": "2026-04-16T23:00:00.000Z",
-              "etd": "2026-04-17T23:00:00.000Z",
+              "eta": "2026-04-16T20:00",
+              "etb": "2026-04-16T23:00",
+              "etd": "2026-04-17T23:00",
               "stayHrs": 24,
               "manIn": 3,
               "waitHrs": 0,
@@ -9834,7 +9943,279 @@
           "modifiedBy": "anonymous"
         }
       ]
+    },
+    {
+      "code": "ZGNC",
+      "name": "ZHONG GU NAN CHANG",
+      "voyages": [
+        {
+          "voyNo": "001W",
+          "lane": "CGX",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-05-15T23:00:00.000Z",
+              "etb": "2026-05-19T01:00:00.000Z",
+              "etd": "2026-05-20T01:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 72,
+              "dist": 387
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-05-21T09:00:00.000Z",
+              "etb": "2026-05-23T14:00:00.000Z",
+              "etd": "2026-05-24T14:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 5,
+              "waitHrs": 48,
+              "dist": 147
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-05-25T04:00:00.000Z",
+              "etb": "2026-05-25T19:00:00.000Z",
+              "etd": "2026-05-26T19:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 754
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-29T02:00:00.000Z",
+              "etb": "2026-05-29T17:00:00.000Z",
+              "etd": "2026-05-30T17:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 19
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-05-30T22:00:00.000Z",
+              "etb": "2026-05-31T13:00:00.000Z",
+              "etd": "2026-06-01T13:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 1655
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-06-06T11:00:00.000Z",
+              "etb": "2026-06-07T02:00:00.000Z",
+              "etd": "2026-06-08T02:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2634
+            },
+            {
+              "code": "INMUN",
+              "name": "MUNDRA",
+              "eta": "2026-06-15T19:00:00.000Z",
+              "etb": "2026-06-16T22:00:00.000Z",
+              "etd": "2026-06-17T22:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 24,
+              "dist": 843
+            },
+            {
+              "code": "OMSOH",
+              "name": "SOHAR, SULTANATE OF OMAN",
+              "eta": "2026-06-20T12:00:00.000Z",
+              "etb": "2026-06-21T15:00:00.000Z",
+              "etd": "2026-06-22T15:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 24,
+              "dist": 0
+            },
+            {
+              "code": "AEKLF",
+              "name": "PORT OF KHOR AL FAKKAN",
+              "eta": "2026-06-22T18:00:00.000Z",
+              "etb": "2026-06-22T21:00:00.000Z",
+              "etd": "2026-06-28T21:00:00.000Z",
+              "stayHrs": 144,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 3143
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-08T01:00:00.000Z",
+              "etb": "2026-07-08T16:00:00.000Z",
+              "etd": "2026-07-09T16:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2404
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-07-16T19:00:00.000Z",
+              "etb": "2026-07-19T00:00:00.000Z",
+              "etd": "2026-07-20T00:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 5,
+              "waitHrs": 48,
+              "dist": 0
+            }
+          ],
+          "lastModified": "2026-04-15T02:29:55.133Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
+    },
+    {
+      "code": "ZGNN",
+      "name": "ZHONG GU NAN NING",
+      "voyages": [
+        {
+          "voyNo": "001W",
+          "lane": "CGX",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-06-05T23:00:00.000Z",
+              "etb": "2026-06-09T01:00:00.000Z",
+              "etd": "2026-06-10T01:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 72,
+              "dist": 387
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-06-11T07:00:00.000Z",
+              "etb": "2026-06-13T12:00:00.000Z",
+              "etd": "2026-06-14T12:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 5,
+              "waitHrs": 48,
+              "dist": 147
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-06-15T01:00:00.000Z",
+              "etb": "2026-06-15T16:00:00.000Z",
+              "etd": "2026-06-16T16:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 754
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-06-18T19:00:00.000Z",
+              "etb": "2026-06-19T10:00:00.000Z",
+              "etd": "2026-06-20T10:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 19
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-06-20T15:00:00.000Z",
+              "etb": "2026-06-21T06:00:00.000Z",
+              "etd": "2026-06-22T06:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 1655
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-06-26T17:00:00.000Z",
+              "etb": "2026-06-27T08:00:00.000Z",
+              "etd": "2026-06-28T08:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2634
+            },
+            {
+              "code": "INMUN",
+              "name": "MUNDRA",
+              "eta": "2026-07-05T08:00:00.000Z",
+              "etb": "2026-07-06T11:00:00.000Z",
+              "etd": "2026-07-07T11:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 24,
+              "dist": 843
+            },
+            {
+              "code": "OMSOH",
+              "name": "SOHAR, SULTANATE OF OMAN",
+              "eta": "2026-07-09T19:00:00.000Z",
+              "etb": "2026-07-10T22:00:00.000Z",
+              "etd": "2026-07-11T22:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 24,
+              "dist": 0
+            },
+            {
+              "code": "AEKLF",
+              "name": "PORT OF KHOR AL FAKKAN",
+              "eta": "2026-07-12T01:00:00.000Z",
+              "etb": "2026-07-12T04:00:00.000Z",
+              "etd": "2026-07-18T04:00:00.000Z",
+              "stayHrs": 144,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 3143
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-26T12:00:00.000Z",
+              "etb": "2026-07-27T03:00:00.000Z",
+              "etd": "2026-07-28T03:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2676
+            },
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-08-04T05:00:00.000Z",
+              "etb": "2026-08-07T07:00:00.000Z",
+              "etd": "2026-08-08T07:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 72,
+              "dist": 0
+            }
+          ],
+          "lastModified": "2026-04-15T02:33:26.004Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
     }
   ],
-  "lastSync": "2026-04-14T09:57:50.268Z"
+  "lastSync": "2026-04-15T02:33:30.638Z"
 }
