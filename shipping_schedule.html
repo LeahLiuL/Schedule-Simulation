@@ -5592,6 +5592,9 @@ function renderDailyFleet(){
 
   let vessels = getUniqueVesselList();
 
+  // Sort by vessel name ascending
+  vessels.sort((a, b) => (a.name || a.code).localeCompare(b.name || b.code));
+
   // Quick search: fuzzy match across vessel code/name, voyage No, lane
   // Supports compound match: "CUBK2601W" matches vessel "CUBK" + voyageNo "2601W"
   if(dailyQuickFilter){
