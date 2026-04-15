@@ -1,4 +1,6 @@
 from_port,to_port,distance_nm,source
+PKKHI,OMSOH,560,auto
+INNSA,PKKHI,532,auto
 TRALI,DZALG,1225,manual
 LYBEN,TRIST,731,auto
 LYMRA,LYBEN,248,manual
