@@ -29,6 +29,12 @@ git push 后必须执行：
 - syncToDaily 使用 fmtDtLocal() 正确格式化 Date 对象
 - 编辑 ETB/ETD 时不再覆盖 waitHrs 和 stayHrs（保留手工值）
 - syncToDaily 自动 commit 到 GitHub，无需确认
+- **重要修复**：syncToDaily 前必须先从 GitHub 重新加载数据，避免使用损坏的 localStorage 数据
+
+### localStorage 风险（2026-04-15）
+- localStorage 可能有损坏/不完整的数据
+- syncToDaily 前会强制从 GitHub 重新加载最新数据
+- 禁止使用 localStorage 作为数据来源
 
 ### 历史 Bug
 | Bug | 原因 | 修复 |
