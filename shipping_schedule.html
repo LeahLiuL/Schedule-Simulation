@@ -4871,6 +4871,17 @@ async function initDailyPage(){
     console.log('[initDailyPage] Using existing FLEET_DATA, names:', FLEET_DATA.vessels.map(v => v.code).join(','));
   }
   loadLinkedGroups(); // Load linked voyage groups from localStorage
+
+  // Initialize collapsed state: collapse all vessels by default on first load
+  // (but preserve user's manual expand/collapse if already set)
+  const allVesselCodes = FLEET_DATA.vessels.map(v => v.code);
+  allVesselCodes.forEach(code => {
+    if(!(code in dailyCollapsedVessels)){
+      // New vessel - collapse by default
+      dailyCollapsedVessels[code] = true;
+    }
+  });
+
   initDailyComboboxes();
   // Restore active time range button state
   document.querySelectorAll('.time-filter-btn').forEach(btn => {
@@ -6897,6 +6908,8 @@ async function syncToDaily(){
     await commitFleetSchedule();
     // After commit, reload data and refresh the daily view
     await loadFleetSchedule();
+    // Auto-expand the synced vessel
+    delete dailyCollapsedVessels[vesselCode];
     renderDailyFleet();
     renderDailyDetail();
     initDailyComboboxes();
