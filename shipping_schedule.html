@@ -5073,12 +5073,26 @@ function isVoyageInTimeRange(voy){
 }
 
 async function loadLanesData(){
-  // GitHub main branch ONLY
+  // Use GitHub API (no-cache) to avoid CDN delay
   try {
-    const url = CSV_GITHUB + '/lanes.json?t=' + Date.now();
-    const resp = await fetch(url, { cache: 'no-store' });
-    if(resp.ok){ LANES_DATA = await resp.json(); }
-  } catch(e) { console.warn('Failed to load lanes from GitHub'); }
+    const token = getGhToken();
+    const headers = { 'Accept': 'application/vnd.github+json' };
+    if(token) headers['Authorization'] = 'token ' + token;
+    const resp = await fetch(GH_REPO_API + '/lanes.json', { headers, cache: 'no-store' });
+    if(resp.ok){
+      const fileInfo = await resp.json();
+      // GitHub API returns content as base64
+      const jsonText = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,'')))).replace(/^\uFEFF/, '');
+      LANES_DATA = JSON.parse(jsonText);
+      console.log('Loaded ' + LANES_DATA.length + ' lanes from GitHub API');
+    } else {
+      // Fallback to raw CDN
+      console.warn('GitHub API failed (' + resp.status + '), falling back to raw CDN');
+      const url = CSV_GITHUB + '/lanes.json?t=' + Date.now();
+      const resp2 = await fetch(url, { cache: 'no-store' });
+      if(resp2.ok){ LANES_DATA = await resp2.json(); }
+    }
+  } catch(e) { console.warn('Failed to load lanes from GitHub:', e); }
   populateLaneFilter();
 }
 
