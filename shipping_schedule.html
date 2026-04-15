@@ -6724,6 +6724,7 @@ async function commitFleetSchedule(){
     clearUndoRedo();
     autoSaveFleet();
     initDailyComboboxes(); // Refresh combobox lists
+    renderDailyFleet();    // Refresh the fleet list
     renderDailyDetail();
   } catch(err){
     console.error('Fleet commit error:', err);
@@ -6864,8 +6865,16 @@ async function syncToDaily(){
   autoSaveFleet();
 
   // Auto-commit to GitHub (no confirmation needed)
+  // Switch to daily tab and commit, then refresh the daily view
   switchAppTab('daily');
-  setTimeout(() => commitFleetSchedule(), 300);
+  setTimeout(async () => {
+    await commitFleetSchedule();
+    // After commit, reload data and refresh the daily view
+    await loadFleetSchedule();
+    renderDailyFleet();
+    renderDailyDetail();
+    initDailyComboboxes();
+  }, 300);
 }
 
 function addNewVoyage(){
