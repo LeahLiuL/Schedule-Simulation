@@ -6782,21 +6782,11 @@ function syncToDaily(){
     return;
   }
 
-  // IMPORTANT: If FLEET_DATA is empty (e.g., after page refresh), try to recover from localStorage first
-  if(!FLEET_DATA.vessels || FLEET_DATA.vessels.length === 0){
-    const saved = localStorage.getItem(FLEET_LOCALSTORAGE_KEY);
-    if(saved){
-      try {
-        const localData = JSON.parse(saved);
-        if(localData && localData.vessels && localData.vessels.length > 0){
-          FLEET_DATA = localData;
-          console.log('Recovered ' + localData.vessels.length + ' vessel(s) from localStorage before sync');
-        }
-      } catch(e){
-        console.warn('Failed to recover from localStorage:', e);
-      }
-    }
-  }
+  // IMPORTANT: Always reload from GitHub first to get the latest complete data
+  // This prevents using corrupted localStorage data
+  showToast('Loading latest data from GitHub...', 'info');
+  await loadFleetSchedule();
+  showToast('Loaded ' + FLEET_DATA.vessels.length + ' vessel(s) from GitHub', 'success');
 
   const vesselCode = currentVessel.code || document.getElementById('vesselInput').value.trim().split('–')[0].trim();
   var _nameParts = document.getElementById('vesselInput').value.trim().split('–');
