@@ -10215,7 +10215,143 @@
           "modifiedBy": "anonymous"
         }
       ]
+    },
+    {
+      "code": "RACE",
+      "name": "Racine",
+      "voyages": [
+        {
+          "voyNo": "001W",
+          "lane": "CGX",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-06-05T23:00:00.000Z",
+              "etb": "2026-06-09T02:00:00.000Z",
+              "etd": "2026-06-10T02:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 72,
+              "dist": 387
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-06-11T08:00:00.000Z",
+              "etb": "2026-06-13T13:00:00.000Z",
+              "etd": "2026-06-14T13:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 5,
+              "waitHrs": 48,
+              "dist": 147
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-06-15T02:00:00.000Z",
+              "etb": "2026-06-15T17:00:00.000Z",
+              "etd": "2026-06-16T17:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 754
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-06-18T20:00:00.000Z",
+              "etb": "2026-06-19T11:00:00.000Z",
+              "etd": "2026-06-20T11:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 19
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-06-20T16:00:00.000Z",
+              "etb": "2026-06-21T07:00:00.000Z",
+              "etd": "2026-06-22T07:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 1655
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-06-26T18:00:00.000Z",
+              "etb": "2026-06-27T09:00:00.000Z",
+              "etd": "2026-06-28T09:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2634
+            },
+            {
+              "code": "INMUN",
+              "name": "MUNDRA",
+              "eta": "2026-07-05T09:00:00.000Z",
+              "etb": "2026-07-06T12:00:00.000Z",
+              "etd": "2026-07-07T12:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 24,
+              "dist": 843
+            },
+            {
+              "code": "OMSOH",
+              "name": "SOHAR, SULTANATE OF OMAN",
+              "eta": "2026-07-09T20:00:00.000Z",
+              "etb": "2026-07-10T23:00:00.000Z",
+              "etd": "2026-07-11T23:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 24,
+              "dist": 0
+            },
+            {
+              "code": "AEKLF",
+              "name": "PORT OF KHOR AL FAKKAN",
+              "eta": "2026-07-12T02:00:00.000Z",
+              "etb": "2026-07-12T05:00:00.000Z",
+              "etd": "2026-07-18T05:00:00.000Z",
+              "stayHrs": 144,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 3143
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-26T13:00:00.000Z",
+              "etb": "2026-07-27T04:00:00.000Z",
+              "etd": "2026-07-28T04:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2676
+            },
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-08-04T07:00:00.000Z",
+              "etb": "2026-08-07T10:00:00.000Z",
+              "etd": "2026-08-08T10:00:00.000Z",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 72,
+              "dist": 0
+            }
+          ],
+          "lastModified": "2026-04-15T03:15:52.006Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
     }
   ],
-  "lastSync": "2026-04-15T02:33:30.638Z"
+  "lastSync": "2026-04-15T02:33:37.111Z"
 }
