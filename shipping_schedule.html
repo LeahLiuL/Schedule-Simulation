@@ -794,6 +794,48 @@
   .daily-past-row { color: #999 !important; background: #fafafa; }
   .daily-past-row input { color: #999; background: #fafafa; }
 
+  /* Collapsible Vessel Groups */
+  .vessel-group {
+    border-bottom: 1px solid var(--border);
+  }
+  .vessel-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--row-alt);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: .85rem;
+    transition: background .15s;
+    border-bottom: 1px solid var(--border);
+  }
+  .vessel-group-header:hover {
+    background: var(--row-hover);
+  }
+  .vessel-arrow {
+    font-size: .7rem;
+    color: var(--muted);
+    transition: transform .2s;
+  }
+  .vessel-group-header .vc-code {
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .voy-count {
+    font-size: .7rem;
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  .vessel-group-content {
+    overflow: hidden;
+    transition: max-height .3s ease-out;
+  }
+  .vessel-group-content.collapsed {
+    max-height: 0;
+  }
+
   /* Daily Right Panel */
   .daily-right {
     flex: 1; display: flex; flex-direction: column; overflow: hidden;
@@ -4806,6 +4848,7 @@ let FLEET_SHA = null; // GitHub file SHA for optimistic locking
 let LANES_DATA = []; // All lanes loaded from GitHub (no static defaults)
 let dailySelectedVessel = null; // {code, name, voyIdx}
 var dailyCheckedVessels = {}; // Object as Set replacement: "code|voyIdx" -> true
+var dailyCollapsedVessels = {}; // Object as Set replacement: vesselCode -> true (collapsed)
 
 // Linked Voyages: continuous view
 // Structure: { vesselCode: [[voyIdx1, voyIdx2, ...], [voyIdx3, voyIdx4, ...]] }
@@ -5699,7 +5742,24 @@ function renderDailyFleet(){
       voyages = voyages.filter(isVoyageInTimeRange);
     }
 
-    // Show one card per voyage (grouped by vessel)
+    if(voyages.length === 0) return;
+
+    const isCollapsed = !!dailyCollapsedVessels[v.code];
+    const arrow = isCollapsed ? '▶' : '▼';
+    const voyCount = voyages.length;
+
+    // Vessel header (collapsible)
+    html += `<div class="vessel-group" id="vg-${esc(v.code)}">
+      <div class="vessel-group-header" onclick="toggleVesselCollapse('${esc(v.code)}')">
+        <span class="vessel-arrow">${arrow}</span>
+        <span class="vc-code">${esc(v.code)}</span>
+        <span style="font-size:.78rem;color:var(--muted);margin-left:6px;">${esc(v.name)}</span>
+        <span class="voy-count">(${voyCount}航次)</span>
+      </div>
+      <div class="vessel-group-content${isCollapsed ? ' collapsed' : ''}">
+    `;
+
+    // Show voyage cards (collapsed by default, expanded individually)
     voyages.forEach(voy => {
       const isSelected = dailySelectedVessel && dailySelectedVessel.code === v.code && dailySelectedVessel.voyIdx === voy._vIdx;
       const isChecked = !!dailyCheckedVessels[v.code + '|' + voy._vIdx];
@@ -5716,28 +5776,37 @@ function renderDailyFleet(){
       const lastPort = ports.length > 0 ? ports[ports.length - 1] : null;
       const isPast = lastPort && lastPort.etd && new Date(lastPort.etd) < new Date();
 
-      html += `<div class="daily-vessel-card${isSelected?' selected':''}${isPast?' past':''}" onclick="selectDailyVessel('${v.code}',${voy._vIdx})">
+      html += `<div class="daily-vessel-card${isSelected?' selected':''}${isPast?' past':''}" onclick="selectDailyVessel('${esc(v.code)}',${voy._vIdx})">
         <div class="vc-header">
           <div>
-            <span class="vc-code">${esc(v.code)}</span>
-            <span style="font-size:.78rem;color:var(--muted);margin-left:6px;">${esc(v.name)}</span>
+            <span style="font-size:.75rem;font-weight:600;color:var(--primary);">${esc(voy.voyNo||'—')}</span>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
-            <button class="daily-link-btn${thisVoyInGroup?' linked':''}" onclick="openLinkVoyagesModal('${v.code}',event)" title="🔗 链接航次（连续视图配置）">🔗</button>
-            <input type="checkbox" ${isChecked?'checked':''} onclick="event.stopPropagation();toggleDailyCheck('${v.code}',${voy._vIdx},this.checked)" title="Select for export"/>
+            <button class="daily-link-btn${thisVoyInGroup?' linked':''}" onclick="openLinkVoyagesModal('${esc(v.code)}',event)" title="🔗 链接航次（连续视图配置）">🔗</button>
+            <input type="checkbox" ${isChecked?'checked':''} onclick="event.stopPropagation();toggleDailyCheck('${esc(v.code)}',${voy._vIdx},this.checked)" title="Select for export"/>
             <span class="vc-lane">${esc(voy.lane||'—')}</span>
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px;">
-          <span style="font-size:.75rem;font-weight:600;color:var(--primary);">${esc(voy.voyNo||'—')}</span>
           <span class="vc-status ${statusCls}">${statusText}</span>
           ${thisVoyInGroup && thisVoyInGroup.length > 1 ? '<span class="cv-badge">🔗已链接</span>' : ''}
         </div>
         <div class="vc-summary">${esc(summaryShort)}</div>
       </div>`;
     });
+
+    html += `</div></div>`;
   });
   container.innerHTML = html;
+}
+
+function toggleVesselCollapse(vesselCode){
+  if(dailyCollapsedVessels[vesselCode]){
+    delete dailyCollapsedVessels[vesselCode];
+  } else {
+    dailyCollapsedVessels[vesselCode] = true;
+  }
+  renderDailyFleet();
 }
 
 function selectDailyVessel(code, voyIdx){
