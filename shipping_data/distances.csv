@@ -1,4 +1,5 @@
 from_port,to_port,distance_nm,source
+TRALI,DZALG,249,manual
 LYBEN,TRIST,731,auto
 LYMRA,LYBEN,248,manual
 TRALI,LYMRA,704,manual
