@@ -1217,7 +1217,7 @@
       </div>
       <div class="toolbar-actions">
         <button class="btn-reset" onclick="resetModifications()" id="btnReset" style="display:none">↺ Reset</button>
-<button class="btn-sync" onclick="syncToDaily()" id="btnSyncDaily" style="display:none;font-size:.85rem;padding:6px 14px;background:#0d6efd;border:2px solid #0d6efd;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;" title="Sync current schedule to Daily Fleet page">📋 Sync to Daily</button>
+<button class="btn-sync" onclick="syncToDaily()" id="btnSyncDaily" style="display:none;font-size:.85rem;padding:6px 14px;background:#198754;border:2px solid #198754;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;" title="添加当前船期到 GitHub Fleet，然后在 Daily 页面显示（不会覆盖其他船期）">💾 添加到 Daily 船期</button>
         <button class="btn-export" onclick="exportExcel()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -3318,8 +3318,8 @@ function renderTable(){
           ).join('')}
         </div>
       </div>
-      <button class="btn-dm" onclick="syncToDailyWithInput()" style="padding:6px 16px;font-size:.85rem;background:#198754;border-color:#198754;color:#fff;">
-        💾 保存到 Daily 船期
+      <button class="btn-dm" onclick="syncToDaily()" style="padding:6px 16px;font-size:.85rem;background:#198754;border-color:#198754;color:#fff;">
+        💾 添加到 Daily 船期
       </button>
     </div>
   `;
@@ -6805,69 +6805,67 @@ function deleteCurrentVoyage(vesselCode, voyIdx){
 }
 
 // Quick save from banner input
-function syncToDailyWithInput(){
-  const voyNoInput = document.getElementById('syncVoyNoInput');
-  if(voyNoInput){
-    document.getElementById('voyNoInput').value = voyNoInput.value;
-  }
-  syncToDaily();
-}
-
-// ===== Sync from Simulator to Daily =====
+// ===== Unified: Add current schedule to GitHub Fleet & show in Daily =====
+// Both "💾 添加到 Daily 船期" buttons (Simulator + Data Manager) call this.
+// SAFETY: Always loads from GitHub first, merges (never overwrites), validates before saving.
 async function syncToDaily(){
   if(!scheduleRows.length){
-    showToast('No schedule to sync. Run simulation first.', 'warning');
+    showToast('⚠️ 没有船期数据可添加，请先运行模拟', 'warning');
     return;
   }
 
-  // IMPORTANT: Always reload from GitHub first to get the latest complete data
-  // This prevents using corrupted localStorage data
-  showToast('Loading latest data from GitHub...', 'info');
+  // STEP 1: Always reload from GitHub first — this prevents overwriting with stale/empty data
+  showToast('⏳ 正在从 GitHub 加载最新船期数据...', 'info');
   const prevVesselCount = FLEET_DATA.vessels ? FLEET_DATA.vessels.length : 0;
   await loadFleetSchedule();
   const loadedCount = FLEET_DATA.vessels ? FLEET_DATA.vessels.length : 0;
-  showToast('Loaded ' + loadedCount + ' vessel(s) from GitHub', 'success');
 
-  // CRITICAL: Check if we successfully loaded data from GitHub
-  // If loadFleetSchedule failed (e.g., token invalid, network error),
-  // FLEET_DATA would be empty. In this case, refuse to save to prevent overwriting!
+  // STEP 2: Validate — if GitHub returned empty and we had nothing before, abort
   if(loadedCount === 0 && prevVesselCount === 0){
-    showToast('⚠️ Failed to load fleet data from GitHub!\n\nPossible causes:\n1. No GitHub token set (click 🔑 Token)\n2. Token expired or invalid\n3. Network error\n\nPlease fix the issue and try again.', 'error');
+    showToast('❌ 无法加载 GitHub 数据！可能原因：\n1. 未设置 Token（点击 🔑）\n2. Token 已失效\n3. 网络错误\n\n请修复后重试。', 'error');
     return;
   }
   if(loadedCount === 0 && prevVesselCount > 0){
-    showToast('⚠️ Warning: GitHub data is empty but local had ' + prevVesselCount + ' vessels.\n\nClick OK to create a NEW fleet schedule (this will overwrite GitHub!)\nClick Cancel to abort.', 'warning');
-    // User can still proceed if they confirm
+    if(!confirm('⚠️ GitHub 数据为空但本地有 ' + prevVesselCount + ' 艘船。\n\n确定要创建新船期吗？（会覆盖 GitHub）\n取消则中止。')){
+      return;
+    }
   }
 
-  const vesselCode = currentVessel.code || document.getElementById('vesselInput').value.trim().split('–')[0].trim();
-  var _nameParts = document.getElementById('vesselInput').value.trim().split('–');
+  showToast('✓ 已加载 ' + loadedCount + ' 艘船，正在添加航次...', 'success');
+
+  // STEP 3: Get vessel info — support both Simulator and Data Manager contexts
+  let vesselCode = currentVessel.code || '';
+  if(!vesselCode){
+    // Try vesselInput (Simulator)
+    const vi = document.getElementById('vesselInput');
+    if(vi && vi.value) vesselCode = vi.value.trim().split('–')[0].trim();
+  }
+  var _nameParts = document.getElementById('vesselInput')?.value?.trim()?.split('–') || [];
   const vesselName = currentVessel.name || (_nameParts[1] ? _nameParts[1].trim() : '') || vesselCode;
-  const defaultVoyNo = document.getElementById('voyNoInput').value || '001W';
 
-  if(!vesselCode){ showToast('Please select a vessel first', 'warning'); return; }
-
-  // Use voyNo from input field directly (no prompt)
-  let voyNo = defaultVoyNo.trim().toUpperCase();
+  // voyNo: check syncVoyNoInput (DM) first, then voyNoInput (Simulator)
+  const dmVoyNo = document.getElementById('syncVoyNoInput');
+  const svVoyNo = document.getElementById('voyNoInput');
+  let voyNo = (dmVoyNo?.value || svVoyNo?.value || '').trim().toUpperCase();
   if(!voyNo) voyNo = '001W';
 
-  // Ask for lane only (no voyNo prompt)
+  if(!vesselCode){ showToast('请先选择船只', 'warning'); return; }
+
+  // STEP 4: Get lane code
   let laneCode = '';
   if(LANES_DATA.length === 0){
     laneCode = prompt('Enter Lane Code (e.g. CT2):');
     if(!laneCode) return;
   } else if(LANES_DATA.length === 1){
-    // Auto-use the only lane
     laneCode = LANES_DATA[0].code;
   } else {
     const options = LANES_DATA.map(l => l.code + ' – ' + l.name).join('\n');
-    laneCode = prompt('Enter Lane Code:\n' + options);
+    laneCode = prompt('选择航线:\n' + options);
     if(!laneCode) return;
     laneCode = laneCode.split('–')[0].trim().toUpperCase();
   }
 
-  // Build voyage ports from scheduleRows
-  // Use fmtDtLocal() to properly format Date objects to datetime-local strings
+  // STEP 5: Build voyage ports from scheduleRows
   const ports = scheduleRows.map(row => ({
     code: row.port,
     name: (PORT_MAP[row.port] ? PORT_MAP[row.port].en : null) || row.port,
@@ -6880,47 +6878,53 @@ async function syncToDaily(){
     dist: row.dist || 0
   }));
 
-  // Find or create vessel
+  // STEP 6: MERGE — find existing vessel or create new one (NEVER clear other vessels!)
   let vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
   if(!vessel){
     vessel = { code: vesselCode, name: vesselName, voyages: [] };
     FLEET_DATA.vessels.push(vessel);
+    console.log('[syncToDaily] Created new vessel:', vesselCode);
   }
   vessel.name = vesselName;
 
-  // Check if voyNo already exists
+  // Check if voyage already exists in this vessel
   const existIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
   if(existIdx >= 0){
-    if(!confirm('Voyage ' + voyNo + ' already exists. Overwrite?')) return;
+    if(!confirm('航次 ' + voyNo + ' 已存在。是否覆盖？\n（点击"否"则取消本次操作）')) return;
     vessel.voyages[existIdx] = {
       voyNo, lane: laneCode, status: 'current',
       ports, lastModified: new Date().toISOString(),
       modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
     };
+    console.log('[syncToDaily] Overwrite voyage:', voyNo);
   } else {
     vessel.voyages.push({
       voyNo, lane: laneCode, status: 'current',
       ports, lastModified: new Date().toISOString(),
       modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
     });
+    console.log('[syncToDaily] Added new voyage:', voyNo, 'to', vesselCode);
   }
 
-  showToast('✓ Schedule synced — ' + vesselCode + ' / ' + voyNo + ' / ' + laneCode, 'success');
+  showToast('✓ 已添加: ' + vesselCode + ' / ' + voyNo + ' / ' + laneCode + '（共 ' + FLEET_DATA.vessels.length + ' 艘船）', 'success');
   autoSaveFleet();
 
-  // Auto-commit to GitHub (no confirmation needed)
-  // Switch to daily tab and commit, then refresh the daily view
+  // STEP 7: Switch to daily tab, auto-expand this vessel, commit to GitHub
   switchAppTab('daily');
   setTimeout(async () => {
     await commitFleetSchedule();
-    // After commit, reload data and refresh the daily view
-    await loadFleetSchedule();
     // Auto-expand the synced vessel
     delete dailyCollapsedVessels[vesselCode];
+    await loadFleetSchedule();
     renderDailyFleet();
     renderDailyDetail();
     initDailyComboboxes();
   }, 300);
+}
+
+function syncToDailyWithInput(){
+  // DEPRECATED: now unified into syncToDaily()
+  syncToDaily();
 }
 
 function addNewVoyage(){
