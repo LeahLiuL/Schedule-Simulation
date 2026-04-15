@@ -1452,7 +1452,8 @@
               <th style="width:40px">#</th>
               <th>Lane Code</th>
               <th>Lane Name</th>
-              <th style="width:100px">Actions</th>
+              <th>Ports (comma-separated)</th>
+              <th style="width:80px">Actions</th>
             </tr>
           </thead>
           <tbody id="dmLaneBody"></tbody>
@@ -4009,20 +4010,28 @@ function renderDmLanes(){
   const tbody = document.getElementById('dmLaneBody');
   let html = '';
   LANES_DATA.forEach((l, i) => {
-    if(search && !l.code.toLowerCase().includes(search) && !l.name.toLowerCase().includes(search)) return;
+    if(search && !l.code.toLowerCase().includes(search) && !l.name.toLowerCase().includes(search) && !(l.ports||'').toLowerCase().includes(search)) return;
+    // Display ports as comma-separated string
+    const portsDisplay = l.ports ? l.ports.map(p => typeof p === 'string' ? p : (p.portCode||'')).join(', ') : '';
+    const portsCount = l.ports ? l.ports.length : 0;
     html += `<tr>
       <td style="color:var(--muted);font-size:.72rem;">${i+1}</td>
       <td><input type="text" value="${esc(l.code)}" onchange="updateDmLane(${i},'code',this.value)" style="width:80px;font-weight:600;text-transform:uppercase;"/></td>
       <td><input type="text" value="${esc(l.name)}" onchange="updateDmLane(${i},'name',this.value)" style="width:100%;"/></td>
+      <td>
+        <input type="text" value="${esc(portsDisplay)}" onchange="updateDmLanePorts(${i},this.value)" 
+               style="width:100%;" placeholder="e.g. CNSHA,CNHKG,TWKHH"/>
+        ${portsCount > 0 ? `<span style="font-size:.65rem;color:#666;margin-left:4px;">(${portsCount} ports)</span>` : ''}
+      </td>
       <td><button class="dm-btn dm-btn-danger" onclick="deleteDmLane(${i})" title="Delete">✕</button></td>
     </tr>`;
   });
-  tbody.innerHTML = html || '<tr><td colspan="4" class="dm-empty">No lanes</td></tr>';
+  tbody.innerHTML = html || '<tr><td colspan="5" class="dm-empty">No lanes</td></tr>';
   updateDmStatus();
 }
 
 function addDmLane(){
-  LANES_DATA.push({ code: '', name: '' });
+  LANES_DATA.push({ code: '', name: '', ports: [] });
   document.getElementById('dmLaneSearch').value = '';
   renderDmLanes();
   requestAnimationFrame(function() {
@@ -4035,7 +4044,7 @@ function addDmLane(){
       if(_inp) _inp.focus();
     }
   });
-  showToast('New lane added – fill in code and name');
+  showToast('New lane added – fill in code, name and ports');
 }
 
 function updateDmLane(i, field, value){
@@ -4047,6 +4056,15 @@ function updateDmLane(i, field, value){
     dailySelectedLaneCode = '';
     renderDailyFleet();
   }
+}
+
+function updateDmLanePorts(i, value){
+  if(!LANES_DATA[i]) return;
+  // Parse comma-separated port codes into array
+  const ports = value.split(',').map(p => p.trim()).filter(p => p);
+  LANES_DATA[i].ports = ports.length > 0 ? ports : undefined;
+  updateDmStatus();
+  showToast('Ports updated for lane ' + LANES_DATA[i].code);
 }
 
 function deleteDmLane(i){
