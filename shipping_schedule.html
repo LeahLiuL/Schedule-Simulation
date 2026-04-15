@@ -5034,14 +5034,19 @@ function isVoyageInTimeRange(voy){
   const cutoff = getTimeRangeCutoff();
   if(!cutoff) return true; // 'all' mode
   
+  // Get cutoff date string (YYYY-MM-DD) to avoid timezone issues
+  const cutoffDateStr = cutoff.toISOString().substring(0, 10);
+  
   // Check if voyage has any ports within the time range
   const ports = voy.ports || [];
   if(ports.length === 0) return true; // Show voyages without ports
   
-  // Show if any port's ETA or ETD is after the cutoff
+  // Show if any port's ETA or ETD date is >= cutoff date
   return ports.some(p => {
-    if(p.eta && new Date(p.eta) >= cutoff) return true;
-    if(p.etd && new Date(p.etd) >= cutoff) return true;
+    const etaDate = p.eta ? String(p.eta).substring(0, 10) : null;
+    const etdDate = p.etd ? String(p.etd).substring(0, 10) : null;
+    if(etaDate && etaDate >= cutoffDateStr) return true;
+    if(etdDate && etdDate >= cutoffDateStr) return true;
     return false;
   });
 }
