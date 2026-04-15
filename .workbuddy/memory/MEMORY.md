@@ -52,6 +52,7 @@ git push 后必须执行：
 | Sync 按钮太小 | CSS 问题 | 加大样式 |
 | Sync 流程繁琐 | 多次 prompt | 单航线自动使用 |
 | 近1个月过滤无反应 | `String(Date)` 返回非ISO格式 | 用 `toDateStr()` 辅助函数处理 Date/字符串 |
+| syncToDaily 覆盖问题 | 加载失败时静默失败，FLEET_DATA 为空导致覆盖 | 添加验证：加载失败时拒绝保存 |
 
 ## 用户偏好
 - 报告输出：中文，结构化表格
