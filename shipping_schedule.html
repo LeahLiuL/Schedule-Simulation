@@ -1521,7 +1521,7 @@
 <div class="token-overlay" id="laneQuickAddOverlay">
   <div class="token-modal" style="width:500px;">
     <h3>📥 从 Lane 导入 Ports</h3>
-    <p class="token-hint">选择一个 Lane，自动将航线中的所有港口添加到 Ports 列表</p>
+    <p class="token-hint">将 Lane 的港口批量添加到全局港口库（已存在的港口会跳过）</p>
     
     <div style="margin:16px 0;">
       <label style="display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;">选择 Lane</label>
@@ -1533,6 +1533,12 @@
     <div id="lqaPreview" style="display:none;margin:16px 0;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #e9ecef;">
       <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px;">预览：</div>
       <div id="lqaPreviewContent"></div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #ccc;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:#666;">
+          <input type="checkbox" id="lqaForceAdd" onchange="updateLaneQuickAddPreview()"/>
+          <span>强制添加（即使港口已存在也添加到列表）</span>
+        </label>
+      </div>
     </div>
     
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
@@ -1630,6 +1636,26 @@ BDX	South China Haiphone Service
         未知港口通过 Nominatim（OpenStreetMap）自动查询坐标，无需注册。
         首次查询需加载海运网络数据（~600KB），之后自动缓存。
       </p>
+    </div>
+  </div>
+
+<!-- Backup Modal -->
+<div id="backupModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:0;width:480px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #eee;">
+      <h3 style="margin:0;font-size:1rem;">🛡 Fleet 备份管理</h3>
+      <button onclick="closeBackupModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#888;padding:2px 6px;border-radius:4px;">&times;</button>
+    </div>
+    <div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="dm-btn dm-btn-primary" onclick="exportBackupJSON()">📤 导出备份</button>
+      <label class="dm-btn" style="cursor:pointer;">
+        📥 导入备份
+        <input type="file" accept=".json" style="display:none;" onchange="importBackupJSON(this)"/>
+      </label>
+    </div>
+    <div id="backupSnapshotList" style="flex:1;overflow-y:auto;padding:12px 20px;min-height:120px;"></div>
+    <div style="padding:10px 20px;border-top:1px solid #eee;font-size:.75rem;color:#888;text-align:center;">
+      <span id="backupStorageInfo">本地存储已用约 0 KB</span>
     </div>
   </div>
 </div>
@@ -2281,11 +2307,23 @@ function buildDistMap(){
   DIST_RAW.forEach(([a,b,d])=>{DIST_MAP[distKey(a,b)]=d;});
 }
 function distKey(a,b){return a<b?a+'|'+b:b+'|'+a;}
+// Sync: only checks DIST_MAP (no searoute fetch — for Simulator fuel estimate)
 function getDistance(a,b){
   if(a===b) return 0;
   const k=distKey(a,b);
+  return DIST_MAP[k] || 0;
+}
+
+// Async: checks DIST_MAP first, then auto-fetches from searoute if missing (for Daily)
+async function getDistanceAsync(a,b){
+  if(a===b) return 0;
+  const k=distKey(a,b);
   if(DIST_MAP[k]) return DIST_MAP[k];
-  // No actual distance on record — return 0 (never estimate)
+  const res = await fetchSearouteDistance(a, b);
+  if(res && res.distance > 0){
+    DIST_MAP[k] = res.distance;
+    return res.distance;
+  }
   return 0;
 }
 function hasActualDistance(a,b){
@@ -2421,7 +2459,7 @@ function lpsLaneToggle(){
   inp.focus();
 }
 
-function executeLanePortSelector(){
+async function executeLanePortSelector(){
   if(!lpsSelectedLane || !lpsSelectedLane.ports || lpsSelectedLane.ports.length === 0){
     showToast('该航线没有预设港口，请先在 Data Manager 中添加', 'warning');
     return;
@@ -2439,42 +2477,63 @@ function executeLanePortSelector(){
     
     if(!voy.ports) voy.ports = [];
     const existingCodes = new Set(voy.ports.map(p => p.code));
+    const newPorts = []; // 收集新添加的港口（暂不设 dist，由 post-loop 统一处理）
     let addedCount = 0;
-    let lastCode = voy.ports.length > 0 ? voy.ports[voy.ports.length - 1].code : null;
-    const newPorts = []; // 收集新添加的港口
+    let lastAddedCode = voy.ports.length > 0 ? voy.ports[voy.ports.length - 1].code : null;
     
-    portCodes.forEach((code, idx) => {
+    // 第一步：只收集新港口，不计算 dist
+    for(const code of portCodes){
       if(!existingCodes.has(code)){
-        // 计算到上一个港口的距离
-        const dist = lastCode ? getDistance(lastCode, code) : 0;
-        // 从 PORT_MAP 读取该港口的 manIn（ports.csv 中有数据则使用，否则默认 3h）
         const manIn = getPortManIn(code);
         const wait = getPortWait(code);
-        newPorts.push({ code: code, name: getPortName(code), dist: dist, manIn: manIn, waitHrs: wait });
+        newPorts.push({ code: code, name: getPortName(code), dist: 0, manIn: manIn, waitHrs: wait });
         existingCodes.add(code);
-        lastCode = code;
         addedCount++;
       }
-    });
+    }
     
-    // 修复：对于新添加的第一个港口（如果是 voyage 的第一个港口），
-    // 设置其 dist 为到下一个港口的距离，这样输入第一个 ETA 后可以正确级联计算
     if(newPorts.length > 0){
-      // 如果 voyage 在添加前是空的或新添加的是第一批
-      const wasEmptyBefore = voy.ports.length === 0;
-      if(wasEmptyBefore && newPorts.length > 1){
-        // 第一个港口的 dist 设为到第二个港口的距离（用于级联计算）
-        newPorts[0].dist = getDistance(newPorts[0].code, newPorts[1].code);
-      }
       voy.ports.push(...newPorts);
+    }
+    
+    // 第二步（post-loop）：dist 必须存在出发港（port[i]）上，等于 dist(port[i], port[i+1])
+    // 遍历 voyage 所有相邻对，补充缺失的 dist
+    for(let i = 0; i < voy.ports.length - 1; i++){
+      if(!voy.ports[i].dist || voy.ports[i].dist <= 0){
+        // dist(from=voy.ports[i], to=voy.ports[i+1]) 应存在 voy.ports[i].dist 上
+        const d = await getDistanceAsync(voy.ports[i].code, voy.ports[i+1].code);
+        voy.ports[i].dist = d;
+      }
     }
     
     _dailyLaneSelectorCtx = null;
     
     if(addedCount > 0){
+      // 补充缺失 dist：dist 必须存在 port[i] 上
+      // 第 1 步 post-loop 已用 getDistanceAsync 填了一部分（getDistanceAsync 会写 DIST_MAP）
+      // 第 2 步：确保所有相邻对的 voy.ports[i].dist 都已赋值，未赋值的再补查
+      const allCodes = voy.ports.map(p => p.code);
+      const needFetch = [];
+      for(let i = 0; i < allCodes.length - 1; i++){
+        if(!voy.ports[i].dist || voy.ports[i].dist <= 0){
+          needFetch.push([voy.ports[i].code, voy.ports[i+1].code]);
+        }
+      }
+      if(needFetch.length > 0){
+        showToast(`正在查询 ${needFetch.length} 条距离…`, 'info', 6000);
+        for(const [f, t] of needFetch){
+          const res = await fetchSearouteDistance(f, t);
+          if(res && res.distance > 0){
+            DIST_MAP[distKey(f, t)] = res.distance;
+            const p1 = voy.ports.find(p => p.code === f);
+            if(p1) p1.dist = res.distance;
+          }
+        }
+      }
       renderDailyDetail();
       autoSaveFleet();
-      showToast(`已添加 ${addedCount} 个港口（距离已计算）`, 'success');
+      const fetched = needFetch.length;
+      showToast(`已添加 ${addedCount} 个港口${fetched > 0 ? '，' + fetched + ' 条距离已查询' : ''}`, 'success');
     } else {
       showToast('所有港口已存在，无需添加', 'info');
     }
@@ -3820,6 +3879,7 @@ function openLaneQuickAdd(){
   // Reset preview
   document.getElementById('lqaPreview').style.display = 'none';
   document.getElementById('lqaAddBtn').disabled = true;
+  document.getElementById('lqaForceAdd').checked = false;
   
   document.getElementById('laneQuickAddOverlay').classList.add('open');
 }
@@ -3848,15 +3908,15 @@ function updateLaneQuickAddPreview(){
     return;
   }
   
-  // Get ports from this lane's portRotation
-  const rotation = lane.portRotation || [];
+  // Get ports from this lane's ports array
+  const rotation = lane.ports || [];
   const existingCodes = new Set(PORTS_DATA.map(r => r[0]));
-  
+
   let newPorts = [];
   let existingPorts = [];
-  
+
   rotation.forEach(item => {
-    const portCode = item.portCode || item.code;
+    const portCode = typeof item === 'string' ? item : (item.portCode || '');
     if(existingCodes.has(portCode)){
       existingPorts.push(portCode);
     } else {
@@ -3881,27 +3941,40 @@ function updateLaneQuickAddPreview(){
   
   previewContent.innerHTML = html;
   previewDiv.style.display = 'block';
-  addBtn.disabled = newPorts.length === 0;
-  addBtn.textContent = newPorts.length > 0 ? `导入 ${newPorts.length} 个新 Port` : '导入 Ports';
+  const forceAdd = document.getElementById('lqaForceAdd').checked;
+  const hasNew = newPorts.length > 0;
+  const hasExisting = existingPorts.length > 0;
+  addBtn.disabled = !forceAdd && !hasNew;
+  addBtn.textContent = forceAdd && hasExisting
+    ? `导入全部 ${rotation.length} 个 Ports（含 ${existingPorts.length} 个已存在）`
+    : hasNew ? `导入 ${newPorts.length} 个新 Port` : '导入 Ports';
 }
 
-function executeLaneQuickAdd(){
+async function executeLaneQuickAdd(){
   const laneCode = document.getElementById('lqaLaneSelect').value;
   if(!laneCode) return;
   
   const lane = LANES_DATA.find(l => l.code === laneCode);
   if(!lane) return;
   
-  const rotation = lane.portRotation || [];
+  const rotation = lane.ports || [];
   const existingCodes = new Set(PORTS_DATA.map(r => r[0]));
-  
+  const forceAdd = document.getElementById('lqaForceAdd').checked;
+
   let addedCount = 0;
+  let skippedCount = 0;
+  const newPortCodes = [];
+
   rotation.forEach(item => {
-    const portCode = item.portCode || item.code;
-    const portName = item.portName || item.name || '';
+    const portCode = typeof item === 'string' ? item : (item.portCode || '');
+    const portName = typeof item === 'string' ? '' : (item.portName || item.name || '');
+    if(existingCodes.has(portCode) && !forceAdd){
+      skippedCount++;
+      return;
+    }
     if(!existingCodes.has(portCode)){
-      // Add new port: [code, name_en, name_cn, man_in, portstay_time]
       PORTS_DATA.push([portCode, portName, '', '', '']);
+      newPortCodes.push(portCode);
       addedCount++;
     }
   });
@@ -3910,12 +3983,106 @@ function executeLaneQuickAdd(){
     buildPortMap();
     initPortCombobox();
     renderDmPorts(document.getElementById('dmPortSearch').value);
-    showToast(`已从 Lane "${laneCode}" 导入 ${addedCount} 个新 Port`, 'success');
+    const msg = skippedCount > 0
+      ? `已从 Lane "${laneCode}" 导入 ${addedCount} 个新 Port，跳过 ${skippedCount} 个已存在`
+      : `已从 Lane "${laneCode}" 导入 ${addedCount} 个新 Port`;
+    showToast(msg, 'success', 5000);
+
+    // Also add new ports to the currently active voyage in Daily (if any)
+    if(_dailyLaneSelectorCtx){
+      const { vesselCode, voyIdx } = _dailyLaneSelectorCtx;
+      const vObj = FLEET_DATA.vessels.find(v => v.code === vesselCode);
+      if(vObj && vObj.voyages[ voyIdx ]){
+        const voy = vObj.voyages[ voyIdx ];
+        if(!voy.ports) voy.ports = [];
+        const existingCodes = new Set(voy.ports.map(p => p.code));
+        let addedToVoy = 0;
+        newPortCodes.forEach(code => {
+          if(!existingCodes.has(code)){
+            voy.ports.push({ code, dist: 0, etb: '', etd: '' });
+            addedToVoy++;
+          }
+        });
+        if(addedToVoy > 0){
+          recalcDailyFromPort(vObj, voyIdx, 0);
+          if(typeof refreshDailyLaneSelector === 'function') refreshDailyLaneSelector();
+          showToast(`已将 ${addedToVoy} 个新 Port 加入当前航次`, 'success', 3000);
+        }
+      }
+    }
+
+    await fetchDistancesForNewPorts(newPortCodes);
   } else {
     showToast('所有 Port 已存在，无需导入', 'info');
   }
   
+  // Close modal only AFTER distance fetch is done
   closeLaneQuickAdd();
+}
+
+// Fetch searoute distances for consecutive new-port pairs in voyages, then cascade
+async function fetchDistancesForNewPorts(newPortCodes){
+  if(!newPortCodes || newPortCodes.length === 0) return;
+  const newSet = new Set(newPortCodes);
+  const vessels = FLEET_DATA.vessels || [];
+  const pairsToFetch = [];
+
+  vessels.forEach((v, vIdx) => {
+    (v.voyages || []).forEach((voy, vi) => {
+      const ports = voy.ports || [];
+      for(let i = 0; i < ports.length - 1; i++){
+        const p1 = ports[i], p2 = ports[i + 1];
+        if((newSet.has(p1.code) || newSet.has(p2.code)) && (!p1.dist || p1.dist === 0)){
+          const k = distKey(p1.code, p2.code);
+          if(!DIST_MAP[k] && !pairsToFetch.some(p => p.from === p1.code && p.to === p2.code)){
+            pairsToFetch.push({from: p1.code, to: p2.code, vIdx, vi, portIdx: i});
+          }
+        }
+      }
+    });
+  });
+
+  if(pairsToFetch.length === 0){
+    // DIST_MAP 里已有数据，同步到 voyage 里缺失的 dist
+    syncDistancesToFleet();
+    return;
+  }
+  showToast(`正在查询 ${pairsToFetch.length} 条新航线距离，请稍候…`, 'info', 8000);
+
+  let fetched = 0;
+  let failed = 0;
+  const failedPairs = [];
+  for(const pair of pairsToFetch){
+    const result = await fetchSearouteDistance(pair.from, pair.to);
+    if(result && result.distance > 0){
+      DIST_MAP[distKey(pair.from, pair.to)] = result.distance;
+      fetched++;
+    } else {
+      failed++;
+      failedPairs.push(`${pair.from} → ${pair.to}`);
+    }
+  }
+
+  if(fetched > 0){
+    // 同步：dist 必须存在 port[i] 上（出发港）
+    pairsToFetch.forEach(pair => {
+      const k = distKey(pair.from, pair.to);
+      const d = DIST_MAP[k];
+      if(!d) return;
+      const v = FLEET_DATA.vessels[pair.vIdx];
+      if(!v) return;
+      const voy = v.voyages[pair.vi];
+      if(!voy || !voy.ports) return;
+      voy.ports[pair.portIdx].dist = d; // 只写出发港，不写到达港
+    });
+    syncDistancesToFleet();
+    const msg = failed > 0
+      ? `✓ 已获取 ${fetched} 条距离；${failed} 条查询失败：${failedPairs.join('、')}，请手动填写`
+      : `✓ 已获取 ${fetched} 条新航线距离并更新船期`;
+    showToast(msg, failed > 0 ? 'warning' : 'success', 6000);
+  } else if(failed > 0){
+    showToast(`全部 ${failed} 条航线查询失败：${failedPairs.join('、')}，请在 Data Manager 中手动填写`, 'warning', 8000);
+  }
 }
 
 // ========== VESSELS ==========
@@ -4691,18 +4858,17 @@ async function commitToGitHub(type){
 }
 
 // Sync updated DIST_MAP values to Fleet schedule ports and recalculate dates
-function syncDistancesToFleet(){
+async function syncDistancesToFleet(){
   let updated = 0;
   const vessels = FLEET_DATA.vessels || [];
-  const needRecalc = []; // track which vessels/voyages need date recalc
-  vessels.forEach((v, vIdx) => {
-    (v.voyages || []).forEach((voy, vi) => {
+  for(const v of vessels){
+    for(const voy of (v.voyages || [])){
       let voyUpdated = false;
       const ports = voy.ports || [];
       for(let i = 0; i < ports.length - 1; i++){
         const from = ports[i].code;
         const to = ports[i + 1].code;
-        const newDist = getDistance(from, to);
+        const newDist = await getDistanceAsync(from, to);
         if(newDist > 0 && ports[i].dist !== newDist){
           ports[i].dist = newDist;
           updated++;
@@ -4710,17 +4876,14 @@ function syncDistancesToFleet(){
         }
       }
       if(voyUpdated){
-        recalcDailyFromPort(v, vi, 0);
+        recalcDailyFromPort(v, voy.voyNo, 0);
         voy.lastModified = new Date().toISOString();
-        needRecalc.push({vIdx, vi});
       }
-    });
-  });
+    }
+  }
   if(updated > 0){
     autoSaveFleet();
-    // Re-render fleet summary
     renderDailyFleet();
-    // Re-render if currently viewing a vessel detail
     const detailEl = document.getElementById('dailyRightPanel');
     if(detailEl && detailEl.querySelector('.daily-detail-body')){
       renderDailyDetail();
@@ -5176,6 +5339,7 @@ function autoSaveFleet(){
   _autoSaveTimer = setTimeout(function(){
     try {
       localStorage.setItem(FLEET_LOCALSTORAGE_KEY, JSON.stringify(FLEET_DATA));
+      tryAutoBackup();
     } catch(e){
       console.warn('Auto-save to localStorage failed:', e);
     }
@@ -6520,7 +6684,7 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
   // 先计算出到本港的距离（上一港 → 本港）
   let dist = 0;
   if(prevPort){
-    const cachedDist = getDistance(prevPort.code, portCode);
+    const cachedDist = await getDistanceAsync(prevPort.code, portCode);
     if(cachedDist > 0){
       dist = cachedDist;
       // 更新上一港 dist 字段
