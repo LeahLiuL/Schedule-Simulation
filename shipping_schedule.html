@@ -714,6 +714,7 @@
   .daily-left {
     width: 380px; min-width: 320px; background: var(--card);
     border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    overflow: hidden;
   }
   .daily-quick-search {
     padding: 10px 16px; border-bottom: 1px solid var(--border);
@@ -731,6 +732,7 @@
   .daily-filter {
     padding: 8px 16px; border-bottom: 1px solid var(--border);
     display: flex; flex-direction: column; gap: 6px;
+    overflow: hidden;
   }
   .daily-filter-row {
     display: flex; gap: 8px; align-items: center;
@@ -743,11 +745,13 @@
   .daily-actions {
     padding: 10px 16px; border-bottom: 1px solid var(--border);
     display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+    overflow-x: hidden;
   }
   /* Time range filter bar */
   .daily-time-filter {
     padding: 7px 16px; border-bottom: 1px solid var(--border);
     display: flex; gap: 5px; align-items: center; background: #f8fafc;
+    overflow-x: hidden;
   }
   .time-filter-label {
     font-size: .72rem; color: var(--muted); white-space: nowrap; margin-right: 2px;
@@ -4057,10 +4061,10 @@ function renderDmLanes(){
   const tbody = document.getElementById('dmLaneBody');
   let html = '';
   LANES_DATA.forEach((l, i) => {
-    if(search && !l.code.toLowerCase().includes(search) && !l.name.toLowerCase().includes(search) && !(l.ports||'').toLowerCase().includes(search)) return;
     // Display ports as comma-separated string
     const portsDisplay = l.ports ? l.ports.map(p => typeof p === 'string' ? p : (p.portCode||'')).join(', ') : '';
     const portsCount = l.ports ? l.ports.length : 0;
+    if(search && !l.code.toLowerCase().includes(search) && !l.name.toLowerCase().includes(search) && !portsDisplay.toLowerCase().includes(search)) return;
     html += `<tr>
       <td style="color:var(--muted);font-size:.72rem;">${i+1}</td>
       <td><input type="text" value="${esc(l.code)}" onchange="updateDmLane(${i},'code',this.value)" style="width:80px;font-weight:600;text-transform:uppercase;"/></td>
