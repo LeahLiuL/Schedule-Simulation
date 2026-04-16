@@ -413,8 +413,8 @@
     "name": "TEST"
   },
   {
-    "code": "CGS",
-    "name": "CGS",
+    "code": "CGX",
+    "name": "China Gulf Service",
     "ports": [
       "CNTAO",
       "CNSHA",
