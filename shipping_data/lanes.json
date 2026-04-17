@@ -334,7 +334,16 @@
   },
   {
     "code": "CST",
-    "name": "CUL SouthChina Thailand service"
+    "name": "CUL SouthChina Thailand service",
+    "ports": [
+      "CNNAS",
+      "CNSHK",
+      "THLCH",
+      "THBKK",
+      "THSCS",
+      "THLCH",
+      "CNNAS"
+    ]
   },
   {
     "code": "CV5",
@@ -342,11 +351,24 @@
   },
   {
     "code": "HDT",
-    "name": "HUA DONG TAIWAN SERVICE"
+    "name": "HUA DONG TAIWAN SERVICE",
+    "ports": [
+      "CNNGB",
+      "CNSHA",
+      "TWTPE",
+      "TWKHH",
+      "TWTXG",
+      "CNNGB"
+    ]
   },
   {
     "code": "JPS",
-    "name": "Jeddah Port Sudan"
+    "name": "Jeddah Port Sudan",
+    "ports": [
+      "SAJED",
+      "SDPZU",
+      "SAJED"
+    ]
   },
   {
     "code": "REX",
@@ -362,7 +384,21 @@
   },
   {
     "code": "SGX",
-    "name": "SINGAPORE EXTRA LOAD"
+    "name": "SINGAPORE EXTRA LOAD",
+    "ports": [
+      "CNXGG",
+      "CNTAO",
+      "CNSHA",
+      "CNNGB",
+      "CNNAS",
+      "CNSHK",
+      "MYPKG",
+      "INNSA",
+      "INMUN",
+      "PKKHI",
+      "AEKLF",
+      "CNXGG"
+    ]
   },
   {
     "code": "SH2",
@@ -374,7 +410,14 @@
   },
   {
     "code": "SJA",
-    "name": "Sokhna Jeddah Aden"
+    "name": "Sokhna Jeddah Aden",
+    "ports": [
+      "EGSOK",
+      "SAJED",
+      "YEADE",
+      "SAJED",
+      "EGSOK"
+    ]
   },
   {
     "code": "SL1",
@@ -382,7 +425,17 @@
   },
   {
     "code": "ST1",
-    "name": "NEW SOUTH CHINA TAIWAN EXPRESS SERVICE"
+    "name": "NEW SOUTH CHINA TAIWAN EXPRESS SERVICE",
+    "ports": [
+      "TWKEL",
+      "TWTXG",
+      "TWKHH",
+      "CNHMN",
+      "CNHUA",
+      "CNNAS",
+      "CNSHK",
+      "TWKEL"
+    ]
   },
   {
     "code": "ST3",
@@ -429,30 +482,136 @@
     "code": "TST",
     "name": "TEST"
   },
-  { "code": "AG1", "name": "Far East-Middle East I Service" },
-  { "code": "AGX", "name": "ASIA GULF EXPRESS" },
-  { "code": "AM1", "name": "Asia Med I service" },
-  { "code": "BC1", "name": "China Thailand Service" },
-  { "code": "CCT", "name": "CUL CentralChina Thailand service" },
-  { "code": "CGS", "name": "China Gulf Service" },
-  { "code": "CHT", "name": "CUL SouthChina Hochiminh Thailand service" },
-  { "code": "CIS", "name": "CUL INDIA SERVICE" },
-  { "code": "CL1", "name": "China Thailand I service" },
-  { "code": "CL2", "name": "China Thailand II service" },
-  { "code": "CP1", "name": "China-Philippine I service" },
-  { "code": "CV2", "name": "CHINA VIETNAM EXPRESS II" },
-  { "code": "CVT", "name": "China Vietnam Thailand service" },
-  { "code": "CVX", "name": "CHINA VIETNAM EXPRESS SERVICE" },
-  { "code": "IMR", "name": "India Middle-east Redsea svc" },
-  { "code": "NP2", "name": "China Philippines Express Service" },
-  { "code": "NSX", "name": "New SCT Express service" },
-  { "code": "RCS", "name": "RED SEA CHINA SERVICE" },
-  { "code": "SC2", "name": "South China - Thailand Service II" },
-  { "code": "SHX", "name": "SHANGHAI HAIPHONG EXPESS" },
-  { "code": "VG1", "name": "Southeast Asia-Western India-Middle East I Service" },
-  { "code": "VG2", "name": "Southeast Asia-Western India-Middle East II Service" },
-  { "code": "VG3", "name": "Southeast Asia-Western India-Middle East III Service" },
-  { "code": "VGX", "name": "Vietnam/Tailand - Middle East/India" },
+  {
+    "code": "AG1",
+    "name": "Far East-Middle East I Service"
+  },
+  {
+    "code": "AGX",
+    "name": "ASIA GULF EXPRESS"
+  },
+  {
+    "code": "AM1",
+    "name": "Asia Med I service"
+  },
+  {
+    "code": "BC1",
+    "name": "China Thailand Service"
+  },
+  {
+    "code": "CCT",
+    "name": "CUL CentralChina Thailand service",
+    "ports": [
+      "THBKK",
+      "THBKS",
+      "THLCH",
+      "VNSGN",
+      "CNNGB",
+      "CNSHA",
+      "THLCH",
+      "THBKK"
+    ]
+  },
+  {
+    "code": "CGS",
+    "name": "China Gulf Service"
+  },
+  {
+    "code": "CHT",
+    "name": "CUL SouthChina Hochiminh Thailand service"
+  },
+  {
+    "code": "CIS",
+    "name": "CUL INDIA SERVICE"
+  },
+  {
+    "code": "CL1",
+    "name": "China Thailand I service"
+  },
+  {
+    "code": "CL2",
+    "name": "China Thailand II service"
+  },
+  {
+    "code": "CP1",
+    "name": "China-Philippine I service"
+  },
+  {
+    "code": "CV2",
+    "name": "CHINA VIETNAM EXPRESS II"
+  },
+  {
+    "code": "CVT",
+    "name": "China Vietnam Thailand service"
+  },
+  {
+    "code": "CVX",
+    "name": "CHINA VIETNAM EXPRESS SERVICE"
+  },
+  {
+    "code": "IMR",
+    "name": "India Middle-east Redsea svc",
+    "ports": [
+      "INNSA",
+      "INMUN",
+      "SAJED",
+      "SAJED",
+      "DJJIB",
+      "INNSA"
+    ]
+  },
+  {
+    "code": "NP2",
+    "name": "China Philippines Express Service",
+    "ports": [
+      "CNTAO",
+      "CNSHA",
+      "CNXMN",
+      "PHMNL",
+      "CNTAO"
+    ]
+  },
+  {
+    "code": "NSX",
+    "name": "New SCT Express service",
+    "ports": [
+      "CNNAS",
+      "CNSHK",
+      "THLCH",
+      "THBKK",
+      "THSCS",
+      "THLCH",
+      "CNNAS"
+    ]
+  },
+  {
+    "code": "RCS",
+    "name": "RED SEA CHINA SERVICE"
+  },
+  {
+    "code": "SC2",
+    "name": "South China - Thailand Service II"
+  },
+  {
+    "code": "SHX",
+    "name": "SHANGHAI HAIPHONG EXPESS"
+  },
+  {
+    "code": "VG1",
+    "name": "Southeast Asia-Western India-Middle East I Service"
+  },
+  {
+    "code": "VG2",
+    "name": "Southeast Asia-Western India-Middle East II Service"
+  },
+  {
+    "code": "VG3",
+    "name": "Southeast Asia-Western India-Middle East III Service"
+  },
+  {
+    "code": "VGX",
+    "name": "Vietnam/Tailand - Middle East/India"
+  },
   {
     "code": "CGX",
     "name": "China Gulf Service",
