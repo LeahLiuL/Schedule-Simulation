@@ -5360,45 +5360,56 @@ async function loadFleetSchedule(){
           FLEET_DATA = remoteData;
           console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from Local (P盘)');
         }
-      } else if(resp.status === 404){
-        console.log('fleet_schedule.json not found locally, starting fresh');
+      } else {
+        // Local server unavailable (GitHub Pages / no server) → fallback to GitHub
+        console.warn('Local fetch failed (' + resp.status + '), falling back to GitHub');
+        await loadFleetFromGitHub();
       }
     } else {
-      // GitHub mode: use GitHub API
-      const token = getGhToken();
-      const headers = { 'Accept': 'application/vnd.github+json' };
-      if(token) headers['Authorization'] = 'token ' + token;
-      const resp = await fetch(GH_REPO_API + '/' + FLEET_FILE, { headers, cache: 'no-store' });
-      if(resp.ok){
-        const fileInfo = await resp.json();
-        const jsonText = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,'')))).replace(/^\uFEFF/, '');
-        const remoteData = JSON.parse(jsonText);
-        if(remoteData && remoteData.vessels){
-          fixFleetDatetimeFormat(remoteData);
-          FLEET_DATA = remoteData;
-          console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub API');
-        }
-      } else if(resp.status === 404){
-        console.log('fleet_schedule.json not found on GitHub, starting fresh');
-      } else {
-        console.warn('GitHub API load failed (' + resp.status + '), falling back to raw CDN');
-        const fallback = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
-        if(fallback.ok){
-          const remoteData = await fallback.json();
-          if(remoteData && remoteData.vessels){
-            fixFleetDatetimeFormat(remoteData);
-            FLEET_DATA = remoteData;
-            console.log('Loaded from raw CDN (fallback): ' + remoteData.vessels.length + ' vessel(s)');
-          }
-        }
-      }
+      await loadFleetFromGitHub();
     }
   } catch(e){
     console.error('Load fleet error:', e);
   }
-  // 不再使用 localStorage 回退，始终从 GitHub 获取
   if(FLEET_DATA.vessels.length === 0){
-    console.log('No vessels on GitHub, starting fresh');
+    console.log('No vessels found, starting fresh');
+  }
+}
+
+// Load fleet data from GitHub (API → raw CDN fallback)
+async function loadFleetFromGitHub(){
+  const token = getGhToken();
+  const headers = { 'Accept': 'application/vnd.github+json' };
+  if(token) headers['Authorization'] = 'token ' + token;
+  try {
+    const resp = await fetch(GH_REPO_API + '/' + FLEET_FILE, { headers, cache: 'no-store' });
+    if(resp.ok){
+      const fileInfo = await resp.json();
+      const jsonText = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,'')))).replace(/^\uFEFF/, '');
+      const remoteData = JSON.parse(jsonText);
+      if(remoteData && remoteData.vessels){
+        fixFleetDatetimeFormat(remoteData);
+        FLEET_DATA = remoteData;
+        console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub API');
+      }
+    } else if(resp.status === 404){
+      console.log('fleet_schedule.json not found on GitHub, starting fresh');
+    } else {
+      throw new Error('GitHub API status: ' + resp.status);
+    }
+  } catch(e){
+    console.warn('GitHub API failed, falling back to raw CDN:', e.message);
+    try {
+      const fallback = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
+      if(fallback.ok){
+        const remoteData = await fallback.json();
+        if(remoteData && remoteData.vessels){
+          fixFleetDatetimeFormat(remoteData);
+          FLEET_DATA = remoteData;
+          console.log('Loaded from raw CDN: ' + remoteData.vessels.length + ' vessel(s)');
+        }
+      }
+    } catch(e2){ console.warn('Raw CDN fallback also failed:', e2); }
   }
 }
 
