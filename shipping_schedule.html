@@ -2329,6 +2329,8 @@ const BESTMODEL_DATA = [{"Vessel Name": "CUL BANGKOK", "Service Lane": "REX", "M
 let PORTS_DATA = [];    // [[code, name_en, name_cn, man_in, portstay_time, wait_time], ...]
 let VESSELS_DATA = [];  // [{code, name, speed, lsfo, hsfo, mgo}, ...]
 let DIST_RAW = [];      // [[from, to, distance, source], ...] source: 'auto' | 'manual'
+let PARTICULAR_DATA = [];  // vessel particular info (array of row objects from cul_ship_particular.csv)
+let BESTMODEL_DATA = [];   // vessel capacity per lane (from cul_vessel_bestmodel.csv)
 
 // Load all CSV data from GitHub (including lanes.json)
 async function loadAllData(){
@@ -2371,7 +2373,51 @@ async function loadAllData(){
   // Build lookup maps now that data is loaded
   buildDistMap();
   buildPortMap();
+
+  // Load vessel particular & best-model data (fire-and-forget)
+  loadParticularData().catch(function(){});
+  loadBestModelData().catch(function({});
 }
+
+// Load CUL Ship Particular data (transposed CSV: rows=fields, cols=vessels)
+async function loadParticularData(){
+  try {
+    const rawRows = await fetchCSV('cul_ship_particular.csv');
+    if(!rawRows || rawRows.length === 0) return;
+    // Convert to array of objects (one per field row)
+    PARTICULAR_DATA = rawRows.map(r => {
+      const obj = {};
+      for(const [k,v] of Object.entries(r)) obj[k] = v||'';
+      return obj;
+    });
+    // Build vessel name -> column key lookup
+    window._particularVessels = [];
+    if(PARTICULAR_DATA.length > 0){
+      const keys = Object.keys(PARTICULAR_DATA[0]);
+      keys.forEach(k => {
+        if(k && k.toLowerCase() !== 'field name' && k.toLowerCase() !== 'field')
+          window._particularVessels.push(k);
+      });
+    }
+    console.log('Loaded ' + PARTICULAR_DATA.length + ' particular fields, ' + window._particularVessels.length + ' vessels');
+  } catch(e){ console.warn('Load particular failed:', e.message); }
+}
+
+// Load CUL Vessel Best Model capacity data (normal CSV - keep raw column names)
+async function loadBestModelData(){
+  try {
+    const rawRows = await fetchCSV('cul_vessel_bestmodel.csv');
+    if(!rawRows || rawRows.length === 0) return;
+    // Store raw rows with original column names so findCapacityRecords/renderCapacityTable can access them
+    BESTMODEL_DATA = rawRows.map(function(r){
+      var obj = {};
+      for(var k in r) obj[k] = r[k]||'';
+      return obj;
+    });
+    console.log('Loaded ' + BESTMODEL_DATA.length + ' best model records');
+  } catch(e){ console.warn('Load best model failed:', e.message); }
+}
+
 
 // Build distance lookup
 let DIST_MAP = {};
@@ -3854,43 +3900,43 @@ function findCapacityRecords(vname){
 }
 
 function renderViParticular(vname){
-  const body = document.getElementById('viBody');
-  const key = findParticularKey(vname);
-  
-  if(!key || !PARTICULAR_DATA[key]){
-    body.innerHTML = `<div class="vi-no-data">未找到 "${vname}" 的船舶参数数据<br><small style="color:#999">数据来源: CUL Ship Particular</small></div>`;
-    return;
+  if(!vname) return '<div style="padding:24px;text-align:center;color:#999;">未选择船舶</div>';
+  if(PARTICULAR_DATA.length === 0){
+    return '<div style="padding:24px;text-align:center;color:#999;">数据加载中...</div>';
   }
-  
-  const d = PARTICULAR_DATA[key];
-  const fields = [
-    ['VESSEL NAME', '船舶名称'],
-    ['CALL SIGN', '呼号'],
-    ['IMO', 'IMO 编号'],
-    ['FLAG', '船旗'],
-    ['YEAR BUILT', '建造年份'],
-    ['NOMINAL CAPACITY (TEU)', '名义箱量 (TEU)'],
-    ['HOMO @14 MT', 'HOMO @14MT (TEU)'],
-    ['DWT (MT)', '载重吨 (MT)'],
-    ['LOA (m)', '总长 LOA (m)'],
-    ['BREADTH (m)', '型宽 (m)'],
-    ['DEPTH (m)', '型深 (m)'],
-    ['SCANTLING DRAFT (m)', '结构吃水 (m)'],
-    ['GRT', '总吨 GRT'],
-    ['NRT', '净吨 NRT'],
-    ['REEFER PLUGS', '冷插位'],
-    ['CLASS', '船级社'],
-  ];
-  
-  let html = `<div class="vi-grid">`;
-  fields.forEach(([fkey, flabel]) => {
-    const val = d[fkey] !== undefined ? d[fkey] : '';
-    if(val){
-      html += `<div class="vi-field"><span class="vi-label">${flabel}</span><span class="vi-value">${val}</span></div>`;
+  var norm = normalizeName(vname);
+  var vessels = window._particularVessels || [];
+  var matchCol = null;
+  for(var vi=0;vi<vessels.length;vi++){
+    var cn = normalizeName(vessels[vi]);
+    if(cn === norm || cn.indexOf(norm)>=0 || norm.indexOf(cn)>=0){
+      matchCol = vessels[vi];
+      break;
     }
-  });
-  html += `</div>`;
-  body.innerHTML = html;
+  }
+  if(!matchCol){
+    return '<div style="padding:24px;text-align:center;color:#999;">未找到 <b>'+escapeHtml(vname)+'</b> 的参数数据<br><span style="font-size:.78rem;">（可尝试切换船名）</span></div>';
+  }
+  var displayFields = ['VESSEL NAME','IMO NUMBER','DWT','LOA','LENGTH OVERALL','BREADTH','BEAM','DRAFT','TEU','CONTAINER CAPACITY','REEFER','PLUGS','FLAG','YEAR BUILT','DELIVERY','BUILDER','ENGINE','POWER','SPEED'];
+  var html = '<table class="vi-table">';
+  for(var ri=0;ri<PARTICULAR_DATA.length;ri++){
+    var row = PARTICULAR_DATA[ri];
+    var fieldName = row['Field Name'] || row['Field'] || '';
+    if(!fieldName.trim()) continue;
+    var val = row[matchCol] || '';
+    var fn = normalizeName(fieldName);
+    var show = false;
+    for(var di=0;di<displayFields.length;di++){
+      if(fn.indexOf(normalizeName(displayFields[di]))>=0 || normalizeName(displayFields[di]).indexOf(fn)>=0){
+        show=true;break;
+      }
+    }
+    if(String(val).trim() && show){
+      html += '<tr><td class="vi-label">'+escapeHtml(fieldName)+'</td><td>'+escapeHtml(String(val))+'</td></tr>';
+    }
+  }
+  html += '</table>';
+  return html;
 }
 
 function renderViCapacity(vname){
