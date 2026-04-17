@@ -7957,10 +7957,11 @@ function handleImportExcel(input){
         return m ? m[1].toUpperCase() : s.split(/[\s\/]/)[0].toUpperCase();
       }
 
-      wb.SheetNames.forEach(function(sheetName){
-        const ws = wb.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, cellDates: true });
-        if(rows.length < 2) return;
+      // Only process the first sheet
+      const firstSheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, cellDates: true });
+      if(rows.length >= 2){
 
         // ---- Detect format ----
         // Format A (standard): row[0] has "vessel" in some cell → header row = 0, data starts at 1
@@ -8098,7 +8099,7 @@ function handleImportExcel(input){
           }
           imported++;
         });
-      });
+      }
 
       if(imported > 0){
         renderDailyFleet();
