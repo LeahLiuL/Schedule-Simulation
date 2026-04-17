@@ -2273,6 +2273,10 @@ async function loadAllData(){
   PORTS_DATA = portsRows.map(r=>[
     r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||'', r.wait_time||''
   ]);
+  // Ensure each row has 6 columns
+  PORTS_DATA.forEach(row => { while(row.length < 6) row.push(''); });
+  // Sort by port code
+  PORTS_DATA.sort((a,b) => a[0].localeCompare(b[0]));
 
   // Parse vessels
   VESSELS_DATA = vesselsRows.map(r=>({
@@ -2285,6 +2289,8 @@ async function loadAllData(){
     ps_lsfo: parseFloat(r.portstay_lsfo_mt_day)||0,
     ps_mgo:  parseFloat(r.portstay_mgo_mt_day)||0
   }));
+  // Sort by vessel code
+  VESSELS_DATA.sort((a,b) => a.code.localeCompare(b.code));
 
   // Parse distances
   DIST_RAW = distRows.map(r=>[
@@ -4726,6 +4732,8 @@ async function reloadCommittedData(type){
     try {
       const data = JSON.parse(await resp.text());
       LANES_DATA = Array.isArray(data) ? data : (data.lanes || []);
+      // Sort by lane code
+      LANES_DATA.sort((a,b) => a.code.localeCompare(b.code));
       console.log('Reloaded ' + LANES_DATA.length + ' lanes from GitHub');
     } catch(e) {
       console.error('Failed to parse lanes.json:', e);
@@ -4740,6 +4748,8 @@ async function reloadCommittedData(type){
     PORTS_DATA = rows.map(r=>[r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||'', r.wait_time||'']);
     // Ensure each row has 6 columns
     PORTS_DATA.forEach(row => { while(row.length < 6) row.push(''); });
+    // Sort by port code
+    PORTS_DATA.sort((a,b) => a[0].localeCompare(b[0]));
     buildPortMap();
   } else if(type === 'vessels'){
     VESSELS_DATA = rows.map(r=>({
@@ -4749,6 +4759,8 @@ async function reloadCommittedData(type){
       ps_lsfo: parseFloat(r.portstay_lsfo_mt_day)||0,
       ps_mgo: parseFloat(r.portstay_mgo_mt_day)||0
     }));
+    // Sort by vessel code
+    VESSELS_DATA.sort((a,b) => a.code.localeCompare(b.code));
   } else if(type === 'distances'){
     DIST_RAW = rows.map(r=>[r.from_port||r.from||'', r.to_port||r.to||'', parseFloat(r.distance_nm||r.distance||0), r.source||'']);
     buildDistMap();
@@ -5255,6 +5267,8 @@ async function loadLanesData(){
       const resp2 = await fetch(url, { cache: 'no-store' });
       if(resp2.ok){ LANES_DATA = await resp2.json(); }
     }
+    // Sort by lane code
+    LANES_DATA.sort((a,b) => a.code.localeCompare(b.code));
   } catch(e) { console.warn('Failed to load lanes from GitHub:', e); }
   populateLaneFilter();
 }
