@@ -5299,7 +5299,7 @@ async function loadLanesData(){
     const token = getGhToken();
     const headers = { 'Accept': 'application/vnd.github+json' };
     if(token) headers['Authorization'] = 'token ' + token;
-    const resp = await fetch(GH_REPO_API + '/lanes.json', { headers, cache: 'no-store' });
+    const resp = await fetch(GH_REPO_API + '/shipping_data/lanes.json', { headers, cache: 'no-store' });
     if(resp.ok){
       const fileInfo = await resp.json();
       // GitHub API returns content as base64
@@ -5309,7 +5309,7 @@ async function loadLanesData(){
     } else {
       // Fallback to raw CDN
       console.warn('GitHub API failed (' + resp.status + '), falling back to raw CDN');
-      const url = CSV_GITHUB + '/lanes.json?t=' + Date.now();
+      const url = CSV_GITHUB + '/shipping_data/lanes.json?t=' + Date.now();
       const resp2 = await fetch(url, { cache: 'no-store' });
       if(resp2.ok){ LANES_DATA = await resp2.json(); }
     }
@@ -5352,23 +5352,27 @@ async function loadFleetSchedule(){
   
   try {
     if(mode === 'local'){
-      const url = '/data/' + path;
-      console.log('[loadFleetSchedule] Trying local: ' + url);
-      // Load from local P盘 server
-      const resp = await fetch(url, { cache: 'no-store' });
-      console.log('[loadFleetSchedule] Local response: status=' + resp.status + ', ok=' + resp.ok);
-      if(resp.ok){
-        const remoteData = await resp.json();
-        console.log('[loadFleetSchedule] Local JSON parsed, vessels=' + (remoteData && remoteData.vessels ? remoteData.vessels.length : 0));
-        if(remoteData && remoteData.vessels){
-          fixFleetDatetimeFormat(remoteData);
-          FLEET_DATA = remoteData;
-          console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from Local (P盘)');
-        }
-      } else {
-        // Local server unavailable (GitHub Pages / no server) → fallback to GitHub
-        console.warn('Local fetch failed (' + resp.status + '), falling back to GitHub');
+      // Detect file:// mode → skip local fetch, go straight to GitHub
+      if(window.location.protocol === 'file:'){
+        console.log('[loadFleetSchedule] file:// mode detected, loading from GitHub directly');
         await loadFleetFromGitHub();
+      } else {
+        const url = '/data/' + path;
+        console.log('[loadFleetSchedule] Trying local: ' + url);
+        const resp = await fetch(url, { cache: 'no-store' });
+        console.log('[loadFleetSchedule] Local response: status=' + resp.status + ', ok=' + resp.ok);
+        if(resp.ok){
+          const remoteData = await resp.json();
+          console.log('[loadFleetSchedule] Local JSON parsed, vessels=' + (remoteData && remoteData.vessels ? remoteData.vessels.length : 0));
+          if(remoteData && remoteData.vessels){
+            fixFleetDatetimeFormat(remoteData);
+            FLEET_DATA = remoteData;
+            console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from Local (P盘)');
+          }
+        } else {
+          console.warn('Local fetch failed (' + resp.status + '), falling back to GitHub');
+          await loadFleetFromGitHub();
+        }
       }
     } else {
       console.log('[loadFleetSchedule] Mode is github, calling loadFleetFromGitHub()');
@@ -5376,7 +5380,6 @@ async function loadFleetSchedule(){
     }
   } catch(e){
     console.error('[loadFleetSchedule] Caught error: ' + e.message, e);
-    // Fetch failed → fallback to GitHub
     console.log('[loadFleetSchedule] Falling back to GitHub due to fetch error');
     await loadFleetFromGitHub();
   }
@@ -5392,7 +5395,7 @@ async function loadFleetFromGitHub(){
   const headers = { 'Accept': 'application/vnd.github+json' };
   if(token) headers['Authorization'] = 'token ' + token;
   const apiUrl = GH_REPO_API + '/' + FLEET_FILE;
-  const cdnUrl = CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now();
+  const cdnUrl = CSV_GITHUB + '/shipping_data/fleet_schedule.json?t=' + Date.now();
   console.log('[loadFleetFromGitHub] API URL: ' + apiUrl);
   console.log('[loadFleetFromGitHub] CDN URL: ' + cdnUrl);
   try {
@@ -6970,15 +6973,22 @@ async function commitFleetSchedule(){
   const content = JSON.stringify(FLEET_DATA, null, 2);
   
   try {
-    // STEP 1: Always save to local P盘 first
-    setStatus('Saving to Local (P盘)...');
-    const localResp = await fetch('/data/' + FLEET_FILE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: content
-    });
-    if(localResp.ok){
-      console.log('Saved to P盘: ' + FLEET_FILE);
+    // STEP 1: Save to local P盘 (skip in file:// mode)
+    const isFileMode = window.location.protocol === 'file:';
+    if(!isFileMode){
+      setStatus('Saving to Local (P盘)...');
+      try {
+        const localResp = await fetch('/data/' + FLEET_FILE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: content
+        });
+        if(localResp.ok){
+          console.log('Saved to P盘: ' + FLEET_FILE);
+        }
+      } catch(localErr){
+        console.warn('Local save skipped (file:// mode or server unavailable): ' + localErr.message);
+      }
     }
     
     // STEP 2: Also commit to GitHub if token exists
@@ -7026,12 +7036,12 @@ async function commitFleetSchedule(){
         setStatus('✓ Saved: P盘 + GitHub (' + result.commit.sha.slice(0,7) + ')');
         showToast('✓ 已保存到 P盘 + GitHub', 'success');
       } else {
-        setStatus('✓ Saved to P盘 (GitHub skipped)');
-        showToast('✓ 已保存到 P盘 (GitHub 未配置)', 'success');
+        setStatus('✓ Saved locally (GitHub skipped)');
+        showToast('✓ 已保存本地 (GitHub skipped)', 'success');
       }
     } else {
-      setStatus('✓ Saved to P盘');
-      showToast('✓ 已保存到 P盘', 'success');
+      setStatus('✓ Saved locally (no token)');
+      showToast('✓ 已保存本地 (需设置 GitHub Token)', 'success');
     }
     
     clearUndoRedo();
@@ -8083,22 +8093,23 @@ function handleImportExcel(input){
           // Extract vessel code, lane from row0
           rows[0].forEach(function(cell){
             const s = String(cell||'').trim();
-            if(!fixedVesselCode && /^[A-Z]{4,5}$/.test(s)) fixedVesselCode = s;
+            // Match vessel codes like H728, CUHP, CUXH, HMNT (2-5 letters + optional digits)
+            if(!fixedVesselCode && /^[A-Z]{2,5}\d*$/i.test(s)) fixedVesselCode = s.toUpperCase();
             // Also grab vessel name (longer text like "CUL HAIPHONG")
             if(!fixedVesselName && s.length > 5 && /[A-Z]/.test(s) && !/^\d/.test(s) && s !== fixedVesselCode) fixedVesselName = s;
             // Extract lane: e.g. "ST3-CUHP" → lane = "ST3"
-            if(!fixedLane && /^([A-Z]{2,4}\d?)-[A-Z]{4,5}$/.test(s)){
+            if(!fixedLane && /^([A-Z]{2,4}\d?)-([A-Z]{2,5}\d*)$/.test(s)){
               fixedLane = s.split('-')[0];
             }
             // Or single lane code like "ST3", "PNI", "CPS" (2-4 uppercase letters + optional digit)
-            if(!fixedLane && /^[A-Z]{2,4}\d?$/.test(s) && s !== fixedVesselCode){
+            if(!fixedLane && /^[A-Z]{2,4}\d?$/i.test(s) && s !== fixedVesselCode){
               fixedLane = s;
             }
           });
           // Fallback: derive from file name
           if(!fixedVesselCode){
-            const fnMatch = file.name.match(/[A-Z]{4,5}/);
-            if(fnMatch) fixedVesselCode = fnMatch[0];
+            const fnMatch = file.name.match(/[A-Z]{2,5}\d*/i);
+            if(fnMatch) fixedVesselCode = fnMatch[0].toUpperCase();
           }
           if(!fixedVesselCode){ console.warn('Format B: cannot find vessel code in row 1, skipping'); return; }
         }
