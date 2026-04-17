@@ -1,109 +1,6 @@
 {
   "vessels": [
     {
-      "code": "H728",
-      "name": "HONG DA XIN 728",
-      "voyages": [
-        {
-          "voyNo": "2611W",
-          "lane": "REX",
-          "status": "current",
-          "ports": [
-            {
-              "code": "CNTAO",
-              "name": "QINGDAO",
-              "eta": "2026-03-19T03:42",
-              "etb": "2026-03-26T06:30",
-              "etd": "2026-03-26T20:48",
-              "stayHrs": 24,
-              "manIn": 1,
-              "waitHrs": 0,
-              "dist": 462
-            },
-            {
-              "code": "CNNGB",
-              "name": "NINGBO",
-              "eta": "2026-03-28T17:48",
-              "etb": "2026-03-28T20:48",
-              "etd": "2026-03-29T20:48",
-              "stayHrs": 24,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 754
-            },
-            {
-              "code": "CNNAS",
-              "name": "NANSHA",
-              "eta": "2026-04-01T20:18",
-              "etb": "2026-04-01T23:18",
-              "etd": "2026-04-02T23:18",
-              "stayHrs": 24,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 1443
-            },
-            {
-              "code": "SGSIN",
-              "name": "SINGAPORE",
-              "eta": "2026-04-08T13:30",
-              "etb": "2026-04-08T16:30",
-              "etd": "2026-04-09T16:30",
-              "stayHrs": 24,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 205
-            },
-            {
-              "code": "MYPKG",
-              "name": "PORT KLANG",
-              "eta": "2026-04-10T14:06",
-              "etb": "2026-04-10T17:06",
-              "etd": "2026-04-11T17:06",
-              "stayHrs": 24,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 4766
-            },
-            {
-              "code": "EGSOK",
-              "name": "SOKHNA",
-              "eta": "2026-04-29T21:24",
-              "etb": "2026-04-30T00:24",
-              "etd": "2026-05-01T00:24",
-              "stayHrs": 24,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 621
-            },
-            {
-              "code": "SAJED",
-              "name": "JEDDAH",
-              "eta": "2026-05-03T11:54",
-              "etb": "2026-05-03T14:54",
-              "etd": "2026-05-04T14:54",
-              "stayHrs": 24,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 4216
-            },
-            {
-              "code": "MYPKG",
-              "name": "PORT KLANG",
-              "eta": "2026-05-20T17:12",
-              "etb": "2026-05-20T20:12",
-              "etd": "2026-05-21T20:12",
-              "stayHrs": 24,
-              "manIn": 3,
-              "waitHrs": 0,
-              "dist": 0
-            }
-          ],
-          "lastModified": "2026-04-08T08:57:45.538Z",
-          "modifiedBy": "anonymous"
-        }
-      ]
-    },
-    {
       "code": "CUHP",
       "name": "CUL HAIPHONG",
       "voyages": [
@@ -9951,6 +9848,254 @@
             }
           ],
           "lastModified": "2026-04-17T04:13:37.826Z",
+          "modifiedBy": "Excel Import"
+        }
+      ]
+    },
+    {
+      "code": "REX",
+      "name": "HDX 728",
+      "voyages": [
+        {
+          "lane": "",
+          "voyNo": "2611W",
+          "status": "active",
+          "ports": [
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "",
+              "etb": "2026-03-16T19:00",
+              "etd": "2026-03-17T04:00",
+              "stayHrs": 9,
+              "manIn": 0,
+              "waitHrs": 0,
+              "dist": 462,
+              "voyNo": "2611W",
+              "remark": "",
+              "speed": 12.6
+            },
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-03-18T19:42",
+              "etb": "2026-03-25T22:30",
+              "etd": "2026-03-26T12:48",
+              "stayHrs": 14.3,
+              "manIn": 3,
+              "waitHrs": 167.8,
+              "dist": 504,
+              "voyNo": "2611W",
+              "remark": "trade备货",
+              "speed": 14.8
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-03-28T01:48",
+              "etb": "2026-03-28T17:18",
+              "etd": "2026-03-30T08:00",
+              "stayHrs": 38.7,
+              "manIn": 3,
+              "waitHrs": 12.5,
+              "dist": 708,
+              "voyNo": "2611W",
+              "remark": "",
+              "speed": 11.2
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-04-02T02:30",
+              "etb": "2026-04-02T05:42",
+              "etd": "2026-04-02T14:24",
+              "stayHrs": 8.7,
+              "manIn": 3.2,
+              "waitHrs": 0,
+              "dist": 1488,
+              "voyNo": "2611W",
+              "remark": "",
+              "speed": 11.3
+            },
+            {
+              "code": "SGSIN",
+              "name": "SINGAPORE",
+              "eta": "2026-04-08T04:06",
+              "etb": "2026-04-08T06:06",
+              "etd": "2026-04-08T20:00",
+              "stayHrs": 13.9,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 211,
+              "voyNo": "2611W",
+              "remark": "998.29吨",
+              "speed": 11.8
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-04-09T15:24",
+              "etb": "2026-04-09T16:54",
+              "etd": "2026-04-10T20:24",
+              "stayHrs": 27.5,
+              "manIn": 1.5,
+              "waitHrs": 0,
+              "dist": 4814,
+              "voyNo": "2611W",
+              "remark": ""
+            }
+          ],
+          "lastModified": "2026-04-17T05:13:34.088Z",
+          "modifiedBy": "Excel Import"
+        },
+        {
+          "lane": "",
+          "voyNo": "2611E",
+          "status": "active",
+          "ports": [
+            {
+              "code": "EGSOK",
+              "name": "SOKHNA",
+              "eta": "2026-04-25T06:18",
+              "etb": "2026-04-25T08:18",
+              "etd": "2026-04-26T10:18",
+              "stayHrs": 26,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 621,
+              "voyNo": "2611E",
+              "remark": "",
+              "speed": 4.9
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-05-01T18:00",
+              "etb": "2026-05-01T20:00",
+              "etd": "2026-05-02T18:00",
+              "stayHrs": 22,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 6457,
+              "voyNo": "2611E",
+              "remark": ""
+            }
+          ],
+          "lastModified": "2026-04-17T05:13:34.089Z",
+          "modifiedBy": "Excel Import"
+        },
+        {
+          "lane": "",
+          "voyNo": "2620W",
+          "status": "active",
+          "ports": [
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-05-22T02:12",
+              "etb": "2026-05-22T05:12",
+              "etd": "2026-05-23T03:12",
+              "stayHrs": 22,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 720,
+              "voyNo": "2620W",
+              "remark": "",
+              "speed": 4.4
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-05-30T00:00",
+              "etb": "2026-05-30T03:00",
+              "etd": "2026-05-30T23:00",
+              "stayHrs": 20,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 30,
+              "voyNo": "2620W",
+              "remark": "",
+              "speed": 15
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-31T04:00",
+              "etb": "2026-05-31T07:00",
+              "etd": "2026-06-01T03:00",
+              "stayHrs": 20,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 6452,
+              "voyNo": "2620W",
+              "remark": ""
+            }
+          ],
+          "lastModified": "2026-04-17T05:13:34.089Z",
+          "modifiedBy": "Excel Import"
+        },
+        {
+          "lane": "",
+          "voyNo": "2620E",
+          "status": "active",
+          "ports": [
+            {
+              "code": "EGSOK",
+              "name": "SOKHNA",
+              "eta": "2026-06-20T10:54",
+              "etb": "2026-06-20T13:54",
+              "etd": "2026-06-21T15:54",
+              "stayHrs": 26,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 621,
+              "voyNo": "2620E",
+              "remark": "",
+              "speed": 3.9
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-06-28T11:00",
+              "etb": "2026-06-28T14:00",
+              "etd": "2026-06-29T12:00",
+              "stayHrs": 22,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 4168,
+              "voyNo": "2620E",
+              "remark": "",
+              "speed": 11.4
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-14T22:00",
+              "etb": "2026-07-15T01:00",
+              "etd": "2026-07-15T21:00",
+              "stayHrs": 20,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 2274,
+              "voyNo": "2620E",
+              "remark": "",
+              "speed": 11.3
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-07-24T10:00",
+              "etb": "2026-07-24T13:00",
+              "etd": "2026-07-25T11:00",
+              "stayHrs": 22,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 0,
+              "voyNo": "2620E",
+              "remark": ""
+            }
+          ],
+          "lastModified": "2026-04-17T05:13:34.089Z",
           "modifiedBy": "Excel Import"
         }
       ]
