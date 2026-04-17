@@ -9938,6 +9938,136 @@
           ],
           "lastModified": "2026-04-15T08:26:55.134Z",
           "modifiedBy": "anonymous"
+        },
+        {
+          "voyNo": "2603W",
+          "lane": "AEM",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-04-18T08:00",
+              "etb": "2026-04-21T11:00",
+              "etd": "2026-04-22T11:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 72,
+              "dist": 387
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-04-23T22:00",
+              "etb": "2026-04-26T15:00",
+              "etd": "2026-04-27T03:00",
+              "stayHrs": 12,
+              "manIn": 5,
+              "waitHrs": 60,
+              "dist": 147
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-04-27T18:00",
+              "etb": "2026-04-28T09:00",
+              "etd": "2026-04-29T09:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 754
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-01T22:00",
+              "etb": "2026-05-02T13:00",
+              "etd": "2026-05-03T13:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 5853
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-05-22T11:00",
+              "etb": "2026-05-22T14:00",
+              "etd": "2026-05-23T14:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 644
+            },
+            {
+              "code": "EGSUZ",
+              "name": "SUEZ CANAL",
+              "eta": "2026-05-25T19:00",
+              "etb": "2026-05-25T22:00",
+              "etd": "2026-05-26T22:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 257
+            },
+            {
+              "code": "EGALY",
+              "name": "ALEXANDRIA",
+              "eta": "2026-05-27T21:00",
+              "etb": "2026-05-28T00:00",
+              "etd": "2026-05-29T00:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 554
+            },
+            {
+              "code": "TRALI",
+              "name": "ALIAGA",
+              "eta": "2026-05-30T22:00",
+              "etb": "2026-05-31T01:00",
+              "etd": "2026-06-01T01:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 257
+            },
+            {
+              "code": "TRIST",
+              "name": "ISTANBUL",
+              "eta": "2026-06-02T00:00",
+              "etb": "2026-06-02T03:00",
+              "etd": "2026-06-03T03:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 798
+            },
+            {
+              "code": "TRMER",
+              "name": "MERSIN",
+              "eta": "2026-06-05T20:00",
+              "etb": "2026-06-05T23:00",
+              "etd": "2026-06-06T23:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 5431
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-06-24T12:00",
+              "etb": "2026-06-25T03:00",
+              "etd": "2026-06-26T03:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 0
+            }
+          ],
+          "lastModified": "2026-04-17T02:12:49.364Z",
+          "modifiedBy": "anonymous"
         }
       ]
     },
