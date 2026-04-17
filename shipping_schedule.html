@@ -526,6 +526,10 @@
   .toolbar-info { font-size: .82rem; color: var(--muted); }
   .toolbar-info strong { color: var(--primary); }
   .toolbar-actions { display: flex; gap: 8px; align-items: center; }
+  /* Data source badge */
+  #dataSourceBadge { cursor: pointer; padding: 4px 10px; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+  #dataSourceBadge.mode-local { background: #d4edda; color: #155724; }
+  #dataSourceBadge.mode-github { background: #cce5ff; color: #004085; }
 
   .btn-export {
     display: flex; align-items: center; gap: 6px;
@@ -1222,6 +1226,7 @@
       <div class="toolbar-actions">
         <button class="btn-reset" onclick="resetModifications()" id="btnReset" style="display:none">↺ Reset</button>
 <button class="btn-sync" onclick="syncToDaily()" id="btnSyncDaily" style="display:none;font-size:.85rem;padding:6px 14px;background:#198754;border:2px solid #198754;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;" title="添加当前船期到 GitHub Fleet，然后在 Daily 页面显示（不会覆盖其他船期）">💾 添加到 Daily 船期</button>
+        <span id="dataSourceBadge" onclick="toggleDataSource()" title="点击切换数据源">📦 Local</span>
         <button class="btn-export" onclick="exportExcel()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -2273,8 +2278,6 @@ async function loadAllData(){
   PORTS_DATA = portsRows.map(r=>[
     r.code, r.name_en, r.name_cn||'', r.man_in||'', r.portstay_time||'', r.wait_time||''
   ]);
-  // Ensure each row has 6 columns
-  PORTS_DATA.forEach(row => { while(row.length < 6) row.push(''); });
   // Sort by port code
   PORTS_DATA.sort((a,b) => a[0].localeCompare(b[0]));
 
@@ -2807,6 +2810,8 @@ let currentVessel = {
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', async ()=>{
+  // Update data source indicator
+  updateDataSourceIndicator();
   // Show loading state
   const statusEl = document.getElementById('headerTime');
   const origUpdate = updateClock;
@@ -4652,6 +4657,32 @@ function exportDmCSV(type){
 const GH_REPO_API = 'https://api.github.com/repos/LeahLiuL/Schedule-Simulation/contents';
 const GH_TOKEN_KEY = 'gh_pat_token';
 
+// ========== DATA SOURCE MODE ==========
+// 'local' = P盘 (data_server.py), 'github' = GitHub API
+const DATA_MODE_KEY = 'data_source_mode';
+function getDataSourceMode(){
+  return localStorage.getItem(DATA_MODE_KEY) || 'local';
+}
+function setDataSourceMode(mode){
+  localStorage.setItem(DATA_MODE_KEY, mode);
+  updateDataSourceIndicator();
+}
+function updateDataSourceIndicator(){
+  const badge = document.getElementById('dataSourceBadge');
+  if(!badge) return;
+  const mode = getDataSourceMode();
+  badge.className = mode === 'local' ? 'mode-local' : 'mode-github';
+  badge.textContent = mode === 'local' ? '📦 Local' : '🐙 GitHub';
+}
+function toggleDataSource(){
+  const current = getDataSourceMode();
+  const next = current === 'local' ? 'github' : 'local';
+  setDataSourceMode(next);
+  showToast('数据源已切换为: ' + (next === 'local' ? 'P盘 (本地)' : 'GitHub'), 'success');
+  // Reload current page to refresh data
+  window.location.reload();
+}
+
 function getGhToken(){ return localStorage.getItem(GH_TOKEN_KEY) || ''; }
 
 function openTokenSetup(){
@@ -4785,71 +4816,68 @@ async function commitToGitHub(type){
   btns.forEach(b=>b.classList.add('loading'));
 
   try {
-    // Step 1: Get current file SHA
-    setCommitStatus('Fetching current file...');
-    const getResp = await fetch(GH_REPO_API + '/' + path, {
-      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+    // STEP 1: Always save to local P盘 first
+    setCommitStatus('Saving to Local (P盘)...');
+    const localResp = await fetch('/data/' + filename, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: content
     });
-
-    let sha = null;
-    if(getResp.status === 404){
-      // File doesn't exist yet — we'll create it (sha = null tells GitHub to create)
-      console.log('File not found, will create: ' + path);
-    } else if(getResp.status === 401){
-      showToast('⚠️ GitHub Token 已失效或无权限，请重新设置 Token！', 'warning');
-      setCommitStatus('✗ Token 已失效，请重新设置');
-      btns.forEach(b=>b.classList.remove('loading'));
-      openTokenSetup();
-      return;
-    } else if(getResp.status === 403){
-      showToast('⚠️ GitHub Token 无写入权限（需要 repo 权限），请检查 Token 设置！', 'warning');
-      setCommitStatus('✗ 权限不足（需要 repo scope）');
-      btns.forEach(b=>b.classList.remove('loading'));
-      openTokenSetup();
-      return;
-    } else if(!getResp.ok){
-      // Any error other than 404/401 is a real error
-      const err = await getResp.json().catch(()=>({}));
-      throw new Error('GitHub API error: ' + getResp.status + (err.message ? ' - ' + err.message : ''));
-    } else {
-      // 200: file exists, read its SHA
-      const fileData = await getResp.json();
-      sha = fileData.sha;
+    if(localResp.ok){
+      console.log('Saved to P盘: ' + filename);
     }
-
-    // Step 2: Create or update file
-    setCommitStatus('Committing ' + filename + '...');
-    const base64Content = btoa(unescape(encodeURIComponent(content)));
-    const message = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
-
-    const bodyPayload = {
-      message: message,
-      content: base64Content,
-      branch: 'main'
-    };
-    if(sha) bodyPayload.sha = sha;
-
-    const putResp = await fetch(GH_REPO_API + '/' + path, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(bodyPayload)
-    });
-
-    if(!putResp.ok){
-      const err = await putResp.json().catch(()=>({}));
-      throw new Error('Commit failed: ' + putResp.status + (err.message ? ' - ' + err.message : ''));
-    }
-
-    const result = await putResp.json();
-    setCommitStatus('✓ Committed: ' + result.commit.sha.slice(0,7));
-    showToast(filename + ' committed to GitHub ✓', 'success');
-
-    // Save updated content to local storage so fetchCSV reads the latest version
     saveLocalCSV(type, content);
+
+    // STEP 2: Also commit to GitHub if token exists
+    if(token){
+      setCommitStatus('Fetching from GitHub...');
+      const getResp = await fetch(GH_REPO_API + '/' + path, {
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+      });
+
+      let sha = null;
+      if(getResp.status === 404){
+        console.log('File not found on GitHub, will create: ' + path);
+      } else if(!getResp.ok){
+        console.warn('GitHub commit skipped: ' + getResp.status);
+      } else {
+        const fileData = await getResp.json();
+        sha = fileData.sha;
+      }
+
+      setCommitStatus('Committing to GitHub...');
+      const base64Content = btoa(unescape(encodeURIComponent(content)));
+      const message = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
+
+      const bodyPayload = {
+        message: message,
+        content: base64Content,
+        branch: 'main'
+      };
+      if(sha) bodyPayload.sha = sha;
+
+      const putResp = await fetch(GH_REPO_API + '/' + path, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bodyPayload)
+      });
+
+      if(putResp.ok){
+        const result = await putResp.json();
+        setCommitStatus('✓ Saved: P盘 + GitHub (' + result.commit.sha.slice(0,7) + ')');
+        showToast(filename + ' ✓ 已保存: P盘 + GitHub', 'success');
+      } else {
+        setCommitStatus('✓ Saved to P盘 (GitHub skipped)');
+        showToast(filename + ' ✓ 已保存: P盘', 'success');
+      }
+    } else {
+      setCommitStatus('✓ Saved to P盘');
+      showToast(filename + ' ✓ 已保存: P盘', 'success');
+    }
 
     // Reload data from GitHub to update in-memory state
     try {
@@ -4907,91 +4935,109 @@ async function syncDistancesToFleet(){
 // Commit all 3 CSV files sequentially
 async function commitAllToGitHub(){
   const token = getGhToken();
-  if(!token){
-    showToast('Please set your GitHub Token first (🔑 Token button)', 'warning');
-    openTokenSetup();
-    return;
-  }
-
   const btnAll = document.getElementById('btnCommitAll');
   const types = ['ports', 'vessels', 'distances', 'lanes'];
-  let ok = 0, fail = 0;
+  let localOk = 0, ghOk = 0, fail = 0;
 
   btnAll.classList.add('loading');
-  setCommitStatus('Committing all files...');
 
+  // STEP 1: Save all files to local P盘
+  setCommitStatus('Saving to Local...');
   for(const type of types){
     const filename = csvFilename(type);
     try {
-      setCommitStatus('Committing ' + filename + '...');
       const content = buildCSV(type);
-      const path = 'shipping_data/' + filename;
-
-      const getResp = await fetch(GH_REPO_API + '/' + path, {
-        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+      const localResp = await fetch('/data/' + filename, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: content
       });
-
-      if(getResp.status === 401){
-        showToast('⚠️ GitHub Token 已失效，请重新设置！', 'warning');
-        setCommitStatus('✗ Token 已失效，请重新设置');
-        openTokenSetup();
-        break;
+      if(localResp.ok){
+        localOk++;
+        saveLocalCSV(type, content);
+        console.log('Saved to P盘: ' + filename);
       }
-      if(getResp.status === 403){
-        showToast('⚠️ GitHub Token 无写入权限（需要 repo 权限）！', 'warning');
-        setCommitStatus('✗ 权限不足（需要 repo scope）');
-        openTokenSetup();
-        break;
-      }
-
-      let sha = null;
-      if(getResp.status === 200){
-        const fileData = await getResp.json();
-        sha = fileData.sha;
-      }
-      // 404 = file doesn't exist yet, will create it (sha stays null)
-
-      const base64Content = btoa(unescape(encodeURIComponent(content)));
-      const message = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
-
-      const bodyPayload = { message, content: base64Content, branch: 'main' };
-      if(sha) bodyPayload.sha = sha;
-
-      const putResp = await fetch(GH_REPO_API + '/' + path, {
-        method: 'PUT',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bodyPayload)
-      });
-
-      if(!putResp.ok){
-        const err = await putResp.json().catch(()=>({}));
-        throw new Error(putResp.status + (err.message ? ' - ' + err.message : ''));
-      }
-
-      ok++;
-      saveLocalCSV(type, content);
     } catch(err){
-      console.error('Commit error for ' + filename + ':', err);
-      fail++;
+      console.error('Local save error for ' + filename + ':', err);
+    }
+  }
+
+  // STEP 2: Also commit to GitHub if token exists
+  if(token){
+    setCommitStatus('Committing to GitHub...');
+    for(const type of types){
+      const filename = csvFilename(type);
+      try {
+        setCommitStatus('Committing ' + filename + '...');
+        const content = buildCSV(type);
+        const path = 'shipping_data/' + filename;
+
+        const getResp = await fetch(GH_REPO_API + '/' + path, {
+          headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+        });
+
+        if(getResp.status === 401){
+          showToast('⚠️ GitHub Token 已失效，请重新设置！', 'warning');
+          setCommitStatus('✗ Token 已失效');
+          openTokenSetup();
+          break;
+        }
+        if(getResp.status === 403){
+          showToast('⚠️ GitHub Token 无写入权限！', 'warning');
+          setCommitStatus('✗ 权限不足');
+          openTokenSetup();
+          break;
+        }
+
+        let sha = null;
+        if(getResp.status === 200){
+          const fileData = await getResp.json();
+          sha = fileData.sha;
+        }
+
+        const base64Content = btoa(unescape(encodeURIComponent(content)));
+        const message = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
+
+        const bodyPayload = { message, content: base64Content, branch: 'main' };
+        if(sha) bodyPayload.sha = sha;
+
+        const putResp = await fetch(GH_REPO_API + '/' + path, {
+          method: 'PUT',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bodyPayload)
+        });
+
+        if(putResp.ok){
+          ghOk++;
+        } else {
+          throw new Error(putResp.status);
+        }
+      } catch(err){
+        console.error('Commit error for ' + filename + ':', err);
+        fail++;
+      }
     }
   }
 
   btnAll.classList.remove('loading');
-  if(fail === 0){
-    setCommitStatus('✓ All ' + ok + ' files committed');
-    showToast('All ' + ok + ' CSV files committed to GitHub ✓', 'success');
-    // Reload all data from GitHub
-    try { await loadAllData(); buildPortMap(); buildDistMap(); } catch(e){ console.warn('Failed to reload:', e); }
-    // Sync distances to fleet if distances were in the batch
-    syncDistancesToFleet();
+  if(fail === 0 && ghOk > 0){
+    setCommitStatus('✓ ' + localOk + ' saved, ' + ghOk + ' → GitHub');
+    showToast('✓ 已保存: ' + localOk + ' 个文件到 P盘 + ' + ghOk + ' 个到 GitHub', 'success');
+  } else if(fail === 0){
+    setCommitStatus('✓ ' + localOk + ' files saved to P盘');
+    showToast('✓ 已保存: ' + localOk + ' 个文件到 P盘', 'success');
   } else {
-    setCommitStatus('⚠ ' + ok + ' ok, ' + fail + ' failed');
-    showToast(ok + ' committed, ' + fail + ' failed', 'warning');
+    setCommitStatus('⚠ ' + localOk + ' ok, ' + fail + ' failed');
+    showToast('部分保存失败: ' + localOk + ' 成功, ' + fail + ' 失败', 'warning');
   }
+
+  // Reload all data
+  try { await loadAllData(); buildPortMap(); buildDistMap(); } catch(e){ console.warn('Failed to reload:', e); }
+  syncDistancesToFleet();
 }
 
 // Helper: escape HTML for input values
@@ -5301,37 +5347,49 @@ async function forceReloadFleet(){
 async function loadFleetSchedule(){
   const path = FLEET_FILE;
   FLEET_DATA = { vessels: [], lastSync: null };
+  const mode = getDataSourceMode();
+  
   try {
-    // Use GitHub API (not raw CDN) to avoid ~5-min CDN cache delay after commit
-    const token = getGhToken();
-    const headers = { 'Accept': 'application/vnd.github+json' };
-    if(token) headers['Authorization'] = 'token ' + token;
-    const resp = await fetch(GH_REPO_API + '/' + FLEET_FILE, { headers, cache: 'no-store' });
-    if(resp.ok){
-      const fileInfo = await resp.json();
-      // GitHub API returns content as base64
-      // Strip BOM (U+FEFF) that may be at the start of the file
-      const jsonText = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,'')))).replace(/^\uFEFF/, '');
-      const remoteData = JSON.parse(jsonText);
-      if(remoteData && remoteData.vessels){
-        // Fix UTC datetime format to datetime-local format for display
-        fixFleetDatetimeFormat(remoteData);
-        FLEET_DATA = remoteData;
-        console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub API (no-cache)');
-      }
-    } else if(resp.status === 404){
-      console.log('fleet_schedule.json not found on GitHub, starting fresh');
-    } else {
-      // Fallback to raw CDN if API fails
-      console.warn('GitHub API load failed (' + resp.status + '), falling back to raw CDN');
-      const fallback = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
-      if(fallback.ok){
-        const remoteData = await fallback.json();
+    if(mode === 'local'){
+      // Load from local P盘 server
+      const resp = await fetch('/data/' + path, { cache: 'no-store' });
+      if(resp.ok){
+        const remoteData = await resp.json();
         if(remoteData && remoteData.vessels){
-          // Fix UTC datetime format to datetime-local format for display
           fixFleetDatetimeFormat(remoteData);
           FLEET_DATA = remoteData;
-          console.log('Loaded from raw CDN (fallback): ' + remoteData.vessels.length + ' vessel(s)');
+          console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from Local (P盘)');
+        }
+      } else if(resp.status === 404){
+        console.log('fleet_schedule.json not found locally, starting fresh');
+      }
+    } else {
+      // GitHub mode: use GitHub API
+      const token = getGhToken();
+      const headers = { 'Accept': 'application/vnd.github+json' };
+      if(token) headers['Authorization'] = 'token ' + token;
+      const resp = await fetch(GH_REPO_API + '/' + FLEET_FILE, { headers, cache: 'no-store' });
+      if(resp.ok){
+        const fileInfo = await resp.json();
+        const jsonText = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,'')))).replace(/^\uFEFF/, '');
+        const remoteData = JSON.parse(jsonText);
+        if(remoteData && remoteData.vessels){
+          fixFleetDatetimeFormat(remoteData);
+          FLEET_DATA = remoteData;
+          console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from GitHub API');
+        }
+      } else if(resp.status === 404){
+        console.log('fleet_schedule.json not found on GitHub, starting fresh');
+      } else {
+        console.warn('GitHub API load failed (' + resp.status + '), falling back to raw CDN');
+        const fallback = await fetch(CSV_GITHUB + '/fleet_schedule.json?t=' + Date.now(), { cache: 'no-store' });
+        if(fallback.ok){
+          const remoteData = await fallback.json();
+          if(remoteData && remoteData.vessels){
+            fixFleetDatetimeFormat(remoteData);
+            FLEET_DATA = remoteData;
+            console.log('Loaded from raw CDN (fallback): ' + remoteData.vessels.length + ' vessel(s)');
+          }
         }
       }
     }
@@ -6862,95 +6920,89 @@ function deleteDailyPort(vesselCode, voyIdx, portIdx){
 
 async function commitFleetSchedule(){
   const token = getGhToken();
-  if(!token){
-    showToast('Please set your GitHub Token first (🔑 Token button)', 'warning');
-    openTokenSetup();
-    return;
-  }
-
+  const mode = getDataSourceMode();
+  
   const setStatus = (msg) => {
     const el = document.getElementById('dailyCommitStatus');
     if(el) el.textContent = msg;
   };
 
-  setStatus('Fetching current file...');
-
+  const content = JSON.stringify(FLEET_DATA, null, 2);
+  
   try {
-    // Get SHA
-    const getResp = await fetch(GH_REPO_API + '/' + FLEET_FILE, {
-      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+    // STEP 1: Always save to local P盘 first
+    setStatus('Saving to Local (P盘)...');
+    const localResp = await fetch('/data/' + FLEET_FILE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: content
     });
-
-    if(getResp.status === 404){
-      // File doesn't exist yet, create it
-      FLEET_SHA = null;
-    } else if(getResp.status === 401){
-      showToast('⚠️ GitHub Token 已失效或无权限，请重新设置 Token！', 'warning');
-      setStatus('✗ Token 已失效');
-      openTokenSetup();
-      return;
-    } else if(getResp.status === 403){
-      showToast('⚠️ GitHub Token 无写入权限（需要 repo 权限），请检查 Token！', 'warning');
-      setStatus('✗ 权限不足');
-      openTokenSetup();
-      return;
-    } else if(!getResp.ok){
-      throw new Error('GitHub API error: ' + getResp.status);
-    } else {
-      const fileData = await getResp.json();
-      FLEET_SHA = fileData.sha;
-
-      // Conflict detection: if we had a SHA and it changed
-      // (For simplicity, we always use latest SHA since we re-fetch each time)
+    if(localResp.ok){
+      console.log('Saved to P盘: ' + FLEET_FILE);
     }
+    
+    // STEP 2: Also commit to GitHub if token exists
+    if(token){
+      setStatus('Fetching current file from GitHub...');
+      const getResp = await fetch(GH_REPO_API + '/' + FLEET_FILE, {
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+      });
 
-    setStatus('Committing fleet_schedule.json...');
-    const content = JSON.stringify(FLEET_DATA, null, 2);
-    const base64Content = btoa(unescape(encodeURIComponent(content)));
-    const message = 'Update fleet schedule (' + new Date().toISOString().slice(0,10) + ')';
-
-    const putBody = {
-      message: message,
-      content: base64Content,
-      branch: 'main'
-    };
-    if(FLEET_SHA) putBody.sha = FLEET_SHA;
-
-    const putResp = await fetch(GH_REPO_API + '/' + FLEET_FILE, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(putBody)
-    });
-
-    if(!putResp.ok){
-      const err = await putResp.json().catch(()=>({}));
-      if(putResp.status === 409){
-        showToast('⚠️ Conflict: someone else modified the file. Please refresh and try again.', 'warning');
-        setStatus('⚠ Conflict detected — refresh needed');
+      if(getResp.status === 404){
+        FLEET_SHA = null;
+      } else if(!getResp.ok){
+        console.warn('GitHub commit skipped: ' + getResp.status);
+        FLEET_SHA = null;
       } else {
-        throw new Error('Commit failed: ' + putResp.status + (err.message ? ' - ' + err.message : ''));
+        const fileData = await getResp.json();
+        FLEET_SHA = fileData.sha;
       }
-      return;
-    }
 
-    const result = await putResp.json();
-    FLEET_SHA = result.content.sha;
-    FLEET_DATA.lastSync = new Date().toISOString();
-    setStatus('✓ Committed: ' + result.commit.sha.slice(0,7));
-    showToast('Fleet schedule committed to GitHub ✓', 'success');
+      setStatus('Committing to GitHub...');
+      const base64Content = btoa(unescape(encodeURIComponent(content)));
+      const message = 'Update fleet schedule (' + new Date().toISOString().slice(0,10) + ')';
+
+      const putBody = {
+        message: message,
+        content: base64Content,
+        branch: 'main'
+      };
+      if(FLEET_SHA) putBody.sha = FLEET_SHA;
+
+      const putResp = await fetch(GH_REPO_API + '/' + FLEET_FILE, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(putBody)
+      });
+
+      if(putResp.ok){
+        const result = await putResp.json();
+        FLEET_SHA = result.content.sha;
+        FLEET_DATA.lastSync = new Date().toISOString();
+        setStatus('✓ Saved: P盘 + GitHub (' + result.commit.sha.slice(0,7) + ')');
+        showToast('✓ 已保存到 P盘 + GitHub', 'success');
+      } else {
+        setStatus('✓ Saved to P盘 (GitHub skipped)');
+        showToast('✓ 已保存到 P盘 (GitHub 未配置)', 'success');
+      }
+    } else {
+      setStatus('✓ Saved to P盘');
+      showToast('✓ 已保存到 P盘', 'success');
+    }
+    
     clearUndoRedo();
     autoSaveFleet();
-    initDailyComboboxes(); // Refresh combobox lists
-    renderDailyFleet();    // Refresh the fleet list
+    initDailyComboboxes();
+    renderDailyFleet();
     renderDailyDetail();
   } catch(err){
     console.error('Fleet commit error:', err);
     setStatus('✗ Error: ' + err.message);
-    showToast('Commit failed: ' + err.message, 'warning');
+    showToast('保存失败: ' + err.message, 'warning');
   }
 }
 
@@ -6998,19 +7050,20 @@ async function syncToDaily(){
     return;
   }
 
-  // STEP 1: Always reload from GitHub first — this prevents overwriting with stale/empty data
-  showToast('⏳ 正在从 GitHub 加载最新船期数据...', 'info');
+  // STEP 1: Always reload from data source first — this prevents overwriting with stale/empty data
+  const mode = getDataSourceMode();
+  showToast('⏳ 正在加载最新船期数据...', 'info');
   const prevVesselCount = FLEET_DATA.vessels ? FLEET_DATA.vessels.length : 0;
   await loadFleetSchedule();
   const loadedCount = FLEET_DATA.vessels ? FLEET_DATA.vessels.length : 0;
 
-  // STEP 2: Validate — if GitHub returned empty and we had nothing before, abort
+  // STEP 2: Validate — if data source returned empty and we had nothing before, abort
   if(loadedCount === 0 && prevVesselCount === 0){
-    showToast('❌ 无法加载 GitHub 数据！可能原因：\n1. 未设置 Token（点击 🔑）\n2. Token 已失效\n3. 网络错误\n\n请修复后重试。', 'error');
+    showToast('❌ 无法加载数据！请检查数据源设置。\n点击右上角 📦 切换数据源模式。', 'error');
     return;
   }
   if(loadedCount === 0 && prevVesselCount > 0){
-    if(!confirm('⚠️ GitHub 数据为空但本地有 ' + prevVesselCount + ' 艘船。\n\n确定要创建新船期吗？（会覆盖 GitHub）\n取消则中止。')){
+    if(!confirm('⚠️ 数据源为空但本地有 ' + prevVesselCount + ' 艘船。\n\n确定要创建新船期吗？\n取消则中止。')){
       return;
     }
   }
@@ -7088,6 +7141,12 @@ async function syncToDaily(){
       modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
     });
     console.log('[syncToDaily] Added new voyage:', voyNo, 'to', vesselCode);
+  }
+
+  // 保持日期不变，反推 speed/dist
+  const syncedVoyIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
+  if(syncedVoyIdx >= 0){
+    recalcDailyFromPort(vessel, syncedVoyIdx, 0);
   }
 
   showToast('✓ 已添加: ' + vesselCode + ' / ' + voyNo + ' / ' + laneCode + '（共 ' + FLEET_DATA.vessels.length + ' 艘船）', 'success');
@@ -8097,6 +8156,9 @@ function handleImportExcel(input){
               modifiedBy: 'Excel Import'
             });
           }
+          // 保持日期不变，反推 speed/dist
+          const voyIdx = vessel.voyages.findIndex(function(v){ return v.voyNo === voy.voyNo && v.lane === voy.lane; });
+          recalcDailyFromPort(vessel, voyIdx, 0);
           imported++;
         });
       }
