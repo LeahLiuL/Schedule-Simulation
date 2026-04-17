@@ -287,21 +287,7 @@
     "code": "AEM",
     "name": "Asia-East Mediterranean Sea Service",
     "ports": [
-      "CNTAO",
-      "CNSHA",
-      "CNNGB",
-      "CNNAS",
-      "SAJED",
-      "EGSUZ",
-      "EGALY",
-      "TRALI",
-      "TRIST",
-      "TRMER",
-      "EGSUZ",
-      "SAJED",
-      "SAJED",
-      "MYPKG",
-      "CNTAO"
+      "CNTAO CNSHA CNNGB CNNAS SAJED EGSUZ EGALY TRALI TRIST TRMER EGSUZ SAJED SAJED MYPKG CNTAO"
     ]
   },
   {
