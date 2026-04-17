@@ -5763,19 +5763,33 @@ function recalcCrossVoyageCascade(vessel, voyIdx, lastAffectedPortIdx){
   const prevEtdDt = new Date(lastPort.etd);
   if(isNaN(prevEtdDt.getTime())) return;
 
-  // Recalculate first port's ETA/ETB/ETD
-  const etaDt = new Date(prevEtdDt.getTime() + runHrs * 3600000);
-  round6Min(etaDt);
-  const waitHrs = firstPort.waitHrs || 0;
-  const stayHrs = firstPort.stayHrs != null ? firstPort.stayHrs : getPortStay(firstPort.code);
-  const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
-  round6Min(etbDt);
-  const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
-  round6Min(etdDt);
+  // If this port was imported from Excel, preserve its dates and adjust speed instead
+  if(firstPort.fromExcel && firstPort.eta){
+    const impEtaDt = new Date(firstPort.eta);
+    if(!isNaN(impEtaDt.getTime())){
+      const seaHrs2 = (impEtaDt.getTime() - prevEtdDt.getTime()) / 3600000 - manIn;
+      if(seaHrs2 > 0 && lastPort.dist > 0){
+        firstPort.speed = +(lastPort.dist / seaHrs2).toFixed(2);
+      }
+      // Preserve imported dates, only adjust speed
+      if(firstPort.etb) firstPort.etb = firstPort.etb;
+      if(firstPort.etd) firstPort.etd = firstPort.etd;
+    }
+  } else {
+    // Original logic: recalculate ETA/ETB/ETD from speed and distance
+    const etaDt = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+    round6Min(etaDt);
+    const waitHrs = firstPort.waitHrs || 0;
+    const stayHrs = firstPort.stayHrs != null ? firstPort.stayHrs : getPortStay(firstPort.code);
+    const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
+    round6Min(etbDt);
+    const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
+    round6Min(etdDt);
 
-  firstPort.eta = toDatetimeLocal(etaDt);
-  firstPort.etb = toDatetimeLocal(etbDt);
-  firstPort.etd = toDatetimeLocal(etdDt);
+    firstPort.eta = toDatetimeLocal(etaDt);
+    firstPort.etb = toDatetimeLocal(etbDt);
+    firstPort.etd = toDatetimeLocal(etdDt);
+  }
 
   // Now continue recalculating within the next voyage from its port[1] onward
   recalcDailyFromPort(vessel, nextVoyIdx, 1);
@@ -7161,7 +7175,8 @@ async function syncToDaily(){
     stayHrs: row.stayHrs != null ? row.stayHrs : 0,
     manIn: row.manIn != null ? row.manIn : 0,
     waitHrs: row.wait != null ? row.wait : 0,
-    dist: row.dist || 0
+    dist: row.dist || 0,
+    fromExcel: row.fromExcel || false
   }));
 
   // STEP 6: MERGE — find existing vessel or create new one (NEVER clear other vessels!)
@@ -8186,7 +8201,8 @@ function handleImportExcel(input){
             waitHrs: colMap.wait  !== undefined ? parseFloat(row[colMap.wait])||0  : getPortWait(portCode),
             dist:    colMap.dist  !== undefined ? parseFloat(row[colMap.dist])||0  : 0,
             voyNo:   voyNo,
-            remark:  colMap.remark !== undefined ? String(row[colMap.remark]||'').trim() : ''
+            remark:  colMap.remark !== undefined ? String(row[colMap.remark]||'').trim() : '',
+            fromExcel: true
           });
         }
 
