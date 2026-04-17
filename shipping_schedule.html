@@ -8033,125 +8033,6 @@ function formatDtPdf(dtStr){
 
 // ===== Import Excel =====
 function handleImportExcel(input){
-  if(!input || !input.files || !input.files.length) return;
-  const file = input.files[0];
-  const reader = new FileReader();
-  reader.onload = function(e){
-    try {
-      const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, { type: 'array', cellDates: true });
-      let imported = 0;
-
-      // ---------- helper: parse date value from xlsx cell ----------
-      function parseXlsxDate(val){
-        if(!val) return '';
-        if(val instanceof Date && !isNaN(val)) return val.toISOString().slice(0,16);
-        // Excel serial number (number but not a JS Date)
-        if(typeof val === 'number'){
-          // XLSX with cellDates:true should have converted, but just in case
-          const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-          if(!isNaN(d)) return d.toISOString().slice(0,16);
-        }
-        const d = new Date(val);
-        if(!isNaN(d)) return d.toISOString().slice(0,16);
-        return String(val);
-      }
-
-      // ---------- helper: extract port code from cell like "CNNAS P/I CHT" ----------
-      function extractPortCode(raw){
-        if(!raw) return '';
-        const s = String(raw).trim();
-        // Take first token (up to space or slash)
-        const m = s.match(/^([A-Z]{2}[A-Z0-9]{3,5})/i);
-        return m ? m[1].toUpperCase() : s.split(/[\s\/]/)[0].toUpperCase();
-      }
-
-      // Only process the first sheet
-      const firstSheetName = wb.SheetNames[0];
-      const ws = wb.Sheets[firstSheetName];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, cellDates: true });
-      if(rows.length >= 2){
-
-        // ---- Detect format ----
-        // Format A (standard): row[0] has "vessel" in some cell → header row = 0, data starts at 1
-        // Format B (CUL ops): row[0] has vessel code in a cell, row[1] is the header (PORT/ETA/ETB/ETD...)
-        const row0vals = rows[0].map(function(v){ return String(v||'').trim().toLowerCase(); });
-        const row1vals = rows[1] ? rows[1].map(function(v){ return String(v||'').trim().toLowerCase(); }) : [];
-        const hasVesselInRow0 = row0vals.some(function(v){ return v.includes('vessel'); });
-        const hasPortInRow1  = row1vals.some(function(v){ return v === 'port'; });
-
-        let headerRowIdx = 0;
-        let dataStartIdx = 1;
-        let fixedVesselCode = '';
-        let fixedVesselName = '';
-        let fixedLane = '';
-
-        if(!hasVesselInRow0 && hasPortInRow1){
-          // Format B: row0 = title (vessel code somewhere), row1 = column headers
-          headerRowIdx = 1;
-          dataStartIdx = 2;
-          // Extract vessel code, lane from row0
-          rows[0].forEach(function(cell){
-            const s = String(cell||'').trim();
-            // Match vessel codes like H728, CUHP, CUXH, HMNT (2-5 letters + optional digits)
-            if(!fixedVesselCode && /^[A-Z]{2,5}\d*$/i.test(s)) fixedVesselCode = s.toUpperCase();
-            // Also grab vessel name (longer text like "CUL HAIPHONG")
-            if(!fixedVesselName && s.length > 5 && /[A-Z]/.test(s) && !/^\d/.test(s) && s !== fixedVesselCode) fixedVesselName = s;
-            // Extract lane: e.g. "ST3-CUHP" → lane = "ST3"
-            if(!fixedLane && /^([A-Z]{2,4}\d?)-([A-Z]{2,5}\d*)$/.test(s)){
-              fixedLane = s.split('-')[0];
-            }
-            // Or single lane code like "ST3", "PNI", "CPS" (2-4 uppercase letters + optional digit)
-            if(!fixedLane && /^[A-Z]{2,4}\d?$/i.test(s) && s !== fixedVesselCode){
-              fixedLane = s;
-            }
-          });
-          // Fallback: derive from file name
-          if(!fixedVesselCode){
-            const fnMatch = file.name.match(/[A-Z]{2,5}\d*/i);
-            if(fnMatch) fixedVesselCode = fnMatch[0].toUpperCase();
-          }
-          if(!fixedVesselCode){ console.warn('Format B: cannot find vessel code in row 1, skipping'); return; }
-        }
-
-        const header = rows[headerRowIdx].map(function(h){ return String(h||'').trim().toLowerCase(); });
-        const colMap = {};
-        header.forEach(function(h, i){
-          if(h.includes('vessel') && !h.includes('name') && !colMap.vessel) colMap.vessel = i;
-          else if(h.includes('vessel') && h.includes('name') && !colMap.vesselName) colMap.vesselName = i;
-          else if(h.includes('lane') && !h.includes('name') && !colMap.lane) colMap.lane = i;
-          else if(h.includes('lane') && h.includes('name') && !colMap.laneName) colMap.laneName = i;
-          else if((h.includes('voy') || h.includes('voyage')) && !colMap.voyNo) colMap.voyNo = i;
-          else if(h.includes('status') && !colMap.status) colMap.status = i;
-          else if((h === 'port' || h === 'port code') && !colMap.port) colMap.port = i;
-          else if(h.includes('port') && h.includes('name') && !colMap.portName) colMap.portName = i;
-          else if(h === 'eta' && !colMap.eta) colMap.eta = i;
-          else if(h === 'etb' && !colMap.etb) colMap.etb = i;
-          else if(h === 'etd' && !colMap.etd) colMap.etd = i;
-          else if(h.includes('stay') && !colMap.stay) colMap.stay = i;
-          else if(h.includes('man') && h.includes('in') && !colMap.manIn) colMap.manIn = i;
-          else if(h.includes('wait') && !colMap.wait) colMap.wait = i;
-          else if(h.includes('dist') && !colMap.dist) colMap.dist = i;
-          else if(h.includes('speed') && !colMap.speed) colMap.speed = i;
-          else if(h.includes('remark') && !colMap.remark) colMap.remark = i;
-        });
-
-        if(colMap.port === undefined && !fixedVesselCode){
-          console.warn('Sheet "' + sheetName + '": missing Port column, skipping'); return;
-        }
-
-        const voyageMap = {};
-        for(let r = dataStartIdx; r < rows.length; r++){
-          const row = rows[r];
-          if(!row || !row.length) continue;
-
-          // Get port code
-          const rawPort = colMap.port !== undefined ? row[colMap.port] : row[0];
-          const portCode = extractPortCode(rawPort);
-          if(!portCode || portCode.length < 2) continue;
-
-          // Get vessel
-          const vesselCode = fixedVesselCode || (colMap.vessel !== undefined ? String(row[colMap.vessel]||'').trim() : '');
           if(!vesselCode) continue;
           const vesselName = fixedVesselName || (colMap.vesselName !== undefined ? String(row[colMap.vesselName]||'').trim() : '');
 
@@ -8230,7 +8111,6 @@ function handleImportExcel(input){
       }
     } catch(err){
       console.error('Import error:', err);
-      showToast('Import failed: ' + err.message, 'warning');
     }
   };
   reader.readAsArrayBuffer(file);
