@@ -339,8 +339,8 @@
 
   /* ===== VESSEL INFO MODAL ===== */
   .vi-overlay {
-    display:none; position:fixed; inset:0; z-index:600;
-    background:rgba(0,0,0,.45);
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,.55);
   }
   .vi-overlay.open { display:block; }
   .vi-modal {
@@ -3838,10 +3838,13 @@ function openVesselInfo(initialName){
   
   // Always show data for selected vessel
   if(autoSelect){
-    onViVesselChange();
+    try { onViVesselChange(); } catch(e) { console.error('onViVesselChange:', e); document.getElementById('viBody').innerHTML = '<div style="color:red;padding:20px;">Error: '+e.message+'</div>'; }
   } else {
     switchViTab('particular', document.querySelector('.vi-tab'));
   }
+  
+  // DEBUG
+  console.log('viOverlay classes:', overlay.className, 'display:', getComputedStyle(overlay).display);
 }
 
 function closeVesselInfo(e){
