@@ -3903,6 +3903,10 @@ function findCapacityRecords(vname){
 }
 
 function renderViParticular(vname){
+  // Helper functions (inline)
+  function normalizeName(s){ return (s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  
   if(!vname) return '<div style="padding:24px;text-align:center;color:#999;">未选择船舶</div>';
   if(PARTICULAR_DATA.length === 0){
     return '<div style="padding:24px;text-align:center;color:#999;">数据加载中...</div>';
