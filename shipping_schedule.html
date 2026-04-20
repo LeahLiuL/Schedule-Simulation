@@ -3817,18 +3817,27 @@ function openVesselInfo(initialName){
   // Populate vessel select (unique names from VESSELS_DATA)
   const names = [...new Set(VESSELS_DATA.map(v => v.name))].sort();
   select.innerHTML = '<option value="">-- 选择船舶 --</option>';
+  let autoSelect = '';
   names.forEach(n => {
     const opt = document.createElement('option');
     opt.value = n;
     opt.textContent = n;
-    if(initialName && n.toUpperCase().includes(initialName.toUpperCase())) opt.selected = true;
+    if(initialName && n.toUpperCase().includes(initialName.toUpperCase())){
+      opt.selected = true;
+      autoSelect = n;
+    }
     select.appendChild(opt);
   });
+  // Auto-select first vessel if no match
+  if(!autoSelect && names.length > 0){
+    autoSelect = names[0];
+    select.value = autoSelect;
+  }
   
   overlay.classList.add('open');
   
-  // If initial name provided, auto-select and show
-  if(initialName && select.value){
+  // Always show data for selected vessel
+  if(autoSelect){
     onViVesselChange();
   } else {
     switchViTab('particular', document.querySelector('.vi-tab'));
