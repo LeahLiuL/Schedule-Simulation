@@ -3851,7 +3851,7 @@ function switchViTab(tab, btn){
   if(!vname){ body.innerHTML = '<div class="vi-no-data">请先选择一艘船舶</div>'; return; }
   
   if(tab === 'particular'){
-    renderViParticular(vname);
+    body.innerHTML = renderViParticular(vname);
   } else if(tab === 'capacity'){
     renderViCapacity(vname);
   } else if(tab === 'fuel'){
