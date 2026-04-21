@@ -1,5 +1,4 @@
 code,name_en,name_cn,man_in,portstay_time,wait_time
-"DZALG","ALGIERS","","","",""
 "AEAUH","ABU DHABI","","1","",""
 "AEDXB","DUBAI","","","",""
 "AEFJR","FUJAIRAH","","","",""
@@ -100,6 +99,7 @@ code,name_en,name_cn,man_in,portstay_time,wait_time
 "CNZUH","ZHUHAI","","","",""
 "DEHAM","HAMBURG","","","",""
 "DJJIB","DJIBOUTI","","","",""
+"DZALG","ALGIERS","","","",""
 "EGALY","ALEXANDRIA","","","",""
 "EGDAM","DAMIETTA","","","",""
 "EGPSD","PORT SAID","","","",""
