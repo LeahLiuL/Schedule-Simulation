@@ -339,7 +339,7 @@
 
   /* ===== VESSEL INFO MODAL ===== */
   .vi-overlay {
-    display:none; position:fixed; inset:0; z-index:9999;
+    display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999;
     background:rgba(0,0,0,.55);
   }
   .vi-overlay.open { display:block; }
@@ -2385,30 +2385,28 @@ async function loadParticularData(){
       return obj;
     });
     // Build vessel name -> column key lookup
+    // Particular CSV is transposed: first col = field labels, remaining cols = vessels
     window._particularVessels = [];
     if(PARTICULAR_DATA.length > 0){
       const keys = Object.keys(PARTICULAR_DATA[0]);
-      keys.forEach(k => {
-        if(k && k.toLowerCase() !== 'field name' && k.toLowerCase() !== 'field')
-          window._particularVessels.push(k);
-      });
+      // Skip the FIRST key (it holds field labels like VESSEL NAME, IMO, FLAG...)
+      for(var ki=1;ki<keys.length;ki++){
+        if(keys[ki] && String(keys[ki]).trim())
+          window._particularVessels.push(keys[ki]);
+      }
     }
     console.log('Loaded ' + PARTICULAR_DATA.length + ' particular fields, ' + window._particularVessels.length + ' vessels');
   } catch(e){ console.warn('Load particular failed:', e.message); }
 }
 
-// Load CUL Vessel Best Model capacity data (normal CSV - keep raw column names)
+// Load CUL Vessel Best Model capacity data (normal CSV - deduplicate column names)
 async function loadBestModelData(){
   try {
     const rawRows = await fetchCSV('cul_vessel_bestmodel.csv');
     if(!rawRows || rawRows.length === 0) return;
-    // Store raw rows with original column names so findCapacityRecords/renderCapacityTable can access them
-    BESTMODEL_DATA = rawRows.map(function(r){
-      var obj = {};
-      for(var k in r) obj[k] = r[k]||'';
-      return obj;
-    });
-    console.log('Loaded ' + BESTMODEL_DATA.length + ' best model records');
+    BESTMODEL_DATA = rawRows;
+    if(rawRows[0]) BESTMODEL_COLS = Object.keys(rawRows[0]);
+    console.log('Loaded ' + BESTMODEL_DATA.length + ' best model records, columns: ' + BESTMODEL_COLS.join(' | '));
   } catch(e){ console.warn('Load best model failed:', e.message); }
 }
 
@@ -3811,40 +3809,245 @@ function showToast(msg, type='', duration=3000){
 
 // ==================== VESSEL INFO MODAL ====================
 function openVesselInfo(initialName){
-  const overlay = document.getElementById('viOverlay');
-  const select = document.getElementById('viVesselSelect');
-  
-  // Populate vessel select (unique names from VESSELS_DATA)
-  const names = [...new Set(VESSELS_DATA.map(v => v.name))].sort();
-  select.innerHTML = '<option value="">-- 选择船舶 --</option>';
-  let autoSelect = '';
-  names.forEach(n => {
-    const opt = document.createElement('option');
-    opt.value = n;
-    opt.textContent = n;
-    if(initialName && n.toUpperCase().includes(initialName.toUpperCase())){
-      opt.selected = true;
-      autoSelect = n;
+  // Ensure data is loaded before opening window
+  if(PARTICULAR_DATA.length === 0 || BESTMODEL_DATA.length === 0){
+    // Show loading indicator
+    var overlay = document.createElement('div');
+    overlay.id = 'viLoadingOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<div style="background:#fff;padding:36px 48px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center;font-family:Segoe UI,Arial,sans-serif;"><div style="font-size:2rem;margin-bottom:12px;">⏳</div><div style="font-size:1rem;color:#333;font-weight:600;">正在加载船舶数据...</div><div style="font-size:.82rem;color:#888;margin-top:8px;">Particular / BestModel CSV</div></div>';
+    document.body.appendChild(overlay);
+    // Wait and retry up to 15 seconds
+    var attempts = 0;
+    var maxAttempts = 30; // 30 * 500ms = 15s
+    var retryTimer = setInterval(function(){
+      attempts++;
+      if(PARTICULAR_DATA.length > 0 && BESTMODEL_DATA.length > 0){
+        clearInterval(retryTimer);
+        var ov = document.getElementById('viLoadingOverlay');
+        if(ov) ov.remove();
+        openVesselInfo(initialName);
+        return;
+      }
+      if(attempts >= maxAttempts){
+        clearInterval(retryTimer);
+        var ov = document.getElementById('viLoadingOverlay');
+        if(ov) ov.remove();
+        alert('船舶数据加载超时，请稍后重试。\n\n提示：首次加载需要从 GitHub 获取 Particular 和 BestModel 数据。');
+      }
+    }, 500);
+    return;
+  }
+
+  // Build code↔name map + vessel list
+  const codeMap = {};  // code → fullName
+  const nameMap = {};  // norm(fullName) → fullName
+  const names = [];
+  VESSELS_DATA.forEach(function(v){
+    if(v.code && !codeMap[v.code]){ codeMap[v.code] = v.name; }
+    if(v.name){
+      var n = normalizeName(v.name);
+      if(n && !nameMap[n]) nameMap[n] = v.name;
+      names.push(v.name);
     }
-    select.appendChild(opt);
   });
-  // Auto-select first vessel if no match
-  if(!autoSelect && names.length > 0){
-    autoSelect = names[0];
-    select.value = autoSelect;
+  var uniqNames = [...new Set(names)].sort();
+  
+  let autoSelect = '';
+  if(initialName){
+    var initNorm = normalizeName(initialName);
+    // Try direct name match
+    if(nameMap[initNorm]) autoSelect = nameMap[initNorm];
+    else if(codeMap[initialName]) autoSelect = codeMap[initialName];  // initialName is a code like CUBK
+    else autoSelect = initialName;
   }
+  if(!autoSelect && uniqNames.length > 0) autoSelect = uniqNames[0];
   
-  overlay.classList.add('open');
+  if(!autoSelect) { alert('没有船舶数据'); return; }
   
-  // Always show data for selected vessel
-  if(autoSelect){
-    try { onViVesselChange(); } catch(e) { console.error('onViVesselChange:', e); document.getElementById('viBody').innerHTML = '<div style="color:red;padding:20px;">Error: '+e.message+'</div>'; }
-  } else {
-    switchViTab('particular', document.querySelector('.vi-tab'));
+  function normalizeName(s){ return (s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // Open a NEW WINDOW
+  var win = window.open('', '_blank', 'width=980,height=720,scrollbars=yes');
+  var doc = win.document;
+  
+  // Build vessel options
+  var nameOptions = '';
+  uniqNames.forEach(function(n){
+    var sel = (n === autoSelect) ? ' selected' : '';
+    nameOptions += '<option value="' + escapeHtml(n) + '"' + sel + '>' + escapeHtml(n) + '</option>';
+  });
+  
+  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>📋 船舶信息</title>');
+  doc.write('<style>');
+  doc.write('*{box-sizing:border-box;margin:0;padding:0;}');
+  doc.write('body{font-family:Segoe UI,Arial,sans-serif;padding:20px;background:#f0f4f8;color:#333;}');
+  doc.write('.top-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}');
+  doc.write('.top-bar h2{color:#1a73e8;font-size:1.2rem;white-space:nowrap;}');
+  doc.write('.top-bar select{padding:8px 14px;border:2px solid #1a73e8;border-radius:8px;font-size:.9rem;background:#fff;color:#1a73e8;font-weight:600;cursor:pointer;min-width:220px;}');
+  doc.write('.tab-bar{display:flex;gap:0;border-bottom:3px solid #ddd;padding:0;margin-bottom:16px;}');
+  doc.write('.tab-btn{padding:10px 22px;border:none;background:none;cursor:pointer;font-size:.88rem;font-weight:700;color:#888;border-bottom:3px solid transparent;margin-bottom:-3px;transition:all .15s;}');
+  doc.write('.tab-btn:hover{color:#333;background:#eee;}');
+  doc.write('.tab-btn.active{color:#1a73e8;border-bottom-color:#1a73e8;}');
+  doc.write('table{border-collapse:collapse;width:100%;margin:10px 0;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.08);}');
+  doc.write('th{background:linear-gradient(135deg,#1a73e8,#1565c0);color:#fff;padding:11px 14px;text-align:left;font-size:.82rem;white-space:nowrap;}');
+  doc.write('td{padding:9px 14px;border-bottom:1px solid #eef0f2;font-size:.83rem;}');
+  doc.write('tr:hover td{background:#f5f8ff;}');
+  doc.write('.no-data{padding:40px;text-align:center;color:#999;font-size:.95rem;background:#fff;border-radius:10px;}');
+  doc.write('.tip{margin-top:16px;padding:12px 16px;background:#e8f0fe;border-radius:10px;font-size:.8rem;color:#444;}');
+  doc.write('</style></head><body>');
+
+  // Top bar with vessel selector
+  doc.write('<div class="top-bar">');
+  doc.write('<h2>📋 船舶详细信息</h2>');
+  doc.write('<select id="vSel" onchange="renderAll(this.value)">' + nameOptions + '</select>');
+  doc.write('</div>');
+
+  // Tabs — no inline onclick, bind after doc.write
+  doc.write('<div class="tab-bar">');
+  doc.write('<button class="tab-btn active" id="tab1">📋 船舶参数</button>');
+  doc.write('<button class="tab-btn" id="tab2">📦 装载能力</button>');
+  doc.write('<button class="tab-btn" id="tab3">⛽ 油耗参数</button>');
+  doc.write('</div>');
+  doc.write('<div id="content"></div>');
+
+  // Pass data to new window
+  win.VESSELS_DATA = JSON.parse(JSON.stringify(VESSELS_DATA));
+  win.PARTICULAR_DATA = JSON.parse(JSON.stringify(PARTICULAR_DATA));
+  win.BESTMODEL_DATA = JSON.parse(JSON.stringify(BESTMODEL_DATA));
+  win._particularVessels = (window._particularVessels || []).slice();
+  // Code↔name mapping for smart matching
+  win._codeMap = JSON.parse(JSON.stringify(codeMap));  // e.g. {"CUBK":"CUL BANGKOK"}
+  win._nameMap = JSON.parse(JSON.stringify(nameMap));   // normalized → fullName
+  // BestModel column headers (deduplicated)
+  win.BESTMODEL_COLS = (window.BESTMODEL_COLS||[]).slice();
+
+  // Render functions — use code↔name map from VESSELS_DATA (vessels.csv)
+  win.renderAll = function(vname){
+    var d = win.document;
+    var html = '';
+    var norm = normalizeName(vname);
+
+    // Resolve: vname could be a code (CUBK) or a full name (CUL BANGKOK)
+    // Use the codeMap built from VESSELS_DATA to get both
+    var resolvedCode = null;
+    var resolvedName = null;
+    // 1. Check if vname is a code
+    if(win._codeMap && win._codeMap[vname]){ resolvedCode = vname; resolvedName = win._codeMap[vname]; }
+    // 2. Check if vname is a name (normalized)
+    else if(win._nameMap && win._nameMap[norm]){ resolvedName = win._nameMap[norm]; }
+    // 3. Search VESSELS_DATA directly
+    if(!resolvedCode || !resolvedName){
+      (win.VESSELS_DATA||[]).forEach(function(v){
+        if(v.code===vname){ resolvedCode=v.code; resolvedName=v.name; }
+        if(v.name===vname){ resolvedCode=v.code; resolvedName=v.name; }
+      });
+    }
+    if(resolvedCode) console.log('[VesselInfo] Resolved: '+vname+' → code='+resolvedCode+' name='+resolvedName);
+    else console.log('[VesselInfo] Could not resolve: '+vname);
+
+    // Helper: check if target matches either code or name
+    function isMatch(targetStr){
+      if(!targetStr) return false;
+      var t = targetStr.toUpperCase();
+      var m1 = resolvedName && t===resolvedName.toUpperCase();
+      var m2 = resolvedCode && t===resolvedCode.toUpperCase();
+      // Debug: log first few checks
+      if(typeof isMatch._cnt==='undefined') isMatch._cnt=0;
+      if(isMatch._cnt++ < 5) console.log('[VesselInfo] isMatch("'+targetStr+'") → '+t+' vs name='+resolvedName+'('+!!m1+') code='+resolvedCode+'('+!!m2+')');
+      return m1 || m2;
+    }
+
+    // TAB 1: Particular (transposed CSV — col[0]=field, other cols=ship names)
+    html += '<div id="pnl1">';
+    if(win.PARTICULAR_DATA.length > 0){
+      var pV = win._particularVessels || [];
+      var fKey = Object.keys(win.PARTICULAR_DATA[0])[0];
+      var mCol = null;
+      // Search column names for resolvedName
+      for(var pi=0;pi<pV.length;pi++){
+        if(isMatch(pV[pi])){ mCol = pV[pi]; break; }
+      }
+      if(mCol && fKey){
+        html += '<table><tr><th style="width:220px;">字段</th><th>数值</th></tr>';
+        for(var ri=0;ri<win.PARTICULAR_DATA.length;ri++){
+          var prow = win.PARTICULAR_DATA[ri];
+          var fn = prow[fKey]||''; if(!fn.trim()) continue;
+          var pv = prow[mCol]||'';
+          if(String(pv).trim()) html+='<tr><td>'+escapeHtml(fn.trim())+'</td><td style="font-weight:600;">'+escapeHtml(String(pv).trim())+'</td></tr>';
+        }
+        html+='</table>';
+      } else {
+        html+='<div class="no-data">\u2757 <b>'+escapeHtml(vname)+'</b> \u5728 Particular CSV \u4e2d\u672a\u627e\u5230<br>\u53ef\u7528\u8239\u8236\uff1a'+escapeHtml(pV.filter(function(x){return x!==fKey;}).join(', '))+'</div>';
+      }
+    } else { html+='<div class="no-data">\u6570\u636e\u52a0\u8f7d\u4e2d...</div>'; }
+    html += '</div>';
+
+    // TAB 2: Capacity/BestModel (normal CSV — rows have "Vessel Name" column)
+    console.log('[VesselInfo] TAB2 start — BESTMODEL_DATA.length='+(win.BESTMODEL_DATA||[]).length+' resolvedName='+resolvedName+' resolvedCode='+resolvedCode);
+    html+='<div id="pnl2" style="display:none">';
+    var capR=[];
+    win.BESTMODEL_DATA.forEach(function(br){ if(br['Vessel Name']&&isMatch(br['Vessel Name'])) capR.push(br); });
+    console.log('[VesselInfo] TAB2 matched rows: '+capR.length);
+    if(capR.length > 0){
+      // Use pre-stored column headers (with dedup names like "Max TEU" / "Max TEU (2)")
+      var cc = (win.BESTMODEL_COLS||[]).filter(function(c){ return c !== 'Vessel Name'; });
+      html+='<table><thead><tr>';
+      cc.forEach(function(c){html+='<th>'+escapeHtml(c)+'</th>';});
+      html+='</tr></thead><tbody>';
+      capR.forEach(function(br){
+        html+='<tr>';cc.forEach(function(c){html+='<td>'+(br[c]?escapeHtml(String(br[c])):'-')+'</td>';});html+='</tr>';
+      });
+      html+='</tbody></table>';
+    } else {
+      var an=[];win.BESTMODEL_DATA.forEach(function(br){if(br['Vessel Name'])an.push(br['Vessel Name']);});
+      html+='<div class="no-data">\u2757 <b>'+escapeHtml(vname)+'</b> \u5728 BestModel CSV \u4e2d\u672a\u627e\u5230<br>\u53ef\u7528\u8239\u8236\uff1a'+escapeHtml([...new Set(an)].sort().join(', '))+'</div>';
+    }
+    html += '</div>';
+
+    // TAB 3: Fuel (from VESSELS_DATA — match by code or name)
+    html+='<div id="pnl3" style="display:none">';
+    var fr=(win.VESSELS_DATA||[]).filter(function(vv){
+      return (resolvedCode && vv.code===resolvedCode) || (resolvedName && vv.name===resolvedName);
+    });
+    if(fr.length > 0){
+      fr.sort(function(a,b){return a.speed-b.speed;});
+      html+='<table><tr><th>速度(kn)</th><th>LSFO mt/d</th><th>HSFO mt/d</th><th>MGO mt/d</th><th>PS LSFO</th><th>PS MGO</th></tr>';
+      fr.forEach(function(vv){
+        html+='<tr><td style="font-weight:700">'+vv.speed+'</td><td>'+(vv.lsfo||'-')+'</td><td>'+(vv.hsfo||'-')+'</td><td>'+(vv.mgo||'-')+'</td><td>'+(vv.ps_lsfo||'-')+'</td><td>'+(vv.ps_mgo||('-'))+'</td></tr>';
+      });
+      html+='</table>';
+    } else { html+='<div class="no-data">\u672a\u627e\u5230\u6cb9\u8019\u53c2\u6570</div>'; }
+    html+='</div>';
+
+    d.getElementById('content').innerHTML = html;
+  };
+
+  win.showTab = function(n){
+    console.log('[VesselInfo] showTab('+n+') called');
+    var dd = win.document;
+    for(var i=1;i<=3;i++){ 
+      var p=dd.getElementById('pnl'+i),t=dd.getElementById('tab'+i); 
+      if(p){ p.style.display=(i===n?'block':'none'); }
+      if(t){ t.className = (i===n)?'tab-btn active':'tab-btn'; } 
+    }
+  };
+
+  // Initial render
+  win.renderAll(autoSelect);
+
+  // Bind tab buttons via addEventListener (not inline onclick)
+  for(var ti=1;ti<=3;ti++){
+    (function(idx){
+      var btn = doc.getElementById('tab'+idx);
+      if(btn) btn.addEventListener('click', function(){ win.showTab(idx); });
+    })(ti);
   }
-  
-  // DEBUG
-  console.log('viOverlay classes:', overlay.className, 'display:', getComputedStyle(overlay).display);
+
+  doc.write('<div class="tip"><b>💡 提示：</b>使用上方下拉框切换船舶 · 完整航次油耗估算请在「单船调度」Simulator 中查看</div>');
+  doc.write('</body></html>');
+  doc.close();
 }
 
 function closeVesselInfo(e){
@@ -3908,11 +4111,21 @@ function findCapacityRecords(vname){
 function renderViParticular(vname){
   // Helper functions (inline)
   function normalizeName(s){ return (s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
-  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
   if(!vname) return '<div style="padding:24px;text-align:center;color:#999;">未选择船舶</div>';
   if(PARTICULAR_DATA.length === 0){
     return '<div style="padding:24px;text-align:center;color:#999;">数据加载中...</div>';
+  }
+  // Determine the field-name column key from first data row
+  // Particular CSV is transposed: header row = vessel names, first col = field labels
+  var fieldKey = '';
+  if(PARTICULAR_DATA.length > 0){
+    var fk = Object.keys(PARTICULAR_DATA[0])[0]; // first key (e.g. "VESSEL NAME")
+    if(fk) fieldKey = fk;
+  }
+  if(!fieldKey){
+    return '<div style="padding:24px;text-align:center;color:#999;">无法识别字段列</div>';
   }
   var norm = normalizeName(vname);
   var vessels = window._particularVessels || [];
@@ -3927,25 +4140,21 @@ function renderViParticular(vname){
   if(!matchCol){
     return '<div style="padding:24px;text-align:center;color:#999;">未找到 <b>'+escapeHtml(vname)+'</b> 的参数数据<br><span style="font-size:.78rem;">（可尝试切换船名）</span></div>';
   }
-  var displayFields = ['VESSEL NAME','IMO NUMBER','DWT','LOA','LENGTH OVERALL','BREADTH','BEAM','DRAFT','TEU','CONTAINER CAPACITY','REEFER','PLUGS','FLAG','YEAR BUILT','DELIVERY','BUILDER','ENGINE','POWER','SPEED'];
+  // Show ALL available fields (not just hardcoded ones) so nothing is missed
   var html = '<table class="vi-table">';
   for(var ri=0;ri<PARTICULAR_DATA.length;ri++){
     var row = PARTICULAR_DATA[ri];
-    var fieldName = row['Field Name'] || row['Field'] || '';
+    var fieldName = row[fieldKey] || '';
     if(!fieldName.trim()) continue;
     var val = row[matchCol] || '';
-    var fn = normalizeName(fieldName);
-    var show = false;
-    for(var di=0;di<displayFields.length;di++){
-      if(fn.indexOf(normalizeName(displayFields[di]))>=0 || normalizeName(displayFields[di]).indexOf(fn)>=0){
-        show=true;break;
-      }
-    }
-    if(String(val).trim() && show){
+    if(String(val).trim()){
       html += '<tr><td class="vi-label">'+escapeHtml(fieldName)+'</td><td>'+escapeHtml(String(val))+'</td></tr>';
     }
   }
   html += '</table>';
+  if(html === '<table class="vi-table"></table>'){
+    return '<div style="padding:24px;text-align:center;color:#999;">该船舶暂无参数数据</div>';
+  }
   return html;
 }
 
