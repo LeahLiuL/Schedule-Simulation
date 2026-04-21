@@ -1159,7 +1159,10 @@
       <div class="speed-grid">
         <div class="field">
           <label>Speed (knots)</label>
-          <input type="number" id="speedInput" value="14" min="5" max="25" step="0.5" onchange="onVoyageSpeedChange(this.value)"/>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="number" id="speedInput" value="14" min="5" max="25" step="0.5" onchange="onVoyageSpeedChange(this.value)" style="flex:1;"/>
+            <button class="dm-btn" onclick="toggleSpeedOptimizer()" id="btnToggleOptimizer" title="Speed Optimizer" style="padding:4px 7px;font-size:.85rem;background:#e67e22;color:#fff;flex-shrink:0;">⚡</button>
+          </div>
         </div>
         <div class="field">
           <label>VOY. NO.</label>
@@ -1261,6 +1264,23 @@
         <div class="fuel-row fuel-total">
           <span class="fuel-label">Grand Total MGO</span>
           <span class="fuel-val" id="fs-total-mgo">-- mt</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Speed Optimizer -->
+    <div class="panel-section" id="speedOptimizerPanel" style="display:none;">
+      <div class="section-title">⚡ Speed Optimizer</div>
+      <div style="margin-bottom:8px;">
+        <button class="dm-btn" onclick="runSpeedOptimizer()" style="background:#e67e22;color:#fff;width:100%;">⚡ Run Optimizer</button>
+      </div>
+      <div id="optimizerHint" style="font-size:.7rem;color:var(--muted);margin-bottom:6px;text-align:center;">
+        Select vessel + ports first
+      </div>
+      <div id="optimizerResults" style="display:none;">
+        <div id="optimizerTable"></div>
+        <div style="margin-top:8px;">
+          <canvas id="fuelChart" width="320" height="160" style="border:1px solid var(--border);border-radius:4px;"></canvas>
         </div>
       </div>
     </div>
@@ -2674,6 +2694,8 @@ async function executeLanePortSelector(){
   
   if(addedCount > 0){
     renderPortList();
+    updateFuelEstimate();
+    updateOptimizerHint();
     showToast(`Added ${addedCount} port(s) from Lane "${lpsSelectedLane.code}"`, 'success');
   }
   
@@ -3024,6 +3046,7 @@ function initVesselCombobox(){
       currentVessel = { code:v.code, name:v.name, speed:v.speed, lsfo:v.lsfo, hsfo:v.hsfo, mgo:v.mgo, ps_lsfo:v.ps_lsfo||0, ps_mgo:v.ps_mgo||0 };
       showVesselInfo();
       document.getElementById('speedInput').value = v.speed;
+      updateOptimizerHint();
     }
   });
 }
@@ -3052,6 +3075,7 @@ function onDesignSpeedChange(val){
     showVesselInfo();
   }
   updateFuelEstimate();
+  updateOptimizerHint();
 }
 
 function onVoyageSpeedChange(val){
@@ -3068,6 +3092,7 @@ function onVoyageSpeedChange(val){
     showVesselInfo();
   }
   updateFuelEstimate();
+  updateOptimizerHint();
 }
 
 function onFuelRateChange(){
@@ -3122,6 +3147,7 @@ function addPortFromCombobox(){
   renderPortList();
   input.value='';
   updateFuelEstimate();
+  updateOptimizerHint();
 }
 
 // ==================== PORT LIST ====================
@@ -3129,6 +3155,7 @@ function removePort(idx){
   selectedPorts.splice(idx,1);
   renderPortList();
   updateFuelEstimate();
+  updateOptimizerHint();
 }
 
 function clearAllPorts(){
@@ -3137,6 +3164,7 @@ function clearAllPorts(){
   selectedPorts = [];
   renderPortList();
   updateFuelEstimate();
+  updateOptimizerHint();
 }
 
 function renderPortList(){
@@ -3177,6 +3205,7 @@ function renderPortList(){
       selectedPorts.splice(to,0,tmp);
       renderPortList();
       updateFuelEstimate();
+      updateOptimizerHint();
     });
     list.appendChild(item);
   });
@@ -3185,6 +3214,7 @@ function renderPortList(){
 function updateStay(idx, val){
   selectedPorts[idx].stayHours = Math.ceil(parseFloat(val)||0);
   updateFuelEstimate();
+  updateOptimizerHint();
 }
 
 // ==================== FUEL ESTIMATE ====================
@@ -3266,6 +3296,252 @@ function updateFuelFromSchedule(){
   document.getElementById('fs-ps-mgo').textContent    = psMgo  ? psMgo+' mt' : '0 mt';
   document.getElementById('fs-total-lsfo').textContent = +(lsfo + psLsfo).toFixed(1)+' mt';
   document.getElementById('fs-total-mgo').textContent  = +(mgo + psMgo).toFixed(1)+' mt';
+}
+
+// ==================== SPEED OPTIMIZER ====================
+function toggleSpeedOptimizer(){
+  const panel = document.getElementById('speedOptimizerPanel');
+  if(!panel) return;
+  const isVisible = panel.style.display !== 'none';
+  panel.style.display = isVisible ? 'none' : 'block';
+  document.getElementById('btnToggleOptimizer').style.background = isVisible ? '#3498db' : '#e67e22';
+}
+
+function getVesselSpeeds(){
+  // Return all distinct speed values for currentVessel from VESSELS_DATA
+  if(!currentVessel || !currentVessel.code) return [];
+  const speeds = [];
+  VESSELS_DATA.forEach(function(v){
+    if(v.code === currentVessel.code || v.name === currentVessel.name){
+      if(v.speed && speeds.indexOf(v.speed) === -1) speeds.push(v.speed);
+    }
+  });
+  return speeds.sort(function(a,b){ return a-b; });
+}
+
+function updateOptimizerHint(){
+  const panel = document.getElementById('speedOptimizerPanel');
+  if(!panel || panel.style.display === 'none') return;
+  const hint = document.getElementById('optimizerHint');
+  if(!hint) return;
+  const hasVessel = currentVessel && (currentVessel.code || currentVessel.name);
+  const hasPorts = selectedPorts.length >= 2;
+  if(hasVessel && hasPorts){
+    const speeds = getVesselSpeeds();
+    hint.textContent = speeds.length + ' speed(s) available for ' + (currentVessel.code || currentVessel.name);
+    hint.style.color = '#27ae60';
+  } else if(!hasVessel) {
+    hint.textContent = 'Select a vessel first';
+    hint.style.color = '#e67e22';
+    hint.style.display = 'block';
+  } else {
+    hint.textContent = 'Add at least 2 ports first';
+    hint.style.color = '#e67e22';
+    hint.style.display = 'block';
+  }
+}
+
+function runSpeedOptimizer(){
+  const panel = document.getElementById('speedOptimizerPanel');
+  if(panel) panel.style.display = 'block';
+  document.getElementById('btnToggleOptimizer').style.background = '#e67e22';
+
+  const speeds = getVesselSpeeds();
+  if(speeds.length === 0){
+    showToast('No speed data found for this vessel in vessels.csv', 'warning');
+    return;
+  }
+  if(selectedPorts.length < 2){
+    showToast('Please add at least 2 ports first', 'warning');
+    return;
+  }
+
+  // Compute constant values
+  let totalDist = 0;
+  for(let i=0; i<selectedPorts.length-1; i++){
+    totalDist += getDistance(selectedPorts[i].code, selectedPorts[i+1].code);
+  }
+
+  let manInDays = 0;
+  let portStayDays = 0; // only stay, no wait
+  for(const p of selectedPorts){
+    manInDays += (getPortManIn(p.code) || 0) / 24;
+    portStayDays += (p.stayHours || getPortStay(p.code) || 0) / 24;
+  }
+
+  // Get port-stay fuel rates (default from currentVessel, but also try to look up from VESSELS_DATA)
+  let psLsfoRate = currentVessel.ps_lsfo || 0;
+  let psMgoRate  = currentVessel.ps_mgo  || 0;
+
+  // Build results for each speed
+  const results = [];
+  for(const spd of speeds){
+    // Look up fuel rates for this specific speed from VESSELS_DATA
+    let lsfoRate = currentVessel.lsfo;
+    let mgoRate  = currentVessel.mgo;
+    VESSELS_DATA.forEach(function(v){
+      if((v.code === currentVessel.code || v.name === currentVessel.name) && v.speed === spd){
+        if(v.lsfo != null) lsfoRate = v.lsfo;
+        if(v.mgo  != null) mgoRate  = v.mgo;
+        if(v.ps_lsfo != null && v.ps_lsfo > 0) psLsfoRate = v.ps_lsfo;
+        if(v.ps_mgo  != null && v.ps_mgo  > 0) psMgoRate  = v.ps_mgo;
+      }
+    });
+
+    const seaDays   = totalDist > 0 && spd > 0 ? totalDist / (spd * 24) : 0;
+    const totalDays  = seaDays + manInDays + portStayDays;
+
+    const seaLsfo  = +(seaDays * lsfoRate).toFixed(1);
+    const seaMgo   = +(seaDays * mgoRate).toFixed(1);
+    const psLsfo   = +(portStayDays * psLsfoRate).toFixed(1);
+    const psMgo    = +(portStayDays * psMgoRate).toFixed(1);
+    const totalLsfo = +(seaLsfo + psLsfo).toFixed(1);
+    const totalMgo  = +(seaMgo + psMgo).toFixed(1);
+    const totalFuel  = +(totalLsfo + totalMgo).toFixed(1);
+
+    results.push({ speed: spd, seaDays: seaDays, totalDays: totalDays,
+      seaLsfo: seaLsfo, seaMgo: seaMgo,
+      psLsfo: psLsfo, psMgo: psMgo,
+      totalLsfo: totalLsfo, totalMgo: totalMgo, totalFuel: totalFuel
+    });
+  }
+
+  // Find optimal (minimum total fuel)
+  let minFuel = Infinity, bestIdx = 0;
+  results.forEach(function(r,i){ if(r.totalFuel < minFuel){ minFuel=r.totalFuel; bestIdx=i; } });
+
+  // Render table
+  let html = '<table style="width:100%;font-size:.72rem;border-collapse:collapse;">';
+  html += '<tr style="background:var(--header-bg);color:#fff;">'+
+    '<th style="padding:4px 5px;text-align:left;">kn</th>'+
+    '<th style="padding:4px 5px;">Sea d</th>'+
+    '<th style="padding:4px 5px;">Total d</th>'+
+    '<th style="padding:4px 5px;">LSFO</th>'+
+    '<th style="padding:4px 5px;">MGO</th>'+
+    '<th style="padding:4px 5px;">Total</th>'+
+    '</tr>';
+  results.forEach(function(r, i){
+    const isBest = (i === bestIdx);
+    const bg = isBest ? '#1a5c2e' : (i%2===0 ? '#fff' : '#f5f8ff');
+    const fg = isBest ? '#fff' : 'var(--text)';
+    const star = isBest ? ' ★' : '';
+    html += '<tr style="background:'+bg+';color:'+fg+';'+(isBest?'font-weight:700;':'')+'">'+
+      '<td style="padding:4px 5px;">'+(r.speed.toFixed ? r.speed.toFixed(1) : r.speed)+star+'</td>'+
+      '<td style="padding:4px 5px;text-align:center;">'+r.seaDays.toFixed(2)+'</td>'+
+      '<td style="padding:4px 5px;text-align:center;">'+r.totalDays.toFixed(2)+'</td>'+
+      '<td style="padding:4px 5px;text-align:right;">'+r.totalLsfo+'</td>'+
+      '<td style="padding:4px 5px;text-align:right;">'+r.totalMgo+'</td>'+
+      '<td style="padding:4px 5px;text-align:right;">'+r.totalFuel+'</td>'+
+      '</tr>';
+  });
+  html += '</table>';
+  if(bestIdx >= 0){
+    html = '<div style="text-align:center;font-size:.68rem;color:#27ae60;margin-bottom:4px;">★ Optimal: '+results[bestIdx].speed+' kn → '+results[bestIdx].totalFuel+' mt ('+results[bestIdx].totalDays.toFixed(1)+' days)</div>' + html;
+  }
+
+  document.getElementById('optimizerResults').style.display = 'block';
+  document.getElementById('optimizerHint').style.display = 'none';
+  document.getElementById('optimizerTable').innerHTML = html;
+
+  // Draw chart
+  drawFuelChart(results, bestIdx);
+}
+
+function drawFuelChart(results, bestIdx){
+  const canvas = document.getElementById('fuelChart');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { top: 12, right: 12, bottom: 28, left: 48 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  const speeds = results.map(function(r){ return r.speed; });
+  const fuels  = results.map(function(r){ return r.totalFuel; });
+  const minF   = Math.min.apply(null, fuels);
+  const maxF   = Math.max.apply(null, fuels);
+  const rngF   = maxF - minF || 1;
+  const minS   = Math.min.apply(null, speeds);
+  const maxS   = Math.max.apply(null, speeds);
+  const rngS   = maxS - minS || 1;
+
+  const toX = function(s){ return pad.left + (s - minS) / rngS * cW; };
+  const toY = function(f){ return pad.top + cH - (f - minF) / rngF * cH; };
+
+  ctx.clearRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle = '#eee';
+  ctx.lineWidth = 1;
+  for(let i=0; i<=4; i++){
+    const y = pad.top + cH/4*i;
+    ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cW,y); ctx.stroke();
+    const fv = +(maxF - rngF/4*i).toFixed(0);
+    ctx.fillStyle = '#999';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(fv+'', pad.left-4, y+3);
+  }
+  // X labels
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#666';
+  ctx.font = '10px sans-serif';
+  speeds.forEach(function(s){
+    const x = toX(s);
+    ctx.fillText((s%1===0?s:s.toFixed(1))+'', x, H-6);
+  });
+
+  // Area fill
+  ctx.beginPath();
+  speeds.forEach(function(s,i){ ctx.beginPath(); ctx.moveTo(toX(s), pad.top+cH); ctx.lineTo(toX(s), toY(fuels[i])); ctx.lineTo(i<speeds.length-1?toX(speeds[i+1]):pad.left+cW, pad.top+cH); ctx.closePath(); });
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top+cH);
+  grad.addColorStop(0, 'rgba(52,152,219,0.2)');
+  grad.addColorStop(1, 'rgba(52,152,219,0.02)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(toX(speeds[0]), toY(fuels[0]));
+  speeds.forEach(function(s,i){ ctx.lineTo(toX(s), toY(fuels[i])); });
+  ctx.lineTo(toX(speeds[speeds.length-1]), toY(fuels[fuels.length-1]));
+  ctx.lineTo(toX(speeds[speeds.length-1]), pad.top+cH);
+  ctx.lineTo(toX(speeds[0]), pad.top+cH);
+  ctx.closePath();
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#3498db';
+  ctx.lineWidth = 2;
+  speeds.forEach(function(s,i){
+    if(i===0) ctx.moveTo(toX(s), toY(fuels[i]));
+    else ctx.lineTo(toX(s), toY(fuels[i]));
+  });
+  ctx.stroke();
+
+  // Points
+  speeds.forEach(function(s,i){
+    const isBest = (i === bestIdx);
+    ctx.beginPath();
+    ctx.arc(toX(s), toY(fuels[i]), isBest ? 5 : 3, 0, Math.PI*2);
+    ctx.fillStyle = isBest ? '#27ae60' : '#3498db';
+    ctx.fill();
+    if(isBest){
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  });
+
+  // Axis labels
+  ctx.fillStyle = '#555';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('MT', pad.left+cW+3, pad.top+4);
+  ctx.save();
+  ctx.translate(8, pad.top+cH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Total Fuel (mt)', 0, 0);
+  ctx.restore();
 }
 
 // ==================== RUN SCHEDULE ====================
