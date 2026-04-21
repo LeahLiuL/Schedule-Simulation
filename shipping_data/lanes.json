@@ -427,7 +427,16 @@
   },
   {
     "code": "REX",
-    "name": "Red sea Service"
+    "name": "Red sea Service",
+    "ports": [
+      "CNNGB",
+      "CNSHK",
+      "CNNAS",
+      "DJJIB",
+      "EGSOK",
+      "SAJED",
+      "CNNGB"
+    ]
   },
   {
     "code": "SC2",
