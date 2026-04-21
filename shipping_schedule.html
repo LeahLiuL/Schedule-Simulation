@@ -3412,13 +3412,13 @@ function runSpeedOptimizer(){
 
   // Render table
   let html = '<table style="width:100%;font-size:.72rem;border-collapse:collapse;">';
-  html += '<tr style="background:var(--header-bg);color:#fff;">'+
+  html += '<tr style="background:#1a3a5c;color:#fff;">'+
     '<th style="padding:4px 5px;text-align:left;">kn</th>'+
     '<th style="padding:4px 5px;">Sea d</th>'+
     '<th style="padding:4px 5px;">Total d</th>'+
-    '<th style="padding:4px 5px;">LSFO</th>'+
-    '<th style="padding:4px 5px;">MGO</th>'+
-    '<th style="padding:4px 5px;">Total</th>'+
+    '<th style="padding:4px 5px;">LSFO (mt)</th>'+
+    '<th style="padding:4px 5px;">MGO (mt)</th>'+
+    '<th style="padding:4px 5px;">Total (mt)</th>'+
     '</tr>';
   results.forEach(function(r, i){
     const isBest = (i === bestIdx);
