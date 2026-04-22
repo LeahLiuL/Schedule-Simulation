@@ -9866,7 +9866,8 @@
               "waitHrs": 12,
               "dist": 4216,
               "fromExcel": false,
-              "speed": 14.5
+              "speed": 14.5,
+              "voyNo": "2622W"
             },
             {
               "code": "SAJED",
@@ -9920,7 +9921,7 @@
               "fromExcel": false
             }
           ],
-          "lastModified": "2026-04-22T01:22:58.470Z",
+          "lastModified": "2026-04-22T01:23:16.647Z",
           "modifiedBy": "anonymous"
         }
       ]
