@@ -9849,6 +9849,79 @@
           ],
           "lastModified": "2026-04-17T04:13:37.826Z",
           "modifiedBy": "Excel Import"
+        },
+        {
+          "voyNo": "001W",
+          "lane": "RES",
+          "status": "current",
+          "ports": [
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-06-06T08:00",
+              "etb": "2026-06-06T23:00",
+              "etd": "2026-06-07T23:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 4216,
+              "fromExcel": false,
+              "speed": 14.5
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-06-20T05:00",
+              "etb": "2026-06-20T08:00",
+              "etd": "2026-06-21T08:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 621,
+              "fromExcel": false,
+              "speed": 14.4
+            },
+            {
+              "code": "EGSOK",
+              "name": "SOKHNA",
+              "eta": "2026-06-23T06:00",
+              "etb": "2026-06-23T17:00",
+              "etd": "2026-06-24T17:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 8,
+              "dist": 4766,
+              "fromExcel": false,
+              "speed": 14.5
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-08T13:00",
+              "etb": "2026-07-09T04:00",
+              "etd": "2026-07-10T04:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2262,
+              "fromExcel": false,
+              "speed": 14.5
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-07-16T19:00",
+              "etb": "2026-07-17T10:00",
+              "etd": "2026-07-18T10:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 0,
+              "fromExcel": false
+            }
+          ],
+          "lastModified": "2026-04-22T01:22:58.470Z",
+          "modifiedBy": "anonymous"
         }
       ]
     },
