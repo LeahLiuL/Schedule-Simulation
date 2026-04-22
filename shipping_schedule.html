@@ -3592,9 +3592,12 @@ function runSchedule(){
     const portNames = selectedPorts.map(p=>portShortLabel(p.code)).join(' \u2192 ');
     document.getElementById('tbTitle').textContent =
       `${vesselDisplay} | ${portNames} | ${speed} kn | VOY ${voyNo}`;
-    document.getElementById('tbModBadge').style.display='none';
-    document.getElementById('btnReset').style.display='none';
-    document.getElementById('btnSyncDaily').style.display='inline-block';
+    var tbModBadge=document.getElementById('tbModBadge');
+    if(tbModBadge) tbModBadge.style.display='none';
+    var btnReset=document.getElementById('btnReset');
+    if(btnReset) btnReset.style.display='none';
+    var btnSyncDaily=document.getElementById('btnSyncDaily');
+    if(btnSyncDaily) btnSyncDaily.style.display='inline-block';
     updateFuelFromSchedule();
   });
 }
@@ -3876,9 +3879,12 @@ function onCellEdit(rowIdx, key, rawVal){
   // Cascade recalculation based on what changed
   cascadeRecalc(rowIdx, key);
   renderTable();
-  document.getElementById('tbModBadge').style.display='inline-block';
-  document.getElementById('btnReset').style.display='inline-block';
-  document.getElementById('btnSyncDaily').style.display='inline-block';
+  var tbModBadge2=document.getElementById('tbModBadge');
+  if(tbModBadge2) tbModBadge2.style.display='inline-block';
+  var btnReset2=document.getElementById('btnReset');
+  if(btnReset2) btnReset2.style.display='inline-block';
+  var btnSyncDaily2=document.getElementById('btnSyncDaily');
+  if(btnSyncDaily2) btnSyncDaily2.style.display='inline-block';
 }
 
 function cascadeRecalc(changedIdx, changedKey){
