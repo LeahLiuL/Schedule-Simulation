@@ -2300,8 +2300,27 @@ function parseCSV(text){
   }).filter(function(r){ for(var k in r){ if(r.hasOwnProperty(k)&&r[k]!=='') return true; } return false; });
 }
 
-// Fetch CSV: GitHub API (no CDN cache) → fallback to raw CDN
+// Fetch CSV: Local server (/data/) → GitHub API → raw CDN
 async function fetchCSV(filename){
+  const mode = getDataSourceMode();
+  const isLocalMode = (mode === 'local' && window.location.protocol !== 'file:');
+
+  // STEP 1: Try local server (data_server.py)
+  if(isLocalMode){
+    try {
+      const localUrl = '/data/' + filename + '?t=' + Date.now();
+      const resp = await fetch(localUrl, { cache: 'no-store' });
+      if(resp.ok){
+        const text = await resp.text();
+        console.log('[fetchCSV] Loaded from local server: ' + filename);
+        return parseCSV(text);
+      }
+    } catch(e){
+      console.warn('[fetchCSV] Local server unavailable:', e.message);
+    }
+  }
+
+  // STEP 2: GitHub API
   const token = getGhToken();
   try {
     const headers = { 'Accept': 'application/vnd.github+json' };
@@ -2317,7 +2336,7 @@ async function fetchCSV(filename){
   } catch(e){
     console.warn('GitHub API fetchCSV failed, falling back to raw CDN:', e);
   }
-  // Fallback: raw CDN (may have up to ~5min cache delay)
+  // STEP 3: Fallback to raw CDN (may have up to ~5min cache delay)
   const githubUrl = CSV_GITHUB + '/' + filename + '?t=' + Date.now();
   const resp = await fetch(githubUrl, { cache: 'no-store' });
   if(!resp.ok) throw new Error('Failed to load ' + filename + ' from GitHub (status ' + resp.status + ')');
@@ -6177,7 +6196,27 @@ function isVoyageInTimeRange(voy){
 }
 
 async function loadLanesData(){
-  // Use GitHub API (no-cache) to avoid CDN delay
+  const mode = getDataSourceMode();
+  const isLocalMode = (mode === 'local' && window.location.protocol !== 'file:');
+
+  // STEP 1: Try local server
+  if(isLocalMode){
+    try {
+      const localUrl = '/data/lanes.json?t=' + Date.now();
+      const resp = await fetch(localUrl, { cache: 'no-store' });
+      if(resp.ok){
+        LANES_DATA = await resp.json();
+        console.log('[loadLanesData] Loaded ' + LANES_DATA.length + ' lanes from local server');
+        LANES_DATA.sort((a,b) => a.code.localeCompare(b.code));
+        populateLaneFilter();
+        return;
+      }
+    } catch(e){
+      console.warn('[loadLanesData] Local server unavailable:', e.message);
+    }
+  }
+
+  // STEP 2: GitHub API (no-cache) to avoid CDN delay
   try {
     const token = getGhToken();
     const headers = { 'Accept': 'application/vnd.github+json' };
@@ -6188,17 +6227,17 @@ async function loadLanesData(){
       // GitHub API returns content as base64
       const jsonText = decodeURIComponent(escape(atob(fileInfo.content.replace(/\n/g,'')))).replace(/^\uFEFF/, '');
       LANES_DATA = JSON.parse(jsonText);
-      console.log('Loaded ' + LANES_DATA.length + ' lanes from GitHub API');
+      console.log('[loadLanesData] Loaded ' + LANES_DATA.length + ' lanes from GitHub API');
     } else {
       // Fallback to raw CDN
-      console.warn('GitHub API failed (' + resp.status + '), falling back to raw CDN');
+      console.warn('[loadLanesData] GitHub API failed (' + resp.status + '), falling back to raw CDN');
       const url = CSV_GITHUB + '/shipping_data/lanes.json?t=' + Date.now();
       const resp2 = await fetch(url, { cache: 'no-store' });
       if(resp2.ok){ LANES_DATA = await resp2.json(); }
     }
     // Sort by lane code
     LANES_DATA.sort((a,b) => a.code.localeCompare(b.code));
-  } catch(e) { console.warn('Failed to load lanes from GitHub:', e); }
+  } catch(e) { console.warn('[loadLanesData] Failed to load lanes:', e); }
   populateLaneFilter();
 }
 
