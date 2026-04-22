@@ -10330,6 +10330,111 @@
           "modifiedBy": "anonymous"
         }
       ]
+    },
+    {
+      "code": "EVHA",
+      "name": "EVERLASTING HARVEST",
+      "voyages": [
+        {
+          "voyNo": "2619W",
+          "lane": "REX",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-05-10T08:00",
+              "etb": "2026-05-10T23:00",
+              "etd": "2026-05-11T23:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 708,
+              "fromExcel": false,
+              "speed": 14.8
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-05-14T02:00",
+              "etb": "2026-05-14T17:00",
+              "etd": "2026-05-15T17:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 19,
+              "fromExcel": false,
+              "speed": 9.5
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-15T22:00",
+              "etb": "2026-05-16T13:00",
+              "etd": "2026-05-17T13:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 5853,
+              "fromExcel": false,
+              "speed": 15
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-06-02T23:00",
+              "etb": "2026-06-03T02:00",
+              "etd": "2026-06-04T02:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 716,
+              "fromExcel": false,
+              "speed": 14.9
+            },
+            {
+              "code": "YEADE",
+              "name": "ADEN",
+              "eta": "2026-06-06T05:00",
+              "etb": "2026-06-08T08:00",
+              "etd": "2026-06-09T08:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 48,
+              "dist": 3552,
+              "fromExcel": false,
+              "speed": 15
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-06-19T08:00",
+              "etb": "2026-06-19T23:00",
+              "etd": "2026-06-20T23:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 2262,
+              "fromExcel": false,
+              "speed": 15
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-06-27T09:00",
+              "etb": "2026-06-28T00:00",
+              "etd": "2026-06-29T00:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 0,
+              "fromExcel": false
+            }
+          ],
+          "lastModified": "2026-04-22T02:58:25.843Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
     }
   ],
   "lastSync": null
