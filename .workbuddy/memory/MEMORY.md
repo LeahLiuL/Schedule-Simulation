@@ -54,7 +54,50 @@ git push 后必须执行：
 | 近1个月过滤无反应 | `String(Date)` 返回非ISO格式 | 用 `toDateStr()` 辅助函数处理 Date/字符串 |
 | syncToDaily 覆盖问题 | 加载失败时静默失败，FLEET_DATA 为空导致覆盖 | 添加验证：加载失败时拒绝保存 |
 
+## 核心计算逻辑（最重要，多次确认后固定）
+
+所有涉及时间计算的地方（daily view、单船调度、continuous view、Excel导入）必须严格遵循：
+
+| 字段 | 公式 |
+|------|------|
+| **run** | dist / speed（纯海上航行时间，**不含 manIn**） |
+| **ETA** | 上一港 ETD + run |
+| **ETB** | ETA + manIn + wait |
+| **ETD** | ETB + portStay |
+| **seaDays** | totalRunHrs / 24（不含 manIn） |
+
+**重要**：`run = dist/speed`，不是 `dist/speed + manIn`。这个逻辑在多个地方都要保持一致。
+
+## Daily 船期编辑 speed 的行为（2026-04-23）
+
+### Bug 1：修改 speed 后值跳回原值
+- **原因**：`recalcDailyFromPort` 重算后续港口时，会用下一港已有 ETA 反推 speed，覆盖用户刚输入的值
+- **修复**：`recalcDailyFromPort` 添加第四个参数 `skipSpeedBackfill`，speed 编辑时传 `true` 跳过反推
+
+### Bug 2：修改 speed 后后续时间没变
+- **原因**：`recalcDailyFromPort` 碰到后续已有 ETA 时优先用旧值反推，而不是正向计算
+- **修复**：编辑 speed 时，先清除后续所有港口的 ETA/ETB/ETD，再调用重算强制正向推演
+
+## Port man_in 时间表（2026-04-23 更新）
+
+| PORT | Main in | PORT | Main in | PORT | Main in | PORT | Main in |
+|------|---------|------|---------|------|---------|------|---------|
+| AEJEA | 2 | CNNAS | 3 | CNSWA | 2 | DJJIB | 2 |
+| AEKLF | 2 | CNNGB | 3 | CNTAO | 2 | EGALY | 2 |
+| EGSOK | 2 | INMUN | 2 | INNSA | 2 | MYPKG | 2 |
+| OMSOH | 2 | PHMNL | 3 | PKKHI | 2 | SADMM | 2 |
+| SAJED | 2 | SDPZU | 2 | SGSIN | 2 | THBKK | 3 |
+| THLCH | 2 | THSCS | 3 | THSSW | 3 | TRALI | 2 |
+| TRIST | 2 | TRIZT | 2 | TRMER | 2 | TWKEL | 2 |
+| TWKHH | 2 | TWTPE | 2 | TWTXG | 2 | VNHPH | 2 |
+| VNSGN | 4 | VNVUT | 2 | YEADE | 2 | CNSHA | 5 |
+| CNSHK | 3 | CNYTN | 2 | | | | |
+
+- THSSW (SUKSAWAT, BANGKOK) 是 2026-04-23 新增的港口代码
+- man_in 存储在 `ports.csv` 第4列
+
 ## 用户偏好
 - 报告输出：中文，结构化表格
 - UI 标识：保留英文
 - 自动化流程：按顺序执行，编号步骤
+
