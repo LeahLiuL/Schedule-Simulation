@@ -1,4 +1,6 @@
 from_port,to_port,distance_nm,source
+LYMRA,TRIST,876,manual
+TRIZT,TRALI,279,auto
 PKKHI,OMSOH,560,auto
 INNSA,PKKHI,532,auto
 TRALI,DZALG,1225,manual
