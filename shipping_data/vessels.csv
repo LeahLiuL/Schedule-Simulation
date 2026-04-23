@@ -1,9 +1,4 @@
 vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day
-NE45,NEW DUILDING 4350,18,50.5,0,0,0,0
-NE45,NEW DUILDING 4350,17,42,0,0,0,0
-NE45,NEW DUILDING 4350,16,34.8,0,0,0,0
-NE45,NEW DUILDING 4350,15,29.3,0,0,0,0
-NE45,NEW DUILDING 4350,14,24.4,0,0,0,0
 BZCF,BZ CHONGFU,13,37,0,0,10,0
 BZCF,BZ CHONGFU,17,75,0,0,10,0
 BZCF,BZ CHONGFU,16,64,0,0,10,0
