@@ -10433,6 +10433,79 @@
           ],
           "lastModified": "2026-04-22T02:58:25.843Z",
           "modifiedBy": "anonymous"
+        },
+        {
+          "voyNo": "001W",
+          "lane": "REX",
+          "status": "current",
+          "ports": [
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-05-10T08:00",
+              "etb": "2026-05-10T23:00",
+              "etd": "2026-05-11T23:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 708,
+              "fromExcel": false,
+              "speed": 15.7
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-05-13T23:00",
+              "etb": "2026-05-14T14:00",
+              "etd": "2026-05-15T14:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 19,
+              "fromExcel": false,
+              "speed": null
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-15T16:00",
+              "etb": "2026-05-16T07:00",
+              "etd": "2026-05-17T07:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 5853,
+              "fromExcel": false,
+              "speed": 15.1
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-06-02T14:00",
+              "etb": "2026-06-02T17:00",
+              "etd": "2026-06-03T17:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 716,
+              "fromExcel": false,
+              "speed": 15.9
+            },
+            {
+              "code": "YEADE",
+              "name": "ADEN",
+              "eta": "2026-06-05T17:00",
+              "etb": "2026-06-07T20:00",
+              "etd": "2026-06-08T20:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 48,
+              "dist": 0,
+              "fromExcel": false
+            }
+          ],
+          "lastModified": "2026-04-23T08:11:42.319Z",
+          "modifiedBy": "anonymous"
         }
       ]
     },
