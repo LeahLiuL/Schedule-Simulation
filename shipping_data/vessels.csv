@@ -1,12 +1,12 @@
-ASR,ASR
-12,13.1,0,0,0,1.5,,,
-11,11.0,0,0,0,1.5,,,
-10,10.0,0,0,0,1.5,,,
 vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day
 BZCF,BZ CHONGFU,13,37,0,0,10,0
 BZCF,BZ CHONGFU,17,75,0,0,10,0
 BZCF,BZ CHONGFU,16,64,0,0,10,0
 BZCF,BZ CHONGFU,15,55,0,0,10,0
+ASR,ASR
+12,13.1,0,0,0,1.5,,,
+11,11.0,0,0,0,1.5,,,
+10,10.0,0,0,0,1.5,,,
 BZCF,BZ CHONGFU,14,46,0,0,10,0
 CASR,ASR,12,14.1,0,0,1,0
 CASR,ASR,11,12,0,0,1,0
