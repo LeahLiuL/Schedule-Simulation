@@ -8097,7 +8097,13 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
     // 修改了本港 dist（到下一港的距离）→ 级联推算下一港起的日期
     recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
   } else if(field === 'speed'){
-    // 修改了本港的出发速度 → 级联推算下一港起的日期，跳过speed反推
+    // 修改了本港的出发速度 → 先清除后续港口的ETA强制重算
+    const ports = vessel.voyages[voyIdx].ports;
+    for(let i = portIdx + 1; i < ports.length; i++){
+      ports[i].eta = null;
+      ports[i].etb = null;
+      ports[i].etd = null;
+    }
     recalcDailyFromPort(vessel, voyIdx, portIdx + 1, true);
   }
 
