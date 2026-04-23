@@ -1368,6 +1368,7 @@
       <button class="dm-btn" onclick="forceReloadFleet()" title="从 GitHub 强制刷新最新数据（清除本地缓存）" style="background:#6f42c1;color:#fff;">🔄 刷新</button>
       <button class="dm-btn dm-btn-commit" onclick="commitFleetSchedule()">⬆ Commit</button>
       <button class="dm-btn dm-btn-export" id="dailyExportBtn" onclick="exportFleetPDF()">📄 Export PDF</button>
+      <button class="dm-btn dm-btn-export" onclick="exportFleetExcel()" style="background:#217346;">📊 Export Excel</button>
       <button class="dm-btn dm-btn-primary" onclick="addNewVoyage()">+ New Voyage</button>
       <button class="dm-btn dm-btn-import" onclick="document.getElementById('importExcelInput').click()" title="Import schedule from Excel">📤 Import</button>
       <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;" onchange="handleImportExcel(this)"/>
@@ -1516,6 +1517,11 @@
         <button class="dm-btn dm-btn-export" onclick="exportDmCSV('vessels')">📥 Export CSV</button>
         <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('vessels')">⬆ Commit</button>
         <button class="dm-btn" onclick="openVesselInfo()" title="查看船舶参数、装载能力、油耗信息" style="background:#1a73e8;color:#fff;">📋 船舶信息</button>
+        <button class="dm-btn" onclick="openParseVesselModal()" style="background:#28a745;color:#fff;">📋 粘贴解析</button>
+        <label class="dm-btn" style="background:#6f42c1;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+          📤 上传文件
+          <input type="file" id="fileUploadInput" accept=".pdf,.docx,.doc,.txt,.csv" style="display:none;" onchange="handleFileUpload(this)"/>
+        </label>
       </div>
       <div class="dm-table-wrap">
         <table class="dm-table" id="dmVesselTable">
@@ -1595,6 +1601,167 @@
       <div style="display:flex;align-items:center;gap:8px;">
         <span id="commitStatus" class="commit-status"></span>
         <button class="dm-btn dm-btn-commit" id="btnCommitAll" onclick="commitAllToGitHub()">⬆ Commit All to GitHub</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PARSE VESSEL MODAL -->
+<div class="token-overlay" id="parseVesselOverlay">
+  <div class="token-modal" style="width:700px;max-height:90vh;overflow-y:auto;">
+    <h3>📋 粘贴船舶数据解析</h3>
+    <p class="token-hint">从 PDF/Word 复制船舶参数和油耗数据，粘贴到下方文本框，系统会自动解析</p>
+
+    <div style="margin:16px 0;">
+      <textarea id="parseVesselInput" rows="12" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;font-family:monospace;resize:vertical;" placeholder="粘贴船舶数据，例如：
+VESSEL NAME: MEDKON LIA
+CALL SIGN: 3E5079
+IMO: 9139646
+FLAG: Panama
+TEU: 1136
+DWT: 12238 MT
+LOA: 149m
+
+Speed 15 kn: LSFO 29 MT/day, MGO 3 MT/day
+Speed 14 kn: LSFO 26 MT/day, MGO 3 MT/day
+Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;">
+      <button class="dm-btn" onclick="closeParseVesselModal()">取消</button>
+      <button class="dm-btn" onclick="parseVesselText()" style="background:#6f42c1;color:#fff;">🔍 解析</button>
+    </div>
+
+    <div id="parseVesselResult" style="display:none;">
+      <div style="border-top:2px solid #dee2e6;padding-top:16px;">
+        <!-- 船舶基本信息 -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h4 style="margin:0;color:#495057;">【船舶参数】</h4>
+            <span id="parseParticularStatus" style="font-size:.75rem;padding:2px 8px;border-radius:4px;"></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">船名</label>
+              <input type="text" id="pv_vessel_name" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">船舶代码</label>
+              <input type="text" id="pv_vessel_code" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;" placeholder="如 MEDKON"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">IMO</label>
+              <input type="text" id="pv_imo" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Call Sign</label>
+              <input type="text" id="pv_call_sign" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">旗籍</label>
+              <input type="text" id="pv_flag" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">建造年份</label>
+              <input type="text" id="pv_year_built" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">TEU</label>
+              <input type="text" id="pv_teu" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">DWT</label>
+              <input type="text" id="pv_dwt" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">LOA (m)</label>
+              <input type="text" id="pv_loa" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Breadth (m)</label>
+              <input type="text" id="pv_breadth" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Depth (m)</label>
+              <input type="text" id="pv_depth" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Reefer Plugs</label>
+              <input type="text" id="pv_reefer" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">HOMO</label>
+              <input type="text" id="pv_homogeneous" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Class</label>
+              <input type="text" id="pv_class" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- 油耗数据 -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h4 style="margin:0;color:#495057;">【油耗数据】</h4>
+            <span id="parseFuelStatus" style="font-size:.75rem;padding:2px 8px;border-radius:4px;"></span>
+          </div>
+          <div id="parseFuelRows">
+            <!-- 动态生成 -->
+          </div>
+          <button class="dm-btn" onclick="addParseFuelRow()" style="margin-top:8px;background:#f8f9fa;color:#495057;">+ 添加速度档</button>
+        </div>
+
+        <!-- 装载能力 -->
+        <div style="margin-bottom:16px;padding:12px;background:#fff3cd;border-radius:8px;border:1px solid #ffc107;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h4 style="margin:0;color:#856404;">【装载能力】⚠️ 需人工填写</h4>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div>
+              <label style="display:block;font-size:.72rem;color:#856404;">Service Lane</label>
+              <select id="pv_lane" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;">
+                <option value="">-- 选择 --</option>
+                <option value="REX">REX</option>
+                <option value="AEM">AEM</option>
+                <option value="IMR">IMR</option>
+                <option value="CST">CST</option>
+                <option value="ST">ST</option>
+                <option value="HDT">HDT</option>
+                <option value="SGX">SGX</option>
+                <option value="JPS">JPS</option>
+                <option value="SJA">SJA</option>
+                <option value="CST(SB)">CST(SB)</option>
+                <option value="CST(NB)">CST(NB)</option>
+                <option value="CCT(SB)">CCT(SB)</option>
+                <option value="CCT(NB)">CCT(NB)</option>
+                <option value="ST1">ST1</option>
+                <option value="ST2">ST2</option>
+                <option value="ST3">ST3</option>
+                <option value="NSCT1">NSCT1</option>
+                <option value="CHT">CHT</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#856404;">Max Cargo (Ton)</label>
+              <input type="number" id="pv_max_cargo" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;" placeholder=""/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#856404;">Max TEU</label>
+              <input type="number" id="pv_max_teu" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#856404;">Suggested BSA</label>
+              <input type="number" id="pv_bsa" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- 按钮 -->
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:16px;border-top:1px solid #dee2e6;">
+          <button class="dm-btn" onclick="closeParseVesselModal()">取消</button>
+          <button class="dm-btn dm-btn-primary" onclick="saveParseVessel()">💾 保存</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3290,7 +3457,7 @@ function updateFuelFromSchedule(){
     totalStayHrs += row.stayHrs || 0;
     totalWaitHrs += row.wait || 0;
   }
-  const seaDays = totalRunHrs > 0 ? (totalRunHrs - totalManInHrs) / 24 : 0;
+  const seaDays = totalRunHrs > 0 ? totalRunHrs / 24 : 0;
   const manInDays = totalManInHrs / 24;
   const runDays = totalRunHrs / 24;
   const lsfo = +(runDays * currentVessel.lsfo).toFixed(1);
@@ -3635,12 +3802,11 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
   firstEtd.setMinutes(0,0,0);
 
   // First port: run/dist to NEXT port
-  // runHrs = sea passage + man in of next port (manIn included in run time)
+  // runHrs = sea passage（纯航行时间）
   let firstDist = 0, firstRun = 0, firstFuel = 0;
   if(ports.length > 1){
     firstDist = getDistance(ports[0].code, ports[1].code);
-    const seaRun = speed>0 ? firstDist/speed : 0;
-    firstRun = seaRun + getPortManIn(ports[1].code); // include next port's man in
+    firstRun = speed > 0 && firstDist > 0 ? firstDist / speed : 0;
     firstFuel = +(firstRun * lsfoPerHr).toFixed(2);
   }
 
@@ -3651,23 +3817,25 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
 
   for(let i=1; i<ports.length; i++){
     const p = ports[i];
-    // ETA = prev ETD + prev.runHrs (which already includes this port's man in)
-    const eta = ceilToHour(new Date(prevEtd.getTime() + rows[i-1].runHrs*3600000));
+    // ETA = prev ETD + sea（纯航行时间，不含manIn）
+    const seaRun = rows[i-1].dist > 0 && speed > 0 ? rows[i-1].dist / speed : 0;
+    const eta = ceilToHour(new Date(prevEtd.getTime() + seaRun * 3600000));
     const manIn = getPortManIn(p.code); // from port data or default
     const wait = p.waitHours || 0;
+    // ETB = ETA + man in + wait
     const etb = new Date(eta.getTime() + (manIn + wait)*3600000);
     etb.setMinutes(0,0,0);
+    // ETD = ETB + port stay
     const stay = p.stayHours || getPortStay(p.code);
     const etd = new Date(etb.getTime() + stay*3600000);
     etd.setMinutes(0,0,0);
 
     // Run/dist to NEXT port (empty for last port)
-    // runHrs = sea passage + man in of NEXT port
+    // runHrs = sea passage（纯航行时间）
     let dist = 0, runHrs = 0;
     if(i < ports.length - 1){
       dist = getDistance(ports[i].code, ports[i+1].code);
-      const seaRun = speed>0 ? dist/speed : 0;
-      runHrs = seaRun + getPortManIn(ports[i+1].code); // include next port's man in
+      runHrs = speed > 0 && dist > 0 ? dist / speed : 0;
     }
 
     rows.push(buildRow(i, p, voyNo, eta, etb, etd, dist, runHrs, speed, vessel, manIn, wait, stay));
@@ -3941,7 +4109,7 @@ function cascadeRecalc(changedIdx, changedKey){
         row.ltsEtd = new Date(row.etd);
         // Don't recalc ETB or ETA — user set ETD directly
       }
-      // Case 4: Man In changed -> recalc ETB, ETD; also update prev row's runHrs
+      // Case 4: Man In changed -> recalc ETB, ETD
       else if(changedKey === 'manIn'){
         row.etb = new Date(row.eta.getTime() + (row.manIn + row.wait)*3600000);
         row.etb.setMinutes(0,0,0);
@@ -3949,13 +4117,7 @@ function cascadeRecalc(changedIdx, changedKey){
         row.etd.setMinutes(0,0,0);
         row.ltsEtb = new Date(row.etb);
         row.ltsEtd = new Date(row.etd);
-        // Update prev row's runHrs: sea passage + this port's new manIn
-        if(changedIdx > 0){
-          const prevRow = scheduleRows[changedIdx-1];
-          const seaRun = prevRow.speed>0 ? +(prevRow.dist/prevRow.speed).toFixed(2) : 0;
-          prevRow.runHrs = +(seaRun + row.manIn).toFixed(2);
-          prevRow.fuelSea = +(prevRow.runHrs * lsfoPerHr).toFixed(2);
-        }
+        // runHrs remains pure sea time (dist/speed), no need to update
       }
       // Case 5: Wait changed -> recalc ETB, ETD
       else if(changedKey === 'wait'){
@@ -3972,13 +4134,11 @@ function cascadeRecalc(changedIdx, changedKey){
         row.etd.setMinutes(0,0,0);
         row.ltsEtd = new Date(row.etd);
       }
-      // Case 7: Distance or Speed changed -> recalc Run hours (sea passage + next port's man in)
+      // Case 7: Distance or Speed changed -> recalc Run hours (sea passage only)
       else if(changedKey === 'dist' || changedKey === 'speed'){
+        // runHrs = sea passage（纯航行时间）
         const seaRun = row.speed>0 ? +(row.dist/row.speed).toFixed(2) : 0;
-        // Add man in of next port if next port exists
-        const nextRow = scheduleRows[changedIdx+1];
-        const nextManIn = nextRow ? (nextRow.manIn || DEFAULT_MAN_IN) : 0;
-        row.runHrs = +(seaRun + nextManIn).toFixed(2);
+        row.runHrs = seaRun;
         // Recalc fuel for this row
         row.fuelSea = +(row.runHrs * lsfoPerHr).toFixed(2);
         // Note: ETA/ETB/ETD on this row stay unchanged
@@ -3986,10 +4146,8 @@ function cascadeRecalc(changedIdx, changedKey){
       }
       // Case 8: Run hours changed -> recalc speed and fuel
       else if(changedKey === 'runHrs'){
-        // Derive speed from runHrs = dist/speed + nextManIn
-        const nextRow = scheduleRows[changedIdx+1];
-        const nextManIn = nextRow ? (nextRow.manIn || DEFAULT_MAN_IN) : 0;
-        const seaRun = row.runHrs - nextManIn;
+        // runHrs就是纯航行时间
+        const seaRun = row.runHrs;
         row.speed = seaRun > 0 ? +(row.dist / seaRun).toFixed(1) : 0;
         // Recalc fuel for this row
         row.fuelSea = +(row.runHrs * lsfoPerHr).toFixed(2);
@@ -3998,9 +4156,9 @@ function cascadeRecalc(changedIdx, changedKey){
 
     // ---- SUBSEQUENT ROWS (i > changedIdx): full recalc from prev ETD ----
     if(i > changedIdx && prev){
-      // ETA = prev ETD + prev.runHrs (run time stored on departure port)
-      const prevRunHrs = prev.runHrs || 0;
-      const etaRaw = new Date(prev.etd.getTime() + prevRunHrs*3600000);
+      // ETA = prev ETD + prev sea hours（纯航行时间）
+      const prevSeaHrs = prev.runHrs || 0;
+      const etaRaw = new Date(prev.etd.getTime() + prevSeaHrs*3600000);
       row.eta = ceilToHour(etaRaw);
       row.date = new Date(row.eta);
 
@@ -4105,6 +4263,496 @@ function showToast(msg, type='', duration=3000){
   t.className='toast '+(type||'');
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), duration);
+}
+
+
+// ==================== PARSE VESSEL MODAL ====================
+function openParseVesselModal(){
+  document.getElementById('parseVesselOverlay').style.display = 'flex';
+  document.getElementById('parseVesselInput').value = '';
+  document.getElementById('parseVesselResult').style.display = 'none';
+  // 清空表单
+  ['vessel_name','vessel_code','imo','call_sign','flag','year_built','teu','homogeneous','dwt','loa','breadth','depth','reefer','class'].forEach(function(id){
+    var el = document.getElementById('pv_' + id);
+    if(el) el.value = '';
+  });
+  document.getElementById('pv_lane').value = '';
+  document.getElementById('pv_max_cargo').value = '';
+  document.getElementById('pv_max_teu').value = '';
+  document.getElementById('pv_bsa').value = '';
+  document.getElementById('parseFuelRows').innerHTML = '';
+}
+
+function closeParseVesselModal(){
+  document.getElementById('parseVesselOverlay').style.display = 'none';
+}
+
+// ==================== 文件上传处理 ====================
+function handleFileUpload(input){
+  var file = input.files[0];
+  if(!file) return;
+
+  var fileName = file.name.toLowerCase();
+  var ext = fileName.split('.').pop();
+
+  // 先打开弹窗
+  openParseVesselModal();
+  showToast('正在读取文件...', 'info');
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var content = e.target.result;
+
+    if(ext === 'txt' || ext === 'csv'){
+      // 纯文本文件
+      document.getElementById('parseVesselInput').value = content;
+      parseVesselText();
+    } else if(ext === 'pdf'){
+      // PDF 文件 - 使用 pdf.js
+      parsePDFContent(content, fileName);
+    } else if(ext === 'docx' || ext === 'doc'){
+      // Word 文件 - 使用 mammoth.js
+      parseWordContent(content, fileName);
+    } else {
+      showToast('不支持的文件格式：' + ext, 'error');
+    }
+  };
+  reader.onerror = function(){
+    showToast('文件读取失败', 'error');
+  };
+
+  if(ext === 'pdf' || ext === 'docx' || ext === 'doc'){
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.readAsText(file);
+  }
+
+  // 清空 input，允许重复选择同一文件
+  input.value = '';
+}
+
+function parsePDFContent(arrayBuffer, fileName){
+  showToast('正在解析 PDF...', 'info');
+
+  // 动态加载 pdf.js
+  if(typeof pdfjsLib === 'undefined'){
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = function(){
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      extractPDFText(arrayBuffer, fileName);
+    };
+    script.onerror = function(){
+      showToast('PDF 库加载失败，请检查网络', 'error');
+    };
+    document.head.appendChild(script);
+  } else {
+    extractPDFText(arrayBuffer, fileName);
+  }
+}
+
+function extractPDFText(arrayBuffer, fileName){
+  pdfjsLib.getDocument({data: arrayBuffer}).promise.then(function(pdf){
+    var textPromises = [];
+    for(var i = 1; i <= pdf.numPages; i++){
+      textPromises.push(pdf.getPage(i).then(function(page){
+        return page.getTextContent().then(function(content){
+          return content.items.map(function(item){ return item.str; }).join(' ');
+        });
+      }));
+    }
+
+    Promise.all(textPromises).then(function(pages){
+      var fullText = pages.join('\n');
+      document.getElementById('parseVesselInput').value = fullText;
+      parseVesselText();
+      showToast('PDF 解析完成，共 ' + pdf.numPages + ' 页', 'success');
+    });
+  }).catch(function(err){
+    showToast('PDF 解析失败：' + err.message, 'error');
+  });
+}
+
+function parseWordContent(arrayBuffer, fileName){
+  showToast('正在解析 Word...', 'info');
+
+  // 动态加载 mammoth.js
+  if(typeof mammoth === 'undefined'){
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+    script.onload = function(){
+      extractWordText(arrayBuffer, fileName);
+    };
+    script.onerror = function(){
+      showToast('Word 库加载失败，请检查网络', 'error');
+    };
+    document.head.appendChild(script);
+  } else {
+    extractWordText(arrayBuffer, fileName);
+  }
+}
+
+function extractWordText(arrayBuffer, fileName){
+  mammoth.extractRawText({arrayBuffer: arrayBuffer}).then(function(result){
+    var text = result.value;
+    document.getElementById('parseVesselInput').value = text;
+    parseVesselText();
+    showToast('Word 解析完成', 'success');
+
+    if(result.messages && result.messages.length > 0){
+      console.log('Word 解析消息：', result.messages);
+    }
+  }).catch(function(err){
+    showToast('Word 解析失败：' + err.message, 'error');
+  });
+}
+
+function parseVesselText(){
+  var text = document.getElementById('parseVesselInput').value.trim();
+  if(!text){
+    showToast('请输入船舶数据', 'error');
+    return;
+  }
+
+  // 纯前端解析
+  var result = parseVesselTextClient(text);
+  displayParseResult(result);
+}
+
+// 纯前端解析函数
+function parseVesselTextClient(text){
+  var result = {
+    particular: {},
+    fuel: [],
+    success: true,
+    warnings: []
+  };
+
+  var lines = text.split('\n');
+  var fieldMap = {
+    'vessel_name': ['vessel name', 'ship name', 'name', '船名', 'shipname'],
+    'call_sign': ['call sign', 'callsign', '呼号'],
+    'imo': ['imo'],
+    'flag': ['flag', '旗籍', 'country'],
+    'year_built': ['year built', 'built year', '建造', 'built'],
+    'teu': ['teu', 'capacity', '集装箱', 'teu capacity'],
+    'homogeneous': ['homogeneous', 'homo', 'homog'],
+    'grt': ['grt'],
+    'nrt': ['nrt'],
+    'scantling_draft': ['scantling draft', 'draft', '吃水'],
+    'dwt': ['dwt', 'deadweight'],
+    'loa': ['loa', 'length', '总长'],
+    'breadth': ['breadth', 'beam', '船宽'],
+    'depth': ['depth', '型深'],
+    'reefer_plugs': ['reefer plug', 'reefer', '冷藏']
+  };
+
+  var numFields = ['teu', 'homogeneous', 'grt', 'nrt', 'dwt', 'loa', 'breadth', 'depth', 'reefer_plugs', 'year_built', 'scantling_draft'];
+
+  for(var i = 0; i < lines.length; i++){
+    var line = lines[i].trim();
+    if(!line) continue;
+
+    // 尝试提取键值对
+    var parts = line.split(/[:\t]/);
+    if(parts.length < 2) continue;
+
+    var key = parts[0].trim().toLowerCase();
+    var value = parts.slice(1).join(':').trim();
+
+    // 清理数值
+    var numMatch = value.match(/^[\d,]+\.?\d*/);
+    var valueNum = numMatch ? numMatch[0].replace(/,/g, '') : '';
+
+    // 匹配 Particular 字段
+    for(var field in fieldMap){
+      var aliases = fieldMap[field];
+      for(var j = 0; j < aliases.length; j++){
+        if(key.indexOf(aliases[j]) !== -1){
+          if(numFields.indexOf(field) !== -1 && valueNum){
+            result.particular[field] = valueNum;
+          } else {
+            result.particular[field] = value;
+          }
+          break;
+        }
+      }
+    }
+
+    // 尝试解析油耗行
+    var lineLower = line.toLowerCase();
+    if(lineLower.indexOf('kn') !== -1 || lineLower.indexOf('speed') !== -1 || lineLower.indexOf('knot') !== -1){
+      var speedMatch = line.match(/(\d+)\s*(?:kn|kt|knot)/i);
+      if(speedMatch){
+        var speed = parseInt(speedMatch[1]);
+        var fuelRow = {speed: speed, lsfo: '', hsfo: '', mgo: '', port_lsfo: '', port_mgo: ''};
+
+        // 提取 LSFO
+        var lsfoMatch = line.match(/lsfo[:\s]*(\d+\.?\d*)/i);
+        if(lsfoMatch) fuelRow.lsfo = lsfoMatch[1];
+
+        // 提取 HSFO
+        var hsfoMatch = line.match(/hsfo[:\s]*(\d+\.?\d*)/i);
+        if(hsfoMatch) fuelRow.hsfo = hsfoMatch[1];
+
+        // 提取 MGO
+        var mgoMatch = line.match(/mgo[:\s]*(\d+\.?\d*)/i);
+        if(mgoMatch) fuelRow.mgo = mgoMatch[1];
+
+        // 提取 ME (当作 LSFO)
+        var meMatch = line.match(/me\s*(\d+\.?\d*)/i);
+        if(meMatch && !lsfoMatch) fuelRow.lsfo = meMatch[1];
+
+        // 提取 AUX
+        var auxMatch = line.match(/aux[:\s]*(\d+\.?\d*)/i);
+        if(auxMatch){
+          var auxVal = parseFloat(auxMatch[1]);
+          var currentMgo = parseFloat(fuelRow.mgo) || 0;
+          fuelRow.mgo = (currentMgo + auxVal).toFixed(1);
+        }
+
+        // 提取 Port Stay
+        var portMatch = line.match(/port[:\s]*(\d+\.?\d*)/i);
+        if(portMatch) fuelRow.port_lsfo = portMatch[1];
+
+        result.fuel.push(fuelRow);
+      }
+    }
+  }
+
+  // 如果没有解析到数据
+  if(!result.particular.vessel_name && result.fuel.length === 0){
+    result.success = false;
+    result.warnings.push('无法识别船舶数据，请检查格式');
+  }
+
+  return result;
+}
+
+function displayParseResult(result){
+  var el = document.getElementById('parseVesselResult');
+  el.style.display = 'block';
+
+  // 填充船舶参数
+  var p = result.particular || {};
+  var fieldMap = {
+    'vessel_name': 'pv_vessel_name',
+    'call_sign': 'pv_call_sign',
+    'imo': 'pv_imo',
+    'flag': 'pv_flag',
+    'year_built': 'pv_year_built',
+    'teu': 'pv_teu',
+    'homogeneous': 'pv_homogeneous',
+    'dwt': 'pv_dwt',
+    'loa': 'pv_loa',
+    'breadth': 'pv_breadth',
+    'depth': 'pv_depth',
+    'reefer_plugs': 'pv_reefer',
+    'class': 'pv_class'
+  };
+  for(var field in fieldMap){
+    var input = document.getElementById(fieldMap[field]);
+    if(input && p[field] !== undefined){
+      input.value = p[field];
+    }
+  }
+
+  // 自动生成船舶代码
+  var vesselName = p.vessel_name || '';
+  var vesselCode = vesselName.split(' ').map(function(w){ return w[0] || ''; }).join('').toUpperCase().substring(0,6);
+  document.getElementById('pv_vessel_code').value = vesselCode;
+
+  // 显示解析状态
+  var statusEl = document.getElementById('parseParticularStatus');
+  if(Object.keys(p).length > 0){
+    statusEl.textContent = '✓ 已解析 ' + Object.keys(p).length + ' 个字段';
+    statusEl.style.background = '#d4edda';
+    statusEl.style.color = '#155724';
+  } else {
+    statusEl.textContent = '⚠ 未识别到船舶参数';
+    statusEl.style.background = '#fff3cd';
+    statusEl.style.color = '#856404';
+  }
+
+  // 填充油耗数据
+  var fuelStatusEl = document.getElementById('parseFuelStatus');
+  var fuelRowsEl = document.getElementById('parseFuelRows');
+  fuelRowsEl.innerHTML = '';
+
+  if(result.fuel && result.fuel.length > 0){
+    fuelStatusEl.textContent = '✓ 已解析 ' + result.fuel.length + ' 个速度档';
+    fuelStatusEl.style.background = '#d4edda';
+    fuelStatusEl.style.color = '#155724';
+    result.fuel.forEach(function(f){
+      addParseFuelRow(f);
+    });
+  } else {
+    fuelStatusEl.textContent = '⚠ 未识别到油耗数据';
+    fuelStatusEl.style.background = '#fff3cd';
+    fuelStatusEl.style.color = '#856404';
+    addParseFuelRow();
+  }
+}
+
+function addParseFuelRow(data){
+  data = data || {speed:'', lsfo:'', hsfo:'', mgo:'', port_lsfo:'', port_mgo:''};
+  var container = document.getElementById('parseFuelRows');
+  var row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:80px repeat(5,1fr);gap:8px;margin-bottom:8px;align-items:center;';
+  row.innerHTML = '<span style="font-size:.75rem;color:#6c757d;text-align:right;">Speed</span>' +
+    '<input type="number" value="'+data.speed+'" placeholder="kn" style="padding:6px;border:1px solid #ddd;border-radius:4px;"/>' +
+    '<input type="number" step="0.1" value="'+data.lsfo+'" placeholder="LSFO" style="padding:6px;border:1px solid #ddd;border-radius:4px;"/>' +
+    '<input type="number" step="0.1" value="'+data.hsfo+'" placeholder="HSFO" style="padding:6px;border:1px solid #ddd;border-radius:4px;"/>' +
+    '<input type="number" step="0.1" value="'+data.mgo+'" placeholder="MGO" style="padding:6px;border:1px solid #ddd;border-radius:4px;"/>' +
+    '<input type="number" step="0.1" value="'+data.port_lsfo+'" placeholder="Port LSFO" style="padding:6px;border:1px solid #ddd;border-radius:4px;"/>' +
+    '<input type="number" step="0.1" value="'+data.port_mgo+'" placeholder="Port MGO" style="padding:6px;border:1px solid #ddd;border-radius:4px;"/>' +
+    '<button onclick="this.parentElement.remove()" style="padding:4px 8px;background:#dc3545;color:#fff;border:none;border-radius:4px;cursor:pointer;">×</button>';
+
+  // 添加列标签
+  if(container.children.length === 0){
+    var labels = document.createElement('div');
+    labels.style.cssText = 'display:grid;grid-template-columns:80px repeat(5,1fr);gap:8px;margin-bottom:4px;font-size:.7rem;color:#adb5bd;';
+    labels.innerHTML = '<span></span><span style="text-align:center;">Speed (kn)</span><span style="text-align:center;">LSFO</span><span style="text-align:center;">HSFO</span><span style="text-align:center;">MGO</span><span style="text-align:center;">PS LSFO</span><span style="text-align:center;">PS MGO</span>';
+    container.appendChild(labels);
+  }
+  container.appendChild(row);
+}
+
+function saveParseVessel(){
+  var vesselCode = document.getElementById('pv_vessel_code').value.trim().toUpperCase();
+  var vesselName = document.getElementById('pv_vessel_name').value.trim();
+
+  if(!vesselCode){
+    showToast('船舶代码不能为空', 'error');
+    return;
+  }
+
+  // 收集油耗数据
+  var fuelData = [];
+  var rows = document.querySelectorAll('#parseFuelRows > div:not(:first-child)');
+  rows.forEach(function(row){
+    var inputs = row.querySelectorAll('input');
+    if(inputs.length >= 6){
+      var speed = inputs[0].value;
+      if(speed){
+        fuelData.push({
+          speed: speed,
+          lsfo: inputs[1].value || '0',
+          hsfo: inputs[2].value || '0',
+          mgo: inputs[3].value || '0',
+          port_lsfo: inputs[4].value || '0',
+          port_mgo: inputs[5].value || '0'
+        });
+      }
+    }
+  });
+
+  // 收集船舶参数
+  var particular = {};
+  var pMap = {
+    'vessel_name': 'vessel_name',
+    'imo': 'imo',
+    'call_sign': 'call_sign',
+    'flag': 'flag',
+    'year_built': 'year_built',
+    'teu': 'teu',
+    'homogeneous': 'homogeneous',
+    'grt': 'grt',
+    'nrt': 'nrt',
+    'scantling_draft': 'scantling_draft',
+    'dwt': 'dwt',
+    'loa': 'loa',
+    'breadth': 'breadth',
+    'depth': 'depth',
+    'reefer_plugs': 'reefer_plugs',
+    'class': 'class'
+  };
+  for(var k in pMap){
+    var v = document.getElementById('pv_' + k).value;
+    if(v) particular[k] = v;
+  }
+
+  // 收集装载能力
+  var lane = document.getElementById('pv_lane').value.trim();
+  var maxCargo = document.getElementById('pv_max_cargo').value.trim();
+  var maxTeu = document.getElementById('pv_max_teu').value.trim();
+  var bsa = document.getElementById('pv_bsa').value.trim();
+
+  // 生成 vessels.csv 行
+  var vesselsCsv = '';
+  if(fuelData.length > 0){
+    // 按速度降序排列
+    fuelData.sort(function(a, b){ return parseFloat(b.speed) - parseFloat(a.speed); });
+    fuelData.forEach(function(f){
+      vesselsCsv += vesselCode + ',' + vesselName + ',' + f.speed + ',' + f.lsfo + ',' + f.hsfo + ',' + f.mgo + ',' + f.port_lsfo + ',' + f.port_mgo + ',,,,\n';
+    });
+  } else {
+    vesselsCsv += vesselCode + ',' + vesselName + ',,,,,\n';
+  }
+
+  // 生成 particular.csv 行
+  var pHeaders = ['Vessel Name','Call Sign','IMO','Flag','Year Built','TEU','HOMOG @14 MT','GRT','NRT','Scantling Draft (m)','DWT (MT)','LOA (m)','Breadth (m)','Depth (m)','Reefer Plugs','Class'];
+  var pFields = ['vessel_name','call_sign','imo','flag','year_built','teu','homogeneous','grt','nrt','scantling_draft','dwt','loa','breadth','depth','reefer_plugs','class'];
+  var pValues = pFields.map(function(f){ return particular[f] || ''; });
+  var particularCsv = pValues.join(',') + '\n';
+
+  // 生成 bestmodel.csv 行
+  var bestmodelCsv = '';
+  if(lane && maxCargo){
+    var teuVal = maxTeu || particular.teu || '';
+    var bsaVal = bsa || '';
+    bestmodelCsv = vesselName + ',' + lane + ',' + maxCargo + ',' + teuVal + ',,,,,' + bsaVal + ',,,,,,,,,,,,\n';
+  }
+
+  // 显示结果
+  var resultDiv = document.getElementById('parseVesselResult');
+  resultDiv.innerHTML = '<div style="margin-top:16px;padding:16px;background:#f8f9fa;border-radius:8px;">' +
+    '<h4 style="margin:0 0 12px 0;">📋 生成的数据（请复制到对应文件）</h4>' +
+
+    '<div style="margin-bottom:16px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<strong>vessels.csv</strong>' +
+        '<button onclick="copyToClipboard(document.getElementById(\'vesselsCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 复制</button>' +
+      '</div>' +
+      '<pre id="vesselsCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + vesselsCsv + '</pre>' +
+    '</div>' +
+
+    '<div style="margin-bottom:16px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<strong>cul_ship_particular.csv</strong>' +
+        '<button onclick="copyToClipboard(document.getElementById(\'particularCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 复制</button>' +
+      '</div>' +
+      '<pre id="particularCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + particularCsv + '</pre>' +
+    '</div>' +
+
+    (bestmodelCsv ? '<div style="margin-bottom:16px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<strong>cul_vessel_bestmodel.csv</strong>' +
+        '<button onclick="copyToClipboard(document.getElementById(\'bestmodelCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 复制</button>' +
+      '</div>' +
+      '<pre id="bestmodelCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + bestmodelCsv + '</pre>' +
+    '</div>' : '') +
+
+    '<p style="margin:16px 0 0 0;font-size:.75rem;color:#6c757d;">💡 复制内容后，打开对应的 CSV 文件，在最后一行后粘贴即可</p>' +
+    '<p style="margin:8px 0 0 0;font-size:.75rem;color:#6c757d;">⚠️ particular.csv 是横向格式，粘贴时请添加到最后一列</p>' +
+  '</div>';
+
+  showToast('数据已生成，请复制到 CSV 文件', 'success');
+}
+
+function copyToClipboard(text){
+  navigator.clipboard.writeText(text).then(function(){
+    showToast('已复制到剪贴板', 'success');
+  }).catch(function(){
+    // 备用方案
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    showToast('已复制到剪贴板', 'success');
+  });
 }
 
 
@@ -6645,9 +7293,7 @@ function recalcCrossVoyageCascade(vessel, voyIdx, lastAffectedPortIdx){
           const etdDt = new Date(lastPort.etd);
           const etaDt = new Date(nextVoy.ports[0].eta);
           if(!isNaN(etdDt.getTime()) && !isNaN(etaDt.getTime())){
-            const gapHrs = (etaDt.getTime() - etdDt.getTime()) / 3600000;
-            const manIn = nextVoy.ports[0].manIn != null ? nextVoy.ports[0].manIn : getPortManIn(nextVoy.ports[0].code);
-            const seaHrs = gapHrs - manIn;
+            const seaHrs = (etaDt.getTime() - etdDt.getTime()) / 3600000;
             if(seaHrs > 0){
               const speed = (lastPort.speed != null && lastPort.speed > 0) ? lastPort.speed : getDailySpeed(vessel, voyIdx);
               if(speed > 0){
@@ -6682,7 +7328,6 @@ function recalcCrossVoyageCascade(vessel, voyIdx, lastAffectedPortIdx){
   const firstPort = nextVoy.ports[0];
   const seaHrs = lastPort.dist / lastSpeed;
   const manIn = firstPort.manIn != null ? firstPort.manIn : getPortManIn(firstPort.code);
-  const runHrs = seaHrs + manIn;
   const prevEtdDt = new Date(lastPort.etd);
   if(isNaN(prevEtdDt.getTime())) return;
 
@@ -6690,7 +7335,8 @@ function recalcCrossVoyageCascade(vessel, voyIdx, lastAffectedPortIdx){
   if(firstPort.fromExcel && firstPort.eta){
     const impEtaDt = new Date(firstPort.eta);
     if(!isNaN(impEtaDt.getTime())){
-      const seaHrs2 = (impEtaDt.getTime() - prevEtdDt.getTime()) / 3600000 - manIn;
+      // seaHrs = ETA - ETD（纯航行时间）
+      const seaHrs2 = (impEtaDt.getTime() - prevEtdDt.getTime()) / 3600000;
       if(seaHrs2 > 0 && lastPort.dist > 0){
         firstPort.speed = +(lastPort.dist / seaHrs2).toFixed(2);
       }
@@ -6700,7 +7346,7 @@ function recalcCrossVoyageCascade(vessel, voyIdx, lastAffectedPortIdx){
     }
   } else {
     // Original logic: recalculate ETA/ETB/ETD from speed and distance
-    const etaDt = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+    const etaDt = new Date(prevEtdDt.getTime() + seaHrs * 3600000);
     round6Min(etaDt);
     const waitHrs = firstPort.waitHrs || 0;
     const stayHrs = firstPort.stayHrs != null ? firstPort.stayHrs : getPortStay(firstPort.code);
@@ -7451,8 +8097,8 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
     // 修改了本港 dist（到下一港的距离）→ 级联推算下一港起的日期
     recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
   } else if(field === 'speed'){
-    // 修改了本港的出发速度 → 级联推算下一港起的日期
-    recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
+    // 修改了本港的出发速度 → 级联推算下一港起的日期，跳过speed反推
+    recalcDailyFromPort(vessel, voyIdx, portIdx + 1, true);
   }
 
   // Track modification
@@ -7606,16 +8252,18 @@ function calcDailyPortTimes(prevPort, thisPortCode, speed){
   if(prevPort && prevPort.etd){
     const prevEtdDt = new Date(prevPort.etd);
     if(!isNaN(prevEtdDt.getTime()) && prevPort.dist > 0 && speed > 0){
+      // ETA = 上一港ETD + 海上航行时间
       const seaHrs = prevPort.dist / speed;
-      const runHrs = seaHrs + manIn; // 单船逻辑：runHrs 含下一港 manIn
-      eta = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+      eta = new Date(prevEtdDt.getTime() + seaHrs * 3600000);
       // round to nearest 6-min
       round6Min(eta);
     }
   }
   if(eta){
-    etb = new Date(eta.getTime() + (manIn) * 3600000);
+    // ETB = ETA + man in + wait
+    etb = new Date(eta.getTime() + (manIn + waitHrs) * 3600000);
     round6Min(etb);
+    // ETD = ETB + port stay
     etd = new Date(etb.getTime() + stayHrs * 3600000);
     round6Min(etd);
   }
@@ -7628,7 +8276,7 @@ function calcDailyPortTimes(prevPort, thisPortCode, speed){
 
 // ===== Fleet Daily: 级联重算从 fromIdx 开始后续所有港口的 ETA/ETB/ETD =====
 // 不重算 manIn/stayHrs/waitHrs/dist（用户可能已手动修改），只推算日期
-function recalcDailyFromPort(vessel, voyIdx, fromIdx){
+function recalcDailyFromPort(vessel, voyIdx, fromIdx, skipSpeedBackfill){
   const voy = vessel.voyages[voyIdx];
   if(!voy || !voy.ports || fromIdx >= voy.ports.length) return;
   const voySpeed = getDailySpeed(vessel, voyIdx); // 航次默认速度（兜底）
@@ -7662,19 +8310,20 @@ function recalcDailyFromPort(vessel, voyIdx, fromIdx){
     if(p.eta){
       const etaDt = new Date(p.eta);
       if(!isNaN(etaDt.getTime())){
-        const manIn = p.manIn != null ? p.manIn : getPortManIn(p.code);
-        // runHrs = ETA - ETD
-        const runHrs = (etaDt - prevEtdDt) / 3600000;
-        const seaHrs = Math.max(0, runHrs - manIn);
-        // 反推 dist 或 speed
-        if(prev.dist && prev.dist > 0){
-          // 有 dist，反推 speed
-          prev.speed = Math.round((prev.dist / seaHrs) * 10) / 10;
-        } else if(prev.speed && prev.speed > 0){
-          // 有 speed，反推 dist
-          prev.dist = Math.round(seaHrs * prev.speed);
+        // seaHrs = ETA - ETD（纯航行时间）
+        const seaHrs = (etaDt - prevEtdDt) / 3600000;
+        // 反推 dist 或 speed（编辑speed字段时跳过，否则会覆盖用户刚输入的值）
+        if(!skipSpeedBackfill){
+          if(prev.dist && prev.dist > 0){
+            // 有 dist，反推 speed
+            prev.speed = Math.round((prev.dist / seaHrs) * 10) / 10;
+          } else if(prev.speed && prev.speed > 0){
+            // 有 speed，反推 dist
+            prev.dist = Math.round(seaHrs * prev.speed);
+          }
         }
         // 继续推算本港 ETB/ETD
+        const manIn = p.manIn != null ? p.manIn : getPortManIn(p.code);
         const waitHrs = p.waitHrs || 0;
         const stayHrs = p.stayHrs != null ? p.stayHrs : getPortStay(p.code);
         const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
@@ -7687,7 +8336,7 @@ function recalcDailyFromPort(vessel, voyIdx, fromIdx){
       }
     }
 
-    // 正向推算（原有逻辑）
+    // 正向推算
     if(!prev.dist || prev.dist <= 0) continue;
     // 每段使用上一港自己的 speed（上一港出发的速度），兜底用航次速度
     const segSpeed = (prev.speed != null && prev.speed > 0) ? prev.speed : voySpeed;
@@ -7695,12 +8344,14 @@ function recalcDailyFromPort(vessel, voyIdx, fromIdx){
     const manIn = p.manIn != null ? p.manIn : getPortManIn(p.code);
     const waitHrs = p.waitHrs || 0;
     const stayHrs = p.stayHrs != null ? p.stayHrs : getPortStay(p.code);
+    // ETA = 上一港ETD + 海上航行时间
     const seaHrs = prev.dist / segSpeed;
-    const runHrs = seaHrs + manIn; // 与单船逻辑一致
-    const etaDt = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+    const etaDt = new Date(prevEtdDt.getTime() + seaHrs * 3600000);
     round6Min(etaDt);
+    // ETB = ETA + man in + wait
     const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
     round6Min(etbDt);
+    // ETD = ETB + port stay
     const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
     round6Min(etdDt);
     p.eta = toDatetimeLocal(etaDt);
@@ -7748,12 +8399,14 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
   if(prevPort && prevPort.etd && prevPort.dist > 0 && speed > 0){
     const prevEtdDt = new Date(prevPort.etd);
     if(!isNaN(prevEtdDt.getTime())){
+      // ETA = 上一港ETD + 海上航行时间
       const seaHrs = prevPort.dist / speed;
-      const runHrs = seaHrs + manIn;
-      const etaDt = new Date(prevEtdDt.getTime() + runHrs * 3600000);
+      const etaDt = new Date(prevEtdDt.getTime() + seaHrs * 3600000);
       round6Min(etaDt);
-      const etbDt = new Date(etaDt.getTime() + manIn * 3600000);
+      // ETB = ETA + man in + wait
+      const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
       round6Min(etbDt);
+      // ETD = ETB + port stay
       const etdDt = new Date(etbDt.getTime() + stayHrs * 3600000);
       round6Min(etdDt);
       etaStr = toDatetimeLocal(etaDt);
@@ -8099,6 +8752,7 @@ async function syncToDaily(){
     manIn: row.manIn != null ? row.manIn : 0,
     waitHrs: row.wait != null ? row.wait : 0,
     dist: row.dist || 0,
+    speed: row.speed != null ? row.speed : 0,
     fromExcel: row.fromExcel || false
   }));
 
@@ -8111,12 +8765,17 @@ async function syncToDaily(){
   }
   vessel.name = vesselName;
 
+  // Get speed from first row (航次默认速度)
+  const voyageSpeed = scheduleRows[0]?.speed || 14;
+  console.log('[syncToDaily] voyageSpeed:', voyageSpeed, 'ports[0].speed:', ports[0]?.speed);
+
   // Check if voyage already exists in this vessel
   const existIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
   if(existIdx >= 0){
     if(!confirm('航次 ' + voyNo + ' 已存在。是否覆盖？\n（点击"否"则取消本次操作）')) return;
     vessel.voyages[existIdx] = {
       voyNo, lane: laneCode, status: 'current',
+      speed: voyageSpeed,
       ports, lastModified: new Date().toISOString(),
       modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
     };
@@ -8124,6 +8783,7 @@ async function syncToDaily(){
   } else {
     vessel.voyages.push({
       voyNo, lane: laneCode, status: 'current',
+      speed: voyageSpeed,
       ports, lastModified: new Date().toISOString(),
       modifiedBy: localStorage.getItem('gh_username') || 'anonymous'
     });
@@ -8447,13 +9107,22 @@ function closeBackupModal(){
   document.getElementById('backupModal').style.display = 'none';
 }
 
-// ===== Export Fleet to Excel =====
+// ===== 辅助函数：解析datetime-local格式字符串，返回本地Date对象 =====
+function parseLocalDate(str){
+  if(!str) return null;
+  // datetime-local格式: "2026-05-14T02:00"
+  const parts = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if(!parts) return null;
+  // 创建本地时间（避免UTC偏移）
+  return new Date(parts[1], parts[2]-1, parts[3], parts[4], parts[5]);
+}
+
+// ===== Export Fleet to Excel (HAMD format with exact formulas) =====
 function exportFleetExcel(){
   let vesselsToExport = [];
 
   var _checkedKeys = Object.keys(dailyCheckedVessels);
   if(_checkedKeys.length > 0){
-    // Export selected
     _checkedKeys.forEach(function(key) {
       var parts = key.split('|');
       var code = parts[0], vIdx = parts[1];
@@ -8463,13 +9132,11 @@ function exportFleetExcel(){
       }
     });
   } else if(dailySelectedVessel){
-    // Export selected vessel's current voyage
     const vessel = FLEET_DATA.vessels.find(v => v.code === dailySelectedVessel.code);
     if(vessel){
       vesselsToExport.push({ vessel, voyage: vessel.voyages[dailySelectedVessel.voyIdx] });
     }
   } else {
-    // Export all current voyages
     FLEET_DATA.vessels.forEach(v => {
       const cur = v.voyages.find(voy => voy.status !== 'completed') || v.voyages[0];
       if(cur) vesselsToExport.push({ vessel: v, voyage: cur });
@@ -8485,65 +9152,111 @@ function exportFleetExcel(){
 
   vesselsToExport.forEach(({vessel, voyage}) => {
     const sheetName = (vessel.code + '_' + voyage.voyNo).replace(/[^A-Za-z0-9_]/g, '').slice(0, 31);
-    const rows = [];
+    const ports = voyage.ports || [];
+    const defaultSpeed = voyage.speed || 14;
 
-    // Define all columns with keys for visibility filtering
-    const allCols = [
-      { key: null,    label: 'Vessel' },
-      { key: null,    label: 'Vessel Name' },
-      { key: null,    label: 'Lane' },
-      { key: null,    label: 'Lane Name' },
-      { key: null,    label: 'Voyage No' },
-      { key: null,    label: 'Status' },
-      { key: null,    label: 'Port' },
-      { key: null,    label: 'Port Name' },
-      { key: 'manIn', label: 'ManIn(h)' },
-      { key: 'wait',  label: 'Wait(h)' },
-      { key: 'voyNo', label: 'Port Voy.No' },
-      { key: 'eta',   label: 'ETA' },
-      { key: 'etb',   label: 'ETB' },
-      { key: 'etd',   label: 'ETD' },
-      { key: 'stay',  label: 'Stay(h)' },
-      { key: 'speed', label: 'Speed(kn)' },
-      { key: 'sea',   label: 'Sea(h)' },
-      { key: 'dist',  label: 'Dist(nm)' },
-    ];
-    const visCols = allCols.filter(function(c){ return !c.key || !isDailyColHidden(c.key); });
-    const header = visCols.map(function(c){ return c.label; });
-    rows.push(header);
-
-    (voyage.ports || []).forEach((p, i) => {
-      const pp = PORT_MAP[p.code] || {};
-      const rowSpeed = p.speed != null ? p.speed : (voyage.speed || 14);
-      const seaHrs = (rowSpeed > 0 && p.dist > 0) ? +(p.dist / rowSpeed).toFixed(1) : 0;
-
-      // Build all cell values keyed by key
-      const allVals = {
-        'Vessel': vessel.code,
-        'Vessel Name': vessel.name,
-        'Lane': voyage.lane,
-        'Lane Name': getLaneName(voyage.lane),
-        'Voyage No': voyage.voyNo,
-        'Status': voyage.status,
-        'Port': p.code,
-        'Port Name': pp.cn || pp.en || p.code,
-        'ManIn(h)': p.manIn || 0,
-        'Wait(h)': p.waitHrs || 0,
-        'Port Voy.No': p.voyNo || voyage.voyNo || '',
-        'ETA': p.eta ? new Date(p.eta).toLocaleString('zh-CN') : '',
-        'ETB': p.etb ? new Date(p.etb).toLocaleString('zh-CN') : '',
-        'ETD': p.etd ? new Date(p.etd).toLocaleString('zh-CN') : '',
-        'Stay(h)': p.stayHrs || 0,
-        'Speed(kn)': rowSpeed,
-        'Sea(h)': seaHrs,
-        'Dist(nm)': p.dist || 0,
-      };
-      rows.push(visCols.map(function(c){ return allVals[c.label]; }));
+    // Create worksheet with data
+    const wsData = [];
+    
+    // Row 1: Title (A1=vessel.code, D1=vessel.name merged, I1=voyage.lane)
+    const row1 = new Array(18).fill(null);
+    row1[0] = vessel.code;                    // A: vessel code
+    row1[3] = vessel.name;                   // D: vessel name
+    row1[8] = voyage.lane || '';            // I: lane code
+    wsData.push(row1);
+    
+    // Row 2: Headers
+    wsData.push([
+      'PORT', 'man in', 'wait', 'Proforma', 'LTS ETB', 'LTS ETD', 'VOY. NO',
+      'Date', 'ETA', 'ETB', 'ETD', 'run', 'Port Stay(hr)', 'fsp distance',
+      'speed', 'ETA Delay/Ahead', 'ETD Delay/Ahead', 'Remark'
+    ]);
+    
+    // Data rows (start from row 3)
+    ports.forEach((p, i) => {
+      const row = new Array(18).fill(null);
+      const rowNum = i + 3;
+      const prevRowNum = rowNum - 1;
+      
+      // A: PORT
+      row[0] = p.code;
+      
+      // B: man in
+      const manIn = p.manIn != null ? p.manIn : 0;
+      row[1] = manIn;
+      
+      // C: wait
+      const wait = p.waitHrs != null ? p.waitHrs : 0;
+      row[2] = wait;
+      
+      // D: Proforma - only first row has value (the initial ETD from previous voyage)
+      if(i === 0 && p.etd){
+        // D: Proforma - 解析datetime-local格式，保持本地时间
+        const d = parseLocalDate(p.etd);
+        row[3] = d ? { t: 'd', v: d, z: 'yyyy/mm/dd\\ hh:mm;@' } : '';
+      }
+      
+      // G: VOY. NO
+      row[6] = p.voyNo || voyage.voyNo || '';
+      
+      // N: fsp distance
+      const dist = p.dist || 0;
+      row[13] = dist;
+      
+      // L: run (sea hours) - 使用每个port自己的speed（与网页显示一致）
+      const rowSpeed = p.speed != null ? p.speed : defaultSpeed;
+      const seaHrs = (rowSpeed > 0 && dist > 0) ? +(dist / rowSpeed).toFixed(1) : 0;
+      row[11] = seaHrs; // 直接值
+      
+      // M: Port Stay(hr)
+      const stay = p.stayHrs != null ? p.stayHrs : 0;
+      row[12] = stay;
+      
+      // H: Date =TEXT(I#,"ddd") - formula string
+      row[7] = { t: 's', f: 'TEXT(I' + rowNum + ',"ddd")', z: '[$-804]aaa;@' };
+      
+      // I: ETA
+      // - First row: use actual value (from data)
+      // - Subsequent rows: =K{当前行-1}+L{当前行-1}/24 (previous ETD + previous run)
+      if(i === 0){
+        // First port: direct value - 用日期对象保留本地时间
+        const etaDate = parseLocalDate(p.eta);
+        row[8] = etaDate ? { t: 'd', v: etaDate, z: 'yyyy/mm/dd\\ hh:mm;@' } : '';
+      } else {
+        // Subsequent ports: formula =K{prev}+L{prev}/24
+        row[8] = { t: 's', f: 'K' + prevRowNum + '+L' + prevRowNum + '/24', z: 'yyyy/mm/dd\\ hh:mm;@' };
+      }
+      
+      // J: ETB = I# + B#/24 + C#/24 (ETA + man in + wait)
+      row[9] = { t: 's', f: 'I' + rowNum + '+B' + rowNum + '/24+C' + rowNum + '/24', z: 'yyyy/mm/dd\\ hh:mm;@' };
+      
+      // K: ETD = J# + M#/24 (ETB + port stay)
+      row[10] = { t: 's', f: 'J' + rowNum + '+M' + rowNum + '/24', z: 'yyyy/mm/dd\\ hh:mm;@' };
+      
+      // O: speed = N/L
+      row[14] = { t: 's', f: 'N' + rowNum + '/L' + rowNum, z: '0.0_ ' };
+      
+      // R: Remark
+      row[17] = p.remark || '';
+      
+      wsData.push(row);
     });
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    // Auto column widths
-    ws['!cols'] = header.map(function(h, i){ return { wch: h.length > 12 ? 18 : (h.length > 6 ? 14 : 10) }; });
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Merge D1:G1 for vessel name
+    ws['!merges'] = [{s:{r:0,c:3},e:{r:0,c:6}}];
+    
+    // Column widths
+    ws['!cols'] = [
+      {wch: 20}, {wch: 8}, {wch: 6}, {wch: 14}, {wch: 14}, {wch: 14}, {wch: 12},
+      {wch: 8}, {wch: 18}, {wch: 18}, {wch: 18}, {wch: 8}, {wch: 12}, {wch: 14},
+      {wch: 8}, {wch: 16}, {wch: 16}, {wch: 20}
+    ];
+    
+    // Row heights
+    ws['!rows'] = [{hpt: 30}, {hpt: 30}];
+    
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
   });
 

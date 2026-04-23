@@ -455,6 +455,45 @@ def health():
     return jsonify({"status": "ok", "cached_ports": len(GEO_CACHE)})
 
 
+# ==================== LOCAL DATA PROXY (DATA_MODE='local') ====================
+# 环境变量指定本地数据目录，默认为 P 盘共享目录
+LOCAL_DATA_DIR = os.environ.get(
+    "LOCAL_DATA_DIR",
+    r"P:\04 上海操作中心\04 本部门共享\ClawReport\shipping_data"
+)
+
+@app.route("/data/<path:filename>", methods=["GET", "POST"])
+def data_proxy(filename):
+    """代理数据文件读写。
+    GET  /data/xxx.csv    → 读取文件内容
+    POST /data/xxx.csv    → 写入文件内容（body 为纯文本）
+    """
+    safe_path = os.path.normpath(os.path.join(LOCAL_DATA_DIR, filename))
+    # 安全检查：禁止路径穿越
+    if not safe_path.startswith(os.path.normpath(LOCAL_DATA_DIR)):
+        return jsonify({"error": "Forbidden: invalid path"}), 403
+
+    if request.method == "GET":
+        if not os.path.isfile(safe_path):
+            return jsonify({"error": f"File not found: {filename}"}), 404
+        try:
+            with open(safe_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            return content, 200, {"Content-Type": "text/plain; charset=utf-8"}
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    else:
+        # POST — write file
+        content = request.get_data(as_text=True)
+        try:
+            os.makedirs(os.path.dirname(safe_path), exist_ok=True)
+            with open(safe_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            return jsonify({"status": "ok", "saved": filename, "path": safe_path})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8898))
     print(f"Sailing distance service starting on http://0.0.0.0:{port}")
