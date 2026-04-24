@@ -6389,7 +6389,7 @@ async function commitToGitHub(type){
       if(getResp.status === 404){
         console.log('File not found on GitHub, will create: ' + path);
       } else if(!getResp.ok){
-        console.warn('GitHub commit skipped: ' + getResp.status);
+        console.warn('GitHub fetch failed: ' + getResp.status + ', will try to create anyway');
       } else {
         const fileData = await getResp.json();
         sha = fileData.sha;
@@ -6416,13 +6416,17 @@ async function commitToGitHub(type){
         body: JSON.stringify(bodyPayload)
       });
 
+      let ghSuccess = false;
       if(putResp.ok){
         const result = await putResp.json();
+        ghSuccess = true;
         setCommitStatus('✓ Saved: P盘 + GitHub (' + result.commit.sha.slice(0,7) + ')');
         showToast(filename + ' ✓ 已保存: P盘 + GitHub', 'success');
       } else {
-        setCommitStatus('✓ Saved to P盘 (GitHub skipped)');
-        showToast(filename + ' ✓ 已保存: P盘', 'success');
+        const errText = await putResp.text();
+        setCommitStatus('⚠ GitHub 失败，已保存到本地');
+        showToast(filename + ' ⚠ GitHub 提交失败，数据已保存到本地 (P盘/浏览器缓存)', 'warning');
+        console.warn('GitHub PUT failed (' + putResp.status + '): ' + errText);
       }
     } else {
       setCommitStatus('✓ Saved to P盘');
@@ -6431,8 +6435,12 @@ async function commitToGitHub(type){
 
     // Reload data from GitHub to update in-memory state
     try {
-      await reloadCommittedData(type);
-    } catch(e){ console.warn('Failed to reload data:', e); }
+      // Only reload from GitHub if commit succeeded — otherwise keep local data
+      if(ghSuccess){
+        try {
+          await reloadCommittedData(type);
+        } catch(e){ console.warn('Failed to reload data from GitHub, keeping local data:', e); }
+      }
 
     // If distances were committed, sync to Fleet schedule
     if(type === 'distances'){
@@ -6585,9 +6593,13 @@ async function commitAllToGitHub(){
     showToast('部分保存失败: ' + localOk + ' 成功, ' + fail + ' 失败', 'warning');
   }
 
-  // Reload all data
-  try { await loadAllData(); buildPortMap(); buildDistMap(); } catch(e){ console.warn('Failed to reload:', e); }
-  syncDistancesToFleet();
+  // Reload all data only if all GitHub commits succeeded
+  if(fail === 0){
+    try { await loadAllData(); buildPortMap(); buildDistMap(); } catch(e){ console.warn('Failed to reload:', e); }
+    syncDistancesToFleet();
+  } else {
+    console.warn('GitHub commit had ' + fail + ' failures, skipped reload to preserve local data');
+  }
 }
 
 // Helper: escape HTML for input values
@@ -8624,15 +8636,19 @@ async function commitFleetSchedule(){
         body: JSON.stringify(putBody)
       });
 
+      let ghSuccess = false;
       if(putResp.ok){
+        ghSuccess = true;
         const result = await putResp.json();
         FLEET_SHA = result.content.sha;
         FLEET_DATA.lastSync = new Date().toISOString();
         setStatus('✓ Saved: P盘 + GitHub (' + result.commit.sha.slice(0,7) + ')');
         showToast('✓ 已保存到 P盘 + GitHub', 'success');
       } else {
-        setStatus('✓ Saved locally (GitHub skipped)');
-        showToast('✓ 已保存本地 (GitHub skipped)', 'success');
+        const errText = await putResp.text();
+        setStatus('⚠ GitHub 失败，已保存到本地');
+        showToast('⚠ GitHub 提交失败，数据已保存到本地 (P盘/浏览器缓存)', 'warning');
+        console.warn('GitHub PUT failed (' + putResp.status + '): ' + errText);
       }
     } else {
       setStatus('✓ Saved locally (no token)');
