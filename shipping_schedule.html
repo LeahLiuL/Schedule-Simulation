@@ -6417,6 +6417,7 @@ async function commitToGitHub(type){
     saveLocalCSV(type, content);
 
     // STEP 2: Also commit to GitHub if token exists
+    let ghSuccess = false;
     if(token){
       setCommitStatus('Fetching from GitHub...');
       const getResp = await fetch(GH_REPO_API + '/' + path, {
@@ -6454,7 +6455,6 @@ async function commitToGitHub(type){
         body: JSON.stringify(bodyPayload)
       });
 
-      let ghSuccess = false;
       if(putResp.ok){
         const result = await putResp.json();
         ghSuccess = true;
