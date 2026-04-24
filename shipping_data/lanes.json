@@ -673,5 +673,15 @@
   {
     "code": "VGX",
     "name": "Vietnam/Tailand - Middle East/India"
+  },
+  {
+    "code": "NAF",
+    "name": "NORTH AFRICA SERVICE (NAF)",
+    "ports": [
+      "TRIST",
+      "TRIZT",
+      "TRALI",
+      "DZALG"
+    ]
   }
 ]
