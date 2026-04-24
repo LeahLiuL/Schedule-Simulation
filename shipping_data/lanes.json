@@ -426,6 +426,19 @@
     "name": "RED SEA CHINA SERVICE"
   },
   {
+    "code": "RES",
+    "name": "RED SEA SERVICE",
+    "ports": [
+      "CNSHA",
+      "CNNGB",
+      "CNNAS",
+      "SAJED",
+      "JOAQJ",
+      "EGSOK",
+      "CNSHA"
+    ]
+  },
+  {
     "code": "REX",
     "name": "Red sea Service",
     "ports": [
@@ -637,5 +650,18 @@
   {
     "code": "VGX",
     "name": "Vietnam/Tailand - Middle East/India"
+  },
+  {
+    "code": "RES",
+    "name": "RED SEA SERVICE",
+    "ports": [
+      "CNSHA",
+      "CNNGB",
+      "CNNAS",
+      "SAJED",
+      "JOAQJ",
+      "EGSOK",
+      "CNSHA"
+    ]
   }
 ]
