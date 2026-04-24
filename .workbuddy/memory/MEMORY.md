@@ -10,6 +10,23 @@ GitHub: https://github.com/LeahLiuL/Schedule-Simulation
 - 格式：`vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day`
 - 关键字段：第6列=停泊LSFO，第7列=停泊MGO
 
+## 数据存储架构（2026-04-24 更新）
+
+### ports.csv 新增列
+- 第 7 列 `lat`：纬度
+- 第 8 列 `lon`：经度
+- 格式：`code,name_en,name_cn,man_in,portstay_time,wait_time,lat,lon`
+- 243 个港口已从 PORT_COORDS 迁移到 CSV
+
+### PORT_COORDS 构建逻辑
+- `let PORT_COORDS = {}` — 初始为空
+- `buildPortCoords()` — 从 PORTS_DATA 第 6-7 列（lat/lon）构建坐标表
+- `PORT_COORDS_FALLBACK` — 仅保留 CSV 中没有的港口（如 AUBNE, USSEA 等内陆/偏远港）
+- 调用时机：init()、loadData()、editDmPort()、deleteDmPort()、addDmPort()、reload 后
+
+### Data Manager Ports 表格
+- 新增 Latitude、Longitude 两列，可直接在页面编辑
+
 ## Bug 与修复记录
 
 ### 推送验证必做（2026-04-15 新增）

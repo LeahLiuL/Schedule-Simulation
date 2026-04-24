@@ -9,7 +9,10 @@
 ### 🐛 Bug 修复
 
 | 日期 | Commit | 内容 |
-|------|--------|------|
+|:------|--------|------|
+| 2026-04-24 | `718e4b4` | **消除 PORT_COORDS 硬编码**：243 港口坐标迁移到 ports.csv（新增 lat/lon 列），代码从 CSV 动态构建；Data Manager 新增 Lat/Lon 编辑列 |
+| 2026-04-24 | `aa922b9` | **GitHub 提交失败保护**：失败时立即 localStorage 备份、warning 提示、跳过 reload 保留内存数据；Toast 增加重试指引 |
+| 2026-04-24 | `f2c8a74` | **新增 GitHub 自动重试队列**：失败 commit 入队，下次开页自动重试 |
 | 2026-04-23 | `c7711e3` | **修改 speed 后后续时间没变**：编辑 speed 时先清除后续所有港口的 ETA/ETB/ETD，再强制正向推演 |
 | 2026-04-23 | `db362d3` | **Daily 船期修改 speed 值跳回原值**：`recalcDailyFromPort` 添加 `skipSpeedBackfill` 参数，跳过反推逻辑 |
 | 2026-04-22 | `e28d753` | 修复 btnSyncDaily/tbModBadge/btnReset 元素 null 检查 |
@@ -38,13 +41,12 @@
 ### ✨ 新功能
 
 | 日期 | Commit | 内容 |
-|------|--------|------|
+|:------|--------|------|
+| 2026-04-24 | `718e4b4` | **Data Manager Ports 新增 Lat/Lon 编辑列**：可直接在页面修改港口坐标 |
 | 2026-04-22 | `0695df6` | **Speed Optimizer**：新增航速优化工具，用图表对比不同航速下的燃油消耗 |
 | 2026-04-22 | `da7216d` | Speed Optimizer 表格头部使用深色主题样式区分 |
-| 2026-04-22 | `1841df5` | **Vessel Info 面板**：从 GitHub CSVs 加载 Particular + Best Model 容量 + 燃油数据 |
 | 2026-04-22 | `050c5cc` | **Vessel Info 面板**（Particular + Best Model + 燃油数据）|
 | 2026-04-22 | `f68fb83` | Vessel Info 面板：code↔name 匹配、全部 3 个 tab 正常工作、Max TEU2 列 |
-| 2026-04-22 | `6160326` | 重命名重复的 Max TEU 列名为 Max TEU2 |
 | 2026-04-21 | `303e3f6` | Data Manager Lanes tab 新增 Ports 列（逗号分隔），支持 Lane-Port 旋转 |
 | 2026-04-21 | `826c0bd` | 为 11 条航线添加 port rotations：ST1, HDT, NSX, CST, CCT, NP2, CGX, SGX, IMR, SJA, JPS |
 | 2026-04-21 | `1a4332b` | 新增 24 条航线：AG1, AGX, AM1, BC1, CCT, CGS, CHT, CIS, CL1, CL2, CP1, CV2, CVT, CVX, IMR, NP2, NSX, RCS, SC2, SHX, VG1-3, VGX |
@@ -58,10 +60,11 @@
 ### 📊 数据更新
 
 | 类型 | 详情 |
-|------|------|
+|:------|------|
 | **新增船只** | ZGCD, ZGNC, RACE (Racine), CASR, MKLA, M/V ASR, NE45 NEW BUILDING 4350, MEDKON LIA, EVERLASTING HARVEST, EXPRESS BERLIN, HOOGE, BZ CHONGFU |
 | **船只更新** | ZHONG GU YIN CHUAN / NAN CHANG / CHENG DU：添加 loading capacity、particulars |
 | **港口更新** | 更新 38 个港口的 man_in 时间；新增 THSSW (SUKSAWAT, BANGKOK) |
+| **坐标更新** | ports.csv 新增 lat/lon 列（243 港口），消除前端硬编码 |
 | **等待时间** | 22 个港口的 wait_times：CNNAS=12, CNNGB=12, CNSHK=12, THBKK=12, MYPKW=24 等 |
 | **距离更新** | distances.csv 多版本更新 |
 | **航线更新** | lanes.json：新增 30+ 条航线，含 port rotations |
@@ -70,7 +73,8 @@
 ### ⚙️ 系统改进
 
 | 日期 | Commit | 内容 |
-|------|--------|------|
+|:------|--------|------|
+| 2026-04-24 | `f2c8a74` | **GitHub 数据同步稳定性**：自动重试队列 + P盘实时备份 + 失败保护 |
 | 2026-04-22 | `519b0b6` | 新增本地服务器模式：fetchCSV/loadLanesData 优先使用 /data/ 端点 |
 | 2026-04-17 | `1e1a0e5` | 移除 Simulator 工具栏中重复的"添加到 Daily"按钮 |
 
