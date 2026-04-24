@@ -404,6 +404,16 @@
     "name": "MIDDLE EAST GULF ASIA SERVICE"
   },
   {
+    "code": "NAF",
+    "name": "NORTH AFRICA SERVICE (NAF)",
+    "ports": [
+      "TRIST",
+      "TRIZT",
+      "TRALI",
+      "DZALG"
+    ]
+  },
+  {
     "code": "NP2",
     "name": "China Philippines Express Service",
     "ports": [
@@ -673,15 +683,5 @@
   {
     "code": "VGX",
     "name": "Vietnam/Tailand - Middle East/India"
-  },
-  {
-    "code": "NAF",
-    "name": "NORTH AFRICA SERVICE (NAF)",
-    "ports": [
-      "TRIST",
-      "TRIZT",
-      "TRALI",
-      "DZALG"
-    ]
   }
 ]
