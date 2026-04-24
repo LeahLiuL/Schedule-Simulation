@@ -3131,6 +3131,9 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     statusEl.textContent = 'Loading data...';
     await loadAllData();
 
+    // Auto-retry pending GitHub commits in background (after data loaded)
+    GHQ.process();
+
     // Now init UI
     initVesselCombobox();
     initPortCombobox();
@@ -6348,6 +6351,56 @@ async function reloadCommittedData(type){
   }
 }
 
+// =====================================
+// Pending GitHub Commit Queue (auto-retry)
+// =====================================
+const GHQ = {
+  KEY: 'gh_pending_commits',
+  get() { try { return JSON.parse(localStorage.getItem(this.KEY)||'[]'); } catch { return []; } },
+  add(type, content) {
+    const q = this.get().filter(x=>x.type!==type);
+    q.push({ type, content, ts: Date.now() });
+    localStorage.setItem(this.KEY, JSON.stringify(q));
+  },
+  remove(type) {
+    localStorage.setItem(this.KEY, JSON.stringify(this.get().filter(x=>x.type!==type)));
+  },
+  async process() {
+    const q = this.get();
+    if(!q.length) return;
+    const token = getGhToken();
+    if(!token) return;
+    showToast('🔄 正在后台同步 ' + q.length + ' 个文件到 GitHub...', 'info');
+    let ok = 0;
+    for(const item of q){
+      const r = await this._pushOne(token, item.type, item.content);
+      if(r) { this.remove(item.type); ok++; }
+    }
+    if(ok>0) showToast('✓ 后台同步完成：' + ok + ' 个文件已上传', 'success');
+  },
+  async _pushOne(token, type, content) {
+    const filename = type === 'fleet' ? 'fleet_schedule.json' : csvFilename(type);
+    const path = 'shipping_data/' + filename;
+    try {
+      const getResp = await fetch(GH_REPO_API + '/' + path, {
+        headers: { 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github.v3+json' }
+      });
+      let sha = null;
+      if(getResp.ok){ const d=await getResp.json(); sha=d.sha; }
+      const base64 = btoa(unescape(encodeURIComponent(content)));
+      const msg = 'Update ' + filename + ' via Data Manager (' + new Date().toISOString().slice(0,10) + ')';
+      const body = { message:msg, content:base64, branch:'main' };
+      if(sha) body.sha = sha;
+      const r = await fetch(GH_REPO_API+'/'+path, {
+        method:'PUT',
+        headers:{ 'Authorization':'Bearer '+token, 'Content-Type':'application/json' },
+        body: JSON.stringify(body)
+      });
+      return r.ok;
+    } catch(e){ return false; }
+  }
+};
+
 // Commit a single CSV file to GitHub via Contents API
 async function commitToGitHub(type){
   const token = getGhToken();
@@ -6424,8 +6477,9 @@ async function commitToGitHub(type){
         showToast(filename + ' ✓ 已保存: P盘 + GitHub', 'success');
       } else {
         const errText = await putResp.text();
-        setCommitStatus('⚠ GitHub 失败，已保存到本地');
-        showToast(filename + ' ⚠ GitHub 提交失败，数据已保存到本地 (P盘/浏览器缓存)', 'warning');
+        setCommitStatus('⚠ GitHub 失败，已保存本地，后台自动重试');
+        GHQ.add(type, content);
+        showToast(filename + ' ⚠ GitHub 提交失败，已保存到 P盘 + 本地队列\n将在下次打开页面时自动重试上传', 'warning');
         console.warn('GitHub PUT failed (' + putResp.status + '): ' + errText);
       }
     } else {
@@ -8646,10 +8700,11 @@ async function commitFleetSchedule(){
         showToast('✓ 已保存到 P盘 + GitHub', 'success');
       } else {
         const errText = await putResp.text();
-        setStatus('⚠ GitHub 失败，已保存到本地');
-        // 立即备份到 localStorage，不等 autoSaveFleet 的 5 分钟定时器
+        setStatus('⚠ GitHub 失败，已保存本地，后台自动重试');
+        // 立即备份到 localStorage，并加入队列等待自动重试
         try { localStorage.setItem('fleet_schedule_local', JSON.stringify(FLEET_DATA)); } catch(e){}
-        showToast('⚠ GitHub 提交失败。数据已保存在 P盘 + 浏览器缓存。\n下次网络好时重新点「⬆」即可重试。', 'warning');
+        GHQ.add('fleet', JSON.stringify(FLEET_DATA));
+        showToast('⚠ GitHub 提交失败。数据已保存到 P盘 + 本地队列\n将在下次打开页面时自动重试上传', 'warning');
         console.warn('GitHub PUT failed (' + putResp.status + '): ' + errText);
       }
     } else {
