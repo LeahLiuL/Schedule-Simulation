@@ -1501,8 +1501,6 @@
               <th style="width:80px">Man-In (hr)</th>
               <th style="width:90px">Stay (hr)</th>
               <th style="width:90px">Wait (hr)</th>
-              <th style="width:90px">Latitude</th>
-              <th style="width:90px">Longitude</th>
               <th style="width:80px">Actions</th>
             </tr>
           </thead>
@@ -5375,7 +5373,7 @@ function renderDmPorts(filter=''){
   const f = filter.toLowerCase();
   let html = '';
   PORTS_DATA.forEach((row,i)=>{
-    const code=row[0], en=row[1]||'', cn=row[2]||'', manIn=row[3]||'', stay=row[4]||'', wait=row[5]||'', lat=row[6]||'', lon=row[7]||'';
+    const code=row[0], en=row[1]||'', cn=row[2]||'', manIn=row[3]||'', stay=row[4]||'', wait=row[5]||'';
     if(f && !(code.toLowerCase().includes(f) || en.toLowerCase().includes(f) || cn.includes(f))) return;
     html += `<tr>
       <td>${i+1}</td>
@@ -5385,8 +5383,6 @@ function renderDmPorts(filter=''){
       <td><input type="number" value="${manIn}" min="0" max="48" step="0.5" onchange="editDmPort(${i},3,this.value)" style="width:70px"/></td>
       <td><input type="number" value="${stay}" min="0" max="720" step="1" onchange="editDmPort(${i},4,this.value)" style="width:70px"/></td>
       <td><input type="number" value="${wait}" min="0" max="168" step="1" onchange="editDmPort(${i},5,this.value)" style="width:70px" placeholder="0"/></td>
-      <td><input type="number" value="${lat}" step="0.001" onchange="editDmPort(${i},6,this.value)" style="width:80px" placeholder="lat"/></td>
-      <td><input type="number" value="${lon}" step="0.001" onchange="editDmPort(${i},7,this.value)" style="width:80px" placeholder="lon"/></td>
       <td class="dm-actions-cell">
         <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmPort(${i})">✕</button>
       </td>
@@ -6477,20 +6473,16 @@ async function commitToGitHub(type){
     }
 
     // Reload data from GitHub to update in-memory state
-    try {
-      // Only reload from GitHub if commit succeeded — otherwise keep local data
-      if(ghSuccess){
-        try {
-          await reloadCommittedData(type);
-        } catch(e){ console.warn('Failed to reload data from GitHub, keeping local data:', e); }
-      }
-
-    // If distances were committed, sync to Fleet schedule
+    if(ghSuccess){
+      try {
+        await reloadCommittedData(type);
+      } catch(e){ console.warn('Failed to reload data from GitHub, keeping local data:', e); }
+    }
     if(type === 'distances'){
       syncDistancesToFleet();
     }
   } catch(err){
-    console.error('GitHub commit error:', err);
+    console.error('Data commit error:', err);
     setCommitStatus('✗ Error: ' + err.message);
     showToast('Commit failed: ' + err.message, 'warning');
   } finally {
