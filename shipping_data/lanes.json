@@ -386,6 +386,16 @@
     "name": "MEDITERRANEAN EXPRESS SERVICE"
   },
   {
+    "code": "MES",
+    "name": "Mediterranean Express Service (MES) / Turkiye Libya Service",
+    "ports": [
+      "TRIST",
+      "TRIZT",
+      "TRALI",
+      "LYMRA"
+    ]
+  },
+  {
     "code": "MFX",
     "name": "MOMBASA FAR EAST X-PRESS"
   },
@@ -663,15 +673,5 @@
   {
     "code": "VGX",
     "name": "Vietnam/Tailand - Middle East/India"
-  },
-  {
-    "code": "MES",
-    "name": "Mediterranean Express Service (MES) / Turkiye Libya Service",
-    "ports": [
-      "TRIST",
-      "TRIZT",
-      "TRALI",
-      "LYMRA"
-    ]
   }
 ]
