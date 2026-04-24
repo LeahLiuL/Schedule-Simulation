@@ -6399,6 +6399,7 @@ async function commitToGitHub(type){
   const content = buildCSV(type);
   const path = 'shipping_data/' + filename;
 
+  // commitToGitHub - Updated 2026-04-24
   // Update button to loading state
   const btns = document.querySelectorAll('.dm-btn-commit');
   btns.forEach(b=>b.classList.add('loading'));
