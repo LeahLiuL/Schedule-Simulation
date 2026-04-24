@@ -10,6 +10,8 @@
 
 | 日期 | Commit | 内容 |
 |:------|--------|------|
+| 2026-04-24 | `154c730` | **修复 try-catch 语法错误**：commitToGitHub 函数嵌套 try 块结构问题；移除 Data Manager Ports 表格 Lat/Lon 列（保留 CSV 中的坐标数据） |
+| 2026-04-24 | `5a6363a` | **修复 ghSuccess undefined**：无 GitHub token 时 ghSuccess 未定义导致报错 |
 | 2026-04-24 | `718e4b4` | **消除 PORT_COORDS 硬编码**：243 港口坐标迁移到 ports.csv（新增 lat/lon 列），代码从 CSV 动态构建；Data Manager 新增 Lat/Lon 编辑列 |
 | 2026-04-24 | `aa922b9` | **GitHub 提交失败保护**：失败时立即 localStorage 备份、warning 提示、跳过 reload 保留内存数据；Toast 增加重试指引 |
 | 2026-04-24 | `f2c8a74` | **新增 GitHub 自动重试队列**：失败 commit 入队，下次开页自动重试 |
@@ -42,7 +44,6 @@
 
 | 日期 | Commit | 内容 |
 |:------|--------|------|
-| 2026-04-24 | `718e4b4` | **Data Manager Ports 新增 Lat/Lon 编辑列**：可直接在页面修改港口坐标 |
 | 2026-04-22 | `0695df6` | **Speed Optimizer**：新增航速优化工具，用图表对比不同航速下的燃油消耗 |
 | 2026-04-22 | `da7216d` | Speed Optimizer 表格头部使用深色主题样式区分 |
 | 2026-04-22 | `050c5cc` | **Vessel Info 面板**（Particular + Best Model + 燃油数据）|
@@ -64,7 +65,7 @@
 | **新增船只** | ZGCD, ZGNC, RACE (Racine), CASR, MKLA, M/V ASR, NE45 NEW BUILDING 4350, MEDKON LIA, EVERLASTING HARVEST, EXPRESS BERLIN, HOOGE, BZ CHONGFU |
 | **船只更新** | ZHONG GU YIN CHUAN / NAN CHANG / CHENG DU：添加 loading capacity、particulars |
 | **港口更新** | 更新 38 个港口的 man_in 时间；新增 THSSW (SUKSAWAT, BANGKOK) |
-| **坐标更新** | ports.csv 新增 lat/lon 列（243 港口），消除前端硬编码 |
+| **坐标更新** | ports.csv 含 lat/lon 列（243 港口），存储在 CSV 中供内部使用（已从 Data Manager 界面移除展示） |
 | **等待时间** | 22 个港口的 wait_times：CNNAS=12, CNNGB=12, CNSHK=12, THBKK=12, MYPKW=24 等 |
 | **距离更新** | distances.csv 多版本更新 |
 | **航线更新** | lanes.json：新增 30+ 条航线，含 port rotations |
