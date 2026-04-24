@@ -58,7 +58,13 @@
   },
   {
     "code": "BDX",
-    "name": "South China Haiphone Service"
+    "name": "South China Haiphone Service",
+    "ports": [
+      "CNSHK",
+      "CNNAS",
+      "VNHPH",
+      "CNSHK"
+    ]
   },
   {
     "code": "CBS",
