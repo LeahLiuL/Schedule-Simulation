@@ -439,6 +439,19 @@
     ]
   },
   {
+    "code": "RES",
+    "name": "RED SEA SERVICE",
+    "ports": [
+      "CNSHA",
+      "CNNGB",
+      "CNNAS",
+      "SAJED",
+      "JOAQJ",
+      "EGSOK",
+      "CNSHA"
+    ]
+  },
+  {
     "code": "REX",
     "name": "Red sea Service",
     "ports": [
@@ -652,16 +665,13 @@
     "name": "Vietnam/Tailand - Middle East/India"
   },
   {
-    "code": "RES",
-    "name": "RED SEA SERVICE",
+    "code": "MES",
+    "name": "Mediterranean Express Service (MES) / Turkiye Libya Service",
     "ports": [
-      "CNSHA",
-      "CNNGB",
-      "CNNAS",
-      "SAJED",
-      "JOAQJ",
-      "EGSOK",
-      "CNSHA"
+      "TRIST",
+      "TRIZT",
+      "TRALI",
+      "LYMRA"
     ]
   }
 ]
