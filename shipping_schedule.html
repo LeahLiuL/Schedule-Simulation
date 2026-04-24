@@ -6590,7 +6590,7 @@ async function commitAllToGitHub(){
     showToast('✓ 已保存: ' + localOk + ' 个文件到 P盘', 'success');
   } else {
     setCommitStatus('⚠ ' + localOk + ' ok, ' + fail + ' failed');
-    showToast('部分保存失败: ' + localOk + ' 成功, ' + fail + ' 失败', 'warning');
+    showToast('部分保存失败: ' + localOk + ' 成功, ' + fail + ' 失败。\n数据已保存在 P盘。下次网络好时重新点「⬆ Commit All」即可重试。', 'warning');
   }
 
   // Reload all data only if all GitHub commits succeeded
@@ -8647,7 +8647,9 @@ async function commitFleetSchedule(){
       } else {
         const errText = await putResp.text();
         setStatus('⚠ GitHub 失败，已保存到本地');
-        showToast('⚠ GitHub 提交失败，数据已保存到本地 (P盘/浏览器缓存)', 'warning');
+        // 立即备份到 localStorage，不等 autoSaveFleet 的 5 分钟定时器
+        try { localStorage.setItem('fleet_schedule_local', JSON.stringify(FLEET_DATA)); } catch(e){}
+        showToast('⚠ GitHub 提交失败。数据已保存在 P盘 + 浏览器缓存。\n下次网络好时重新点「⬆」即可重试。', 'warning');
         console.warn('GitHub PUT failed (' + putResp.status + '): ' + errText);
       }
     } else {
