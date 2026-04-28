@@ -2444,7 +2444,15 @@ YEHOD,HODEIDAH,,,`
 function parseCSV(text){
   const lines = text.trim().split(/\r?\n/);
   if(!lines.length) return [];
-  const headers = lines[0].split(',').map(h=>h.trim());
+  // Deduplicate column names: "Max TEU" → "Max TEU", "Max TEU" → "Max TEU (2)"
+  const rawHeaders = lines[0].split(',').map(h=>h.trim());
+  const seen = {};
+  const headers = rawHeaders.map(h=>{
+    if(!h) return h;
+    if(!seen[h]){ seen[h]=1; return h; }
+    seen[h]++;
+    return h + ' (' + seen[h] + ')';
+  });
   return lines.slice(1).map(line=>{
     const vals = [];
     let cur = '', inQuote = false;
