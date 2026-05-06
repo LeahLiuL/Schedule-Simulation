@@ -10675,6 +10675,204 @@
           "modifiedBy": "anonymous"
         }
       ]
+    },
+    {
+      "code": "CUST",
+      "name": "SHENG TANG",
+      "voyages": [
+        {
+          "voyNo": "001W",
+          "lane": "AEM",
+          "status": "current",
+          "speed": 15,
+          "ports": [
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-05-14T08:00",
+              "etb": "2026-05-17T10:00",
+              "etd": "2026-05-18T10:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 72,
+              "dist": 387,
+              "speed": 14.9,
+              "fromExcel": false
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-05-19T12:00",
+              "etb": "2026-05-22T05:00",
+              "etd": "2026-05-22T17:00",
+              "stayHrs": 12,
+              "manIn": 5,
+              "waitHrs": 60,
+              "dist": 147,
+              "speed": 14.7,
+              "fromExcel": false
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-05-23T03:00",
+              "etb": "2026-05-23T18:00",
+              "etd": "2026-05-24T18:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 754,
+              "speed": 14.8,
+              "fromExcel": false
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-26T21:00",
+              "etb": "2026-05-27T12:00",
+              "etd": "2026-05-28T12:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 5853,
+              "speed": 15,
+              "fromExcel": false
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-06-13T19:00",
+              "etb": "2026-06-13T21:00",
+              "etd": "2026-06-14T21:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 644,
+              "speed": 15,
+              "fromExcel": false
+            },
+            {
+              "code": "EGSUZ",
+              "name": "SUEZ CANAL",
+              "eta": "2026-06-16T16:00",
+              "etb": "2026-06-16T19:00",
+              "etd": "2026-06-17T19:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 257,
+              "speed": 14.3,
+              "fromExcel": false
+            },
+            {
+              "code": "EGALY",
+              "name": "ALEXANDRIA",
+              "eta": "2026-06-18T13:00",
+              "etb": "2026-06-18T15:00",
+              "etd": "2026-06-19T15:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 554,
+              "speed": 15,
+              "fromExcel": false
+            },
+            {
+              "code": "TRALI",
+              "name": "ALIAGA",
+              "eta": "2026-06-21T04:00",
+              "etb": "2026-06-21T06:00",
+              "etd": "2026-06-22T06:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 257,
+              "speed": 14.3,
+              "fromExcel": false
+            },
+            {
+              "code": "TRIST",
+              "name": "ISTANBUL",
+              "eta": "2026-06-23T00:00",
+              "etb": "2026-06-23T02:00",
+              "etd": "2026-06-24T02:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 798,
+              "speed": 14.8,
+              "fromExcel": false
+            },
+            {
+              "code": "TRMER",
+              "name": "MERSIN",
+              "eta": "2026-06-26T08:00",
+              "etb": "2026-06-26T10:00",
+              "etd": "2026-06-27T10:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 453,
+              "speed": 14.6,
+              "fromExcel": false
+            },
+            {
+              "code": "EGSUZ",
+              "name": "SUEZ CANAL",
+              "eta": "2026-06-28T17:00",
+              "etb": "2026-06-28T20:00",
+              "etd": "2026-06-29T20:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 644,
+              "speed": 15,
+              "fromExcel": false
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-07-01T15:00",
+              "etb": "2026-07-01T17:00",
+              "etd": "2026-07-02T17:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 0,
+              "speed": 0,
+              "fromExcel": false
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-07-03T03:00",
+              "etb": "2026-07-03T05:00",
+              "etd": "2026-07-04T05:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 4216,
+              "speed": 15,
+              "fromExcel": false
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-15T23:00",
+              "etb": "2026-07-16T13:00",
+              "etd": "2026-07-17T13:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 12,
+              "dist": 0,
+              "speed": 15,
+              "fromExcel": false
+            }
+          ],
+          "lastModified": "2026-05-06T10:42:15.577Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
     }
   ],
   "lastSync": null
