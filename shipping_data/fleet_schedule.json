@@ -10873,6 +10873,165 @@
           "modifiedBy": "anonymous"
         }
       ]
+    },
+    {
+      "code": "BZCF",
+      "name": "BZ CHONGFU",
+      "voyages": [
+        {
+          "voyNo": "001W",
+          "lane": "AEM",
+          "status": "current",
+          "speed": 13,
+          "ports": [
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-05-08T08:00",
+              "etb": "2026-05-11T10:00",
+              "etd": "2026-05-12T10:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 72,
+              "dist": 387,
+              "speed": 12.9,
+              "fromExcel": false
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-05-13T16:00",
+              "etb": "2026-05-16T09:00",
+              "etd": "2026-05-16T21:00",
+              "stayHrs": 12,
+              "manIn": 5,
+              "waitHrs": 60,
+              "dist": 147,
+              "speed": 12.3,
+              "fromExcel": false
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-05-17T09:00",
+              "etb": "2026-05-18T00:00",
+              "etd": "2026-05-19T00:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 754,
+              "speed": 13,
+              "fromExcel": false
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-05-21T10:00",
+              "etb": "2026-05-22T01:00",
+              "etd": "2026-05-23T01:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 5853,
+              "speed": 13,
+              "fromExcel": false
+            },
+            {
+              "code": "SAJED",
+              "name": "JEDDAH",
+              "eta": "2026-06-10T20:00",
+              "etb": "2026-06-10T22:00",
+              "etd": "2026-06-11T22:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 644,
+              "speed": 12.9,
+              "fromExcel": false
+            },
+            {
+              "code": "EGSUZ",
+              "name": "SUEZ CANAL",
+              "eta": "2026-06-14T00:00",
+              "etb": "2026-06-14T03:00",
+              "etd": "2026-06-15T03:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 257,
+              "speed": 12.9,
+              "fromExcel": false
+            },
+            {
+              "code": "EGALY",
+              "name": "ALEXANDRIA",
+              "eta": "2026-06-15T23:00",
+              "etb": "2026-06-16T01:00",
+              "etd": "2026-06-17T01:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 554,
+              "speed": 12.9,
+              "fromExcel": false
+            },
+            {
+              "code": "TRALI",
+              "name": "ALIAGA",
+              "eta": "2026-06-18T20:00",
+              "etb": "2026-06-18T22:00",
+              "etd": "2026-06-19T22:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 257,
+              "speed": 12.9,
+              "fromExcel": false
+            },
+            {
+              "code": "TRIST",
+              "name": "ISTANBUL",
+              "eta": "2026-06-20T18:00",
+              "etb": "2026-06-20T20:00",
+              "etd": "2026-06-21T20:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 798,
+              "speed": 12.9,
+              "fromExcel": false
+            },
+            {
+              "code": "TRMER",
+              "name": "MERSIN",
+              "eta": "2026-06-24T10:00",
+              "etb": "2026-06-24T12:00",
+              "etd": "2026-06-25T12:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 5431,
+              "speed": 13,
+              "fromExcel": false
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-12T22:00",
+              "etb": "2026-07-13T12:00",
+              "etd": "2026-07-14T12:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 12,
+              "dist": 0,
+              "speed": 13,
+              "fromExcel": false
+            }
+          ],
+          "lastModified": "2026-05-07T07:12:23.452Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
     }
   ],
   "lastSync": null
