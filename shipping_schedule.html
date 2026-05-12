@@ -8466,6 +8466,7 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
       const etaDt = new Date(prevEtdDt.getTime() + seaHrs * 3600000);
       round6Min(etaDt);
       // ETB = ETA + man in + wait
+      const waitHrs = getPortWait(portCode);
       const etbDt = new Date(etaDt.getTime() + (manIn + waitHrs) * 3600000);
       round6Min(etbDt);
       // ETD = ETB + port stay
