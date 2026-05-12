@@ -10174,7 +10174,7 @@
         },
         {
           "voyNo": "001W",
-          "lane": "AEM",
+          "lane": "REX",
           "status": "current",
           "speed": 16,
           "ports": [
@@ -10252,12 +10252,77 @@
               "stayHrs": 24,
               "manIn": 2,
               "waitHrs": 12,
+              "dist": 2676,
+              "speed": 15.9,
+              "fromExcel": false
+            },
+            {
+              "code": "CNTAO",
+              "name": "QINGDAO",
+              "eta": "2026-06-13T16:00",
+              "etb": "2026-06-16T18:00",
+              "etd": "2026-06-17T18:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 72,
+              "dist": 387,
+              "speed": 15.5,
+              "fromExcel": false
+            },
+            {
+              "code": "CNSHA",
+              "name": "SHANGHAI",
+              "eta": "2026-06-18T19:00",
+              "etb": "2026-06-21T12:00",
+              "etd": "2026-06-22T00:00",
+              "stayHrs": 12,
+              "manIn": 5,
+              "waitHrs": 60,
+              "dist": 147,
+              "speed": 14.7,
+              "fromExcel": false
+            },
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-06-22T10:00",
+              "etb": "2026-06-23T01:00",
+              "etd": "2026-06-24T01:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 754,
+              "speed": 15.7,
+              "fromExcel": false
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-06-26T01:00",
+              "etb": "2026-06-26T16:00",
+              "etd": "2026-06-27T16:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 12,
+              "dist": 1659,
+              "speed": 16,
+              "fromExcel": false
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-02T00:00",
+              "etb": "2026-07-02T14:00",
+              "etd": "2026-07-03T14:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 12,
               "dist": 0,
               "speed": 16,
               "fromExcel": false
             }
           ],
-          "lastModified": "2026-05-11T10:03:40.912Z",
+          "lastModified": "2026-05-12T05:34:38.183Z",
           "modifiedBy": "anonymous"
         }
       ]
