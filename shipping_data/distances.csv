@@ -1,4 +1,5 @@
 from_port,to_port,distance_nm,source
+TRMER,MYPKG,5431,auto
 LYMRA,TRIST,876,manual
 TRIZT,TRALI,279,auto
 PKKHI,OMSOH,560,auto
