@@ -1,5 +1,5 @@
 ﻿Vessel Name,Service Lane,Max Cargo Weight (Ton),Max TEU,Min 20' required (only for footpad),Max TEU,Min 20' required (without slot loss),Suggested BSA,Reefer Plug,Remark,,,,,,,,,,,,,,,,,
-CUL HAIPHONG,ST3,8400,679,17,790,205,750,97,,,,,,,,,,,,,,,,,,
+CUL HAIPHONG,ST3,8400,679,17,790,205,680,97,,,,,,,,,,,,,,,,,,
 CUL HUANGPU,CHT,7100,594,10,672,280,590,80,,,,,,,,,,,,,,,,,,
 CUL HUANGPU,NSCT1,7100,594,10,672,280,590,80,,,,,,,,,,,,,,,,,,
 CUL HOCHIMINH,REX,27500,2214,30,2370,460 - 480,2250,388,,,,,,,,,,,,,,,,,,
