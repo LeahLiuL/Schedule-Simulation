@@ -1265,6 +1265,17 @@
           <span class="fuel-label">Grand Total MGO</span>
           <span class="fuel-val" id="fs-total-mgo">-- mt</span>
         </div>
+        <!-- Adjustment Factors -->
+        <div class="fuel-row" style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);display:flex;gap:12px;flex-wrap:wrap;">
+          <label style="font-size:.75rem;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="chkCongestion" onchange="onFuelAdjustChange()" style="cursor:pointer;"/>
+            塞港情况
+          </label>
+          <label style="font-size:.75rem;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="chkMonsoon" onchange="onFuelAdjustChange()" style="cursor:pointer;"/>
+            季风原因
+          </label>
+        </div>
       </div>
     </div>
 
@@ -3435,6 +3446,26 @@ function updateStay(idx, val){
 }
 
 // ==================== FUEL ESTIMATE ====================
+// ==================== FUEL ADJUSTMENT FACTORS (hidden percentages) ====================
+const FUEL_ADJUST_CONGESTION = 0.05;  // 塞港 +5% (not shown to user)
+const FUEL_ADJUST_MONSOON    = 0.10;  // 季风 +10% (not shown to user)
+
+function getFuelAdjustMultiplier(){
+  let m = 1.0;
+  if(document.getElementById('chkCongestion')?.checked) m *= (1 + FUEL_ADJUST_CONGESTION);
+  if(document.getElementById('chkMonsoon')?.checked)    m *= (1 + FUEL_ADJUST_MONSOON);
+  return m;
+}
+
+function onFuelAdjustChange(){
+  // Re-run fuel update with new multiplier
+  if(scheduleRows.length > 0){
+    updateFuelFromSchedule();
+  } else {
+    updateFuelEstimate();
+  }
+}
+
 function updateFuelEstimate(){
   const speed = parseFloat(document.getElementById('speedInput').value)||14;
 
@@ -3473,8 +3504,9 @@ function updateFuelEstimate(){
   document.getElementById('fs-waithrs').textContent   = totalWaitHrs ? totalWaitHrs+' hr' : '0 hr';
   document.getElementById('fs-ps-lsfo').textContent   = psLsfo ? psLsfo+' mt' : '0 mt';
   document.getElementById('fs-ps-mgo').textContent    = psMgo  ? psMgo+' mt' : '0 mt';
-  document.getElementById('fs-total-lsfo').textContent = +(lsfo + psLsfo).toFixed(1)+' mt';
-  document.getElementById('fs-total-mgo').textContent  = +(mgo + psMgo).toFixed(1)+' mt';
+  const adj = getFuelAdjustMultiplier();
+  document.getElementById('fs-total-lsfo').textContent = +((lsfo + psLsfo) * adj).toFixed(1)+' mt';
+  document.getElementById('fs-total-mgo').textContent  = +((mgo + psMgo) * adj).toFixed(1)+' mt';
 }
 
 // Update fuel summary from actual schedule rows (after user edits)
@@ -3511,8 +3543,9 @@ function updateFuelFromSchedule(){
   document.getElementById('fs-waithrs').textContent   = totalWaitHrs+' hr';
   document.getElementById('fs-ps-lsfo').textContent   = psLsfo ? psLsfo+' mt' : '0 mt';
   document.getElementById('fs-ps-mgo').textContent    = psMgo  ? psMgo+' mt' : '0 mt';
-  document.getElementById('fs-total-lsfo').textContent = +(lsfo + psLsfo).toFixed(1)+' mt';
-  document.getElementById('fs-total-mgo').textContent  = +(mgo + psMgo).toFixed(1)+' mt';
+  const adj2 = getFuelAdjustMultiplier();
+  document.getElementById('fs-total-lsfo').textContent = +((lsfo + psLsfo) * adj2).toFixed(1)+' mt';
+  document.getElementById('fs-total-mgo').textContent  = +((mgo + psMgo) * adj2).toFixed(1)+' mt';
 }
 
 // ==================== SPEED OPTIMIZER ====================
