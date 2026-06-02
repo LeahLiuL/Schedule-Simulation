@@ -1,4 +1,7 @@
 vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day
+SDAM,Sidra Ahlam,11,18.5,0,5,0,5
+SDAM,Sidra Ahlam,12,19.5,0,5,0,5
+SDAM,Sidra Ahlam,14,23,0,5,0,5
 BZCF,BZ CHONGFU,13,37,0,4,10,0
 BZCF,BZ CHONGFU,17,75,0,4,10,0
 BZCF,BZ CHONGFU,16,64,0,4,10,0
