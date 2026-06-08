@@ -2883,20 +2883,17 @@ async function executeLanePortSelector(){
   
   // Single vessel scheduling mode
   const addAll = document.getElementById('lpsAddAll').checked;
-  const existingCodes = new Set(selectedPorts.map(p => p.code));
+  const preExistingCodes = new Set(selectedPorts.map(p => p.code));
   
   let addedCount = 0;
   portCodes.forEach(code => {
-    if(addAll || !existingCodes.has(code)){
-      if(!existingCodes.has(code)){
-        selectedPorts.push({
-          code: code,
-          stayHours: getPortStay(code),
-          waitHours: getPortWait(code)
-        });
-        addedCount++;
-        existingCodes.add(code);
-      }
+    if(addAll || !preExistingCodes.has(code)){
+      selectedPorts.push({
+        code: code,
+        stayHours: getPortStay(code),
+        waitHours: getPortWait(code)
+      });
+      addedCount++;
     }
   });
   
