@@ -739,6 +739,8 @@
   }
   #schedTable {
     width: 100%;
+    min-width: 0;
+    table-layout: auto;
   }
   thead tr {
     background: var(--thead);
@@ -2775,7 +2777,7 @@ function parseCSV(text){
 // Fetch CSV: Local server (/data/) → GitHub API → raw CDN
 async function fetchCSV(filename){
   const mode = getDataSourceMode();
-  const isLocalMode = (mode === 'local' && window.location.protocol !== 'file:');
+  const isLocalMode = (mode === 'local' && window.location.protocol !== 'file:' && !window.location.hostname.includes('github.io'));
 
   // STEP 1: Try local server (data_server.py)
   if(isLocalMode){
@@ -7313,7 +7315,7 @@ function isVoyageInTimeRange(voy){
 
 async function loadLanesData(){
   const mode = getDataSourceMode();
-  const isLocalMode = (mode === 'local' && window.location.protocol !== 'file:');
+  const isLocalMode = (mode === 'local' && window.location.protocol !== 'file:' && !window.location.hostname.includes('github.io'));
 
   // STEP 1: Try local server
   if(isLocalMode){
