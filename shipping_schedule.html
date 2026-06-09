@@ -621,11 +621,16 @@
   /* ===== TABLE ===== */
   /* ===== SPLIT PANE (schedule + cost) ===== */
   .right-body {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     min-height: 0;
+    align-self: flex-start;
+  }
+  .right-body.has-schedule {
+    flex: 1;
+    align-self: stretch;
   }
   .table-wrapper {
     flex: 0 0 auto;
@@ -4222,6 +4227,7 @@ function runSchedule(){
     document.getElementById('emptyState').style.display='none';
     document.getElementById('scheduleTableContainer').style.display='block';
     document.getElementById('tableWrapper').classList.add('has-schedule');
+    document.querySelector('.right-body').classList.add('has-schedule');
 
     const vesselDisplay = currentVessel.code || vesselInputVal;
     const portNames = selectedPorts.map(p=>portShortLabel(p.code)).join(' \u2192 ');
