@@ -73,10 +73,8 @@
   .main-layout {
     display: flex;
     gap: 0;
-    overflow: hidden;
-  }
-  .main-layout.has-schedule {
     height: calc(100vh - 60px);
+    overflow: hidden;
   }
 
   /* ===== LEFT PANEL ===== */
@@ -749,6 +747,8 @@
   }
   #schedTable {
     table-layout: auto;
+    min-width: 0;
+    width: auto;
   }
   thead tr {
     background: var(--thead);
@@ -4227,7 +4227,6 @@ function runSchedule(){
     document.getElementById('scheduleTableContainer').style.display='block';
     document.getElementById('tableWrapper').classList.add('has-schedule');
     document.querySelector('.right-body').classList.add('has-schedule');
-    document.querySelector('.main-layout').classList.add('has-schedule');
 
     const vesselDisplay = currentVessel.code || vesselInputVal;
     const portNames = selectedPorts.map(p=>portShortLabel(p.code)).join(' \u2192 ');
