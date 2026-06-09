@@ -628,10 +628,14 @@
     min-height: 0;
   }
   .table-wrapper {
-    flex: 1;
+    flex: 0 0 auto;
     overflow: auto;
     padding: 16px 20px;
     min-height: 80px;
+  }
+  .table-wrapper.has-schedule {
+    flex: 1 1 auto;
+    min-height: 200px;
   }
   .cost-resizer {
     height: 8px;
@@ -4217,6 +4221,7 @@ function runSchedule(){
     showToast('Schedule generated successfully','success');
     document.getElementById('emptyState').style.display='none';
     document.getElementById('scheduleTableContainer').style.display='block';
+    document.getElementById('tableWrapper').classList.add('has-schedule');
 
     const vesselDisplay = currentVessel.code || vesselInputVal;
     const portNames = selectedPorts.map(p=>portShortLabel(p.code)).join(' \u2192 ');
