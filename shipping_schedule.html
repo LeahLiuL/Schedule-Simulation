@@ -619,10 +619,113 @@
   }
 
   /* ===== TABLE ===== */
+  /* ===== SPLIT PANE (schedule + cost) ===== */
+  .right-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
   .table-wrapper {
     flex: 1;
     overflow: auto;
     padding: 16px 20px;
+    min-height: 80px;
+  }
+  .cost-resizer {
+    height: 8px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    cursor: row-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .cost-resizer:hover { background: #e8f0fe; }
+  .cost-resizer-handle {
+    width: 36px; height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .cost-panel {
+    flex-shrink: 0;
+    height: 160px;
+    min-height: 60px;
+    max-height: 50vh;
+    overflow-y: auto;
+    background: var(--card);
+    border-top: none;
+    padding: 12px 20px 14px;
+  }
+  .cost-panel-title {
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .cost-cards {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+  .cost-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  .cost-card.cost-total {
+    border-color: #93c5fd;
+    background: #eff6ff;
+  }
+  .cost-card.cost-placeholder {
+    border-style: dashed;
+    opacity: 0.55;
+  }
+  .cost-card-label { font-size: .68rem; color: var(--muted); margin-bottom: 4px; }
+  .cost-card-value { font-size: 1rem; font-weight: 600; color: var(--primary); line-height: 1.2; }
+  .cost-card.cost-total .cost-card-value { color: #c2410c; }
+  .cost-card-sub { font-size: .65rem; color: var(--muted); margin-top: 3px; }
+  /* ===== FUEL PRICE INPUT BLOCK ===== */
+  .fuel-price-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 4px;
+  }
+  .fuel-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    font-size: .76rem;
+  }
+  .fuel-price-input {
+    width: 72px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: .76rem;
+    text-align: right;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .fuel-price-input:focus { outline: none; border-color: var(--primary); }
+  .fuel-price-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0 0;
+    margin-top: 3px;
+    border-top: 1px dashed var(--border);
+    font-size: .76rem;
   }
   table {
     border-collapse: collapse;
@@ -1279,6 +1382,33 @@
       </div>
     </div>
 
+    <!-- Fuel Price & Cost Estimate -->
+    <div class="panel-section" id="fuelPricePanel">
+      <div class="section-title">Fuel Price</div>
+      <div class="fuel-price-box">
+        <div class="fuel-price-row">
+          <span>LSFO ($/mt)</span>
+          <input type="number" class="fuel-price-input" id="fpLsfoPrice" value="580" min="0" step="1" oninput="updateCostPanel()"/>
+        </div>
+        <div class="fuel-price-row">
+          <span>MGO ($/mt)</span>
+          <input type="number" class="fuel-price-input" id="fpMgoPrice" value="720" min="0" step="1" oninput="updateCostPanel()"/>
+        </div>
+        <div class="fuel-price-total-row">
+          <span style="color:var(--muted);">LSFO Cost</span>
+          <span id="fpLsfoCost" style="color:var(--primary);font-weight:600;">-- </span>
+        </div>
+        <div class="fuel-price-row">
+          <span style="color:var(--muted);">MGO Cost</span>
+          <span id="fpMgoCost" style="color:var(--primary);font-weight:600;">-- </span>
+        </div>
+        <div class="fuel-price-row" style="border-top:1px solid var(--border);padding-top:5px;margin-top:3px;">
+          <span style="font-weight:600;">Total Fuel Cost</span>
+          <span id="fpTotalCost" style="color:#c2410c;font-weight:700;">-- </span>
+        </div>
+      </div>
+    </div>
+
     <!-- Speed Optimizer -->
     <div class="panel-section" id="speedOptimizerPanel" style="display:none;">
       <div class="section-title">⚡ Speed Optimizer</div>
@@ -1327,17 +1457,56 @@
       </div>
     </div>
 
-    <div class="table-wrapper" id="tableWrapper">
-      <div class="empty-state" id="emptyState">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <line x1="3" y1="9" x2="21" y2="9"/>
-          <line x1="9" y1="21" x2="9" y2="9"/>
-        </svg>
-        <h3>No Schedule Yet</h3>
-        <p>Select a vessel, add ports, set speed and start date, then click <strong>RUN SIMULATION</strong>.</p>
+    <div class="right-body">
+      <div class="table-wrapper" id="tableWrapper">
+        <div class="empty-state" id="emptyState">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          <h3>No Schedule Yet</h3>
+          <p>Select a vessel, add ports, set speed and start date, then click <strong>RUN SIMULATION</strong>.</p>
+        </div>
+        <div id="scheduleTableContainer" style="display:none;"></div>
       </div>
-      <div id="scheduleTableContainer" style="display:none;"></div>
+
+      <!-- Drag resizer -->
+      <div class="cost-resizer" id="costResizer">
+        <div class="cost-resizer-handle"></div>
+      </div>
+
+      <!-- Cost Summary Panel -->
+      <div class="cost-panel" id="costPanel">
+        <div class="cost-panel-title">Voyage Cost Summary</div>
+        <div class="cost-cards" id="costCards">
+          <div class="cost-card" id="ccLsfo">
+            <div class="cost-card-label">LSFO Cost</div>
+            <div class="cost-card-value" id="ccLsfoCost">--</div>
+            <div class="cost-card-sub" id="ccLsfoCostSub">awaiting simulation</div>
+          </div>
+          <div class="cost-card" id="ccMgo">
+            <div class="cost-card-label">MGO Cost</div>
+            <div class="cost-card-value" id="ccMgoCost">--</div>
+            <div class="cost-card-sub" id="ccMgoCostSub">awaiting simulation</div>
+          </div>
+          <div class="cost-card cost-total" id="ccFuelTotal">
+            <div class="cost-card-label">Total Fuel Cost</div>
+            <div class="cost-card-value" id="ccFuelTotalCost">--</div>
+            <div class="cost-card-sub">LSFO + MGO</div>
+          </div>
+          <div class="cost-card cost-placeholder" id="ccHire">
+            <div class="cost-card-label">Hire (Charter)</div>
+            <div class="cost-card-value" style="color:var(--muted);">--</div>
+            <div class="cost-card-sub">coming soon</div>
+          </div>
+          <div class="cost-card cost-placeholder" id="ccPtx">
+            <div class="cost-card-label">PTX (Port Charges)</div>
+            <div class="cost-card-value" style="color:var(--muted);">--</div>
+            <div class="cost-card-sub">coming soon</div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -3443,6 +3612,70 @@ function updateStay(idx, val){
 }
 
 // ==================== FUEL ESTIMATE ====================
+// ==================== COST PANEL ====================
+function fmtUSD(v){
+  if(!isFinite(v)) return '--';
+  return '$' + Math.round(v).toLocaleString('en-US');
+}
+
+function updateCostPanel(){
+  const lsfoMt  = parseFuelMt('fs-total-lsfo');
+  const mgoMt   = parseFuelMt('fs-total-mgo');
+  const lsfoP   = parseFloat(document.getElementById('fpLsfoPrice')?.value) || 0;
+  const mgoP    = parseFloat(document.getElementById('fpMgoPrice')?.value) || 0;
+
+  const lsfoCost = lsfoMt * lsfoP;
+  const mgoCost  = mgoMt  * mgoP;
+  const total    = lsfoCost + mgoCost;
+
+  // Left panel mini display
+  const showL = isFinite(lsfoCost) && lsfoMt > 0;
+  document.getElementById('fpLsfoCost').textContent = showL ? fmtUSD(lsfoCost) : '--';
+  document.getElementById('fpMgoCost').textContent  = (isFinite(mgoCost) && mgoMt > 0) ? fmtUSD(mgoCost) : '--';
+  document.getElementById('fpTotalCost').textContent= (showL) ? fmtUSD(total) : '--';
+
+  // Right panel cards
+  document.getElementById('ccLsfoCost').textContent     = showL ? fmtUSD(lsfoCost) : '--';
+  document.getElementById('ccLsfoCostSub').textContent  = showL ? lsfoMt.toFixed(1)+' mt × $'+lsfoP : 'awaiting simulation';
+  document.getElementById('ccMgoCost').textContent      = (isFinite(mgoCost) && mgoMt > 0) ? fmtUSD(mgoCost) : '--';
+  document.getElementById('ccMgoCostSub').textContent   = (isFinite(mgoCost) && mgoMt > 0) ? mgoMt.toFixed(1)+' mt × $'+mgoP : 'awaiting simulation';
+  document.getElementById('ccFuelTotalCost').textContent= showL ? fmtUSD(total) : '--';
+}
+
+function parseFuelMt(id){
+  const el = document.getElementById(id);
+  if(!el) return 0;
+  const m = el.textContent.match(/([\d.]+)/);
+  return m ? parseFloat(m[1]) : 0;
+}
+
+// ==================== COST PANEL RESIZER ====================
+(function initCostResizer(){
+  document.addEventListener('DOMContentLoaded', function(){
+    const resizer  = document.getElementById('costResizer');
+    const costPane = document.getElementById('costPanel');
+    const rightBody = resizer?.parentElement;
+    if(!resizer || !costPane) return;
+    let dragging = false, startY = 0, startH = 0;
+    resizer.addEventListener('mousedown', function(e){
+      dragging = true;
+      startY = e.clientY;
+      startH = costPane.offsetHeight;
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', function(e){
+      if(!dragging) return;
+      const delta = startY - e.clientY;
+      const newH  = Math.min(Math.max(startH + delta, 60), window.innerHeight * 0.6);
+      costPane.style.height = newH + 'px';
+    });
+    document.addEventListener('mouseup', function(){
+      if(dragging){ dragging = false; document.body.style.cursor=''; document.body.style.userSelect=''; }
+    });
+  });
+})();
+
 // ==================== FUEL ADJUSTMENT FACTORS (hidden percentages) ====================
 const FUEL_ADJUST_CONGESTION = 0.10;  // 塞港 +10% (not shown to user)
 const FUEL_ADJUST_MONSOON    = 0.10;  // 季风 +10% (not shown to user)
@@ -3504,6 +3737,7 @@ function updateFuelEstimate(){
   const adj = getFuelAdjustMultiplier();
   document.getElementById('fs-total-lsfo').textContent = +((lsfo + psLsfo) * adj).toFixed(1)+' mt';
   document.getElementById('fs-total-mgo').textContent  = +((mgo + psMgo) * adj).toFixed(1)+' mt';
+  updateCostPanel();
 }
 
 // Update fuel summary from actual schedule rows (after user edits)
@@ -3543,6 +3777,7 @@ function updateFuelFromSchedule(){
   const adj2 = getFuelAdjustMultiplier();
   document.getElementById('fs-total-lsfo').textContent = +((lsfo + psLsfo) * adj2).toFixed(1)+' mt';
   document.getElementById('fs-total-mgo').textContent  = +((mgo + psMgo) * adj2).toFixed(1)+' mt';
+  updateCostPanel();
 }
 
 // ==================== SPEED OPTIMIZER ====================
