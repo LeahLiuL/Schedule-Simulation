@@ -1,4 +1,5 @@
 from_port,to_port,distance_nm,source
+CNSHA,USLAX,5819,manual
 USLAX,CNNAS,6433,manual
 CNNAS,USLAX,6491,manual
 DZALG,TRMER,1562,manual
