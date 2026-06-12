@@ -6551,8 +6551,17 @@ async function fetchSearouteDistance(fromCode, toCode){
 
     // Try actual sea route calculation (Dijkstra on marnet network)
     const routeResult = await calcSearoute(c1.lng, c1.lat, c2.lng, c2.lat);
-    if(routeResult && routeResult.distance_nm > 0){
+    // Sanity check: reject unrealistic distances (> 15000 NM = likely wrong path)
+    if(routeResult && routeResult.distance_nm > 0 && routeResult.distance_nm < 15000){
       return {distance: routeResult.distance_nm};
+    }
+
+    // Searoute failed or returned unrealistic distance — fall back to haversine x 1.08
+    const h = haversineNM(c1.lat, c1.lng, c2.lat, c2.lng);
+    if(h > 0){
+      const fallback = Math.round(h * 1.08);
+      console.warn('searoute failed for ' + fromCode + '->' + toCode + ', using haversine fallback: ' + fallback + ' NM');
+      return {distance: fallback};
     }
 
     // Searoute failed — do NOT estimate, require manual input
