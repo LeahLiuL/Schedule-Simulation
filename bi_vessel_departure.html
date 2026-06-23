@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BI Vessel Departure Analysis</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f6f7; color: #333; }
+header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.container { max-width: 1800px; margin: 0 auto; padding: 12px; display: flex; gap: 12px; min-height: calc(100vh - 60px); }
+.left { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.right { width: 340px; flex-shrink: 0; }
+.filter-bar { background: white; border-radius: 8px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.filter-bar label { font-size: 12px; color: #666; font-weight: 500; }
+.filter-bar select, .filter-bar input { padding: 5px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; }
+.filter-bar input[type="date"] { width: 130px; }
+.filter-bar input[type="text"] { width: 180px; }
+.btn { padding: 5px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s; }
+.btn-primary { background: #1a73e8; color: white; }
+.btn-primary:hover { background: #1557b0; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-secondary:hover { background: #545b62; }
+.btn-success { background: #28a745; color: white; }
+.btn-success:hover { background: #1e7e34; }
+.table-wrap { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex: 1; overflow: auto; position: relative; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.data-table thead { position: sticky; top: 0; z-index: 10; }
+.data-table th { background: #e8f0fe; padding: 7px 8px; text-align: left; font-weight: 600; color: #1a73e8; border-bottom: 2px solid #c6d9f1; white-space: nowrap; font-size: 10px; }
+.data-table td { padding: 5px 8px; border-bottom: 1px solid #eee; white-space: nowrap; }
+.data-table tr:hover { background: #f8f9fa; }
+.data-table .warn { background: #fff8e1; }
+.data-table .danger { background: #ffebee; }
+.data-table .good { background: #e8f5e9; }
+.data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .col-small { width: 45px; }
+.data-table .col-date { width: 120px; }
+.data-table .col-num { width: 55px; }
+.data-table .col-teu { width: 60px; }
+.data-table .col-hidden { display: none; }
+.data-table th.th-discharge { background: #fce8e6; color: #c5221f; border-bottom: 2px solid #f5a9a6; }
+.data-table th.th-load { background: #e6f4ea; color: #137333; border-bottom: 2px solid #a8dab5; }
+.data-table td.td-discharge { color: #c5221f; background: #fef5f5; }
+.data-table td.td-load { color: #137333; background: #f2f9f5; }
+.data-table tr:hover td.td-discharge { background: #fde8e8; }
+.data-table tr:hover td.td-load { background: #e8f5e9; }
+.cargo-box.discharge { border-color: #f5a9a6; background: #fef5f5; }
+.cargo-box.discharge .cargo-title { color: #c5221f; }
+.cargo-box.discharge .value { color: #c5221f; }
+.cargo-box.load { border-color: #a8dab5; background: #f2f9f5; }
+.cargo-box.load .cargo-title { color: #137333; }
+.cargo-box.load .value { color: #137333; }
+.loading { text-align: center; padding: 60px 20px; color: #666; font-size: 15px; }
+.col-picker { position: relative; display: inline-block; }
+.col-picker-panel { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 10px; min-width: 180px; z-index: 100; max-height: 400px; overflow-y: auto; }
+.col-picker-panel.show { display: block; }
+.col-picker-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.col-picker-item input { cursor: pointer; }
+.col-picker-item:hover { background: #f8f9fa; }
+.col-picker-btns { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+.col-picker-btns button { flex: 1; font-size: 11px; padding: 4px; }
+.panel { background: white; border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 12px; }
+.panel-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #1a73e8; display: flex; align-items: center; gap: 6px; }
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.summary-card { background: #f8f9fa; border-radius: 6px; padding: 10px; text-align: center; border: 1px solid #e8eaed; }
+.summary-card .val { font-size: 22px; font-weight: 700; color: #1a73e8; }
+.summary-card .lbl { font-size: 11px; color: #5f6368; margin-top: 4px; }
+.summary-card.red .val { color: #d93025; }
+.summary-card.orange .val { color: #f9ab00; }
+.bar-chart { display: flex; flex-direction: column; gap: 5px; }
+.bar-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.bar-label { width: 60px; text-align: right; color: #5f6368; font-weight: 500; }
+.bar-track { flex: 1; height: 16px; background: #e8eaed; border-radius: 4px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.bar-val { width: 30px; text-align: left; color: #3c4043; font-weight: 600; font-size: 12px; }
+.histogram { display: flex; flex-direction: column; gap: 5px; }
+.terminal-list { font-size: 12px; }
+.terminal-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+.terminal-item:last-child { border-bottom: none; }
+.terminal-name { font-weight: 500; color: #3c4043; }
+.terminal-val { color: #1a73e8; font-weight: 600; }
+.cargo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cargo-box { background: #f8f9fa; border-radius: 6px; padding: 10px; border: 1px solid #e8eaed; }
+.cargo-title { font-size: 12px; font-weight: 600; color: #5f6368; margin-bottom: 8px; }
+.cargo-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; border-bottom: 1px solid #f0f0f0; }
+.cargo-row:last-child { border-bottom: none; font-weight: 600; }
+.cargo-row .label { color: #5f6368; }
+.cargo-row .value { color: #1a73e8; font-weight: 600; }
+.cargo-row .discharge-val { color: #c5221f; font-weight: 600; }
+.cargo-row .load-val { color: #137333; font-weight: 600; }
+.cargo-row .total-val { color: #1a73e8; font-weight: 700; }
+</style>
+</head>
+<body>
+<header>🚢 BI Vessel Departure Analysis</header>
+<div class="container">
+<div class="left">
+<div class="filter-bar">
+<label>Terminal</label>
+<select id="f_terminal"><option value="">All</option></select>
+<label>SVC</label>
+<select id="f_svc"><option value="">All</option></select>
+<label>Operator</label>
+<select id="f_operator"><option value="">All</option></select>
+<label>Dep. From</label>
+<input type="date" id="f_from" />
+<label>To</label>
+<input type="date" id="f_to" />
+<input type="text" id="f_search" placeholder="Search vessel/voyage/port..." />
+<button class="btn btn-primary" onclick="applyFilter()">Filter</button>
+<button class="btn btn-secondary" onclick="resetFilter()">Reset</button>
+<button class="btn btn-success" onclick="exportCSV()">Export CSV</button>
+<div class="col-picker">
+  <button class="btn btn-secondary" onclick="toggleColPicker(event)">⚙️ Columns</button>
+  <div class="col-picker-panel" id="colPickerPanel" onclick="event.stopPropagation()">
+    <div id="colPickerList"></div>
+    <div class="col-picker-btns">
+      <button class="btn btn-primary" style="font-size:11px;padding:4px 8px" onclick="saveColVisibility()">Save</button>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 8px" onclick="resetColVisibility()">Reset</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="table-wrap" id="tableWrap">
+<div class="loading">Loading...</div>
+</div>
+</div>
+<div class="right">
+<div class="panel">
+<div class="panel-title">📊 Summary</div>
+<div class="summary-grid" id="summaryGrid"></div>
+</div>
+<div class="panel">
+<div class="panel-title">⏱ Wait Time Dist.</div>
+<div class="bar-chart" id="waitChart"></div>
+</div>
+<div class="panel">
+<div class="panel-title">⚓ Port Stay Dist.</div>
+<div class="bar-chart" id="stayChart"></div>
+</div>
+<div class="panel">
+<div class="panel-title">⛽ MPG H Dist.</div>
+<div class="histogram" id="mpghChart"></div>
+</div>
+<div class="panel">
+<div class="panel-title">🚢 Terminal Moves Top10</div>
+<div class="terminal-list" id="terminalChart"></div>
+</div>
+<div class="panel">
+<div class="panel-title">📦 TEU Top10</div>
+<div class="terminal-list" id="teuChart"></div>
+</div>
+<div class="panel">
+<div class="panel-title">📥 Discharge Summary</div>
+<div class="cargo-grid" id="cargoDisSummary"></div>
+</div>
+<div class="panel">
+<div class="panel-title">📤 Load Summary</div>
+<div class="cargo-grid" id="cargoLoadSummary"></div>
+</div>
+<div class="panel">
+<div class="panel-title">📦 Total Summary</div>
+<div class="cargo-grid" id="cargoSummary"></div>
+</div>
+</div>
+</div>
+
+<script>
+const CSV_URL = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv';
+let DATA = [];
+let filtered = [];
+let colVisibility = {};
+
+const COL_DEFS = [
+  { key: 'srl_no', label: 'SRL', cls: 'col-small', fmt: v => v || '' },
+  { key: 'terminal', label: 'TERMINAL', cls: '', fmt: v => v || '' },
+  { key: 'svc', label: 'SVC', cls: '', fmt: v => v || '' },
+  { key: 'vessel_voyage', label: 'VESSEL/VOYAGE', cls: '', fmt: v => v || '' },
+  { key: 'operator', label: 'OPERATOR', cls: '', fmt: v => v || '' },
+  { key: 'arrived_anchorage', label: 'ETA Anch.', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
+  { key: 'berth', label: 'Berth', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
+  { key: 'departure', label: 'Departure', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
+  { key: 'wait_time', label: 'Wait(h)', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true },
+  { key: 'port_stay', label: 'Stay(h)', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true },
+  { key: 'total_moves', label: 'MOVES', cls: 'col-num', fmt: v => v != null ? Math.round(v) : '', num: true },
+  { key: 'discharge_full_20gp', label: 'Dis F20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
+  { key: 'discharge_empty_20gp', label: 'Dis E20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
+  { key: 'discharge_full_40hc', label: 'Dis F40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
+  { key: 'discharge_empty_40hc', label: 'Dis E40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
+  { key: 'load_full_20gp', label: 'Load F20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
+  { key: 'load_empty_20gp', label: 'Load E20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
+  { key: 'load_full_40hc', label: 'Load F40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
+  { key: 'load_empty_40hc', label: 'Load E40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
+  { key: 'total_teu', label: 'TEU', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, bold: true },
+  { key: 'vessel_mpgh', label: 'MPG H', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true }
+];
+
+let OPTIONS = { terminals: [], svcs: [], operators: [] };
+
+function parseCSV(text) {
+  const BOM = '\uFEFF';
+  if (text.startsWith(BOM)) text = text.slice(1);
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = lines[i].split(',');
+    if (vals.length < headers.length) continue;
+    const row = {};
+    headers.forEach((h, j) => {
+      let val = vals[j] ? vals[j].trim().replace(/^"|"$/g, '') : '';
+      if (val === '' || val === 'null') { row[h] = null; return; }
+      const n = Number(val);
+      row[h] = isNaN(n) ? val : n;
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function buildOptions(data) {
+  OPTIONS.terminals = [...new Set(data.map(r => r.terminal).filter(Boolean))].sort();
+  OPTIONS.svcs = [...new Set(data.map(r => r.svc).filter(Boolean))].sort();
+  OPTIONS.operators = [...new Set(data.map(r => r.operator).filter(Boolean))].sort();
+}
+
+function loadColVisibility() {
+  try {
+    const saved = localStorage.getItem('bi_col_visibility');
+    if (saved) colVisibility = JSON.parse(saved);
+  } catch (e) {}
+  COL_DEFS.forEach(c => {
+    if (!(c.key in colVisibility)) colVisibility[c.key] = true;
+  });
+}
+
+function saveColVisibility() {
+  localStorage.setItem('bi_col_visibility', JSON.stringify(colVisibility));
+  document.getElementById('colPickerPanel').classList.remove('show');
+  renderTable();
+}
+
+function resetColVisibility() {
+  COL_DEFS.forEach(c => colVisibility[c.key] = true);
+  localStorage.removeItem('bi_col_visibility');
+  renderColPicker();
+  renderTable();
+}
+
+function toggleColPicker(e) {
+  e.stopPropagation();
+  const panel = document.getElementById('colPickerPanel');
+  panel.classList.toggle('show');
+  if (panel.classList.contains('show')) renderColPicker();
+}
+
+function renderColPicker() {
+  const list = document.getElementById('colPickerList');
+  list.innerHTML = COL_DEFS.map(c =>
+    '<label class="col-picker-item">' +
+    '<input type="checkbox" ' + (colVisibility[c.key] ? 'checked' : '') + ' onchange="colVisibility[\'' + c.key + '\'] = this.checked">' +
+    '<span>' + c.label + '</span>' +
+    '</label>'
+  ).join('');
+}
+
+function initDropdowns() {
+  document.getElementById('f_terminal').innerHTML += OPTIONS.terminals.map(x => '<option value="' + x + '">' + x + '</option>').join('');
+  document.getElementById('f_svc').innerHTML += OPTIONS.svcs.map(x => '<option value="' + x + '">' + x + '</option>').join('');
+  document.getElementById('f_operator').innerHTML += OPTIONS.operators.map(x => '<option value="' + x + '">' + x + '</option>').join('');
+}
+
+function init() {
+  loadColVisibility();
+  document.addEventListener('click', () => document.getElementById('colPickerPanel').classList.remove('show'));
+  const wrap = document.getElementById('tableWrap');
+  wrap.innerHTML = '<div class="loading">Loading data from GitHub...</div>';
+  fetch(CSV_URL)
+    .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.text(); })
+    .then(text => {
+      DATA = parseCSV(text);
+      buildOptions(DATA);
+      initDropdowns();
+      resetFilter();
+    })
+    .catch(err => {
+      wrap.innerHTML = '<div class="no-data">Failed to load data: ' + err.message + '<br>Make sure ' + CSV_URL + ' is accessible.</div>';
+    });
+}
+
+function applyFilter() {
+  const t = document.getElementById('f_terminal').value;
+  const s = document.getElementById('f_svc').value;
+  const o = document.getElementById('f_operator').value;
+  const from = document.getElementById('f_from').value;
+  const to = document.getElementById('f_to').value;
+  const q = document.getElementById('f_search').value.trim().toLowerCase();
+  filtered = DATA.filter(r => {
+    if (t && r.terminal !== t) return false;
+    if (s && r.svc !== s) return false;
+    if (o && r.operator !== o) return false;
+    if (from && r.departure && r.departure < from) return false;
+    if (to && r.departure && r.departure > to) return false;
+    if (q) {
+      const hay = (r.vessel_voyage + ' ' + r.terminal + ' ' + r.svc).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  renderTable();
+  renderAnalysis();
+}
+
+function resetFilter() {
+  document.getElementById('f_terminal').value = '';
+  document.getElementById('f_svc').value = '';
+  document.getElementById('f_operator').value = '';
+  document.getElementById('f_from').value = '';
+  document.getElementById('f_to').value = '';
+  document.getElementById('f_search').value = '';
+  filtered = DATA.slice();
+  renderTable();
+  renderAnalysis();
+}
+
+function renderTable() {
+  const wrap = document.getElementById('tableWrap');
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="no-data">No matching data</div>';
+    return;
+  }
+  let html = '<table class="data-table"><thead><tr>';
+  COL_DEFS.forEach(c => {
+    if (!colVisibility[c.key]) return;
+    const groupCls = c.group === 'discharge' ? ' th-discharge' : c.group === 'load' ? ' th-load' : '';
+    html += '<th class="' + c.cls + groupCls + '" data-col="' + c.key + '">' + c.label + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  filtered.forEach(r => {
+    let waitClass = '', stayClass = '';
+    if (r.wait_time > 24) waitClass = 'danger';
+    else if (r.wait_time > 6) waitClass = 'warn';
+    else if (r.wait_time != null && r.wait_time <= 6) waitClass = 'good';
+    if (r.port_stay > 72) stayClass = 'danger';
+    else if (r.port_stay > 24) stayClass = 'warn';
+    else if (r.port_stay != null && r.port_stay <= 24) stayClass = 'good';
+    html += '<tr>';
+    COL_DEFS.forEach(c => {
+      if (!colVisibility[c.key]) return;
+      let cls = c.num ? 'num' : '';
+      if (c.group === 'discharge') cls += ' td-discharge';
+      if (c.group === 'load') cls += ' td-load';
+      if (c.key === 'wait_time' && waitClass) cls += ' ' + waitClass;
+      if (c.key === 'port_stay' && stayClass) cls += ' ' + stayClass;
+      if (c.bold) cls += ' bold';
+      let style = c.bold ? ' style="font-weight:600;color:#1a73e8"' : '';
+      html += '<td class="' + cls + '"' + style + '>' + c.fmt(r[c.key]) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function renderAnalysis() {
+  const n = filtered.length;
+  const waits = filtered.map(r => r.wait_time).filter(v => v != null);
+  const stays = filtered.map(r => r.port_stay).filter(v => v != null);
+  const mpghs = filtered.map(r => r.vessel_mpgh).filter(v => v != null);
+  const moves = filtered.map(r => r.total_moves).filter(v => v != null);
+  const avgWait = waits.length ? (waits.reduce((a, b) => a + b, 0) / waits.length).toFixed(1) : '-';
+  const avgStay = stays.length ? (stays.reduce((a, b) => a + b, 0) / stays.length).toFixed(1) : '-';
+  const avgMoves = moves.length ? (moves.reduce((a, b) => a + b, 0) / moves.length).toFixed(0) : '-';
+  const wait24 = waits.filter(v => v > 24).length;
+  const stay72 = stays.filter(v => v > 72).length;
+  const avgMpgh = mpghs.length ? (mpghs.reduce((a, b) => a + b, 0) / mpghs.length).toFixed(1) : '-';
+  const mpghCount = mpghs.length;
+  const grid = document.getElementById('summaryGrid');
+  grid.innerHTML =
+    '<div class="summary-card"><div class="val">' + n + '</div><div class="lbl">Vessels</div></div>' +
+    '<div class="summary-card"><div class="val">' + avgWait + '</div><div class="lbl">Avg Wait(h)</div></div>' +
+    '<div class="summary-card"><div class="val">' + avgStay + '</div><div class="lbl">Avg Stay(h)</div></div>' +
+    '<div class="summary-card"><div class="val">' + avgMoves + '</div><div class="lbl">Avg Moves</div></div>' +
+    '<div class="summary-card red"><div class="val">' + wait24 + '</div><div class="lbl">Wait>24h</div></div>' +
+    '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay>72h</div></div>' +
+    '<div class="summary-card orange"><div class="val">' + avgMpgh + '</div><div class="lbl">Avg MPG H</div></div>' +
+    '<div class="summary-card"><div class="val">' + mpghCount + '</div><div class="lbl">MPG H Data</div></div>';
+  renderBarChart('waitChart', waits, [
+    { label: '<=6h', min: -1, max: 6, color: '#34a853' },
+    { label: '6-12h', min: 6, max: 12, color: '#4285f4' },
+    { label: '12-24h', min: 12, max: 24, color: '#f9ab00' },
+    { label: '24-48h', min: 24, max: 48, color: '#fa7b17' },
+    { label: '>48h', min: 48, max: 9999, color: '#d93025' }
+  ]);
+  renderBarChart('stayChart', stays, [
+    { label: '<=12h', min: -1, max: 12, color: '#34a853' },
+    { label: '12-24h', min: 12, max: 24, color: '#4285f4' },
+    { label: '24-48h', min: 24, max: 48, color: '#f9ab00' },
+    { label: '48-72h', min: 48, max: 72, color: '#fa7b17' },
+    { label: '>72h', min: 72, max: 9999, color: '#d93025' }
+  ]);
+  renderMpghChart(mpghs);
+  renderTerminalChart();
+  renderTeuChart();
+  renderCargoDisSummary();
+  renderCargoLoadSummary();
+  renderCargoSummary();
+}
+
+function renderBarChart(id, values, buckets) {
+  const counts = buckets.map(b => ({ ...b, count: values.filter(v => v > b.min && v <= b.max).length }));
+  const maxCount = Math.max.apply(null, counts.map(c => c.count).concat([1]));
+  const container = document.getElementById(id);
+  container.innerHTML = counts.map(c =>
+    '<div class="bar-row">' +
+    '<div class="bar-label">' + c.label + '</div>' +
+    '<div class="bar-track">' +
+    '<div class="bar-fill" style="width:' + (c.count / maxCount * 100) + '%;background:' + c.color + '"></div>' +
+    '</div>' +
+    '<div class="bar-val">' + c.count + '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function renderMpghChart(values) {
+  const container = document.getElementById('mpghChart');
+  if (!values.length) {
+    container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>';
+    return;
+  }
+  const min = Math.min.apply(null, values);
+  const max = Math.max.apply(null, values);
+  const bins = 8;
+  const step = (max - min) / bins || 1;
+  const arr = [];
+  for (let i = 0; i < bins; i++) {
+    arr.push({ label: (min + i * step).toFixed(0) + '-' + (min + (i + 1) * step).toFixed(0), min: min + i * step, max: min + (i + 1) * step, count: 0 });
+  }
+  values.forEach(v => {
+    for (let i = 0; i < arr.length; i++) {
+      if (v >= arr[i].min && v < arr[i].max) { arr[i].count++; break; }
+      if (i === arr.length - 1 && v >= arr[i].min) { arr[i].count++; break; }
+    }
+  });
+  const maxCount = Math.max.apply(null, arr.map(b => b.count).concat([1]));
+  container.innerHTML = arr.map(b =>
+    '<div class="bar-row">' +
+    '<div class="bar-label">' + b.label + '</div>' +
+    '<div class="bar-track">' +
+    '<div class="bar-fill" style="width:' + (b.count / maxCount * 100) + '%;background:#6c757d"></div>' +
+    '</div>' +
+    '<div class="bar-val">' + b.count + '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function renderTerminalChart() {
+  const map = {};
+  filtered.forEach(r => {
+    if (r.terminal && r.total_moves != null) map[r.terminal] = (map[r.terminal] || 0) + r.total_moves;
+  });
+  const arr = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const container = document.getElementById('terminalChart');
+  if (!arr.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
+  container.innerHTML = arr.map(a =>
+    '<div class="terminal-item"><span class="terminal-name">' + a[0] + '</span><span class="terminal-val">' + Math.round(a[1]) + '</span></div>'
+  ).join('');
+}
+
+function renderTeuChart() {
+  const map = {};
+  filtered.forEach(r => {
+    if (r.terminal && r.total_teu != null) map[r.terminal] = (map[r.terminal] || 0) + r.total_teu;
+  });
+  const arr = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const container = document.getElementById('teuChart');
+  if (!arr.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
+  container.innerHTML = arr.map(a =>
+    '<div class="terminal-item"><span class="terminal-name">' + a[0] + '</span><span class="terminal-val">' + Math.round(a[1]) + ' TEU</span></div>'
+  ).join('');
+}
+
+function renderCargoDisSummary() {
+  const df20 = filtered.map(r => r.discharge_full_20gp).filter(v => v != null).reduce((a,b)=>a+b,0);
+  const de20 = filtered.map(r => r.discharge_empty_20gp).filter(v => v != null).reduce((a,b)=>a+b,0);
+  const df40 = filtered.map(r => r.discharge_full_40hc).filter(v => v != null).reduce((a,b)=>a+b,0);
+  const de40 = filtered.map(r => r.discharge_empty_40hc).filter(v => v != null).reduce((a,b)=>a+b,0);
+  const container = document.getElementById('cargoDisSummary');
+  container.innerHTML =
+    '<div class="cargo-box discharge"><div class="cargo-title">Full 20\'GP</div><div class="cargo-row"><span class="label">Qty</span><span class="value">' + Math.round(df20) + '</span></div></div>' +
+    '<div class="cargo-box discharge"><div class="cargo-title">Empty 20\'GP</div><div class="cargo-row"><span class="label">Qty</span><span class="value">' + Math.round(de20) + '</span></div></div>' +
+    '<div class="cargo-box discharge"><div class="cargo-title">Full 40\'HC</div><div class="cargo-row"><span class="label">Qty</span><span class="value">' + Math.round(df40) + '</span></div></div>' +
+    '<div class="cargo-box discharge"><div class="cargo-title">Empty 40\'HC</div><div class="cargo-row"><span class="label">Qty</span><span class="value">' + Math.round(de40) + '</span></div></div>' +
+    '<div class="cargo-box discharge" style="grid-column:1/-1"><div class="cargo-title">Discharge Subtotal</div>' +
+    '<div class="cargo-row"><span class="label">20\'GP</span><span class="value">' + Math.round(df20+de20) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">40\'HC</span><span class="value">' + Math.round(df40+de40) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">TEU Equiv.</span><span class="value">' + Math.round(df20+de20+(df40+de40)*2) + '</span></div></div>';
+}
+
+function renderCargoLoadSummary() {
+  const lf20 = filtered.map(r => r.load_full_20gp).filter(v => v != null).reduce((a,b)=>a+b,0);
+  const le20 = filtered.map(r => r.load_empty_20gp).filter(v => v != null).reduce((a,b)=>a+b,0);
+  const lf40 = filtered.map(r => r.load_full_40hc).filter(v => v != null).reduce((a,b)=>a+b,0);
+  const le40 = filtered.map(r => r.load_empty_40hc).filter(v => v != null).reduce((a,b)=>a+b,0);
+  const container = document.getElementById('cargoLoadSummary');
+  container.innerHTML =
+    '<div class="cargo-box load"><div class="cargo-title">Full 20\'GP</div><div class="cargo-row"><span class="label">Qty</span><span class="value">' + Math.round(lf20) + '</span></div></div>' +
+    '<div class="cargo-box load"><div class="cargo-title">Empty 20\'GP</div><div class="cargo-row"><span class="label">Qty</span><span class="value">' + Math.round(le20) + '</span></div></div>' +
+    '<div class="cargo-box load"><div class="cargo-title">Full 40\'HC</div><div class="cargo-row"><span class="label">Qty</span><span class="value">' + Math.round(lf40) + '</span></div></div>' +
+    '<div class="cargo-box load"><div class="cargo-title">Empty 40\'HC</div><div class="cargo-row"><span class="label">Qty</span><span class="value">' + Math.round(le40) + '</span></div></div>' +
+    '<div class="cargo-box load" style="grid-column:1/-1"><div class="cargo-title">Load Subtotal</div>' +
+    '<div class="cargo-row"><span class="label">20\'GP</span><span class="load-val">' + Math.round(lf20+le20) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">40\'HC</span><span class="load-val">' + Math.round(lf40+le40) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">TEU Equiv.</span><span class="load-val">' + Math.round(lf20+le20+(lf40+le40)*2) + '</span></div></div>';
+}
+
+function renderCargoSummary() {
+  const df20=filtered.map(r=>r.discharge_full_20gp).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+  const de20=filtered.map(r=>r.discharge_empty_20gp).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+  const df40=filtered.map(r=>r.discharge_full_40hc).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+  const de40=filtered.map(r=>r.discharge_empty_40hc).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+  const lf20=filtered.map(r=>r.load_full_20gp).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+  const le20=filtered.map(r=>r.load_empty_20gp).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+  const lf40=filtered.map(r=>r.load_full_40hc).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+  const le40=filtered.map(r=>r.load_empty_40hc).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+  const t20=df20+de20+lf20+le20, t40=df40+de40+lf40+le40, tTeu=t20+t40*2;
+  const container = document.getElementById('cargoSummary');
+  container.innerHTML =
+    '<div class="cargo-box"><div class="cargo-title">20\'GP Total</div>' +
+    '<div class="cargo-row"><span class="label">Discharge</span><span class="discharge-val">' + Math.round(df20+de20) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">Load</span><span class="load-val">' + Math.round(lf20+le20) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">Total</span><span class="total-val">' + Math.round(t20) + '</span></div></div>' +
+    '<div class="cargo-box"><div class="cargo-title">40\'HC Total</div>' +
+    '<div class="cargo-row"><span class="label">Discharge</span><span class="discharge-val">' + Math.round(df40+de40) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">Load</span><span class="load-val">' + Math.round(lf40+le40) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">Total</span><span class="total-val">' + Math.round(t40) + '</span></div></div>' +
+    '<div class="cargo-box" style="grid-column:1/-1"><div class="cargo-title">TEU Total</div>' +
+    '<div class="cargo-row"><span class="label">20\'GP</span><span class="total-val">' + Math.round(t20) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">40\'HC</span><span class="total-val">' + Math.round(t40) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">Total TEU</span><span class="total-val">' + Math.round(tTeu) + '</span></div></div>';
+}
+
+function exportCSV() {
+  if (!filtered.length) return alert('No data to export');
+  const headers = ['srl_no','terminal','svc','vessel_voyage','operator','arrived_anchorage','berth','departure','wait_time','port_stay','total_moves','discharge_full_20gp','discharge_empty_20gp','discharge_full_40hc','discharge_empty_40hc','load_full_20gp','load_empty_20gp','load_full_40hc','load_empty_40hc','total_teu','vessel_mpgh'];
+  const out = [headers.join(',')];
+  filtered.forEach(r => {
+    out.push(headers.map(h => {
+      const v = r[h];
+      if (v == null || v === undefined) return '';
+      const s = String(v);
+      return s.includes(',') ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(','));
+  });
+  const blob = new Blob(["\uFEFF" + out.join("\n")], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'bi_vessel_departure_' + new Date().toISOString().split('T')[0] + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+init();
+
+  </script>
+</body>
+</html>
