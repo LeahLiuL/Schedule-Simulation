@@ -13,9 +13,8 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 .right { width: 340px; flex-shrink: 0; }
 .filter-bar { background: white; border-radius: 8px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .filter-bar label { font-size: 12px; color: #666; font-weight: 500; }
-.filter-bar select, .filter-bar input { padding: 5px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; }
-.filter-bar input[type="date"] { width: 130px; }
-.filter-bar input[type="text"] { width: 180px; }
+.filter-bar input[type="date"] { padding: 5px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; width: 130px; }
+.filter-bar input[type="text"] { padding: 5px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; width: 180px; }
 .btn { padding: 5px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s; }
 .btn-primary { background: #1a73e8; color: white; }
 .btn-primary:hover { background: #1557b0; }
@@ -23,10 +22,30 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 .btn-secondary:hover { background: #545b62; }
 .btn-success { background: #28a745; color: white; }
 .btn-success:hover { background: #1e7e34; }
+
+/* Multi-select dropdown */
+.multi-select { position: relative; display: inline-block; min-width: 120px; }
+.multi-select-btn { padding: 5px 28px 5px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer; text-align: left; position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.multi-select-btn::after { content: '▾'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #666; }
+.multi-select-btn:hover { border-color: #1a73e8; }
+.multi-select-panel { display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 8px; min-width: 200px; z-index: 100; max-height: 320px; overflow-y: auto; }
+.multi-select-panel.show { display: block; }
+.multi-select-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; font-size: 12px; cursor: pointer; white-space: nowrap; border-radius: 4px; }
+.multi-select-item:hover { background: #f0f7ff; }
+.multi-select-item input { cursor: pointer; }
+.multi-select-btns { display: flex; gap: 6px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee; }
+.multi-select-btns button { flex: 1; font-size: 11px; padding: 4px; }
+
 .table-wrap { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex: 1; overflow: auto; position: relative; }
 .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .data-table thead { position: sticky; top: 0; z-index: 10; }
-.data-table th { background: #e8f0fe; padding: 7px 8px; text-align: left; font-weight: 600; color: #1a73e8; border-bottom: 2px solid #c6d9f1; white-space: nowrap; font-size: 10px; }
+.data-table th { background: #e8f0fe; padding: 7px 8px; text-align: left; font-weight: 600; color: #1a73e8; border-bottom: 2px solid #c6d9f1; white-space: nowrap; font-size: 10px; cursor: pointer; user-select: none; position: relative; }
+.data-table th:hover { background: #d2e3fc; }
+.data-table th .sort-arrow { margin-left: 4px; font-size: 9px; color: #888; }
+.data-table th.sorted-asc .sort-arrow::after { content: '▲'; color: #1a73e8; }
+.data-table th.sorted-desc .sort-arrow::after { content: '▼'; color: #1a73e8; }
+.data-table th.sorted-asc { background: #d2e3fc; }
+.data-table th.sorted-desc { background: #d2e3fc; }
 .data-table td { padding: 5px 8px; border-bottom: 1px solid #eee; white-space: nowrap; }
 .data-table tr:hover { background: #f8f9fa; }
 .data-table .warn { background: #fff8e1; }
@@ -39,7 +58,11 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 .data-table .col-teu { width: 60px; }
 .data-table .col-hidden { display: none; }
 .data-table th.th-discharge { background: #fce8e6; color: #c5221f; border-bottom: 2px solid #f5a9a6; }
+.data-table th.th-discharge:hover { background: #fadad8; }
+.data-table th.th-discharge.sorted-asc, .data-table th.th-discharge.sorted-desc { background: #fadad8; }
 .data-table th.th-load { background: #e6f4ea; color: #137333; border-bottom: 2px solid #a8dab5; }
+.data-table th.th-load:hover { background: #d4edda; }
+.data-table th.th-load.sorted-asc, .data-table th.th-load.sorted-desc { background: #d4edda; }
 .data-table td.td-discharge { color: #c5221f; background: #fef5f5; }
 .data-table td.td-load { color: #137333; background: #f2f9f5; }
 .data-table tr:hover td.td-discharge { background: #fde8e8; }
@@ -51,6 +74,7 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 .cargo-box.load .cargo-title { color: #137333; }
 .cargo-box.load .value { color: #137333; }
 .loading { text-align: center; padding: 60px 20px; color: #666; font-size: 15px; }
+.no-data { text-align: center; padding: 40px 20px; color: #666; font-size: 14px; }
 .col-picker { position: relative; display: inline-block; }
 .col-picker-panel { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 10px; min-width: 180px; z-index: 100; max-height: 400px; overflow-y: auto; }
 .col-picker-panel.show { display: block; }
@@ -92,16 +116,43 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 </style>
 </head>
 <body>
-<header>🚢 BI Vessel Departure Analysis</header>
+<header>BI Vessel Departure Analysis</header>
 <div class="container">
 <div class="left">
 <div class="filter-bar">
 <label>Terminal</label>
-<select id="f_terminal"><option value="">All</option></select>
+<div class="multi-select" id="ms_terminal">
+  <button class="multi-select-btn" onclick="toggleMultiSelect(event, 'terminal')">All</button>
+  <div class="multi-select-panel" id="panel_terminal" onclick="event.stopPropagation()">
+    <div id="list_terminal"></div>
+    <div class="multi-select-btns">
+      <button class="btn btn-primary" style="font-size:11px;padding:4px 8px" onclick="selectAll('terminal')">All</button>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 8px" onclick="clearAll('terminal')">Clear</button>
+    </div>
+  </div>
+</div>
 <label>SVC</label>
-<select id="f_svc"><option value="">All</option></select>
+<div class="multi-select" id="ms_svc">
+  <button class="multi-select-btn" onclick="toggleMultiSelect(event, 'svc')">All</button>
+  <div class="multi-select-panel" id="panel_svc" onclick="event.stopPropagation()">
+    <div id="list_svc"></div>
+    <div class="multi-select-btns">
+      <button class="btn btn-primary" style="font-size:11px;padding:4px 8px" onclick="selectAll('svc')">All</button>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 8px" onclick="clearAll('svc')">Clear</button>
+    </div>
+  </div>
+</div>
 <label>Operator</label>
-<select id="f_operator"><option value="">All</option></select>
+<div class="multi-select" id="ms_operator">
+  <button class="multi-select-btn" onclick="toggleMultiSelect(event, 'operator')">All</button>
+  <div class="multi-select-panel" id="panel_operator" onclick="event.stopPropagation()">
+    <div id="list_operator"></div>
+    <div class="multi-select-btns">
+      <button class="btn btn-primary" style="font-size:11px;padding:4px 8px" onclick="selectAll('operator')">All</button>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 8px" onclick="clearAll('operator')">Clear</button>
+    </div>
+  </div>
+</div>
 <label>Dep. From</label>
 <input type="date" id="f_from" />
 <label>To</label>
@@ -111,7 +162,7 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 <button class="btn btn-secondary" onclick="resetFilter()">Reset</button>
 <button class="btn btn-success" onclick="exportCSV()">Export CSV</button>
 <div class="col-picker">
-  <button class="btn btn-secondary" onclick="toggleColPicker(event)">⚙️ Columns</button>
+  <button class="btn btn-secondary" onclick="toggleColPicker(event)">Columns</button>
   <div class="col-picker-panel" id="colPickerPanel" onclick="event.stopPropagation()">
     <div id="colPickerList"></div>
     <div class="col-picker-btns">
@@ -127,39 +178,39 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 </div>
 <div class="right">
 <div class="panel">
-<div class="panel-title">📊 Summary</div>
+<div class="panel-title">Summary</div>
 <div class="summary-grid" id="summaryGrid"></div>
 </div>
 <div class="panel">
-<div class="panel-title">⏱ Wait Time Dist.</div>
+<div class="panel-title">Wait Time Dist.</div>
 <div class="bar-chart" id="waitChart"></div>
 </div>
 <div class="panel">
-<div class="panel-title">⚓ Port Stay Dist.</div>
+<div class="panel-title">Port Stay Dist.</div>
 <div class="bar-chart" id="stayChart"></div>
 </div>
 <div class="panel">
-<div class="panel-title">⛽ MPG H Dist.</div>
+<div class="panel-title">MPG H Dist.</div>
 <div class="histogram" id="mpghChart"></div>
 </div>
 <div class="panel">
-<div class="panel-title">🚢 Terminal Moves Top10</div>
+<div class="panel-title">Terminal Moves Top10</div>
 <div class="terminal-list" id="terminalChart"></div>
 </div>
 <div class="panel">
-<div class="panel-title">📦 TEU Top10</div>
+<div class="panel-title">TEU Top10</div>
 <div class="terminal-list" id="teuChart"></div>
 </div>
 <div class="panel">
-<div class="panel-title">📥 Discharge Summary</div>
+<div class="panel-title">Discharge Summary</div>
 <div class="cargo-grid" id="cargoDisSummary"></div>
 </div>
 <div class="panel">
-<div class="panel-title">📤 Load Summary</div>
+<div class="panel-title">Load Summary</div>
 <div class="cargo-grid" id="cargoLoadSummary"></div>
 </div>
 <div class="panel">
-<div class="panel-title">📦 Total Summary</div>
+<div class="panel-title">Total Summary</div>
 <div class="cargo-grid" id="cargoSummary"></div>
 </div>
 </div>
@@ -170,6 +221,8 @@ const CSV_URL = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/
 let DATA = [];
 let filtered = [];
 let colVisibility = {};
+let sortKey = null;
+let sortDir = 'asc';
 
 const COL_DEFS = [
   { key: 'srl_no', label: 'SRL', cls: 'col-small', fmt: v => v || '' },
@@ -196,6 +249,7 @@ const COL_DEFS = [
 ];
 
 let OPTIONS = { terminals: [], svcs: [], operators: [] };
+let selected = { terminal: new Set(), svc: new Set(), operator: new Set() };
 
 function parseCSV(text) {
   const BOM = '\uFEFF';
@@ -250,6 +304,7 @@ function resetColVisibility() {
 
 function toggleColPicker(e) {
   e.stopPropagation();
+  closeAllPanels();
   const panel = document.getElementById('colPickerPanel');
   panel.classList.toggle('show');
   if (panel.classList.contains('show')) renderColPicker();
@@ -265,15 +320,66 @@ function renderColPicker() {
   ).join('');
 }
 
-function initDropdowns() {
-  document.getElementById('f_terminal').innerHTML += OPTIONS.terminals.map(x => '<option value="' + x + '">' + x + '</option>').join('');
-  document.getElementById('f_svc').innerHTML += OPTIONS.svcs.map(x => '<option value="' + x + '">' + x + '</option>').join('');
-  document.getElementById('f_operator').innerHTML += OPTIONS.operators.map(x => '<option value="' + x + '">' + x + '</option>').join('');
+/* Multi-select functions */
+function toggleMultiSelect(e, type) {
+  e.stopPropagation();
+  closeAllPanels();
+  const panel = document.getElementById('panel_' + type);
+  panel.classList.toggle('show');
+}
+
+function renderMultiSelect(type) {
+  const list = document.getElementById('list_' + type);
+  const options = OPTIONS[type + 's'] || [];
+  const sel = selected[type];
+  list.innerHTML = options.map(opt =>
+    '<label class="multi-select-item">' +
+    '<input type="checkbox" ' + (sel.has(opt) ? 'checked' : '') + ' onchange="toggleSelect(\'' + type + '\', \'' + opt.replace(/'/g, "\\'") + '\', this.checked)">' +
+    '<span>' + opt + '</span>' +
+    '</label>'
+  ).join('');
+  updateMultiSelectBtn(type);
+}
+
+function toggleSelect(type, value, checked) {
+  if (checked) selected[type].add(value);
+  else selected[type].delete(value);
+  updateMultiSelectBtn(type);
+  applyFilter();
+}
+
+function selectAll(type) {
+  const options = OPTIONS[type + 's'] || [];
+  options.forEach(opt => selected[type].add(opt));
+  renderMultiSelect(type);
+  applyFilter();
+}
+
+function clearAll(type) {
+  selected[type].clear();
+  renderMultiSelect(type);
+  applyFilter();
+}
+
+function updateMultiSelectBtn(type) {
+  const btn = document.querySelector('#ms_' + type + ' .multi-select-btn');
+  const count = selected[type].size;
+  const total = (OPTIONS[type + 's'] || []).length;
+  if (count === 0 || count === total) {
+    btn.textContent = 'All';
+  } else {
+    btn.textContent = count + ' selected';
+  }
+}
+
+function closeAllPanels() {
+  document.querySelectorAll('.multi-select-panel').forEach(p => p.classList.remove('show'));
+  document.getElementById('colPickerPanel').classList.remove('show');
 }
 
 function init() {
   loadColVisibility();
-  document.addEventListener('click', () => document.getElementById('colPickerPanel').classList.remove('show'));
+  document.addEventListener('click', closeAllPanels);
   const wrap = document.getElementById('tableWrap');
   wrap.innerHTML = '<div class="loading">Loading data from GitHub...</div>';
   fetch(CSV_URL)
@@ -281,7 +387,9 @@ function init() {
     .then(text => {
       DATA = parseCSV(text);
       buildOptions(DATA);
-      initDropdowns();
+      renderMultiSelect('terminal');
+      renderMultiSelect('svc');
+      renderMultiSelect('operator');
       resetFilter();
     })
     .catch(err => {
@@ -290,16 +398,16 @@ function init() {
 }
 
 function applyFilter() {
-  const t = document.getElementById('f_terminal').value;
-  const s = document.getElementById('f_svc').value;
-  const o = document.getElementById('f_operator').value;
+  const selTerminals = selected.terminal;
+  const selSvcs = selected.svc;
+  const selOperators = selected.operator;
   const from = document.getElementById('f_from').value;
   const to = document.getElementById('f_to').value;
   const q = document.getElementById('f_search').value.trim().toLowerCase();
   filtered = DATA.filter(r => {
-    if (t && r.terminal !== t) return false;
-    if (s && r.svc !== s) return false;
-    if (o && r.operator !== o) return false;
+    if (selTerminals.size > 0 && !selTerminals.has(r.terminal)) return false;
+    if (selSvcs.size > 0 && !selSvcs.has(r.svc)) return false;
+    if (selOperators.size > 0 && !selOperators.has(r.operator)) return false;
     if (from && r.departure && r.departure < from) return false;
     if (to && r.departure && r.departure > to) return false;
     if (q) {
@@ -308,20 +416,61 @@ function applyFilter() {
     }
     return true;
   });
+  sortFiltered();
   renderTable();
   renderAnalysis();
 }
 
 function resetFilter() {
-  document.getElementById('f_terminal').value = '';
-  document.getElementById('f_svc').value = '';
-  document.getElementById('f_operator').value = '';
+  selected.terminal.clear();
+  selected.svc.clear();
+  selected.operator.clear();
+  renderMultiSelect('terminal');
+  renderMultiSelect('svc');
+  renderMultiSelect('operator');
   document.getElementById('f_from').value = '';
   document.getElementById('f_to').value = '';
   document.getElementById('f_search').value = '';
+  sortKey = null;
+  sortDir = 'asc';
   filtered = DATA.slice();
   renderTable();
   renderAnalysis();
+}
+
+/* Sorting */
+function toggleSort(key) {
+  const colDef = COL_DEFS.find(c => c.key === key);
+  if (!colDef) return;
+  if (sortKey === key) {
+    sortDir = sortDir === 'asc' ? 'desc' : (sortDir === 'desc' ? null : 'asc');
+    if (sortDir === null) sortKey = null;
+  } else {
+    sortKey = key;
+    sortDir = 'asc';
+  }
+  sortFiltered();
+  renderTable();
+}
+
+function sortFiltered() {
+  if (!sortKey) return;
+  const colDef = COL_DEFS.find(c => c.key === sortKey);
+  const isNum = colDef && colDef.num;
+  filtered.sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (va == null && vb == null) return 0;
+    if (va == null) return sortDir === 'asc' ? 1 : -1;
+    if (vb == null) return sortDir === 'asc' ? -1 : 1;
+    if (isNum) {
+      return sortDir === 'asc' ? va - vb : vb - va;
+    }
+    va = String(va).toLowerCase();
+    vb = String(vb).toLowerCase();
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
 }
 
 function renderTable() {
@@ -333,8 +482,12 @@ function renderTable() {
   let html = '<table class="data-table"><thead><tr>';
   COL_DEFS.forEach(c => {
     if (!colVisibility[c.key]) return;
-    const groupCls = c.group === 'discharge' ? ' th-discharge' : c.group === 'load' ? ' th-load' : '';
-    html += '<th class="' + c.cls + groupCls + '" data-col="' + c.key + '">' + c.label + '</th>';
+    let groupCls = c.group === 'discharge' ? ' th-discharge' : c.group === 'load' ? ' th-load' : '';
+    let sortCls = '';
+    if (sortKey === c.key) {
+      sortCls = sortDir === 'asc' ? ' sorted-asc' : ' sorted-desc';
+    }
+    html += '<th class="' + c.cls + groupCls + sortCls + '" data-col="' + c.key + '" onclick="toggleSort(\'' + c.key + '\')">' + c.label + '<span class="sort-arrow"></span></th>';
   });
   html += '</tr></thead><tbody>';
   filtered.forEach(r => {
@@ -382,8 +535,8 @@ function renderAnalysis() {
     '<div class="summary-card"><div class="val">' + avgWait + '</div><div class="lbl">Avg Wait(h)</div></div>' +
     '<div class="summary-card"><div class="val">' + avgStay + '</div><div class="lbl">Avg Stay(h)</div></div>' +
     '<div class="summary-card"><div class="val">' + avgMoves + '</div><div class="lbl">Avg Moves</div></div>' +
-    '<div class="summary-card red"><div class="val">' + wait24 + '</div><div class="lbl">Wait>24h</div></div>' +
-    '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay>72h</div></div>' +
+    '<div class="summary-card red"><div class="val">' + wait24 + '</div><div class="lbl">Wait&gt;24h</div></div>' +
+    '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay&gt;72h</div></div>' +
     '<div class="summary-card orange"><div class="val">' + avgMpgh + '</div><div class="lbl">Avg MPG H</div></div>' +
     '<div class="summary-card"><div class="val">' + mpghCount + '</div><div class="lbl">MPG H Data</div></div>';
   renderBarChart('waitChart', waits, [
@@ -562,7 +715,6 @@ function exportCSV() {
 }
 
 init();
-
-  </script>
+</script>
 </body>
 </html>
