@@ -91,6 +91,10 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 .col-picker-item:hover { background: #f8f9fa; }
 .col-picker-btns { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
 .col-picker-btns button { flex: 1; font-size: 11px; padding: 4px; }
+.data-table th { cursor: grab; }
+.data-table th:active { cursor: grabbing; }
+.data-table th.dragging { opacity: 0.5; background: #d2e3fc; }
+.data-table th.drag-over { background: #a8d5ff; border: 2px dashed #1a73e8; }
 .panel { background: white; border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 12px; }
 .panel-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #1a73e8; display: flex; align-items: center; gap: 6px; }
 .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -233,6 +237,7 @@ const CSV_URL = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/
 let DATA = [];
 let filtered = [];
 let colVisibility = {};
+let colOrder = [];
 let sortKey = null;
 let sortDir = 'asc';
 
@@ -309,17 +314,41 @@ function loadColVisibility() {
       colVisibility[c.key] = c.group !== 'fuel';
     }
   });
+  try {
+    const savedOrder = localStorage.getItem('bi_col_order');
+    if (savedOrder) {
+      colOrder = JSON.parse(savedOrder);
+      // validate: ensure all visible keys are in colOrder
+      const visibleKeys = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
+      const missing = visibleKeys.filter(k => !colOrder.includes(k));
+      const extra = colOrder.filter(k => !visibleKeys.includes(k));
+      colOrder = colOrder.filter(k => visibleKeys.includes(k)).concat(missing);
+    } else {
+      colOrder = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
+    }
+  } catch (e) {
+    colOrder = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
+  }
 }
 
 function saveColVisibility() {
   localStorage.setItem('bi_col_visibility', JSON.stringify(colVisibility));
+  // sync colOrder with visibility changes
+  const visibleKeys = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
+  const newOrder = [];
+  colOrder.forEach(k => { if (visibleKeys.includes(k)) newOrder.push(k); });
+  visibleKeys.forEach(k => { if (!newOrder.includes(k)) newOrder.push(k); });
+  colOrder = newOrder;
+  localStorage.setItem('bi_col_order', JSON.stringify(colOrder));
   document.getElementById('colPickerPanel').classList.remove('show');
   renderTable();
 }
 
 function resetColVisibility() {
   COL_DEFS.forEach(c => colVisibility[c.key] = true);
+  colOrder = COL_DEFS.map(c => c.key);
   localStorage.removeItem('bi_col_visibility');
+  localStorage.removeItem('bi_col_order');
   renderColPicker();
   renderTable();
 }
@@ -502,14 +531,15 @@ function renderTable() {
     return;
   }
   let html = '<table class="data-table"><thead><tr>';
-  COL_DEFS.forEach(c => {
-    if (!colVisibility[c.key]) return;
-    let groupCls = c.group === 'discharge' ? ' th-discharge' : c.group === 'load' ? ' th-load' : '';
+  colOrder.forEach(key => {
+    const c = COL_DEFS.find(d => d.key === key);
+    if (!c || !colVisibility[c.key]) return;
+    let groupCls = c.group === 'discharge' ? ' th-discharge' : c.group === 'load' ? ' th-load' : c.group === 'fuel' ? ' th-fuel' : '';
     let sortCls = '';
     if (sortKey === c.key) {
       sortCls = sortDir === 'asc' ? ' sorted-asc' : ' sorted-desc';
     }
-    html += '<th class="' + c.cls + groupCls + sortCls + '" data-col="' + c.key + '" onclick="toggleSort(\'' + c.key + '\')">' + c.label + '<span class="sort-arrow"></span></th>';
+    html += '<th class="' + c.cls + groupCls + sortCls + '" draggable="true" data-col="' + c.key + '" onclick="toggleSort(\'' + c.key + '\')">' + c.label + '<span class="sort-arrow"></span></th>';
   });
   html += '</tr></thead><tbody>';
   filtered.forEach(r => {
@@ -521,11 +551,13 @@ function renderTable() {
     else if (r.port_stay > 24) stayClass = 'warn';
     else if (r.port_stay != null && r.port_stay <= 24) stayClass = 'good';
     html += '<tr>';
-    COL_DEFS.forEach(c => {
-      if (!colVisibility[c.key]) return;
+    colOrder.forEach(key => {
+      const c = COL_DEFS.find(d => d.key === key);
+      if (!c || !colVisibility[c.key]) return;
       let cls = c.num ? 'num' : '';
       if (c.group === 'discharge') cls += ' td-discharge';
       if (c.group === 'load') cls += ' td-load';
+      if (c.group === 'fuel') cls += ' td-fuel';
       if (c.key === 'wait_time' && waitClass) cls += ' ' + waitClass;
       if (c.key === 'port_stay' && stayClass) cls += ' ' + stayClass;
       if (c.bold) cls += ' bold';
@@ -536,6 +568,56 @@ function renderTable() {
   });
   html += '</tbody></table>';
   wrap.innerHTML = html;
+  bindDragEvents();
+}
+
+let dragSrcKey = null;
+
+function bindDragEvents() {
+  const ths = document.querySelectorAll('.data-table thead th');
+  ths.forEach(th => {
+    th.addEventListener('dragstart', handleDragStart);
+    th.addEventListener('dragover', handleDragOver);
+    th.addEventListener('drop', handleDrop);
+    th.addEventListener('dragend', handleDragEnd);
+  });
+}
+
+function handleDragStart(e) {
+  dragSrcKey = e.target.getAttribute('data-col');
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragSrcKey);
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const th = e.target.closest('th');
+  if (th && th !== document.querySelector('.data-table th.dragging')) {
+    th.classList.add('drag-over');
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const th = e.target.closest('th');
+  if (!th) return;
+  const dropKey = th.getAttribute('data-col');
+  if (!dragSrcKey || dragSrcKey === dropKey) return;
+  const srcIdx = colOrder.indexOf(dragSrcKey);
+  const dstIdx = colOrder.indexOf(dropKey);
+  if (srcIdx === -1 || dstIdx === -1) return;
+  colOrder.splice(srcIdx, 1);
+  colOrder.splice(dstIdx, 0, dragSrcKey);
+  localStorage.setItem('bi_col_order', JSON.stringify(colOrder));
+  renderTable();
+}
+
+function handleDragEnd(e) {
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.data-table th').forEach(th => th.classList.remove('drag-over'));
+  dragSrcKey = null;
 }
 
 function renderAnalysis() {
