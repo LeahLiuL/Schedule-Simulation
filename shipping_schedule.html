@@ -7361,7 +7361,7 @@ async function loadLanesData(){
     } else {
       // Fallback to raw CDN
       console.warn('[loadLanesData] GitHub API failed (' + resp.status + '), falling back to raw CDN');
-      const url = CSV_GITHUB + '/shipping_data/lanes.json?t=' + Date.now();
+      const url = CSV_GITHUB + '/lanes.json?t=' + Date.now();
       const resp2 = await fetch(url, { cache: 'no-store' });
       if(resp2.ok){ LANES_DATA = await resp2.json(); }
     }
