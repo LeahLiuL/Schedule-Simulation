@@ -63,16 +63,24 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 .data-table th.th-load { background: #e6f4ea; color: #137333; border-bottom: 2px solid #a8dab5; }
 .data-table th.th-load:hover { background: #d4edda; }
 .data-table th.th-load.sorted-asc, .data-table th.th-load.sorted-desc { background: #d4edda; }
+.data-table th.th-fuel { background: #e8e0ff; color: #5e35b1; border-bottom: 2px solid #b39ddb; }
+.data-table th.th-fuel:hover { background: #ddd6f3; }
+.data-table th.th-fuel.sorted-asc, .data-table th.th-fuel.sorted-desc { background: #ddd6f3; }
 .data-table td.td-discharge { color: #c5221f; background: #fef5f5; }
 .data-table td.td-load { color: #137333; background: #f2f9f5; }
+.data-table td.td-fuel { color: #5e35b1; background: #f5f3ff; }
 .data-table tr:hover td.td-discharge { background: #fde8e8; }
 .data-table tr:hover td.td-load { background: #e8f5e9; }
+.data-table tr:hover td.td-fuel { background: #ede7f6; }
 .cargo-box.discharge { border-color: #f5a9a6; background: #fef5f5; }
 .cargo-box.discharge .cargo-title { color: #c5221f; }
 .cargo-box.discharge .value { color: #c5221f; }
 .cargo-box.load { border-color: #a8dab5; background: #f2f9f5; }
 .cargo-box.load .cargo-title { color: #137333; }
 .cargo-box.load .value { color: #137333; }
+.cargo-box.fuel { border-color: #b39ddb; background: #f5f3ff; }
+.cargo-box.fuel .cargo-title { color: #5e35b1; }
+.cargo-box.fuel .value { color: #5e35b1; }
 .loading { text-align: center; padding: 60px 20px; color: #666; font-size: 15px; }
 .no-data { text-align: center; padding: 40px 20px; color: #666; font-size: 14px; }
 .col-picker { position: relative; display: inline-block; }
@@ -213,6 +221,10 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 <div class="panel-title">Total Summary</div>
 <div class="cargo-grid" id="cargoSummary"></div>
 </div>
+<div class="panel">
+<div class="panel-title">Fuel Summary</div>
+<div class="cargo-grid" id="fuelSummary"></div>
+</div>
 </div>
 </div>
 
@@ -245,7 +257,15 @@ const COL_DEFS = [
   { key: 'load_full_40hc', label: 'Load F40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
   { key: 'load_empty_40hc', label: 'Load E40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
   { key: 'total_teu', label: 'TEU', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, bold: true },
-  { key: 'vessel_mpgh', label: 'MPG H', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true }
+  { key: 'vessel_mpgh', label: 'MPG H', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true },
+  { key: 'arr_fuel_oil', label: 'Arr FO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
+  { key: 'arr_lsfo', label: 'Arr LSFO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
+  { key: 'arr_diesel_oil', label: 'Arr DO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
+  { key: 'arr_lsdo', label: 'Arr LSDO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
+  { key: 'dep_fuel_oil', label: 'Dep FO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
+  { key: 'dep_lsfo', label: 'Dep LSFO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
+  { key: 'dep_diesel_oil', label: 'Dep DO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
+  { key: 'dep_lsdo', label: 'Dep LSDO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' }
 ];
 
 let OPTIONS = { terminals: [], svcs: [], operators: [] };
@@ -285,7 +305,9 @@ function loadColVisibility() {
     if (saved) colVisibility = JSON.parse(saved);
   } catch (e) {}
   COL_DEFS.forEach(c => {
-    if (!(c.key in colVisibility)) colVisibility[c.key] = true;
+    if (!(c.key in colVisibility)) {
+      colVisibility[c.key] = c.group !== 'fuel';
+    }
   });
 }
 
@@ -559,6 +581,7 @@ function renderAnalysis() {
   renderCargoDisSummary();
   renderCargoLoadSummary();
   renderCargoSummary();
+  renderFuelSummary();
 }
 
 function renderBarChart(id, values, buckets) {
@@ -694,9 +717,38 @@ function renderCargoSummary() {
     '<div class="cargo-row"><span class="label">Total TEU</span><span class="total-val">' + Math.round(tTeu) + '</span></div></div>';
 }
 
+function renderFuelSummary() {
+  const arrFo = filtered.map(r => r.arr_fuel_oil).filter(v => v != null).reduce((a,b) => a+b, 0);
+  const arrLsfo = filtered.map(r => r.arr_lsfo).filter(v => v != null).reduce((a,b) => a+b, 0);
+  const arrDo = filtered.map(r => r.arr_diesel_oil).filter(v => v != null).reduce((a,b) => a+b, 0);
+  const arrLsdo = filtered.map(r => r.arr_lsdo).filter(v => v != null).reduce((a,b) => a+b, 0);
+  const depFo = filtered.map(r => r.dep_fuel_oil).filter(v => v != null).reduce((a,b) => a+b, 0);
+  const depLsfo = filtered.map(r => r.dep_lsfo).filter(v => v != null).reduce((a,b) => a+b, 0);
+  const depDo = filtered.map(r => r.dep_diesel_oil).filter(v => v != null).reduce((a,b) => a+b, 0);
+  const depLsdo = filtered.map(r => r.dep_lsdo).filter(v => v != null).reduce((a,b) => a+b, 0);
+  const arrTotal = arrFo + arrLsfo + arrDo + arrLsdo;
+  const depTotal = depFo + depLsfo + depDo + depLsdo;
+  const container = document.getElementById('fuelSummary');
+  container.innerHTML =
+    '<div class="cargo-box fuel"><div class="cargo-title">Arrival Fuel</div>' +
+    '<div class="cargo-row"><span class="label">FO</span><span class="value">' + arrFo.toFixed(1) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">LSFO</span><span class="value">' + arrLsfo.toFixed(1) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">DO</span><span class="value">' + arrDo.toFixed(1) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">LSDO</span><span class="value">' + arrLsdo.toFixed(1) + '</span></div></div>' +
+    '<div class="cargo-box fuel"><div class="cargo-title">Departure Fuel</div>' +
+    '<div class="cargo-row"><span class="label">FO</span><span class="value">' + depFo.toFixed(1) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">LSFO</span><span class="value">' + depLsfo.toFixed(1) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">DO</span><span class="value">' + depDo.toFixed(1) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">LSDO</span><span class="value">' + depLsdo.toFixed(1) + '</span></div></div>' +
+    '<div class="cargo-box fuel" style="grid-column:1/-1"><div class="cargo-title">Total Fuel</div>' +
+    '<div class="cargo-row"><span class="label">Arrival</span><span class="value">' + arrTotal.toFixed(1) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">Departure</span><span class="value">' + depTotal.toFixed(1) + '</span></div>' +
+    '<div class="cargo-row"><span class="label">Total</span><span class="value">' + (arrTotal + depTotal).toFixed(1) + '</span></div></div>';
+}
+
 function exportCSV() {
   if (!filtered.length) return alert('No data to export');
-  const headers = ['srl_no','terminal','svc','vessel_voyage','operator','arrived_anchorage','berth','departure','wait_time','port_stay','total_moves','discharge_full_20gp','discharge_empty_20gp','discharge_full_40hc','discharge_empty_40hc','load_full_20gp','load_empty_20gp','load_full_40hc','load_empty_40hc','total_teu','vessel_mpgh'];
+  const headers = ['srl_no','terminal','svc','vessel_voyage','operator','arrived_anchorage','berth','departure','wait_time','port_stay','total_moves','discharge_full_20gp','discharge_empty_20gp','discharge_full_40hc','discharge_empty_40hc','load_full_20gp','load_empty_20gp','load_full_40hc','load_empty_40hc','total_teu','vessel_mpgh','arr_fuel_oil','arr_lsfo','arr_diesel_oil','arr_lsdo','dep_fuel_oil','dep_lsfo','dep_diesel_oil','dep_lsdo'];
   const out = [headers.join(',')];
   filtered.forEach(r => {
     out.push(headers.map(h => {

@@ -58,6 +58,14 @@ def convert_to_csv():
         'Load Vol. Full 40HC': 'load_full_40hc',
         'Load Vol. Empty 20GP': 'load_empty_20gp',
         'Load Vol. Empty 40HC': 'load_empty_40hc',
+        'Arrival Fuel Oil': 'arr_fuel_oil',
+        'Arrival LSFO': 'arr_lsfo',
+        'Arrival DIESEL OIL': 'arr_diesel_oil',
+        'Arrival LSDO': 'arr_lsdo',
+        'Departure Fuel Oil': 'dep_fuel_oil',
+        'Departure LSFO': 'dep_lsfo',
+        'Departure DIESEL OIL': 'dep_diesel_oil',
+        'Departure LSDO': 'dep_lsdo',
     }
 
     # Rename columns
@@ -84,7 +92,9 @@ def convert_to_csv():
                      'total_moves', 'discharge_full_20gp', 'discharge_empty_20gp',
                      'discharge_full_40hc', 'discharge_empty_40hc',
                      'load_full_20gp', 'load_empty_20gp', 'load_full_40hc', 'load_empty_40hc',
-                     'total_teu', 'vessel_mpgh']
+                     'total_teu', 'vessel_mpgh',
+                     'arr_fuel_oil', 'arr_lsfo', 'arr_diesel_oil', 'arr_lsdo',
+                     'dep_fuel_oil', 'dep_lsfo', 'dep_diesel_oil', 'dep_lsdo']
 
     for col in expected_cols:
         if col not in df.columns:
