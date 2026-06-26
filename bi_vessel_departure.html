@@ -261,6 +261,7 @@ const COL_DEFS = [
   { key: 'load_empty_20gp', label: 'Load E20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
   { key: 'load_full_40hc', label: 'Load F40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
   { key: 'load_empty_40hc', label: 'Load E40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
+  { key: 'restows', label: 'Restows', cls: 'col-num', fmt: v => v != null ? Math.round(v) : '', num: true },
   { key: 'total_teu', label: 'TEU', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, bold: true },
   { key: 'vessel_mpgh', label: 'MPG H', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true },
   { key: 'arr_fuel_oil', label: 'Arr FO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
@@ -830,7 +831,7 @@ function renderFuelSummary() {
 
 function exportCSV() {
   if (!filtered.length) return alert('No data to export');
-  const headers = ['srl_no','terminal','svc','vessel_voyage','operator','arrived_anchorage','berth','departure','wait_time','port_stay','total_moves','discharge_full_20gp','discharge_empty_20gp','discharge_full_40hc','discharge_empty_40hc','load_full_20gp','load_empty_20gp','load_full_40hc','load_empty_40hc','total_teu','vessel_mpgh','arr_fuel_oil','arr_lsfo','arr_diesel_oil','arr_lsdo','dep_fuel_oil','dep_lsfo','dep_diesel_oil','dep_lsdo'];
+  const headers = ['srl_no','terminal','svc','vessel_voyage','operator','arrived_anchorage','berth','departure','wait_time','port_stay','total_moves','discharge_full_20gp','discharge_empty_20gp','discharge_full_40hc','discharge_empty_40hc','load_full_20gp','load_empty_20gp','load_full_40hc','load_empty_40hc','restows','total_teu','vessel_mpgh','arr_fuel_oil','arr_lsfo','arr_diesel_oil','arr_lsdo','dep_fuel_oil','dep_lsfo','dep_diesel_oil','dep_lsdo'];
   const out = [headers.join(',')];
   filtered.forEach(r => {
     out.push(headers.map(h => {
