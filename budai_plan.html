@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>布袋计划 — CULINES Port Klang Cargo Transfer (FIFO)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+.header { background: linear-gradient(135deg, #1a237e, #283593); color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.header .subtitle { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+.filter-bar { background: white; padding: 12px 24px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #e0e0e0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.filter-bar label { font-size: 12px; font-weight: 500; color: #555; white-space: nowrap; }
+.filter-bar select, .filter-bar input { padding: 5px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; outline: none; background: white; }
+.filter-bar select:focus, .filter-bar input:focus { border-color: #1a237e; box-shadow: 0 0 0 2px rgba(26,35,126,0.1); }
+.filter-bar input[type="date"] { width: 130px; }
+.multi-select-wrap { position: relative; display: inline-block; }
+.multi-select-btn { padding: 5px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; cursor: pointer; background: white; white-space: nowrap; min-width: 70px; text-align: left; transition: border-color 0.2s; }
+.multi-select-btn:hover { border-color: #1a237e; }
+.multi-select-btn.budai1-btn { border-left: 3px solid #1565c0; }
+.multi-select-btn.budai2-btn { border-left: 3px solid #2e7d32; }
+.multi-select-drop { display: none; position: absolute; top: 100%; left: 0; z-index: 100; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); min-width: 200px; max-height: 280px; overflow-y: auto; padding: 6px 0; margin-top: 4px; }
+.multi-select-drop.open { display: block; }
+.multi-select-drop .drop-item { display: flex; align-items: center; gap: 6px; padding: 5px 12px; cursor: pointer; font-size: 12px; transition: background 0.1s; }
+.multi-select-drop .drop-item:hover { background: #f5f5f5; }
+.multi-select-drop .drop-item input { margin: 0; }
+.multi-select-drop .drop-actions { display: flex; gap: 6px; padding: 6px 12px; border-top: 1px solid #f0f0f0; }
+.multi-select-badge { display: inline-block; padding: 1px 5px; border-radius: 8px; font-size: 9px; font-weight: 500; margin-left: 4px; }
+.multi-select-badge.budai1 { background: #e3f2fd; color: #1565c0; }
+.multi-select-badge.budai2 { background: #e8f5e9; color: #2e7d32; }
+.filter-chip { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; user-select: none; }
+.filter-chip.budai1 { background: #e3f2fd; color: #1565c0; }
+.filter-chip.budai1.active { background: #1565c0; color: white; }
+.filter-chip.budai2 { background: #e8f5e9; color: #2e7d32; }
+.filter-chip.budai2.active { background: #2e7d32; color: white; }
+.filter-chip.other { background: #f5f5f5; color: #666; }
+.filter-chip.other.active { background: #666; color: white; }
+
+/* Summary Cards */
+.summary-row { padding: 12px 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.card { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: all 0.2s; border: 2px solid transparent; }
+.card .card-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 3px; }
+.card .card-value { font-size: 24px; font-weight: 700; }
+.card.budai1-card { border-left: 4px solid #1565c0; }
+.card.budai2-card { border-left: 4px solid #2e7d32; }
+.card.match-card { border-left: 4px solid #f57c00; }
+.card.queue-card { border-left: 4px solid #e91e63; }
+.card.budai1-card .card-value { color: #1565c0; }
+.card.budai2-card .card-value { color: #2e7d32; }
+.card.match-card .card-value { color: #f57c00; }
+.card.queue-card .card-value { color: #e91e63; }
+
+/* Main Content */
+.main-content { padding: 0 24px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 1000px) { .main-content { grid-template-columns: 1fr; } }
+.panel { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; }
+.panel-header { padding: 10px 14px; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #f0f0f0; }
+.panel-header .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot-budai1 { background: #1565c0; }
+.dot-budai2 { background: #2e7d32; }
+.dot-match { background: #f57c00; }
+.dot-queue { background: #e91e63; }
+.panel-body { max-height: 450px; overflow-y: auto; }
+
+/* Ship Row */
+.ship-row { padding: 8px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f5f5f5; transition: background 0.15s; }
+.ship-row:hover { background: #fafafa; }
+.ship-row .date-badge { width: 80px; text-align: center; padding: 3px 6px; border-radius: 6px; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+.date-badge.budai1 { background: #e3f2fd; color: #1565c0; }
+.date-badge.budai2 { background: #e8f5e9; color: #2e7d32; }
+.ship-info { flex: 1; min-width: 0; }
+.ship-info .ship-name { font-weight: 600; font-size: 12px; }
+.ship-info .ship-meta { font-size: 10px; color: #888; margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; }
+.teu-badge { background: #fff3e0; color: #e65100; padding: 1px 6px; border-radius: 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.tag { display: inline-block; padding: 1px 5px; border-radius: 10px; font-size: 9px; font-weight: 500; }
+.tag-cul { background: #e8eaf6; color: #1a237e; }
+.tag-route { background: #f3e5f5; color: #7b1fa2; }
+
+/* FIFO Match Table */
+.match-section { grid-column: 1 / -1; }
+.match-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.match-table th { background: #f5f5f5; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 11px; color: #555; border-bottom: 2px solid #e0e0e0; }
+.match-table td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
+.match-table tr:hover td { background: #fafafa; }
+.match-table .td-b1 { color: #1565c0; font-weight: 600; }
+.match-table .td-b2 { color: #2e7d32; font-weight: 600; }
+.match-table .td-teu { font-weight: 700; text-align: center; }
+.match-table .td-days { text-align: center; }
+.dwell-good { color: #2e7d32; font-weight: 600; }
+.dwell-warn { color: #f57c00; font-weight: 600; }
+.dwell-bad { color: #d32f2f; font-weight: 600; }
+
+/* Queue Panel */
+.queue-item { padding: 6px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f5f5f5; font-size: 11px; }
+.queue-empty { text-align: center; padding: 20px; color: #999; font-size: 12px; }
+
+/* Timeline */
+.timeline-panel { grid-column: 1 / -1; }
+.timeline-container { padding: 12px 16px; }
+.timeline-bar { position: relative; height: 36px; background: #f5f5f5; border-radius: 6px; margin: 4px 0; }
+.timeline-bar .seg { position: absolute; height: 100%; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: white; overflow: hidden; white-space: nowrap; }
+.timeline-bar .seg.budai1-seg { background: #1565c0; }
+.timeline-bar .seg.budai2-seg { background: #2e7d32; }
+.timeline-bar .seg.wait-seg { background: #e91e63; }
+
+/* Stats Table */
+.stats-panel { grid-column: 1 / -1; }
+.stats-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.stats-table th { background: #f5f5f5; padding: 6px 8px; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid #e0e0e0; }
+.stats-table td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; }
+
+.btn { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; white-space: nowrap; }
+.btn-primary { background: #1a237e; color: white; }
+.btn-primary:hover { background: #283593; }
+.btn-outline { background: white; color: #1a237e; border: 1px solid #1a237e; }
+.btn-outline:hover { background: #e8eaf6; }
+.btn-export { background: #43a047; color: white; }
+.btn-export:hover { background: #388e3c; }
+.btn-reset { background: #eee; color: #555; }
+.btn-reset:hover { background: #ddd; }
+.btn-sm { padding: 3px 8px; font-size: 10px; }
+.actions { display: flex; gap: 6px; }
+
+.progress-bar-wrap { background: #e0e0e0; border-radius: 4px; height: 6px; margin-top: 3px; min-width: 60px; }
+.progress-bar-fill { height: 100%; border-radius: 4px; background: #1565c0; transition: width 0.3s; }
+
+.legend { display: flex; gap: 14px; font-size: 11px; color: #888; padding: 4px 16px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+.empty-state { text-align: center; padding: 32px 16px; }
+.empty-state .empty-text { font-size: 13px; color: #999; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📦 布袋计划 — FIFO 货物中转优化</h1>
+    <div class="subtitle">布袋一卸货 → 巴生中转(先进先出) → 布袋二接货 · 最小化箱子停留时间</div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-export" onclick="exportCSV()">📥 导出CSV</button>
+    <button class="btn btn-reset" onclick="resetDefaults()">🔄 重置默认</button>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <label>📅 时段</label>
+  <input type="date" id="dateFrom" value="2026-07-01" onchange="applyFilters()">
+  <span style="color:#999;">—</span>
+  <input type="date" id="dateTo" value="2026-07-14" onchange="applyFilters()">
+  
+  <label style="margin-left:4px;">🏢 Operator</label>
+  <select id="operatorFilter" onchange="applyFilters()">
+    <option value="CUL" selected>CUL</option>
+    <option value="ALL">全部</option>
+  </select>
+
+  <label style="margin-left:4px;">📥 布袋一航线</label>
+  <div class="multi-select-wrap" id="wrapBudai1Routes">
+    <button class="multi-select-btn budai1-btn" onclick="toggleMultiDrop('budai1Routes')" id="btnBudai1Routes">SGX, SGX0006 ▾</button>
+    <div class="multi-select-drop" id="dropBudai1Routes"></div>
+  </div>
+
+  <label style="margin-left:4px;">📤 布袋二航线</label>
+  <div class="multi-select-wrap" id="wrapBudai2Routes">
+    <button class="multi-select-btn budai2-btn" onclick="toggleMultiDrop('budai2Routes')" id="btnBudai2Routes">REX* ▾</button>
+    <div class="multi-select-drop" id="dropBudai2Routes"></div>
+  </div>
+
+  <button class="btn btn-sm btn-primary" onclick="applyRouteRules()">🔄 应用</button>
+  <span style="font-size:10px;color:#999;">航线: <b id="selectedRoutes">-</b></span>
+</div>
+
+<div class="summary-row" id="summaryRow"></div>
+
+<!-- Route Classification -->
+<div style="padding: 0 24px 8px;">
+  <div class="panel" style="margin-bottom:0;">
+    <div class="panel-header"><span class="dot" style="background:#7b1fa2;"></span>航线归类设置 <span style="font-size:10px;color:#999;font-weight:normal;margin-left:6px;">点击航线 → 下方按钮归类</span></div>
+    <div style="padding: 6px 14px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;" id="routeChips"></div>
+    <div style="padding: 2px 14px 8px; display: flex; gap: 6px;">
+      <button class="btn btn-sm" style="background:#1565c0;color:white;" onclick="classifySelected('budai1')">→ 布袋一</button>
+      <button class="btn btn-sm" style="background:#2e7d32;color:white;" onclick="classifySelected('budai2')">→ 布袋二</button>
+      <button class="btn btn-sm btn-reset" onclick="classifySelected('other')">→ 未归类</button>
+    </div>
+  </div>
+</div>
+
+<div class="main-content">
+  <!-- Left: 布袋一 -->
+  <div class="panel">
+    <div class="panel-header"><span class="dot dot-budai1"></span>🔵 布袋一到巴生（卸货）</div>
+    <div class="panel-body" id="budai1List"></div>
+  </div>
+
+  <!-- Right: 布袋二 -->
+  <div class="panel">
+    <div class="panel-header"><span class="dot dot-budai2"></span>🟢 布袋二到巴生（接货）</div>
+    <div class="panel-body" id="budai2List"></div>
+  </div>
+
+  <!-- Cargo Queue State -->
+  <div class="panel">
+    <div class="panel-header"><span class="dot dot-queue"></span>📊 巴生港中转货队列（FIFO）</div>
+    <div class="panel-body" id="queuePanel" style="max-height:300px;"></div>
+  </div>
+
+  <!-- FIFO Matching Plan -->
+  <div class="panel match-section">
+    <div class="panel-header"><span class="dot dot-match"></span>📋 FIFO 接货匹配明细 — 布袋一 → 布袋二（先进先出）</div>
+    <div class="panel-body" style="max-height:500px;" id="matchPanel"></div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="panel stats-panel">
+    <div class="panel-header"><span class="dot" style="background:#7b1fa2;"></span>📈 停留时间统计</div>
+    <div class="panel-body" id="statsPanel" style="max-height:250px;"></div>
+  </div>
+</div>
+
+<script src="budai_data.js"></script>
+<script>
+// ========== Route Classification ==========
+let routeClass = {
+  'SGX': 'budai1', 'SGX0006': 'budai1',
+  'REX0002': 'budai2', 'REX0004': 'budai2', 'REX0009': 'budai2',
+  'REX0015': 'budai2', 'REX0016': 'budai2', 'REX1019': 'budai2',
+  'AM10009': 'other', 'CSX0005': 'other'
+};
+
+let selectedRouteChips = new Set();
+
+// ========== Multi-Select Dropdown System ==========
+let openDropdown = null;
+
+// Close any open dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  if (openDropdown && !e.target.closest('.multi-select-wrap')) {
+    closeAllDrops();
+  }
+});
+
+function closeAllDrops() {
+  document.querySelectorAll('.multi-select-drop').forEach(d => d.classList.remove('open'));
+  openDropdown = null;
+}
+
+function toggleMultiDrop(dropId) {
+  // dropId is 'budai1Routes' or 'budai2Routes'
+  const targetDrop = document.getElementById('dropBudai1Routes') && dropId === 'budai1Routes'
+    ? document.getElementById('dropBudai1Routes')
+    : document.getElementById('dropBudai2Routes');
+  if (!targetDrop) return;
+  
+  const allDrops = document.querySelectorAll('.multi-select-drop');
+  const isOpen = targetDrop.classList.contains('open');
+  allDrops.forEach(d => d.classList.remove('open'));
+  
+  if (!isOpen) {
+    targetDrop.classList.add('open');
+    openDropdown = targetDrop;
+    buildDropOptions(dropId);
+  } else {
+    openDropdown = null;
+  }
+}
+
+function getRouteOptions(excludeOtherDropId) {
+  const allRoutes = [...new Set(window.BUDAI_DATA.map(v => v.route))].sort();
+  return allRoutes.map(r => {
+    const cls = routeClass[r] || 'other';
+    // Determine if checked in this dropdown
+    let checked = false;
+    if (excludeOtherDropId === 'budai1Routes') {
+      checked = cls === 'budai1';
+    } else if (excludeOtherDropId === 'budai2Routes') {
+      checked = cls === 'budai2';
+    }
+    const otherLabel = excludeOtherDropId === 'budai1Routes' 
+      ? (routeClass[r] === 'budai2' ? '(已是布袋二)' : '')
+      : (routeClass[r] === 'budai1' ? '(已是布袋一)' : '');
+    return { route: r, checked, otherLabel };
+  });
+}
+
+function buildDropOptions(dropId) {
+  const targetDrop = document.getElementById(dropId === 'budai1Routes' ? 'dropBudai1Routes' : 'dropBudai2Routes');
+  if (!targetDrop) return;
+  
+  const options = getRouteOptions(dropId);
+  
+  let html = options.map(o => `
+    <label class="drop-item">
+      <input type="checkbox" value="${o.route}" ${o.checked ? 'checked' : ''} 
+        onchange="onRouteCheckChange('${dropId}', '${o.route}', this.checked)">
+      <span>${o.route}</span>
+      ${o.otherLabel ? `<span style="font-size:10px;color:#999;">${o.otherLabel}</span>` : ''}
+    </label>`).join('');
+  
+  html += `<div class="drop-actions">
+    <button class="btn btn-sm" style="background:#1565c0;color:white;font-size:10px;" 
+      onclick="selectAllInDrop('${dropId}');event.stopPropagation();">全选</button>
+    <button class="btn btn-sm btn-reset" style="font-size:10px;" 
+      onclick="clearAllInDrop('${dropId}');event.stopPropagation();">清空</button>
+  </div>`;
+  
+  targetDrop.innerHTML = html;
+}
+
+function onRouteCheckChange(dropId, route, checked) {
+  if (dropId === 'budai1Routes') {
+    routeClass[route] = checked ? 'budai1' : ((routeClass[route] === 'budai1') ? 'other' : routeClass[route]);
+  } else if (dropId === 'budai2Routes') {
+    routeClass[route] = checked ? 'budai2' : ((routeClass[route] === 'budai2') ? 'other' : routeClass[route]);
+  }
+  updateMultiSelectBtnLabel(dropId);
+  saveRules();
+  renderRouteChips();
+  applyFilters();
+}
+
+function selectAllInDrop(dropId) {
+  const options = getRouteOptions(dropId);
+  options.forEach(o => {
+    if (dropId === 'budai1Routes') routeClass[o.route] = 'budai1';
+    else routeClass[o.route] = 'budai2';
+  });
+  updateMultiSelectBtnLabel(dropId);
+  buildDropOptions(dropId);
+  saveRules();
+  renderRouteChips();
+  applyFilters();
+}
+
+function clearAllInDrop(dropId) {
+  const options = getRouteOptions(dropId);
+  options.forEach(o => {
+    const cls = dropId === 'budai1Routes' ? 'budai1' : 'budai2';
+    if (routeClass[o.route] === cls) routeClass[o.route] = 'other';
+  });
+  updateMultiSelectBtnLabel(dropId);
+  buildDropOptions(dropId);
+  saveRules();
+  renderRouteChips();
+  applyFilters();
+}
+
+function updateMultiSelectBtnLabel(dropId) {
+  const btn = document.getElementById(dropId === 'budai1Routes' ? 'btnBudai1Routes' : 'btnBudai2Routes');
+  if (!btn) return;
+  const allRoutes = [...new Set(window.BUDAI_DATA.map(v => v.route))].sort();
+  const targetClass = dropId === 'budai1Routes' ? 'budai1' : 'budai2';
+  const selected = allRoutes.filter(r => (routeClass[r] || 'other') === targetClass).sort();
+  
+  if (selected.length === 0) {
+    btn.textContent = '未选择 ▾';
+  } else if (selected.length <= 3) {
+    btn.textContent = selected.join(', ') + ' ▾';
+  } else {
+    btn.textContent = selected[0] + ' +' + (selected.length - 1) + '条 ▾';
+  }
+}
+
+function initMultiSelects() {
+  buildDropOptions('budai1Routes');
+  buildDropOptions('budai2Routes');
+  updateMultiSelectBtnLabel('budai1Routes');
+  updateMultiSelectBtnLabel('budai2Routes');
+}
+
+// ========== FIFO Matching Engine ==========
+function runFIFO(budai1Ships, budai2Ships) {
+  // Each ship: { vessel_name, route, first_mypkg_eta, first_mypkg_eta_ts, best_model_teu, ... }
+  
+  // Cargo queue: FIFO array of {vessel, teu, arrival_ts, arrival_date}
+  let cargoQueue = [];           // Cargo waiting at Klang
+  let matches = [];              // Completed matches
+  let queueHistory = [];         // Queue state snapshots for display
+  
+  // Create timeline of events
+  let events = [];
+  budai1Ships.forEach(s => {
+    if (s.first_mypkg_eta_ts && s.best_model_teu > 0) {
+      events.push({ type: 'budai1', ship: s, ts: s.first_mypkg_eta_ts, teu: s.best_model_teu });
+    }
+  });
+  budai2Ships.forEach(s => {
+    if (s.first_mypkg_eta_ts && s.best_model_teu > 0) {
+      events.push({ type: 'budai2', ship: s, ts: s.first_mypkg_eta_ts, capacity: s.best_model_teu });
+    }
+  });
+  
+  // Sort by timestamp
+  events.sort((a, b) => a.ts - b.ts);
+  
+  // Process events
+  for (const evt of events) {
+    if (evt.type === 'budai1') {
+      // Add cargo to queue
+      cargoQueue.push({
+        vessel: evt.ship.vessel_name,
+        route: evt.ship.route,
+        teu: evt.teu,
+        arrival_ts: evt.ts,
+        arrival_date: evt.ship.first_mypkg_eta,
+        remaining: evt.teu
+      });
+    } else if (evt.type === 'budai2') {
+      // Pick up cargo from queue (FIFO)
+      let remainingCapacity = evt.capacity;
+      let pickedMatches = [];
+      
+      while (remainingCapacity > 0 && cargoQueue.length > 0) {
+        let cargo = cargoQueue[0]; // Oldest first (FIFO)
+        let takeAmount = Math.min(remainingCapacity, cargo.remaining);
+        
+        if (takeAmount > 0) {
+          let dwellDays = Math.round((evt.ts - cargo.arrival_ts) / 86400);
+          pickedMatches.push({
+            budai1_vessel: cargo.vessel,
+            budai1_route: cargo.route,
+            budai1_eta: cargo.arrival_date,
+            budai2_vessel: evt.ship.vessel_name,
+            budai2_route: evt.ship.route,
+            budai2_eta: evt.ship.first_mypkg_eta,
+            teu: takeAmount,
+            total_teu_b1: cargo.teu,
+            dwell_days: dwellDays,
+            split: (takeAmount < cargo.teu)
+          });
+          
+          cargo.remaining -= takeAmount;
+          remainingCapacity -= takeAmount;
+          
+          if (cargo.remaining <= 0) {
+            cargoQueue.shift(); // Remove fully picked up cargo
+          }
+        }
+      }
+      
+      if (pickedMatches.length > 0) {
+        matches.push({
+          budai2: evt.ship,
+          picks: pickedMatches,
+          total_picked: pickedMatches.reduce((s, m) => s + m.teu, 0),
+          capacity: evt.capacity,
+          remaining_capacity: remainingCapacity
+        });
+      } else {
+        matches.push({
+          budai2: evt.ship,
+          picks: [],
+          total_picked: 0,
+          capacity: evt.capacity,
+          remaining_capacity: remainingCapacity,
+          no_cargo: true
+        });
+      }
+    }
+    
+    // Snapshot queue state
+    queueHistory.push({
+      after_ts: evt.ts,
+      after_date: formatDateFull(evt.ship ? evt.ship.first_mypkg_eta : ''),
+      event_type: evt.type,
+      event_ship: evt.ship ? evt.ship.vessel_name : '',
+      queue_teu: cargoQueue.reduce((s, c) => s + c.remaining, 0),
+      queue_count: cargoQueue.length,
+      queue_items: cargoQueue.map(c => ({
+        vessel: c.vessel,
+        remaining: c.remaining,
+        total: c.teu,
+        arrival_date: c.arrival_date
+      }))
+    });
+  }
+  
+  // Final unmatched cargo
+  let finalQueue = cargoQueue;
+  
+  return { matches, queueHistory, finalQueue };
+}
+
+// ========== Render Functions ==========
+function parseDateLocal(dateStr) {
+  // Parse 'YYYY-MM-DD' as local midnight (not UTC)
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d); // local time constructor
+}
+
+function applyFilters() {
+  const opFilter = document.getElementById('operatorFilter').value;
+  const dateFrom = document.getElementById('dateFrom').value;
+  const dateTo = document.getElementById('dateTo').value;
+  const fromTs = dateFrom ? parseDateLocal(dateFrom).getTime() / 1000 : 0;
+  const toTs = dateTo ? parseDateLocal(dateTo).getTime() / 1000 + 86400 : Infinity;
+  
+  const filtered = window.BUDAI_DATA.filter(v => {
+    if (opFilter !== 'ALL' && v.operator !== opFilter) return false;
+    if (!v.first_mypkg_eta || !v.first_mypkg_eta_ts) return false;
+    if (v.first_mypkg_eta_ts < fromTs || v.first_mypkg_eta_ts > toTs) return false;
+    return true;
+  });
+  
+  filtered.sort((a, b) => a.first_mypkg_eta_ts - b.first_mypkg_eta_ts);
+  
+  const budai1Ships = filtered.filter(v => (routeClass[v.route] || 'other') === 'budai1');
+  const budai2Ships = filtered.filter(v => (routeClass[v.route] || 'other') === 'budai2');
+  
+  // Run FIFO matching
+  const fifo = runFIFO(budai1Ships, budai2Ships);
+  
+  // Summary
+  const totalB1TEU = budai1Ships.reduce((s, v) => s + (v.best_model_teu || 0), 0);
+  const totalB2TEU = budai2Ships.reduce((s, v) => s + (v.best_model_teu || 0), 0);
+  const matchedTEU = fifo.matches.reduce((s, m) => s + m.total_picked, 0);
+  const finalQueueTEU = fifo.finalQueue.reduce((s, c) => s + c.remaining, 0);
+  const matchedPairs = fifo.matches.filter(m => m.picks.length > 0).length;
+  const dwellDaysTotal = fifo.matches.reduce((s, m) => s + m.picks.reduce((ss, p) => ss + p.dwell_days * p.teu, 0), 0);
+  const avgDwell = matchedTEU > 0 ? (dwellDaysTotal / matchedTEU).toFixed(1) : '-';
+  
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="card budai1-card">
+      <div class="card-label">🔵 布袋一到港</div>
+      <div class="card-value">${budai1Ships.length}<span style="font-size:12px;font-weight:400;color:#888;"> / ${totalB1TEU} TEU</span></div>
+    </div>
+    <div class="card budai2-card">
+      <div class="card-label">🟢 布袋二到港</div>
+      <div class="card-value">${budai2Ships.length}<span style="font-size:12px;font-weight:400;color:#888;"> / ${totalB2TEU} TEU</span></div>
+    </div>
+    <div class="card match-card">
+      <div class="card-label">🟠 已匹配TEU / 对接次数</div>
+      <div class="card-value">${matchedTEU}<span style="font-size:12px;font-weight:400;color:#888;"> / ${matchedPairs}次</span></div>
+    </div>
+    <div class="card queue-card">
+      <div class="card-label">🔴 未接货 / 平均停留</div>
+      <div class="card-value">${finalQueueTEU}<span style="font-size:12px;font-weight:400;color:#888;"> / ${avgDwell}d</span></div>
+    </div>
+  `;
+  
+  // Render lists
+  document.getElementById('budai1List').innerHTML = renderShipList(budai1Ships, 'budai1');
+  document.getElementById('budai2List').innerHTML = renderShipList(budai2Ships, 'budai2');
+  
+  // Render FIFO match plan
+  document.getElementById('matchPanel').innerHTML = renderFIFOMatch(fifo);
+  
+  // Render queue
+  document.getElementById('queuePanel').innerHTML = renderQueue(fifo);
+  
+  // Render stats
+  document.getElementById('statsPanel').innerHTML = renderStats(fifo, budai1Ships, budai2Ships);
+}
+
+function renderShipList(ships, type) {
+  if (ships.length === 0) {
+    return '<div class="empty-state"><div class="empty-text">该时段无抵港船舶</div></div>';
+  }
+  return ships.map(v => `
+    <div class="ship-row">
+      <div class="date-badge ${type}">${formatDate(v.first_mypkg_eta)}</div>
+      <div class="ship-info">
+        <div class="ship-name">${v.vessel_name} 
+          ${v.best_model_teu > 0 ? `<span class="teu-badge">${v.best_model_teu} TEU</span>` : ''}
+          <span class="tag tag-cul">${v.operator}</span>
+        </div>
+        <div class="ship-meta">
+          <span class="tag tag-route">${v.route}</span>
+          ${v.vessel_code ? `<span>${v.vessel_code}</span>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderFIFOMatch(fifo) {
+  if (fifo.matches.length === 0) {
+    return '<div class="empty-state"><div class="empty-text">无匹配数据 — 请确认时间范围内有布袋一和布袋二船舶</div></div>';
+  }
+  
+  let html = '<table class="match-table"><thead><tr>';
+  html += '<th>布袋一（卸货船）</th><th>布袋一到港</th>';
+  html += '<th>接货TEU</th><th>停留(d)</th>';
+  html += '<th>布袋二（接货船）</th><th>布袋二到港</th>';
+  html += '<th>布袋二运力</th><th>剩余运力</th>';
+  html += '</tr></thead><tbody>';
+  
+  let rowNum = 0;
+  for (const m of fifo.matches) {
+    if (m.picks.length === 0) {
+      // No cargo picked up
+      html += `<tr>
+        <td colspan="4" style="color:#999;text-align:center;">— 无待接货物 —</td>
+        <td class="td-b2">${m.budai2.vessel_name}</td>
+        <td>${formatDate(m.budai2.first_mypkg_eta)}</td>
+        <td class="td-teu">${m.capacity} TEU</td>
+        <td style="color:#999;">${m.capacity} TEU (全空)</td>
+      </tr>`;
+    } else {
+      for (let i = 0; i < m.picks.length; i++) {
+        const p = m.picks[i];
+        const dwellClass = p.dwell_days <= 3 ? 'dwell-good' : (p.dwell_days <= 7 ? 'dwell-warn' : 'dwell-bad');
+        const splitMark = p.split ? ' 🔀' : '';
+        
+        html += `<tr>
+          <td class="td-b1">${p.budai1_vessel}${splitMark}</td>
+          <td>${formatDate(p.budai1_eta)}</td>
+          <td class="td-teu">${p.teu} / ${p.total_teu_b1} TEU</td>
+          <td class="td-days ${dwellClass}">${p.dwell_days}d</td>
+          ${i === 0 ? `
+          <td class="td-b2" rowspan="${m.picks.length}">${m.budai2.vessel_name} <span class="tag tag-route">${m.budai2.route}</span></td>
+          <td rowspan="${m.picks.length}">${formatDate(m.budai2.first_mypkg_eta)}</td>
+          <td class="td-teu" rowspan="${m.picks.length}">${m.capacity} TEU</td>
+          <td rowspan="${m.picks.length}" style="${m.remaining_capacity > 0 ? 'color:#2e7d32;' : ''}">${m.remaining_capacity > 0 ? m.remaining_capacity + ' TEU' : '满'}</td>
+          ` : ''}
+        </tr>`;
+      }
+    }
+    rowNum++;
+  }
+  html += '</tbody></table>';
+  
+  return html;
+}
+
+function renderQueue(fifo) {
+  if (fifo.queueHistory.length === 0) {
+    return '<div class="empty-state"><div class="empty-text">无队列事件 — 请确认有船舶抵港</div></div>';
+  }
+  
+  let html = '';
+  for (const snap of fifo.queueHistory) {
+    const typeLabel = snap.event_type === 'budai1' 
+      ? '<span style="color:#1565c0;font-weight:600;">📥 卸货</span>' 
+      : '<span style="color:#2e7d32;font-weight:600;">📤 接货</span>';
+    const shipName = snap.event_ship;
+    
+    html += `<div style="padding:4px 14px;font-size:11px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;gap:8px;">
+      <span style="color:#999;min-width:55px;">${snap.after_date ? formatDate(snap.after_date) : ''}</span>
+      ${typeLabel} <b>${shipName}</b>
+      <span style="color:#e91e63;font-weight:600;margin-left:auto;">队列: ${snap.queue_teu} TEU / ${snap.queue_count}批</span>
+    </div>`;
+    
+    if (snap.queue_items.length > 0) {
+      html += '<div style="padding:2px 14px 4px 70px;display:flex;gap:6px;flex-wrap:wrap;">';
+      for (const qi of snap.queue_items) {
+        const pct = Math.round(qi.remaining / qi.total * 100);
+        html += `<span style="background:#fce4ec;color:#c62828;padding:1px 6px;border-radius:8px;font-size:10px;">
+          ${qi.vessel} ${qi.remaining}TEU
+          <span style="font-size:8px;opacity:0.7;">(${pct}%)</span>
+        </span>`;
+      }
+      html += '</div>';
+    }
+  }
+  
+  // Final state
+  if (fifo.finalQueue.length > 0) {
+    html += `<div style="padding:4px 14px;border-top:2px solid #e91e63;font-size:11px;display:flex;align-items:center;gap:8px;">
+      <span style="color:#e91e63;font-weight:700;">⚠️ 时段末剩余:</span>
+    </div>`;
+    html += '<div style="padding:2px 14px 4px 14px;display:flex;gap:6px;flex-wrap:wrap;">';
+    for (const c of fifo.finalQueue) {
+      html += `<span style="background:#ffcdd2;color:#b71c1c;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;">
+        ${c.vessel} ${c.remaining} TEU
+      </span>`;
+    }
+    html += '</div>';
+  }
+  
+  return html || '<div class="empty-state"><div class="empty-text">队列为空</div></div>';
+}
+
+function renderStats(fifo, b1ships, b2ships) {
+  const allPicks = fifo.matches.flatMap(m => m.picks);
+  
+  if (allPicks.length === 0) {
+    return '<div class="empty-state"><div class="empty-text">无匹配记录</div></div>';
+  }
+  
+  // Per-vessel dwell stats
+  const b1Dwell = {};
+  for (const p of allPicks) {
+    if (!b1Dwell[p.budai1_vessel]) b1Dwell[p.budai1_vessel] = { total: 0, teu: 0, max: 0 };
+    b1Dwell[p.budai1_vessel].total += p.dwell_days * p.teu;
+    b1Dwell[p.budai1_vessel].teu += p.teu;
+    b1Dwell[p.budai1_vessel].max = Math.max(b1Dwell[p.budai1_vessel].max, p.dwell_days);
+  }
+  
+  // Dwell distribution
+  const dwellBuckets = { '0-3d': 0, '4-7d': 0, '8-14d': 0, '15d+': 0 };
+  for (const p of allPicks) {
+    if (p.dwell_days <= 3) dwellBuckets['0-3d'] += p.teu;
+    else if (p.dwell_days <= 7) dwellBuckets['4-7d'] += p.teu;
+    else if (p.dwell_days <= 14) dwellBuckets['8-14d'] += p.teu;
+    else dwellBuckets['15d+'] += p.teu;
+  }
+  
+  const totalTEU = allPicks.reduce((s, p) => s + p.teu, 0);
+  const totalDwellDays = allPicks.reduce((s, p) => s + p.dwell_days * p.teu, 0);
+  const avgDwell = totalTEU > 0 ? (totalDwellDays / totalTEU).toFixed(1) : 0;
+  const maxDwell = allPicks.reduce((m, p) => Math.max(m, p.dwell_days), 0);
+  
+  let html = '<table class="stats-table"><thead><tr>';
+  html += '<th>指标</th><th>值</th><th>说明</th>';
+  html += '</tr></thead><tbody>';
+  html += `<tr><td>总匹配TEU</td><td style="font-weight:700;">${totalTEU} TEU</td><td>布袋一到布袋二成功接货的总箱量</td></tr>`;
+  html += `<tr><td>总停留箱·天</td><td style="font-weight:700;">${totalDwellDays} 箱·天</td><td>所有箱子在巴生等待的总天数</td></tr>`;
+  html += `<tr><td>加权平均停留</td><td style="font-weight:700;color:${avgDwell <= 5 ? '#2e7d32' : '#f57c00'};">${avgDwell} 天</td><td>每TEU在巴生平均等待天数</td></tr>`;
+  html += `<tr><td>最大单批停留</td><td style="font-weight:700;color:${maxDwell <= 7 ? '#2e7d32' : '#d32f2f'};">${maxDwell} 天</td><td>某批货物最长等待时间</td></tr>`;
+  
+  // Dwell distribution
+  html += `<tr><td colspan="3" style="font-weight:600;padding-top:8px;">停留时间分布 (TEU)</td></tr>`;
+  for (const [label, teu] of Object.entries(dwellBuckets)) {
+    const pct = totalTEU > 0 ? (teu / totalTEU * 100).toFixed(1) : 0;
+    html += `<tr>
+      <td>${label}</td>
+      <td style="font-weight:600;">${teu} TEU (${pct}%)</td>
+      <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${label==='0-3d'?'#43a047':label==='4-7d'?'#ff9800':label==='8-14d'?'#f44336':'#b71c1c'}"></div></div></td>
+    </tr>`;
+  }
+  
+  html += '</tbody></table>';
+  return html;
+}
+
+function formatDate(ymd) {
+  if (!ymd) return '-';
+  const parts = ymd.split('-');
+  if (parts.length === 3) {
+    return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+  }
+  return ymd;
+}
+
+function formatDateFull(ymd) {
+  if (!ymd) return '-';
+  return ymd;
+}
+
+// ========== Route Classification UI ==========
+function init() {
+  loadSavedRules();
+  renderRouteChips();
+  initMultiSelects();
+  applyFilters();
+}
+
+function loadSavedRules() {
+  try {
+    const saved = localStorage.getItem('budai_route_class');
+    if (saved) Object.assign(routeClass, JSON.parse(saved));
+  } catch(e) {}
+}
+
+function saveRules() {
+  localStorage.setItem('budai_route_class', JSON.stringify(routeClass));
+}
+
+function resetDefaults() {
+  routeClass = {
+    'SGX': 'budai1', 'SGX0006': 'budai1',
+    'REX0002': 'budai2', 'REX0004': 'budai2', 'REX0009': 'budai2',
+    'REX0015': 'budai2', 'REX0016': 'budai2', 'REX1019': 'budai2',
+    'AM10009': 'other', 'CSX0005': 'other'
+  };
+  saveRules();
+  renderRouteChips();
+  initMultiSelects();
+  applyFilters();
+}
+
+function renderRouteChips() {
+  const container = document.getElementById('routeChips');
+  const routes = [...new Set(window.BUDAI_DATA.map(v => v.route))].sort();
+  container.innerHTML = routes.map(r => {
+    const cls = routeClass[r] || 'other';
+    const label = cls === 'budai1' ? '布袋一' : cls === 'budai2' ? '布袋二' : '未归类';
+    return `<span class="filter-chip ${cls} ${selectedRouteChips.has(r) ? 'selected' : ''}"
+      onclick="toggleRouteChip('${r}')" id="rc-${r}">
+      ${r} <small>${label}</small>
+    </span>`;
+  }).join('');
+}
+
+function toggleRouteChip(route) {
+  if (selectedRouteChips.has(route)) selectedRouteChips.delete(route);
+  else selectedRouteChips.add(route);
+  renderRouteChips();
+  document.getElementById('selectedRoutes').textContent = selectedRouteChips.size > 0 ? selectedRouteChips.size + '条' : '-';
+}
+
+function classifySelected(cls) {
+  if (selectedRouteChips.size === 0) { alert('请先点击选择航线标签'); return; }
+  selectedRouteChips.forEach(r => { routeClass[r] = cls; });
+  selectedRouteChips.clear();
+  saveRules();
+  renderRouteChips();
+  applyFilters();
+}
+
+function applyRouteRules() {
+  saveRules();
+  applyFilters();
+}
+
+// ========== Export ==========
+function exportCSV() {
+  const opFilter = document.getElementById('operatorFilter').value;
+  const dateFrom = document.getElementById('dateFrom').value;
+  const dateTo = document.getElementById('dateTo').value;
+  const fromTs = dateFrom ? parseDateLocal(dateFrom).getTime() / 1000 : 0;
+  const toTs = dateTo ? parseDateLocal(dateTo).getTime() / 1000 + 86400 : Infinity;
+  
+  const filtered = window.BUDAI_DATA.filter(v => {
+    if (opFilter !== 'ALL' && v.operator !== opFilter) return false;
+    if (!v.first_mypkg_eta || !v.first_mypkg_eta_ts) return false;
+    if (v.first_mypkg_eta_ts < fromTs || v.first_mypkg_eta_ts > toTs) return false;
+    return true;
+  });
+  filtered.sort((a, b) => a.first_mypkg_eta_ts - b.first_mypkg_eta_ts);
+  
+  const b1s = filtered.filter(v => (routeClass[v.route] || 'other') === 'budai1');
+  const b2s = filtered.filter(v => (routeClass[v.route] || 'other') === 'budai2');
+  const fifo = runFIFO(b1s, b2s);
+  
+  let csv = '类别,航线,船名,Operator,巴生ETA,载货TEU(Best Model)\n';
+  for (const v of filtered) {
+    const cls = routeClass[v.route] || 'other';
+    const label = cls === 'budai1' ? '布袋一' : cls === 'budai2' ? '布袋二' : '未归类';
+    csv += `${label},${v.route},${v.vessel_name},${v.operator},${v.first_mypkg_eta},${v.best_model_teu}\n`;
+  }
+  
+  csv += '\n\nFIFO匹配明细\n';
+  csv += '布袋一,布袋一到港,接货TEU,总TEU,停留天数,布袋二,布袋二到港,布袋二运力\n';
+  for (const m of fifo.matches) {
+    for (const p of m.picks) {
+      csv += `${p.budai1_vessel},${p.budai1_eta},${p.teu},${p.total_teu_b1},${p.dwell_days},${p.budai2_vessel},${p.budai2_eta},${m.capacity}\n`;
+    }
+  }
+  
+  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `布袋计划_FIFO_${dateFrom}_${dateTo}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

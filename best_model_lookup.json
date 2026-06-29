@@ -1,0 +1,464 @@
+{
+  "CUL HAIPHONG": [
+    {
+      "service": "ST3",
+      "bsa": 680,
+      "bsa_regular": 680,
+      "bsa_monsoon": 0
+    }
+  ],
+  "CUL HUANGPU": [
+    {
+      "service": "CHT",
+      "bsa": 590,
+      "bsa_regular": 590,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "NSCT1",
+      "bsa": 590,
+      "bsa_regular": 590,
+      "bsa_monsoon": 0
+    }
+  ],
+  "CUL HOCHIMINH": [
+    {
+      "service": "REX",
+      "bsa": 2230,
+      "bsa_regular": 2250,
+      "bsa_monsoon": 2230
+    },
+    {
+      "service": "AEM/CGX",
+      "bsa": 2230,
+      "bsa_regular": 2250,
+      "bsa_monsoon": 2230
+    }
+  ],
+  "CUL KLANG": [
+    {
+      "service": "AEM",
+      "bsa": 2010,
+      "bsa_regular": 2030,
+      "bsa_monsoon": 2010
+    },
+    {
+      "service": "REX",
+      "bsa": 2010,
+      "bsa_regular": 2030,
+      "bsa_monsoon": 2010
+    }
+  ],
+  "CUL LAEMCHABANG": [
+    {
+      "service": "REX",
+      "bsa": 1520,
+      "bsa_regular": 1600,
+      "bsa_monsoon": 1520
+    },
+    {
+      "service": "AEM",
+      "bsa": 1520,
+      "bsa_regular": 1600,
+      "bsa_monsoon": 1520
+    },
+    {
+      "service": "CST(SB)",
+      "bsa": 1650,
+      "bsa_regular": 1650,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "CST(NB)",
+      "bsa": 18500,
+      "bsa_regular": 18500,
+      "bsa_monsoon": 0
+    }
+  ],
+  "CUL NANSHA": [
+    {
+      "service": "CST(SB)",
+      "bsa": 1650,
+      "bsa_regular": 1650,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "CST(NB)",
+      "bsa": 18500,
+      "bsa_regular": 18500,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "REX",
+      "bsa": 1520,
+      "bsa_regular": 1600,
+      "bsa_monsoon": 1520
+    }
+  ],
+  "CUL SHEKOU": [
+    {
+      "service": "AEM",
+      "bsa": 2230,
+      "bsa_regular": 2250,
+      "bsa_monsoon": 2230
+    },
+    {
+      "service": "REX",
+      "bsa": 2230,
+      "bsa_regular": 2250,
+      "bsa_monsoon": 2230
+    }
+  ],
+  "CUL XIAMEN": [
+    {
+      "service": "HDT",
+      "bsa": 1138,
+      "bsa_regular": 1138,
+      "bsa_monsoon": 0
+    }
+  ],
+  "M. ODYSSEY": [
+    {
+      "service": "CST(SB)",
+      "bsa": 850,
+      "bsa_regular": 850,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "CST(NB)",
+      "bsa": 9400,
+      "bsa_regular": 9400,
+      "bsa_monsoon": 0
+    }
+  ],
+  "M. MARINER": [
+    {
+      "service": "CST(SB)",
+      "bsa": 850,
+      "bsa_regular": 850,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "CST(NB)",
+      "bsa": 9400,
+      "bsa_regular": 9400,
+      "bsa_monsoon": 0
+    }
+  ],
+  "CUL YANGPU": [
+    {
+      "service": "CST(SB)",
+      "bsa": 1650,
+      "bsa_regular": 1650,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "CST(NB)",
+      "bsa": 18500,
+      "bsa_regular": 18500,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "CCT(SB)",
+      "bsa": 1650,
+      "bsa_regular": 1650,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "CCT(NB)",
+      "bsa": 18500,
+      "bsa_regular": 18500,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "REX",
+      "bsa": 1520,
+      "bsa_regular": 1600,
+      "bsa_monsoon": 1520
+    }
+  ],
+  "KR TASMAN": [
+    {
+      "service": "IMR",
+      "bsa": 1180,
+      "bsa_regular": 1200,
+      "bsa_monsoon": 1180
+    },
+    {
+      "service": "REX",
+      "bsa": 1200,
+      "bsa_regular": 1220,
+      "bsa_monsoon": 1200
+    }
+  ],
+  "STAR BLESSING": [
+    {
+      "service": "REX",
+      "bsa": 1200,
+      "bsa_regular": 1220,
+      "bsa_monsoon": 1200
+    },
+    {
+      "service": "IMR",
+      "bsa": 1180,
+      "bsa_regular": 0,
+      "bsa_monsoon": 1180
+    }
+  ],
+  "SUNNY 68": [
+    {
+      "service": "SJA",
+      "bsa": 0,
+      "bsa_regular": 0,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "SJA",
+      "bsa": 0,
+      "bsa_regular": 0,
+      "bsa_monsoon": 0
+    }
+  ],
+  "TIGER LONGKOU": [
+    {
+      "service": "REX",
+      "bsa": 1300,
+      "bsa_regular": 1350,
+      "bsa_monsoon": 1300
+    },
+    {
+      "service": "AEM",
+      "bsa": 1300,
+      "bsa_regular": 1350,
+      "bsa_monsoon": 1300
+    }
+  ],
+  "CUL HUMEN": [
+    {
+      "service": "IMR",
+      "bsa": 1000,
+      "bsa_regular": 1050,
+      "bsa_monsoon": 1000
+    },
+    {
+      "service": "REX",
+      "bsa": 1000,
+      "bsa_regular": 1050,
+      "bsa_monsoon": 1000
+    }
+  ],
+  "ZHONG LIAN SHAN TOU": [
+    {
+      "service": "JPS",
+      "bsa": 0,
+      "bsa_regular": 0,
+      "bsa_monsoon": 0
+    }
+  ],
+  "WAN FU DA": [
+    {
+      "service": "REX",
+      "bsa": 1520,
+      "bsa_regular": 1600,
+      "bsa_monsoon": 1520
+    }
+  ],
+  "HAIAN MIND": [
+    {
+      "service": "REX",
+      "bsa": 1370,
+      "bsa_regular": 1450,
+      "bsa_monsoon": 1370
+    }
+  ],
+  "HUA DONG 811": [
+    {
+      "service": "SGX",
+      "bsa": 1080,
+      "bsa_regular": 1080,
+      "bsa_monsoon": 0
+    }
+  ],
+  "CHANG SHENG JI 7": [
+    {
+      "service": "SGX",
+      "bsa": 1100,
+      "bsa_regular": 1100,
+      "bsa_monsoon": 0
+    }
+  ],
+  "ZHI YING HE SHUN": [
+    {
+      "service": "SGX",
+      "bsa": 1050,
+      "bsa_regular": 1100,
+      "bsa_monsoon": 1050
+    }
+  ],
+  "HONG DA XIN 728": [
+    {
+      "service": "REX",
+      "bsa": 1670,
+      "bsa_regular": 1700,
+      "bsa_monsoon": 1670
+    }
+  ],
+  "XING DONG 88": [
+    {
+      "service": "CGS",
+      "bsa": 1100,
+      "bsa_regular": 1100,
+      "bsa_monsoon": 1100
+    }
+  ],
+  "MAO GANG SHANGHAI": [
+    {
+      "service": "REX",
+      "bsa": 1100,
+      "bsa_regular": 1160,
+      "bsa_monsoon": 1100
+    }
+  ],
+  "ZHONG GU ZHU HAI": [
+    {
+      "service": "REX/RES",
+      "bsa": 2000,
+      "bsa_regular": 2060,
+      "bsa_monsoon": 2000
+    }
+  ],
+  "ZHONG GU YIN CHUAN": [
+    {
+      "service": "REX",
+      "bsa": 3800,
+      "bsa_regular": 3850,
+      "bsa_monsoon": 3800
+    }
+  ],
+  "ZHONG GU NAN CHANG": [
+    {
+      "service": "AEM",
+      "bsa": 3800,
+      "bsa_regular": 3850,
+      "bsa_monsoon": 3800
+    }
+  ],
+  "ZHONG GU CHENG DU": [
+    {
+      "service": "AEM",
+      "bsa": 3800,
+      "bsa_regular": 3850,
+      "bsa_monsoon": 3800
+    }
+  ],
+  "EVERLASTING HARVEST": [
+    {
+      "service": "REX",
+      "bsa": 1520,
+      "bsa_regular": 1600,
+      "bsa_monsoon": 1520
+    }
+  ],
+  "EXPRESS BERLIN": [
+    {
+      "service": "CGX",
+      "bsa": 8450,
+      "bsa_regular": 8700,
+      "bsa_monsoon": 8450
+    }
+  ],
+  "RACINE": [
+    {
+      "service": "CGX",
+      "bsa": 5300,
+      "bsa_regular": 5500,
+      "bsa_monsoon": 5300
+    }
+  ],
+  "HOOGE": [
+    {
+      "service": "CCT(SB)",
+      "bsa": 1530,
+      "bsa_regular": 1530,
+      "bsa_monsoon": 0
+    },
+    {
+      "service": "CCT(NB)",
+      "bsa": 19200,
+      "bsa_regular": 19200,
+      "bsa_monsoon": 0
+    }
+  ],
+  "BZ CHONGFU": [
+    {
+      "service": "AEM/CGX",
+      "bsa": 5000,
+      "bsa_regular": 5010,
+      "bsa_monsoon": 5000
+    }
+  ],
+  "SHENG TANG": [
+    {
+      "service": "REX/AEM",
+      "bsa": 1800,
+      "bsa_regular": 1880,
+      "bsa_monsoon": 1800
+    }
+  ],
+  "ASR": [
+    {
+      "service": "NAF",
+      "bsa": 440,
+      "bsa_regular": 440,
+      "bsa_monsoon": 0
+    }
+  ],
+  "MEDKON LIA": [
+    {
+      "service": "MES",
+      "bsa": 600,
+      "bsa_regular": 600,
+      "bsa_monsoon": 0
+    }
+  ],
+  "FUYU": [
+    {
+      "service": "SGX",
+      "bsa": 810,
+      "bsa_regular": 810,
+      "bsa_monsoon": 0
+    }
+  ],
+  "CHANG SHENG JI 8": [
+    {
+      "service": "REX",
+      "bsa": 1600,
+      "bsa_regular": 1660,
+      "bsa_monsoon": 1600
+    }
+  ],
+  "KAI DA HONG ZHOU": [
+    {
+      "service": "SGX",
+      "bsa": 1000,
+      "bsa_regular": 1020,
+      "bsa_monsoon": 1000
+    }
+  ],
+  "XIN DONG 88": [
+    {
+      "service": "CGS",
+      "bsa": 1130,
+      "bsa_regular": 1130,
+      "bsa_monsoon": 0
+    }
+  ],
+  "": [
+    {
+      "service": "",
+      "bsa": 0,
+      "bsa_regular": 0,
+      "bsa_monsoon": 0
+    }
+  ]
+}
