@@ -442,7 +442,11 @@ function init() {
       renderMultiSelect('terminal');
       renderMultiSelect('svc');
       renderMultiSelect('operator');
-      resetFilter();
+      // Default: select CUL operator only
+      selected.operator.clear();
+      selected.operator.add('CUL');
+      renderMultiSelect('operator');
+      applyFilter();
     })
     .catch(err => {
       wrap.innerHTML = '<div class="no-data">Failed to load data: ' + err.message + '<br>Make sure ' + CSV_URL + ' is accessible.</div>';
@@ -477,6 +481,7 @@ function resetFilter() {
   selected.terminal.clear();
   selected.svc.clear();
   selected.operator.clear();
+  selected.operator.add('CUL');
   renderMultiSelect('terminal');
   renderMultiSelect('svc');
   renderMultiSelect('operator');
