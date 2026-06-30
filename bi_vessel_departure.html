@@ -238,8 +238,7 @@ let DATA = [];
 let filtered = [];
 let colVisibility = {};
 let colOrder = [];
-let sortKey = null;
-let sortDir = 'asc';
+let sortKeys = []; // [{key, dir}] multi-column sort
 
 const COL_DEFS = [
   { key: 'srl_no', label: 'SRL', cls: 'col-small', fmt: v => v || '' },
@@ -498,8 +497,7 @@ function resetFilter() {
   renderMultiSelect('operator');
   setDefaultDateRange();
   document.getElementById('f_search').value = '';
-  sortKey = null;
-  sortDir = 'asc';
+  sortKeys = [];
   filtered = DATA.slice();
   renderTable();
   renderAnalysis();
@@ -509,33 +507,41 @@ function resetFilter() {
 function toggleSort(key) {
   const colDef = COL_DEFS.find(c => c.key === key);
   if (!colDef) return;
-  if (sortKey === key) {
-    sortDir = sortDir === 'asc' ? 'desc' : (sortDir === 'desc' ? null : 'asc');
-    if (sortDir === null) sortKey = null;
+  const existing = sortKeys.find(s => s.key === key);
+  if (existing) {
+    if (existing.dir === 'asc') existing.dir = 'desc';
+    else if (existing.dir === 'desc') {
+      // Remove from sort list
+      sortKeys = sortKeys.filter(s => s.key !== key);
+    }
   } else {
-    sortKey = key;
-    sortDir = 'asc';
+    // Add as secondary sort
+    sortKeys.push({ key, dir: 'asc' });
   }
   sortFiltered();
   renderTable();
 }
 
 function sortFiltered() {
-  if (!sortKey) return;
-  const colDef = COL_DEFS.find(c => c.key === sortKey);
-  const isNum = colDef && colDef.num;
+  if (!sortKeys.length) return;
   filtered.sort((a, b) => {
-    let va = a[sortKey], vb = b[sortKey];
-    if (va == null && vb == null) return 0;
-    if (va == null) return sortDir === 'asc' ? 1 : -1;
-    if (vb == null) return sortDir === 'asc' ? -1 : 1;
-    if (isNum) {
-      return sortDir === 'asc' ? va - vb : vb - va;
+    for (const { key, dir } of sortKeys) {
+      const colDef = COL_DEFS.find(c => c.key === key);
+      const isNum = colDef && colDef.num;
+      let va = a[key], vb = b[key];
+      if (va == null && vb == null) continue;
+      if (va == null) return dir === 'asc' ? 1 : -1;
+      if (vb == null) return dir === 'asc' ? -1 : 1;
+      if (isNum) {
+        const cmp = va - vb;
+        if (cmp !== 0) return dir === 'asc' ? cmp : -cmp;
+      } else {
+        va = String(va).toLowerCase();
+        vb = String(vb).toLowerCase();
+        if (va < vb) return dir === 'asc' ? -1 : 1;
+        if (va > vb) return dir === 'asc' ? 1 : -1;
+      }
     }
-    va = String(va).toLowerCase();
-    vb = String(vb).toLowerCase();
-    if (va < vb) return sortDir === 'asc' ? -1 : 1;
-    if (va > vb) return sortDir === 'asc' ? 1 : -1;
     return 0;
   });
 }
@@ -552,10 +558,12 @@ function renderTable() {
     if (!c || !colVisibility[c.key]) return;
     let groupCls = c.group === 'discharge' ? ' th-discharge' : c.group === 'load' ? ' th-load' : c.group === 'fuel' ? ' th-fuel' : '';
     let sortCls = '';
-    if (sortKey === c.key) {
-      sortCls = sortDir === 'asc' ? ' sorted-asc' : ' sorted-desc';
+    const sortIdx = sortKeys.findIndex(s => s.key === c.key);
+    if (sortIdx >= 0) {
+      const s = sortKeys[sortIdx];
+      sortCls = s.dir === 'asc' ? ' sorted-asc' : ' sorted-desc';
     }
-    html += '<th class="' + c.cls + groupCls + sortCls + '" draggable="true" data-col="' + c.key + '" onclick="toggleSort(\'' + c.key + '\')">' + c.label + '<span class="sort-arrow"></span></th>';
+    html += '<th class="' + c.cls + groupCls + sortCls + '" draggable="true" data-col="' + c.key + '" onclick="toggleSort(\'' + c.key + '\')">' + c.label + '<span class="sort-arrow">' + (sortIdx >= 0 ? (sortIdx + 1) : '') + '</span></th>';
   });
   html += '</tr></thead><tbody>';
   filtered.forEach(r => {
