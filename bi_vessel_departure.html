@@ -241,7 +241,6 @@ let colOrder = [];
 let sortKeys = []; // [{key, dir}] multi-column sort
 
 const COL_DEFS = [
-  { key: 'srl_no', label: 'SRL', cls: 'col-small', fmt: v => v || '' },
   { key: 'terminal', label: 'TERMINAL', cls: '', fmt: v => v || '' },
   { key: 'svc', label: 'SVC', cls: '', fmt: v => v || '' },
   { key: 'vessel_voyage', label: 'VESSEL/VOYAGE', cls: '', fmt: v => v || '' },
@@ -456,6 +455,8 @@ function init() {
       renderMultiSelect('operator');
       // Default: departure date within +/- 3 months
       setDefaultDateRange();
+      // Default: sort by Vessel/Voyage asc, then Arrival asc
+      sortKeys = [{ key: 'vessel_voyage', dir: 'asc' }, { key: 'arrived_anchorage', dir: 'asc' }];
       applyFilter();
     })
     .catch(err => {
@@ -497,7 +498,7 @@ function resetFilter() {
   renderMultiSelect('operator');
   setDefaultDateRange();
   document.getElementById('f_search').value = '';
-  sortKeys = [];
+  sortKeys = [{ key: 'vessel_voyage', dir: 'asc' }, { key: 'arrived_anchorage', dir: 'asc' }];
   filtered = DATA.slice();
   renderTable();
   renderAnalysis();
@@ -854,7 +855,7 @@ function renderFuelSummary() {
 
 function exportCSV() {
   if (!filtered.length) return alert('No data to export');
-  const headers = ['srl_no','terminal','svc','vessel_voyage','operator','arrived_anchorage','berth','departure','wait_time','port_stay','total_moves','discharge_full_20gp','discharge_empty_20gp','discharge_full_40hc','discharge_empty_40hc','load_full_20gp','load_empty_20gp','load_full_40hc','load_empty_40hc','restows','total_teu','vessel_mpgh','arr_fuel_oil','arr_lsfo','arr_diesel_oil','arr_lsdo','dep_fuel_oil','dep_lsfo','dep_diesel_oil','dep_lsdo'];
+  const headers = ['terminal','svc','vessel_voyage','operator','arrived_anchorage','berth','departure','wait_time','port_stay','total_moves','discharge_full_20gp','discharge_empty_20gp','discharge_full_40hc','discharge_empty_40hc','load_full_20gp','load_empty_20gp','load_full_40hc','load_empty_40hc','restows','total_teu','vessel_mpgh','arr_fuel_oil','arr_lsfo','arr_diesel_oil','arr_lsdo','dep_fuel_oil','dep_lsfo','dep_diesel_oil','dep_lsdo'];
   const out = [headers.join(',')];
   filtered.forEach(r => {
     out.push(headers.map(h => {
