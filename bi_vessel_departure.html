@@ -429,6 +429,15 @@ function closeAllPanels() {
   document.getElementById('colPickerPanel').classList.remove('show');
 }
 
+function setDefaultDateRange() {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+  const to = new Date(now.getFullYear(), now.getMonth() + 4, 0); // last day of +3 month
+  const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  document.getElementById('f_from').value = fmt(from);
+  document.getElementById('f_to').value = fmt(to);
+}
+
 function init() {
   loadColVisibility();
   document.addEventListener('click', closeAllPanels);
@@ -446,6 +455,8 @@ function init() {
       selected.operator.clear();
       selected.operator.add('CUL');
       renderMultiSelect('operator');
+      // Default: departure date within +/- 3 months
+      setDefaultDateRange();
       applyFilter();
     })
     .catch(err => {
@@ -485,8 +496,7 @@ function resetFilter() {
   renderMultiSelect('terminal');
   renderMultiSelect('svc');
   renderMultiSelect('operator');
-  document.getElementById('f_from').value = '';
-  document.getElementById('f_to').value = '';
+  setDefaultDateRange();
   document.getElementById('f_search').value = '';
   sortKey = null;
   sortDir = 'asc';
