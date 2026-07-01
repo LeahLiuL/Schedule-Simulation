@@ -1,4 +1,6 @@
 vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day,hire_daily
+ZGYC,ZHONG GU YIN CHUAN,13,35,0,2,10,0,0
+ZGYC,ZHONG GU YIN CHUAN,14,44,0,2,10,0,0
 CSJ,CHANG SHENG JI 7,11,12,0,1.5,0,0,0
 CUBK,CUL BANGKOK,12,15,0,0,0,0,0
 CUBK,CUL BANGKOK,12.5,15.5,0,0,0,0,0
