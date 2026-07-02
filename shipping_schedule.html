@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="searoute-browser.js"></script>
 <style>
   :root {
@@ -6625,7 +6626,7 @@ function exportDmCSV(type){
   showToast(filename+' exported');
 }
 
-// ========== VESSEL EXCEL EXPORT ==========
+// ========== VESSEL EXCEL EXPORT (ExcelJS - full styling) ==========
 function exportVesselExcel(){
   if(!VESSELS_DATA.length){ showToast('No vessel data to export','warning'); return; }
 
@@ -6645,64 +6646,135 @@ function exportVesselExcel(){
   // Sort speeds descending within each group
   groups.forEach(g => g.speeds.sort((a,b) => b.speed - a.speed));
 
-  // Build worksheet data
-  const headers = ['Vessel Code','Vessel Name','Speed (kn)','LSFO (mt/d)','HSFO (mt/d)','MGO (mt/d)','PS LSFO (mt/d)','PS MGO (mt/d)','Hire ($/day)'];
-  const wsData = [headers];
-  const merges = [];
-  let rowNum = 1; // after header
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Vessel Data');
 
-  groups.forEach(g => {
-    const n = g.speeds.length;
-    const startRow = rowNum;
-    g.speeds.forEach((s, idx) => {
-      wsData.push([
-        idx===0 ? g.code : '',
-        idx===0 ? g.name : '',
-        s.speed, s.lsfo, s.hsfo, s.mgo, s.ps_lsfo, s.ps_mgo,
-        idx===0 ? g.hire : ''
-      ]);
-      rowNum++;
-    });
-    if(n > 1){
-      // Merge vessel code cells
-      merges.push({s:{r:startRow, c:0}, e:{r:startRow+n-1, c:0}});
-      // Merge vessel name cells
-      merges.push({s:{r:startRow, c:1}, e:{r:startRow+n-1, c:1}});
-      // Merge hire cells
-      merges.push({s:{r:startRow, c:8}, e:{r:startRow+n-1, c:8}});
-    }
+  // Column widths (match Python: A=10, B=26, C=14, D=16, E=16, F=16, G=18, H=16, I=16)
+  ws.columns = [
+    { width: 10 }, { width: 26 }, { width: 14 },
+    { width: 16 }, { width: 16 }, { width: 16 },
+    { width: 18 }, { width: 16 }, { width: 16 }
+  ];
+
+  // Header style
+  const hdrStyle = {
+    font: { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F5496' } },
+    alignment: { horizontal: 'center', vertical: 'middle' },
+    border: { top: {style:'thin',color:{argb:'FFB0C4DE'}}, bottom: {style:'thin',color:{argb:'FFB0C4DE'}}, left: {style:'thin',color:{argb:'FFB0C4DE'}}, right: {style:'thin',color:{argb:'FFB0C4DE'}} }
+  };
+  // Group-first-row style
+  const groupStyle = {
+    font: { name: 'Arial', size: 11, bold: true, color: { argb: 'FF2F5496' } },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD6E4F0' } },
+    alignment: { vertical: 'middle' }
+  };
+  // Normal data row style (alternating)
+  const rowOdd = {
+    font: { name: 'Arial', size: 10 },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } },
+    alignment: { vertical: 'middle' }
+  };
+  const rowEven = {
+    font: { name: 'Arial', size: 10 },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F7FB' } },
+    alignment: { vertical: 'middle' }
+  };
+  // Thin border all sides
+  const thinBorder = { top: {style:'thin',color:{argb:'FFB0C4DE'}}, bottom: {style:'thin',color:{argb:'FFB0C4DE'}}, left: {style:'thin',color:{argb:'FFB0C4DE'}}, right: {style:'thin',color:{argb:'FFB0C4DE'}} };
+  const mediumBottom = { top: {style:'thin',color:{argb:'FFB0C4DE'}}, bottom: {style:'medium',color:{argb:'FF2F5496'}}, left: {style:'thin',color:{argb:'FFB0C4DE'}}, right: {style:'thin',color:{argb:'FFB0C4DE'}} };
+  const leftAlign = { horizontal: 'left', vertical: 'middle' };
+  const centerAlign = { horizontal: 'center', vertical: 'middle' };
+
+  // Number formats
+  const fmtSpeed = '0.0';
+  const fmtFuel = '#,##0.0';
+  const fmtHire = '#,##0';
+
+  // Write header row
+  const headers = ['Code', 'Vessel Name', 'Speed (knots)', 'LSFO (mt/day)', 'HSFO (mt/day)', 'MGO (mt/day)', 'PS LSFO (mt/day)', 'PS MGO (mt/day)', 'Hire ($/day)'];
+  const hdrRow = ws.getRow(1);
+  hdrRow.height = 28;
+  headers.forEach((h, i) => {
+    const cell = hdrRow.getCell(i + 1);
+    cell.value = h;
+    cell.style = hdrStyle;
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws['!merges'] = merges;
-  ws['!cols'] = [
-    {wch: 12}, {wch: 28}, {wch: 12}, {wch: 14},
-    {wch: 14}, {wch: 14}, {wch: 16}, {wch: 14}, {wch: 14}
-  ];
-  // Bold/padded header row
-  ws['!rows'] = [{hpt: 24}];
+  // Write data rows
+  let rowIdx = 2;
+  groups.forEach(g => {
+    const n = g.speeds.length;
+    g.speeds.forEach((s, idx) => {
+      const r = ws.getRow(rowIdx);
+      r.height = 22;
+      const isFirst = (idx === 0);
+      const isLast = (idx === n - 1);
+
+      // Determine row style
+      let baseStyle;
+      if (isFirst) {
+        baseStyle = JSON.parse(JSON.stringify(groupStyle));
+      } else {
+        baseStyle = JSON.parse(JSON.stringify((idx % 2 === 0) ? rowEven : rowOdd));
+      }
+      baseStyle.border = isLast ? mediumBottom : thinBorder;
+
+      // Col A: Code (only on first row)
+      { const c = r.getCell(1); if(isFirst) c.value = g.code; c.style = Object.assign({}, baseStyle, leftAlign); }
+      // Col B: Name (only on first row)
+      { const c = r.getCell(2); if(isFirst) c.value = g.name; c.style = Object.assign({}, baseStyle, leftAlign); }
+      // Col C: Speed
+      { const c = r.getCell(3); c.value = Number(s.speed); c.numFmt = fmtSpeed; c.style = Object.assign({}, baseStyle, centerAlign); }
+      // Col D: LSFO
+      { const c = r.getCell(4); c.value = Number(s.lsfo); c.numFmt = fmtFuel; c.style = Object.assign({}, baseStyle, centerAlign); }
+      // Col E: HSFO
+      { const c = r.getCell(5); c.value = Number(s.hsfo); c.numFmt = fmtFuel; c.style = Object.assign({}, baseStyle, centerAlign); }
+      // Col F: MGO
+      { const c = r.getCell(6); c.value = Number(s.mgo); c.numFmt = fmtFuel; c.style = Object.assign({}, baseStyle, centerAlign); }
+      // Col G: PS LSFO
+      { const c = r.getCell(7); c.value = Number(s.ps_lsfo); c.numFmt = fmtFuel; c.style = Object.assign({}, baseStyle, centerAlign); }
+      // Col H: PS MGO
+      { const c = r.getCell(8); c.value = Number(s.ps_mgo); c.numFmt = fmtFuel; c.style = Object.assign({}, baseStyle, centerAlign); }
+      // Col I: Hire (only on first row)
+      { const c = r.getCell(9); if(isFirst) c.value = Number(g.hire); c.numFmt = fmtHire; c.style = Object.assign({}, baseStyle, centerAlign); }
+
+      rowIdx++;
+    });
+  });
+
+  // Freeze header
+  ws.views = [{ state: 'frozen', ySplit: 1 }];
 
   // Summary sheet
+  const ws2 = wb.addWorksheet('Summary');
+  ws2.columns = [{ width: 40 }, { width: 20 }];
+  const labelStyle = { font: { name: 'Arial', size: 11, bold: true, color: { argb: 'FF2F5496' } } };
+  const valStyle = { font: { name: 'Arial', size: 11 }, alignment: { horizontal: 'center' } };
+
   const totalSpeedBands = groups.reduce((s,g) => s + g.speeds.length, 0);
   const summaryData = [
-    ['Vessel Data Export'],
-    [''],
     ['Total Vessels', groups.length],
     ['Total Speed Bands', totalSpeedBands],
-    ['Data Source', 'Data Manager - Vessels Tab'],
-    ['Exported', new Date().toLocaleString('zh-CN')]
+    ['Data Source', 'shipping_data/vessels.csv'],
+    ['Generated', new Date().toISOString().slice(0,10)]
   ];
-  const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
-  ws2['!cols'] = [{wch: 22}, {wch: 40}];
-  ws2['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:1}}];
+  summaryData.forEach(([label, val], i) => {
+    const r = ws2.getRow(i + 1);
+    r.getCell(1).value = label; r.getCell(1).style = labelStyle;
+    r.getCell(2).value = val; r.getCell(2).style = valStyle;
+  });
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Vessel Data');
-  XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
-
+  // Download
   const filename = 'Vessels_' + new Date().toISOString().slice(0,10) + '.xlsx';
-  XLSX.writeFile(wb, filename);
-  showToast('Exported '+filename, 'success');
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported '+filename, 'success');
+  }).catch(() => showToast('Export failed', 'error'));
 }
 
 // ========== GITHUB COMMIT ==========
