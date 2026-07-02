@@ -1703,6 +1703,7 @@
         <input class="dm-search" id="dmVesselSearch" placeholder="Search vessel code or name..." oninput="filterDmVessels()"/>
         <button class="dm-btn dm-btn-primary" onclick="addDmVessel()">+ Add Vessel</button>
         <button class="dm-btn dm-btn-export" onclick="exportDmCSV('vessels')">📥 Export CSV</button>
+        <button class="dm-btn dm-btn-export" onclick="exportVesselExcel()" style="background:#217346;color:#fff;">📥 Export Excel</button>
         <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('vessels')">⬆ Commit</button>
         <button class="dm-btn" onclick="openVesselInfo()" title="查看船舶参数、装载能力、油耗信息" style="background:#1a73e8;color:#fff;">📋 船舶信息</button>
         <button class="dm-btn" onclick="openParseVesselModal()" style="background:#28a745;color:#fff;">📋 粘贴解析</button>
@@ -6622,6 +6623,86 @@ function exportDmCSV(type){
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
   showToast(filename+' exported');
+}
+
+// ========== VESSEL EXCEL EXPORT ==========
+function exportVesselExcel(){
+  if(!VESSELS_DATA.length){ showToast('No vessel data to export','warning'); return; }
+
+  // Group by vessel code, maintaining order
+  const groups = [];
+  const seen = new Set();
+  VESSELS_DATA.forEach(v => {
+    if(!seen.has(v.code)){
+      seen.add(v.code);
+      groups.push({code: v.code, name: v.name, hire: v.hire, speeds: []});
+    }
+  });
+  VESSELS_DATA.forEach(v => {
+    const g = groups.find(g => g.code === v.code);
+    if(g) g.speeds.push({speed: v.speed, lsfo: v.lsfo, hsfo: v.hsfo, mgo: v.mgo, ps_lsfo: v.ps_lsfo||0, ps_mgo: v.ps_mgo||0});
+  });
+  // Sort speeds descending within each group
+  groups.forEach(g => g.speeds.sort((a,b) => b.speed - a.speed));
+
+  // Build worksheet data
+  const headers = ['Vessel Code','Vessel Name','Speed (kn)','LSFO (mt/d)','HSFO (mt/d)','MGO (mt/d)','PS LSFO (mt/d)','PS MGO (mt/d)','Hire ($/day)'];
+  const wsData = [headers];
+  const merges = [];
+  let rowNum = 1; // after header
+
+  groups.forEach(g => {
+    const n = g.speeds.length;
+    const startRow = rowNum;
+    g.speeds.forEach((s, idx) => {
+      wsData.push([
+        idx===0 ? g.code : '',
+        idx===0 ? g.name : '',
+        s.speed, s.lsfo, s.hsfo, s.mgo, s.ps_lsfo, s.ps_mgo,
+        idx===0 ? g.hire : ''
+      ]);
+      rowNum++;
+    });
+    if(n > 1){
+      // Merge vessel code cells
+      merges.push({s:{r:startRow, c:0}, e:{r:startRow+n-1, c:0}});
+      // Merge vessel name cells
+      merges.push({s:{r:startRow, c:1}, e:{r:startRow+n-1, c:1}});
+      // Merge hire cells
+      merges.push({s:{r:startRow, c:8}, e:{r:startRow+n-1, c:8}});
+    }
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!merges'] = merges;
+  ws['!cols'] = [
+    {wch: 12}, {wch: 28}, {wch: 12}, {wch: 14},
+    {wch: 14}, {wch: 14}, {wch: 16}, {wch: 14}, {wch: 14}
+  ];
+  // Bold/padded header row
+  ws['!rows'] = [{hpt: 24}];
+
+  // Summary sheet
+  const totalSpeedBands = groups.reduce((s,g) => s + g.speeds.length, 0);
+  const summaryData = [
+    ['Vessel Data Export'],
+    [''],
+    ['Total Vessels', groups.length],
+    ['Total Speed Bands', totalSpeedBands],
+    ['Data Source', 'Data Manager - Vessels Tab'],
+    ['Exported', new Date().toLocaleString('zh-CN')]
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
+  ws2['!cols'] = [{wch: 22}, {wch: 40}];
+  ws2['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:1}}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vessel Data');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+
+  const filename = 'Vessels_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, filename);
+  showToast('Exported '+filename, 'success');
 }
 
 // ========== GITHUB COMMIT ==========
