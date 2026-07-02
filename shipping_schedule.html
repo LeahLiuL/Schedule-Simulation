@@ -444,6 +444,9 @@
     100% { background:transparent; }
   }
   .dm-row-new { animation: dmFlashNew 2s ease-out; }
+  .dm-row-dup { background:#fff3cd !important; }
+  .dm-row-dup input { background:#fffbea; }
+  .dm-dup-badge { display:inline-block; background:#dc3545; color:#fff; font-size:10px; padding:1px 5px; border-radius:8px; margin-left:4px; vertical-align:middle; }
   .dm-btn-commit:hover { background:#0b5ed7; }
   .dm-btn-commit.loading { opacity:.65; pointer-events:none; }
   .dm-btn-external { background:#0d6efd22; color:#0d6efd; text-decoration:none; display:inline-block; text-align:center; }
@@ -6097,14 +6100,28 @@ async function fetchDistancesForNewPorts(newPortCodes){
 }
 
 // ========== VESSELS ==========
+function getVesselDupMap(){
+  // Returns a Set of "name|speed" keys that appear more than once
+  const counts = {};
+  VESSELS_DATA.forEach(v => {
+    const key = (v.name||'').trim().toLowerCase() + '|' + parseFloat(v.speed||0);
+    counts[key] = (counts[key]||0) + 1;
+  });
+  const dups = new Set();
+  for(const key in counts){ if(counts[key] > 1) dups.add(key); }
+  return dups;
+}
 function renderDmVessels(filter=''){
   const body = document.getElementById('dmVesselBody');
   const f = filter.toLowerCase();
+  const dupMap = getVesselDupMap();
   let html = '';
   VESSELS_DATA.forEach((v,i)=>{
     if(f && !(v.code.toLowerCase().includes(f) || v.name.toLowerCase().includes(f))) return;
-    html += `<tr>
-      <td>${i+1}</td>
+    const dupKey = (v.name||'').trim().toLowerCase() + '|' + parseFloat(v.speed||0);
+    const isDup = dupMap.has(dupKey);
+    html += `<tr${isDup ? ' class="dm-row-dup"' : ''}>
+      <td>${i+1}${isDup ? '<span class="dm-dup-badge" title="Duplicate: same vessel name + speed">DUP</span>' : ''}</td>
       <td><input value="${esc(v.code)}" onchange="editDmVessel(${i},'code',this.value)" style="width:80px;font-weight:600"/></td>
       <td><input value="${esc(v.name)}" onchange="editDmVessel(${i},'name',this.value)"/></td>
       <td><input type="number" value="${v.speed}" min="0" max="30" step="0.5" onchange="editDmVessel(${i},'speed',this.value)" style="width:75px"/></td>
@@ -6127,6 +6144,21 @@ function editDmVessel(i,key,val){
   if(key==='speed'||key==='lsfo'||key==='hsfo'||key==='mgo'||key==='ps_lsfo'||key==='ps_mgo'||key==='hire') val=parseFloat(val)||0;
   VESSELS_DATA[i][key] = val;
   initVesselCombobox();
+  // Check for duplicates when name or speed changes
+  if(key==='name' || key==='speed'){
+    const v = VESSELS_DATA[i];
+    const dupKey = (v.name||'').trim().toLowerCase() + '|' + parseFloat(v.speed||0);
+    const dupMap = getVesselDupMap();
+    if(dupMap.has(dupKey)){
+      const dupCount = VESSELS_DATA.filter(x => 
+        (x.name||'').trim().toLowerCase() === (v.name||'').trim().toLowerCase() && 
+        parseFloat(x.speed||0) === parseFloat(v.speed||0)
+      ).length;
+      showToast('⚠️ Duplicate: "' + v.name + '" @ ' + v.speed + ' kn appears ' + dupCount + ' times', 'warning', 5000);
+    }
+    // Re-render to update duplicate highlighting
+    renderDmVessels(document.getElementById('dmVesselSearch').value);
+  }
   updateDmStatus();
 }
 function deleteDmVessel(i){
