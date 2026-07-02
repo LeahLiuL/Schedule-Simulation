@@ -114,14 +114,23 @@ def convert_to_csv():
     print(f"[CSV] Total rows: {len(df)}")
 
 def push_to_github():
-    print("[Git] Pushing to GitHub...")
     import subprocess
-    subprocess.run(['git', 'add', '-A'], cwd=WORK_DIR)
-    subprocess.run(['git', 'commit', '-m', 'Update vessel departure data from SFTP'], cwd=WORK_DIR)
-    result = subprocess.run(['git', 'push', 'origin', 'main'], cwd=WORK_DIR, capture_output=True, text=True)
-    print(result.stdout)
+    print("[Git] Adding files...")
+    subprocess.run(['git', 'add', '-A'], cwd=WORK_DIR, timeout=30)
+    print("[Git] Committing...")
+    result = subprocess.run(['git', 'commit', '-m', 'Update vessel departure data from SFTP'],
+                          cwd=WORK_DIR, capture_output=True, text=True, timeout=30)
     if result.returncode != 0:
-        print("stderr:", result.stderr)
+        print("[Git] Commit output:", result.stdout, result.stderr)
+        if "nothing to commit" in result.stdout:
+            print("[Git] No changes to commit.")
+            return
+    print("[Git] Pushing to GitHub (timeout 120s)...")
+    result = subprocess.run(['git', 'push', 'origin', 'main'],
+                          cwd=WORK_DIR, capture_output=True, text=True, timeout=120)
+    print("[Git] Push stdout:", result.stdout)
+    if result.returncode != 0:
+        print("[Git] Push stderr:", result.stderr)
     print("[Git] Done!")
 
 if __name__ == '__main__':
