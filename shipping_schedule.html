@@ -5240,9 +5240,9 @@ function openVesselInfo(initialName){
     return;
   }
 
-  // Build code↔name map + vessel list
-  const codeMap = {};  // code → fullName
-  const nameMap = {};  // norm(fullName) → fullName
+  // Build code↔name map + vessel list from BOTH vessels.csv and cul_ship_particular.csv
+  const codeMap = {};  // code → fullName (from vessels.csv)
+  const nameMap = {};  // norm(fullName) → fullName (from both sources)
   const names = [];
   VESSELS_DATA.forEach(function(v){
     if(v.code && !codeMap[v.code]){ codeMap[v.code] = v.name; }
@@ -5251,6 +5251,13 @@ function openVesselInfo(initialName){
       if(n && !nameMap[n]) nameMap[n] = v.name;
       names.push(v.name);
     }
+  });
+  // Also include vessels that only have Ship Particular data (no speed/fuel entry yet)
+  (window._particularVessels || []).forEach(function(pName){
+    if(!pName) return;
+    var n = normalizeName(pName);
+    if(n && !nameMap[n]) nameMap[n] = pName;
+    names.push(pName);
   });
   var uniqNames = [...new Set(names)].sort();
   
