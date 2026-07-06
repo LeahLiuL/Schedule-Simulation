@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Port Charges Inquiry | 港使费查询</title>
+<title>Port Charges Inquiry</title>
 <style>
   :root {
     --primary: #1a3a5c; --accent: #0d6efd; --accent2: #17a2b8;
@@ -111,18 +111,18 @@
 <div class="app-header">
   <div class="logo">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h2l2-6h10l2 6h2v4h-2a2 2 0 1 1-4 0H9a2 2 0 1 1-4 0H3v-4z"/></svg>
-    Port Charges Inquiry · 港使费查询
+    Port Charges Inquiry
   </div>
   <div class="header-right">PTX Cost Actual · Revenue Month 2024 – 2026.04 · 4213 voyages</div>
 </div>
 <div class="main-layout">
   <div class="left-panel">
     <div class="panel-section">
-      <div class="section-title">Ship Code · 船名代码</div>
+      <div class="section-title">Ship Code</div>
       <select id="shipSelect"><option value="">All Ships</option><option value="ASHK">ASHK</option><option value="ASHP">ASHP</option><option value="AVOS">AVOS</option><option value="CHCE">CHCE</option><option value="CSJ7">CSJ7</option><option value="CUBK">CUBK</option><option value="CUHA">CUHA</option><option value="CUHC">CUHC</option><option value="CUHM">CUHM</option><option value="CUHP">CUHP</option><option value="CUJK">CUJK</option><option value="CUKL">CUKL</option><option value="CULC">CULC</option><option value="CUMN">CUMN</option><option value="CUNS">CUNS</option><option value="CUQD">CUQD</option><option value="CUSK">CUSK</option><option value="CUXM">CUXM</option><option value="CUYP">CUYP</option><option value="GFMQ">GFMQ</option><option value="H728">H728</option><option value="H811">H811</option><option value="HABL">HABL</option><option value="HAMD">HAMD</option><option value="HDHY">HDHY</option><option value="HSBH">HSBH</option><option value="IAFW">IAFW</option><option value="IDRO">IDRO</option><option value="KRTM">KRTM</option><option value="LAPA">LAPA</option><option value="LTAN">LTAN</option><option value="MMRN">MMRN</option><option value="MODS">MODS</option><option value="OSGB">OSGB</option><option value="OSGT">OSGT</option><option value="SMTJ">SMTJ</option><option value="SNSO">SNSO</option><option value="SSSE">SSSE</option><option value="STBE">STBE</option><option value="SY68">SY68</option><option value="TGLK">TGLK</option><option value="TMOS">TMOS</option><option value="UGSZ">UGSZ</option><option value="WNFD">WNFD</option><option value="X106">X106</option><option value="X108">X108</option><option value="XHDP">XHDP</option><option value="ZGBJ">ZGBJ</option><option value="ZGCC">ZGCC</option><option value="ZGCS">ZGCS</option><option value="ZGDZ">ZGDZ</option><option value="ZGOA">ZGOA</option><option value="ZGXM">ZGXM</option><option value="ZGYK">ZGYK</option><option value="ZLST">ZLST</option><option value="ZPYY">ZPYY</option><option value="ZYHS">ZYHS</option></select>
     </div>
     <div class="panel-section">
-      <div class="section-title">Year · 年份</div>
+      <div class="section-title">Year</div>
       <div class="year-chips" id="yearChips">
         <span class="year-chip active" data-year="all">All</span>
         <span class="year-chip" data-year="2024">2024</span>
@@ -131,17 +131,17 @@
       </div>
     </div>
     <div class="panel-section">
-      <div class="section-title">Revenue Month · 营收月份</div>
+      <div class="section-title">Revenue Month</div>
       <label>From</label><input type="month" id="dateFrom" value="2024-01" min="2024-01" max="2026-04"/>
       <label style="margin-top:8px;">To</label><input type="month" id="dateTo" value="2026-04" min="2024-01" max="2026-04"/>
     </div>
     <div class="panel-section">
-      <div class="section-title">Terminal · 码头</div>
+      <div class="section-title">Terminal</div>
       <select id="terminalSelect"><option value="">All Terminals</option><option value="AEJEAT01">AEJEAT01 - DPW Jebel Ali (T1)</option><option value="AEKLFT01">AEKLFT01 - Khorfakkan Commercial Terminal (KCT)</option><option value="CNHMNT01">CNHMNT01 - Dongguan Container Terminals Co. Ltd (DCT)</option><option value="CNHUAT01">CNHUAT01 - Huangpu New Port (GCT)</option><option value="CNHUAT11">CNHUAT11 - Xinsha Container Terminal</option><option value="CNHUIT01">CNHUIT01 - Huizhou International Container Terminals </option><option value="CNNAST04">CNNAST04 - Nansha International Container Terminal P III</option><option value="CNNAST05">CNNAST05 - Guangzhou Port Nansha Port Co.,Ltd. P I</option><option value="CNNGBT01">CNNGBT01 - Ningbo 3rd Terminal Co., Ltd. (Phase 4)</option><option value="CNNGBT02">CNNGBT02 - China Merchants International Container Terminal (</option><option value="CNNGBT04">CNNGBT04 - Ningbo Yongzhou, Zhoushan Port Ltd (Yzct)</option><option value="CNNGBT05">CNNGBT05 - Ningbo (Bei Lun) 2Rd Terminal Co., Ltd. (Phase 3)</option><option value="CNNGBT06">CNNGBT06 - Ningbo Beilun International Container Terminal (Ph</option><option value="CNNGBT07">CNNGBT07 - Ningbo Meishan-Island International Container Term</option><option value="CNSHAT01">CNSHAT01 - Shanghai East Container Terminal (W4)</option><option value="CNSHAT02">CNSHAT02 - Shanghai Mingdong Container Terminal (W5)</option><option value="CNSHAT03">CNSHAT03 - Shanghai Waigaoqiao International Container Termin</option><option value="CNSHAT04">CNSHAT04 - Shanghai Pudong Logistics Co., Ltd. (W1)</option><option value="CNSHKT01">CNSHKT01 - Shekou Container Terminal (SCT)</option><option value="CNSHKT02">CNSHKT02 - Chiwan Container Terminal (CCT)</option><option value="CNSHKT07">CNSHKT07 - Mawan Container Terminal (MCT)</option><option value="CNSWAT02">CNSWAT02 - Shantou Guangao Terminal</option><option value="CNTAOT01">CNTAOT01 - QINGDAO QIANWAN CNTR TMNL CO.,LTD (phase 3)</option><option value="CNTAOT02">CNTAOT02 - QINGDAO NEW QIANWAN CNTR TMNL CO.,LTD (phase 5)</option><option value="CNTAOT03">CNTAOT03 - Qingdao Qianwan UnitedContainerTerminalCo., Ltd P4</option><option value="CNXGGT03">CNXGGT03 - Tianjin Port Alliance International Container Term</option><option value="CNXMNT01">CNXMNT01 - Xiamen Container Terminal Group Co., Ltd.</option><option value="CNXMNT03">CNXMNT03 - Xiamen Ocean Gate Container Terminal</option><option value="CNXMNT04">CNXMNT04 -  厦门海润集装箱码头有限公司</option><option value="CNYTNT01">CNYTNT01 - Yantian International Container Terminals Ltd.(YIC</option><option value="DJJIBT01">DJJIBT01 - SGTD-Doraleh Container Terminal</option><option value="DJJIBT02">DJJIBT02 - DMP-Dorelah Mutlipurpose Port</option><option value="EGALYT01">EGALYT01 - AICT Alexandria (Old Port)</option><option value="EGSOKT01">EGSOKT01 - DP World Sokhna</option><option value="EGSUZT01">EGSUZT01 - Suez Canal (N)</option><option value="EGSUZT02">EGSUZT02 - Suez Canal (S)</option><option value="HKHKGT02">HKHKGT02 - China Merchants Container Services Ltd. (CMCS)</option><option value="IDJKTT01">IDJKTT01 - PT. New Priok Container Terminal One (NPCT1)</option><option value="INMUNT01">INMUNT01 - Adani Ports And Special Economic Zone Ltd (CT2)</option><option value="INMUNT04">INMUNT04 - Adani International Container Terminal Pvt Ltd CT3</option><option value="INMUNT06">INMUNT06 - Mundra International Container Terminal Pvt. Ltd. </option><option value="INNSAT02">INNSAT02 - Gateway Teminals India Private Ltd. (GTI)</option><option value="INNSAT03">INNSAT03 - Bharat Mumbai Container Terminals Private Limited</option><option value="INNSAT04">INNSAT04 - Nhava Sheva (India) Gateway Terminals (NSIGT)</option><option value="INNSAT05">INNSAT05 - Nhava Sheva International Container Terminal (NSIC</option><option value="MYPKGT01">MYPKGT01 - Klang Multi Terminal (Westport)</option><option value="MYPKNT01">MYPKNT01 - Klang Container Terminal (Northport)</option><option value="OMSOHT01">OMSOHT01 - Oman International Container Terminal LLC. (OICT)</option><option value="PHMNLT01">PHMNLT01 - Asian Terminals Inc. (ATI) - Manila South Port</option><option value="PKKHIT01">PKKHIT01 - South Asia Pakistan Terminals (SAPT) </option><option value="QAHMDT01">QAHMDT01 - Port Of Hamad (CT1 & CT2)</option><option value="SADMMT01">SADMMT01 - Saudi Global Ports-Terminals (SGP-T)</option><option value="SAJEDT01">SAJEDT01 - Red Sea Gateway Terminal (RSGT)</option><option value="SDPZUT01">SDPZUT01 - Sea Ports Corporation (SPC)</option><option value="SGSINT01">SGSINT01 - PSA Co., Ltd.</option><option value="THBKKT01">THBKKT01 - Port Authority Of Thailand (PAT)</option><option value="THBKST01">THBKST01 - Suksawat Terminal (SSW)</option><option value="THLCHT02">THLCHT02 - Eastern Sea Laem Chabang Terminal Co. Ltd.(B3)</option><option value="THLCHT04">THLCHT04 - Tips Co., Ltd. (B4 Terminal)</option><option value="THLCHT08">THLCHT08 - Hutchison Laemchabang Terminal (C1C2)</option><option value="THSCST01">THSCST01 - Sahathai Terminal Public Company Limited (STT)</option><option value="TRALIT01">TRALIT01 - Nemport Liman Işletmeleri </option><option value="TRISTT01">TRISTT01 - Kumport Container Terminal (KMX)</option><option value="TRISTT02">TRISTT02 - Mardas Terminal</option><option value="TRIZTT01">TRIZTT01 - Beldeport</option><option value="TRIZTT03">TRIZTT03 - Dp World Evyap (DPWE)</option><option value="TRMERT01">TRMERT01 - Mersin International Port (MIP)</option><option value="TWKELT01">TWKELT01 - China Container Terminal Corp.(W.P 19-21 West)</option><option value="TWKHHT01">TWKHHT01 - Hong Ming Terminal & Stevedoring Corp.,(P.70)</option><option value="TWKHHT05">TWKHHT05 - CMA Cgm Kaohsiung Terminal Co., Ltd.(P.68/69)</option><option value="TWKHHT06">TWKHHT06 - HMM Pacific Co., Ltd Taiwan Branch (P.76/77/78)</option><option value="TWKHHT10">TWKHHT10 - Taiwan International Ports Corp., Ltd. (P.120/121)</option><option value="TWTPET01">TWTPET01 - Taipei Port Container Terminal Corp.</option><option value="TWTXGT01">TWTXGT01 - Wan Hai Lines Ltd.(P.34/35)</option><option value="TWTXGT02">TWTXGT02 - China Container Terminal Corp. (P.10)</option><option value="TWTXGT03">TWTXGT03 - Evergreen International Storage Transport (P32)</option><option value="USLAXT04">USLAXT04 - WBCT Terminal</option><option value="VNHPHT06">VNHPHT06 - Haiphong International Container Terminal Company </option><option value="VNSGNT01">VNSGNT01 - Cat Lai Terminal (Saigon Newport)</option><option value="VNSGNT03">VNSGNT03 - International Transp N Tradding Com (SP-ITC)</option><option value="VNSGNT04">VNSGNT04 - Tan Cang-Hiep Phuoc (TCHP)</option><option value="VNVUTT04">VNVUTT04 - Cai Mep International Terminal Co., Ltd. (CMIT)</option><option value="YEADET01">YEADET01 - Aden Container Terminal (ACT)</option></select>
     </div>
     <div class="panel-section">
-      <button class="btn-search" onclick="applyFilters()">🔍 查询 Query</button>
-      <button class="btn-reset" onclick="resetFilters()">↺ 重置 Reset</button>
+      <button class="btn-search" onclick="applyFilters()">🔍 Query</button>
+      <button class="btn-reset" onclick="resetFilters()">↺ Reset</button>
     </div>
     <div class="panel-section" style="font-size:.75rem;color:var(--muted);">
       💡 Click voyage row → expand cost details<br/>点击航次行展开费用明细
@@ -149,10 +149,10 @@
   </div>
   <div class="right-panel">
     <div class="summary-grid">
-      <div class="summary-card"><div class="sc-label">Voyages · 航次数</div><div class="sc-value" id="scVoyages">—</div><div class="sc-sub" id="scVoyagesSub"></div></div>
-      <div class="summary-card accent"><div class="sc-label">Total USD · 总费用</div><div class="sc-value" id="scTotal">—</div><div class="sc-sub" id="scTotalSub"></div></div>
-      <div class="summary-card success"><div class="sc-label">Avg per Voyage · 航次平均</div><div class="sc-value" id="scAvg">—</div><div class="sc-sub" id="scAvgSub"></div></div>
-      <div class="summary-card warning"><div class="sc-label">Terminals · 码头数</div><div class="sc-value" id="scTerminals">—</div><div class="sc-sub" id="scTerminalsSub"></div></div>
+      <div class="summary-card"><div class="sc-label">Voyages</div><div class="sc-value" id="scVoyages">—</div><div class="sc-sub" id="scVoyagesSub"></div></div>
+      <div class="summary-card accent"><div class="sc-label">Total USD</div><div class="sc-value" id="scTotal">—</div><div class="sc-sub" id="scTotalSub"></div></div>
+      <div class="summary-card success"><div class="sc-label">Avg per Voyage</div><div class="sc-value" id="scAvg">—</div><div class="sc-sub" id="scAvgSub"></div></div>
+      <div class="summary-card warning"><div class="sc-label">Terminals</div><div class="sc-value" id="scTerminals">—</div><div class="sc-sub" id="scTerminalsSub"></div></div>
     </div>
     <div class="table-wrap">
       <div class="table-toolbar">
