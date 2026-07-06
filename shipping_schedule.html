@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
@@ -3495,7 +3495,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 function updateClock(){
   const now = new Date();
   document.getElementById('headerTime').textContent =
-    now.toLocaleString('zh-CN',{weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    now.toLocaleString('en-US',{weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
 }
 
 function setDefaultDate(){
@@ -8646,7 +8646,7 @@ function renderDailyDetail(){
         <span class="vc-status ${curVoy&&curVoy.status==='completed'?'completed':'current'}">${curVoy&&curVoy.status==='completed'?'Completed':'Active'}</span>`;
   }
   const modifiedBy = curVoy ? (curVoy.modifiedBy || '') : '';
-  const lastMod = curVoy && curVoy.lastModified ? new Date(curVoy.lastModified).toLocaleString('zh-CN') : '';
+  const lastMod = curVoy && curVoy.lastModified ? new Date(curVoy.lastModified).toLocaleString('en-US') : '';
 
   panel.innerHTML = `
     <div class="daily-detail-header">
@@ -8677,7 +8677,7 @@ function renderDailyDetail(){
     </div>
     <div class="daily-detail-body">${portsHtml}</div>
     <div class="daily-detail-footer">
-      <span class="commit-status" id="dailyCommitStatus">${FLEET_DATA.lastSync?'Last sync: '+new Date(FLEET_DATA.lastSync).toLocaleString('zh-CN'):'Not synced yet'}</span>
+      <span class="commit-status" id="dailyCommitStatus">${FLEET_DATA.lastSync?'Last sync: '+new Date(FLEET_DATA.lastSync).toLocaleString('en-US'):'Not synced yet'}</span>
       <div style="display:flex;gap:6px;">
         <button class="dm-btn" onclick="forceReloadFleet()" title="Force reload latest data from GitHub" style="background:#6f42c1;color:#fff;">🔄 Refresh</button>
         <button class="dm-btn dm-btn-commit" onclick="commitFleetSchedule()">⬆ Commit</button>
@@ -9766,7 +9766,7 @@ function showBackupMenu(){
     snapshotsHtml = '<div style="color:var(--muted);font-size:.82rem;padding:8px 0;">No auto-snapshots (system saves every 10 min)</div>';
   } else {
     snapshotsHtml = meta.map((m, i) => {
-      const timeStr = new Date(m.ts).toLocaleString('zh-CN');
+      const timeStr = new Date(m.ts).toLocaleString('en-US');
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #eee;">
         <div>
           <span style="font-size:.82rem;font-weight:600;">#${meta.length - i}</span>
@@ -10138,8 +10138,8 @@ function buildPdfNative(exportItems){
 
   // Subtitle - date
   const now = new Date();
-  const dateStr = now.toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit' });
-  const timeStr = now.toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
+  const dateStr = now.toLocaleDateString('en-US', { year:'numeric', month:'2-digit', day:'2-digit' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
   applyFont(9, 'normal');
   applyTextColor(...C.muted);
   pdf.text('Generated: ' + dateStr + ' ' + timeStr, pageW / 2, y + 5, { align: 'center' });
