@@ -4209,8 +4209,7 @@ function runSchedule(){
       showToast('Auto-queried and filled ' + filled + ' sailing distance(s)', 'success');
     }
     if(failed.length > 0){
-      const msg = failed.length + ' sailing distance queries failed:
-\n\n' +
+      const msg = failed.length + ' sailing distance queries failed:\n\n' +
         failed.map(f => f.from + ' → ' + f.to + ': ' + f.error).join('\n') +
         '\n\nAdded to distance list (dist=0). Enter actual sailing distance manually.';
       console.warn('Auto-fill distance failures:', failed);
