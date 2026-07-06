@@ -1208,8 +1208,8 @@
     Voyage Schedule Simulator
   </div>
   <div class="app-tabs">
-    <div class="app-tab active" data-tab="simulator" onclick="switchAppTab('simulator')">🚢 单船调度</div>
-    <div class="app-tab" data-tab="daily" onclick="switchAppTab('daily')">📋 Daily 船期总览</div>
+    <div class="app-tab active" data-tab="simulator" onclick="switchAppTab('simulator')">🚢 Simulator</div>
+    <div class="app-tab" data-tab="daily" onclick="switchAppTab('daily')">📋 Daily Schedule</div>
   </div>
   <div class="header-right">
     <button class="btn-dm" onclick="openDataManager()">⚙ Data Manager</button>
@@ -1456,7 +1456,7 @@
       </div>
       <div class="toolbar-actions">
         <button class="btn-reset" onclick="resetModifications()" id="btnReset" style="display:none">↺ Reset</button>
-        <span id="dataSourceBadge" onclick="toggleDataSource()" title="点击切换数据源">📦 Local</span>
+        <span id="dataSourceBadge" onclick="toggleDataSource()" title="Click to switch data source">📦 Local</span>
         <button class="btn-export" onclick="exportExcel()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -1532,19 +1532,19 @@
   <!-- Left: Fleet list -->
   <div class="daily-left">
     <div class="daily-quick-search">
-      <input type="text" id="dailyQuickSearch" placeholder="搜索 船名/航次/航线，如 CUBK2601W" oninput="onQuickSearch(this.value)"/>
-      <button onclick="clearDailyFilters()" title="清除所有筛选条件" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--muted);padding:2px 4px;line-height:1;">✕</button>
+      <input type="text" id="dailyQuickSearch" placeholder="Search vessel/voyage/lane, e.g. CUBK2601W" oninput="onQuickSearch(this.value)"/>
+      <button onclick="clearDailyFilters()" title="Clear all filters" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--muted);padding:2px 4px;line-height:1;">✕</button>
     </div>
     <div class="daily-filter">
       <div class="daily-filter-row" style="gap:6px;align-items:center;">
         <div class="combobox-wrap" id="dailyVesselCombobox" style="flex:1;min-width:0;">
-          <input type="text" id="dailyVesselInput" placeholder="船名..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
+          <input type="text" id="dailyVesselInput" placeholder="Vessel..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
           <span class="combobox-arrow">&#9662;</span>
           <div class="combobox-dropdown" id="dailyVesselDropdown"></div>
         </div>
-        <input type="text" id="dailyVoyFilter" placeholder="航次..." style="flex:1;min-width:0;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
+        <input type="text" id="dailyVoyFilter" placeholder="Voyage..." style="flex:1;min-width:0;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
         <div class="combobox-wrap" id="dailyLaneCombobox" style="flex:1;min-width:0;">
-          <input type="text" id="dailyLaneInput" placeholder="航线..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
+          <input type="text" id="dailyLaneInput" placeholder="Lane..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
           <span class="combobox-arrow">&#9662;</span>
           <div class="combobox-dropdown" id="dailyLaneDropdown"></div>
         </div>
@@ -1557,29 +1557,29 @@
       </div>
     </div>
     <div class="daily-actions">
-      <button class="dm-btn" onclick="forceReloadFleet()" title="从 GitHub 强制刷新最新数据（清除本地缓存）" style="background:#6f42c1;color:#fff;">🔄 刷新</button>
+      <button class="dm-btn" onclick="forceReloadFleet()" title="Force reload latest data from GitHub (clear local cache)" style="background:#6f42c1;color:#fff;">🔄 Refresh</button>
       <button class="dm-btn dm-btn-commit" onclick="commitFleetSchedule()">⬆ Commit</button>
       <button class="dm-btn dm-btn-export" id="dailyExportBtn" onclick="exportFleetPDF()">📄 Export PDF</button>
       <button class="dm-btn dm-btn-export" onclick="exportFleetExcel()" style="background:#217346;">📊 Export Excel</button>
       <button class="dm-btn dm-btn-primary" onclick="addNewVoyage()">+ New Voyage</button>
       <button class="dm-btn dm-btn-import" onclick="document.getElementById('importExcelInput').click()" title="Import schedule from Excel">📤 Import</button>
       <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;" onchange="handleImportExcel(this)"/>
-      <button class="dm-btn" onclick="showBackupMenu()" title="数据备份与恢复" style="background:rgba(255,193,7,.25);color:#856404;">🛡 备份</button>
+      <button class="dm-btn" onclick="showBackupMenu()" title="Data Backup & Restore" style="background:rgba(255,193,7,.25);color:#856404;">🛡 Backup</button>
       <span class="commit-status" id="dailyCommitStatus"></span>
     </div>
     <!-- Time range filter bar -->
     <div class="daily-time-filter">
-      <span class="time-filter-label">📅 显示范围：</span>
-      <button class="time-filter-btn" data-range="1m" onclick="setDailyTimeRange('1m')">近1个月</button>
-      <button class="time-filter-btn" data-range="3m" onclick="setDailyTimeRange('3m')">近3个月</button>
-      <button class="time-filter-btn" data-range="6m" onclick="setDailyTimeRange('6m')">近6个月</button>
-      <button class="time-filter-btn" data-range="1y" onclick="setDailyTimeRange('1y')">近1年</button>
-      <button class="time-filter-btn" data-range="all" onclick="setDailyTimeRange('all')">全部</button>
+      <span class="time-filter-label">📅 Range: </span>
+      <button class="time-filter-btn" data-range="1m" onclick="setDailyTimeRange('1m')">Past 1M</button>
+      <button class="time-filter-btn" data-range="3m" onclick="setDailyTimeRange('3m')">Past 3M</button>
+      <button class="time-filter-btn" data-range="6m" onclick="setDailyTimeRange('6m')">Past 6M</button>
+      <button class="time-filter-btn" data-range="1y" onclick="setDailyTimeRange('1y')">Past 1Y</button>
+      <button class="time-filter-btn" data-range="all" onclick="setDailyTimeRange('all')">All</button>
     </div>
     <div class="daily-fleet-list" id="dailyFleetList">
       <div class="daily-empty">
         <div class="icon">📋</div>
-        <div>No fleet data.<br/>Use 单船调度 to simulate and sync.</div>
+        <div>No fleet data.<br/>Use Simulator to simulate and sync.</div>
       </div>
     </div>
   </div>
@@ -1597,16 +1597,16 @@
 <div class="lv-overlay" id="lvOverlay" onclick="if(event.target===this)closeLinkVoyagesModal()">
   <div class="lv-modal">
     <div class="lv-header">
-      <h3>🔗 链接航次</h3>
+      <h3>🔗 Link Voyages</h3>
       <button onclick="closeLinkVoyagesModal()">✕</button>
     </div>
     <div class="lv-body">
-      <div class="lv-hint">选择要连续显示的航次（可多选），点击「保存」后右侧详情面板可开启连续视图。<br/>选中的航次将按顺序串联显示港口时间线。</div>
+      <div class="lv-hint">Select voyages to display continuously (multi-select). Click Save to enable continuous view in detail panel.<br/>Selected voyages will chain to show port timeline.</div>
       <div class="lv-voy-list" id="lvVoyList"></div>
     </div>
     <div class="lv-footer">
-      <button class="dm-btn" onclick="clearLinkedVoyages()">清除链接</button>
-      <button class="dm-btn dm-btn-primary" onclick="saveLinkedVoyages()">✓ 保存</button>
+      <button class="dm-btn" onclick="clearLinkedVoyages()">Clear Links</button>
+      <button class="dm-btn dm-btn-primary" onclick="saveLinkedVoyages()">✓ Save</button>
     </div>
   </div>
 </div>
@@ -1615,39 +1615,39 @@
 <div class="nv-overlay" id="nvOverlay" onclick="if(event.target===this)closeNewVoyageModal()">
   <div class="nv-modal">
     <div class="nv-header">
-      <h3>🚢 新建航次</h3>
+      <h3>🚢 New Voyage</h3>
       <button onclick="closeNewVoyageModal()">✕</button>
     </div>
     <div class="nv-body">
       <div class="nv-field">
         <label>Vessel Code <span style="color:#e74c3c">*</span></label>
         <div class="combobox-wrap nv-vessel-combo" style="position:relative;">
-          <input type="text" id="nvVesselInput" placeholder="输入船名代码，如 CUBK" autocomplete="off"
+          <input type="text" id="nvVesselInput" placeholder="Enter vessel code, e.g. CUBK" autocomplete="off"
             oninput="nvVesselSearch(this.value)" onblur="setTimeout(()=>nvVesselClose(),200)"/>
           <span class="combobox-arrow" onclick="nvVesselToggle()">&#9662;</span>
           <div class="combobox-dropdown" id="nvVesselDropdown" style="top:100%;left:0;right:0;"></div>
         </div>
-        <div class="nv-hint">从已有船舶列表中选择，或直接输入新船代码</div>
+        <div class="nv-hint">Select from existing vessels, or type a new vessel code</div>
       </div>
       <div class="nv-field">
         <label>Voyage No <span style="color:#e74c3c">*</span></label>
-        <input type="text" id="nvVoyNo" placeholder="例如 001W、026E" autocomplete="off" style="text-transform:uppercase"/>
-        <div class="nv-hint">航次号，通常为数字 + 方向字母（W/E/N/S）</div>
+        <input type="text" id="nvVoyNo" placeholder="e.g. 001W, 026E" autocomplete="off" style="text-transform:uppercase"/>
+        <div class="nv-hint">Voyage number, typically digits + direction letter (W/E/N/S)</div>
       </div>
       <div class="nv-field">
         <label>Lane <span style="color:#e74c3c">*</span></label>
         <div class="combobox-wrap" style="position:relative;">
-          <input type="text" id="nvLaneInput" placeholder="输入航线代码，如 CT2" autocomplete="off"
+          <input type="text" id="nvLaneInput" placeholder="Enter lane code, e.g. CT2" autocomplete="off"
             oninput="nvLaneSearch(this.value)" onblur="setTimeout(()=>nvLaneClose(),200)"/>
           <span class="combobox-arrow" onclick="nvLaneToggle()">&#9662;</span>
           <div class="combobox-dropdown" id="nvLaneDropdown" style="top:100%;left:0;right:0;"></div>
         </div>
-        <div class="nv-hint">选择该航次所属的航线</div>
+        <div class="nv-hint">Select the lane this voyage belongs to</div>
       </div>
     </div>
     <div class="nv-footer">
-      <button class="dm-btn" onclick="closeNewVoyageModal()">取消</button>
-      <button class="dm-btn dm-btn-primary" onclick="submitNewVoyage()">✓ 创建航次</button>
+      <button class="dm-btn" onclick="closeNewVoyageModal()">Cancel</button>
+      <button class="dm-btn dm-btn-primary" onclick="submitNewVoyage()">✓ Create Voyage</button>
     </div>
   </div>
 </div>
@@ -1680,7 +1680,7 @@
         <button class="dm-btn dm-btn-primary" onclick="addDmPort()">+ Add Port</button>
         <button class="dm-btn" onclick="openLaneQuickAdd()" style="background:#6f42c1;color:#fff;">📥 From Lane</button>
         <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('ports')">⬆ Commit</button>
-        <button class="dm-btn" onclick="refreshVoyageWaits()" title="从 ports.csv 刷新所有航次的 Wait 时间" style="background:#e67e22;color:#fff;">🔄 刷新航次 Wait</button>
+        <button class="dm-btn" onclick="refreshVoyageWaits()" title="Refresh all voyage Wait times from ports.csv" style="background:#e67e22;color:#fff;">🔄 Refresh Voyage Wait</button>
       </div>
       <div class="dm-table-wrap">
         <table class="dm-table" id="dmPortTable">
@@ -1709,10 +1709,10 @@
         <button class="dm-btn dm-btn-export" onclick="exportDmCSV('vessels')">📥 Export CSV</button>
         <button class="dm-btn dm-btn-export" onclick="exportVesselExcel()" style="background:#217346;color:#fff;">📥 Export Excel</button>
         <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('vessels')">⬆ Commit</button>
-        <button class="dm-btn" onclick="openVesselInfo()" title="查看船舶参数、装载能力、油耗信息" style="background:#1a73e8;color:#fff;">📋 船舶信息</button>
-        <button class="dm-btn" onclick="openParseVesselModal()" style="background:#28a745;color:#fff;">📋 粘贴解析</button>
+        <button class="dm-btn" onclick="openVesselInfo()" title="View vessel particulars, capacity, fuel info" style="background:#1a73e8;color:#fff;">📋 Vessel Info</button>
+        <button class="dm-btn" onclick="openParseVesselModal()" style="background:#28a745;color:#fff;">📋 Paste & Parse</button>
         <label class="dm-btn" style="background:#6f42c1;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
-          📤 上传文件
+          📤 Upload File
           <input type="file" id="fileUploadInput" accept=".pdf,.docx,.doc,.txt,.csv" style="display:none;" onchange="handleFileUpload(this)"/>
         </label>
       </div>
@@ -1743,10 +1743,10 @@
       <div class="dm-toolbar">
         <input class="dm-search" id="dmDistSearch" placeholder="Search from/to port code..." oninput="filterDmDists()"/>
         <button class="dm-btn dm-btn-primary" onclick="addDmDist()">+ Add Distance</button>
-        <a class="dm-btn dm-btn-external" href="https://www.myvessel.cn" target="_blank" title="打开调度宝查询实际航行距离">🚢 调度宝</a>
+        <a class="dm-btn dm-btn-external" href="https://www.myvessel.cn" target="_blank" title="Open Diaodubao to check actual sailing distance">🚢 Diaodubao</a>
         <button class="dm-btn dm-btn-export" onclick="exportDmCSV('distances')">📥 Export CSV</button>
         <button class="dm-btn dm-btn-commit" onclick="commitToGitHub('distances')">⬆ Commit</button>
-        <span style="font-size:.72rem;color:var(--muted);white-space:nowrap;margin-left:4px;">🔍 = 自动查询航行距离 &nbsp; 🚢 = 调度宝查询</span>
+        <span style="font-size:.72rem;color:var(--muted);white-space:nowrap;margin-left:4px;">(Search) = Auto sailing distance &nbsp; (Ship) = Diaodubao lookup</span>
       </div>
       <div class="dm-table-wrap">
         <table class="dm-table" id="dmDistTable">
@@ -1803,11 +1803,11 @@
 <!-- PARSE VESSEL MODAL -->
 <div class="token-overlay" id="parseVesselOverlay">
   <div class="token-modal" style="width:700px;max-height:90vh;overflow-y:auto;">
-    <h3>📋 粘贴船舶数据解析</h3>
-    <p class="token-hint">从 PDF/Word 复制船舶参数和油耗数据，粘贴到下方文本框，系统会自动解析</p>
+    <h3>📋 Paste Vessel Data Parser</h3>
+    <p class="token-hint">Paste vessel parameters and fuel data from PDF/Word below; the system will auto-parse</p>
 
     <div style="margin:16px 0;">
-      <textarea id="parseVesselInput" rows="12" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;font-family:monospace;resize:vertical;" placeholder="粘贴船舶数据，例如：
+      <textarea id="parseVesselInput" rows="12" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;font-family:monospace;resize:vertical;" placeholder="Paste vessel data, e.g.:
 VESSEL NAME: MEDKON LIA
 CALL SIGN: 3E5079
 IMO: 9139646
@@ -1822,26 +1822,26 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
     </div>
 
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;">
-      <button class="dm-btn" onclick="closeParseVesselModal()">取消</button>
-      <button class="dm-btn" onclick="parseVesselText()" style="background:#6f42c1;color:#fff;">🔍 解析</button>
+      <button class="dm-btn" onclick="closeParseVesselModal()">Cancel</button>
+      <button class="dm-btn" onclick="parseVesselText()" style="background:#6f42c1;color:#fff;">🔍 Parse</button>
     </div>
 
     <div id="parseVesselResult" style="display:none;">
       <div style="border-top:2px solid #dee2e6;padding-top:16px;">
-        <!-- 船舶基本信息 -->
+        <!-- Vessel Basic Info -->
         <div style="margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <h4 style="margin:0;color:#495057;">【船舶参数】</h4>
+            <h4 style="margin:0;color:#495057;">[Particulars]</h4>
             <span id="parseParticularStatus" style="font-size:.75rem;padding:2px 8px;border-radius:4px;"></span>
           </div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
             <div>
-              <label style="display:block;font-size:.72rem;color:#6c757d;">船名</label>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Vessel Name</label>
               <input type="text" id="pv_vessel_name" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
             </div>
             <div>
-              <label style="display:block;font-size:.72rem;color:#6c757d;">船舶代码</label>
-              <input type="text" id="pv_vessel_code" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;" placeholder="如 MEDKON"/>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Vessel Code</label>
+              <input type="text" id="pv_vessel_code" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;" placeholder="e.g. MEDKON"/>
             </div>
             <div>
               <label style="display:block;font-size:.72rem;color:#6c757d;">IMO</label>
@@ -1852,11 +1852,11 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
               <input type="text" id="pv_call_sign" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
             </div>
             <div>
-              <label style="display:block;font-size:.72rem;color:#6c757d;">旗籍</label>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Flag</label>
               <input type="text" id="pv_flag" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
             </div>
             <div>
-              <label style="display:block;font-size:.72rem;color:#6c757d;">建造年份</label>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Year Built</label>
               <input type="text" id="pv_year_built" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
             </div>
             <div>
@@ -1894,28 +1894,28 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
           </div>
         </div>
 
-        <!-- 油耗数据 -->
+        <!-- Fuel Data -->
         <div style="margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <h4 style="margin:0;color:#495057;">【油耗数据】</h4>
+            <h4 style="margin:0;color:#495057;">[Fuel Data]</h4>
             <span id="parseFuelStatus" style="font-size:.75rem;padding:2px 8px;border-radius:4px;"></span>
           </div>
           <div id="parseFuelRows">
-            <!-- 动态生成 -->
+            <!-- Dynamically generated -->
           </div>
-          <button class="dm-btn" onclick="addParseFuelRow()" style="margin-top:8px;background:#f8f9fa;color:#495057;">+ 添加速度档</button>
+          <button class="dm-btn" onclick="addParseFuelRow()" style="margin-top:8px;background:#f8f9fa;color:#495057;">+ Add Speed Tier</button>
         </div>
 
-        <!-- 装载能力 -->
+        <!-- Capacity -->
         <div style="margin-bottom:16px;padding:12px;background:#fff3cd;border-radius:8px;border:1px solid #ffc107;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <h4 style="margin:0;color:#856404;">【装载能力】⚠️ 需人工填写</h4>
+            <h4 style="margin:0;color:#856404;">[Capacity] (Manual entry required)</h4>
           </div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
             <div>
               <label style="display:block;font-size:.72rem;color:#856404;">Service Lane</label>
               <select id="pv_lane" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;">
-                <option value="">-- 选择 --</option>
+                <option value="">-- Select --</option>
                 <option value="REX">REX</option>
                 <option value="AEM">AEM</option>
                 <option value="IMR">IMR</option>
@@ -1951,10 +1951,10 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
           </div>
         </div>
 
-        <!-- 按钮 -->
+        <!-- Buttons -->
         <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:16px;border-top:1px solid #dee2e6;">
-          <button class="dm-btn" onclick="closeParseVesselModal()">取消</button>
-          <button class="dm-btn dm-btn-primary" onclick="saveParseVessel()">💾 保存</button>
+          <button class="dm-btn" onclick="closeParseVesselModal()">Cancel</button>
+          <button class="dm-btn dm-btn-primary" onclick="saveParseVessel()">💾 Save</button>
         </div>
       </div>
     </div>
@@ -1964,30 +1964,30 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
 <!-- LANE QUICK ADD MODAL -->
 <div class="token-overlay" id="laneQuickAddOverlay">
   <div class="token-modal" style="width:500px;">
-    <h3>📥 从 Lane 导入 Ports</h3>
-    <p class="token-hint">将 Lane 的港口批量添加到全局港口库（已存在的港口会跳过）</p>
+    <h3>📥 Import Ports from Lane</h3>
+    <p class="token-hint">Batch add Lane ports to global port library (existing ports skipped)</p>
     
     <div style="margin:16px 0;">
-      <label style="display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;">选择 Lane</label>
+      <label style="display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:6px;">Select Lane</label>
       <select id="lqaLaneSelect" onchange="updateLaneQuickAddPreview()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.88rem;">
-        <option value="">-- 选择一条 Lane --</option>
+        <option value="">-- Select a Lane --</option>
       </select>
     </div>
     
     <div id="lqaPreview" style="display:none;margin:16px 0;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #e9ecef;">
-      <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px;">预览：</div>
+      <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:8px;">Preview: </div>
       <div id="lqaPreviewContent"></div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #ccc;">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:#666;">
           <input type="checkbox" id="lqaForceAdd" onchange="updateLaneQuickAddPreview()"/>
-          <span>强制添加（即使港口已存在也添加到列表）</span>
+          <span>Force add (append even if port already exists)</span>
         </label>
       </div>
     </div>
     
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
-      <button class="dm-btn" onclick="closeLaneQuickAdd()">取消</button>
-      <button class="dm-btn dm-btn-primary" id="lqaAddBtn" onclick="executeLaneQuickAdd()" disabled>导入 Ports</button>
+      <button class="dm-btn" onclick="closeLaneQuickAdd()">Cancel</button>
+      <button class="dm-btn dm-btn-primary" id="lqaAddBtn" onclick="executeLaneQuickAdd()" disabled>Import Ports</button>
     </div>
   </div>
 </div>
@@ -1995,8 +1995,8 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
 <!-- BULK IMPORT LANES MODAL -->
 <div class="token-overlay" id="bulkImportLanesOverlay">
   <div class="token-modal" style="width:600px;">
-    <h3>📋 批量导入 Lanes</h3>
-    <p class="token-hint">每行一个 Lane，格式：<code>CODE	Name</code>（制表符分隔）</p>
+    <h3>📋 Batch Import Lanes</h3>
+    <p class="token-hint">One Lane per line, format: <code>CODE	Name</code>(tab-separated)</p>
     
     <textarea id="bulkLanesInput" rows="15" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;font-family:monospace;resize:vertical;" placeholder="AIS	ASIA INDIA SUB-CONTINENT SERVICE
 BC2	RCL BANGKOK CHINA SERVICE
@@ -2004,8 +2004,8 @@ BDX	South China Haiphone Service
 ..."></textarea>
     
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
-      <button class="dm-btn" onclick="closeBulkImportLanes()">取消</button>
-      <button class="dm-btn dm-btn-primary" onclick="executeBulkImportLanes()">导入 Lanes</button>
+      <button class="dm-btn" onclick="closeBulkImportLanes()">Cancel</button>
+      <button class="dm-btn dm-btn-primary" onclick="executeBulkImportLanes()">Import Lanes</button>
     </div>
   </div>
 </div>
@@ -2074,11 +2074,11 @@ BDX	South China Haiphone Service
 
     <!-- Distance Info -->
     <div>
-      <h4 style="margin:0 0 4px;font-size:.85rem;color:var(--primary);">📏 距离计算说明</h4>
+      <h4 style="margin:0 0 4px;font-size:.85rem;color:var(--primary);">📏 Distance Calculation</h4>
       <p class="token-hint">
-        内置 244 个港口坐标，使用 <b>searoute</b> 海运网络算法（Dijkstra 寻路）计算实际航行距离。
-        未知港口通过 Nominatim（OpenStreetMap）自动查询坐标，无需注册。
-        首次查询需加载海运网络数据（~600KB），之后自动缓存。
+        Built-in 244 port coordinates, using <b>searoute</b> maritime network algorithm (Dijkstra pathfinding) to calculate actual sailing distance.
+        Unknown ports are auto-geocoded via Nominatim (OpenStreetMap), no registration required.
+        First query loads maritime network data (~600KB), cached thereafter.
       </p>
     </div>
   </div>
@@ -2087,19 +2087,19 @@ BDX	South China Haiphone Service
 <div id="backupModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:12px;padding:0;width:480px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #eee;">
-      <h3 style="margin:0;font-size:1rem;">🛡 Fleet 备份管理</h3>
+      <h3 style="margin:0;font-size:1rem;">🛡 Fleet Backup Manager</h3>
       <button onclick="closeBackupModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#888;padding:2px 6px;border-radius:4px;">&times;</button>
     </div>
     <div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <button class="dm-btn dm-btn-primary" onclick="exportBackupJSON()">📤 导出备份</button>
+      <button class="dm-btn dm-btn-primary" onclick="exportBackupJSON()">📤 Export Backup</button>
       <label class="dm-btn" style="cursor:pointer;">
-        📥 导入备份
+        📥 Import Backup
         <input type="file" accept=".json" style="display:none;" onchange="importBackupJSON(this)"/>
       </label>
     </div>
     <div id="backupSnapshotList" style="flex:1;overflow-y:auto;padding:12px 20px;min-height:120px;"></div>
     <div style="padding:10px 20px;border-top:1px solid #eee;font-size:.75rem;color:#888;text-align:center;">
-      <span id="backupStorageInfo">本地存储已用约 0 KB</span>
+      <span id="backupStorageInfo">Local storage used: ~ 0 KB</span>
     </div>
   </div>
 </div>
@@ -2508,7 +2508,7 @@ BDCGP,CHITTAGONG/CHITTAGONG,,,
 BDDAC,DHAKA/DHAKA,,,
 BEANR,ANTWERP,,,
 BRSSZ,SANTOS,,,
-CNAJG,安吉港,,,
+CNAJG,Anji Port,,,
 CNAQG,ANQING,,,
 CNBIH,BEIHAI,,,
 CNBJS,BEIJING,,,
@@ -2520,7 +2520,7 @@ CNCQI,CHONGQING,,,
 CNCSH,CHANGSHA,,,
 CNCWN,CHIWAN,,,
 CNDAL,DALIAN,,,
-CNDCB,CNDCB(大铲湾) TERMINAL,,,
+CNDCB,CNDCB(Dachan Bay) TERMINAL,,,
 CNDGG,DONGGUAN,,,
 CNFAN,FANGCHENGGANG,,,
 CNFOS,FOSHAN,,,
@@ -3110,7 +3110,7 @@ function lpsLaneToggle(){
 
 async function executeLanePortSelector(){
   if(!lpsSelectedLane || !lpsSelectedLane.ports || lpsSelectedLane.ports.length === 0){
-    showToast('该航线没有预设港口，请先在 Data Manager 中添加', 'warning');
+    showToast('No preset ports for this lane. Add in Data Manager first.', 'warning');
     return;
   }
   
@@ -3126,11 +3126,11 @@ async function executeLanePortSelector(){
     
     if(!voy.ports) voy.ports = [];
     const existingCodes = new Set(voy.ports.map(p => p.code));
-    const newPorts = []; // 收集新添加的港口（暂不设 dist，由 post-loop 统一处理）
+    const newPorts = []; // Collect newly added ports (defer dist assignment to post-loop)
     let addedCount = 0;
     let lastAddedCode = voy.ports.length > 0 ? voy.ports[voy.ports.length - 1].code : null;
     
-    // 第一步：只收集新港口，不计算 dist
+    // Step 1: Collect new ports only, skip dist
     for(const code of portCodes){
       if(!existingCodes.has(code)){
         const manIn = getPortManIn(code);
@@ -3145,11 +3145,11 @@ async function executeLanePortSelector(){
       voy.ports.push(...newPorts);
     }
     
-    // 第二步（post-loop）：dist 必须存在出发港（port[i]）上，等于 dist(port[i], port[i+1])
-    // 遍历 voyage 所有相邻对，补充缺失的 dist
+    // Step 2 (post-loop): dist must exist on departure port[i], equals dist(port[i], port[i+1])
+    // Iterate all adjacent pairs in voyage, fill missing dist
     for(let i = 0; i < voy.ports.length - 1; i++){
       if(!voy.ports[i].dist || voy.ports[i].dist <= 0){
-        // dist(from=voy.ports[i], to=voy.ports[i+1]) 应存在 voy.ports[i].dist 上
+        // dist(from=voy.ports[i], to=voy.ports[i+1]) should exist on voy.ports[i].dist
         const d = await getDistanceAsync(voy.ports[i].code, voy.ports[i+1].code);
         voy.ports[i].dist = d;
       }
@@ -3158,9 +3158,9 @@ async function executeLanePortSelector(){
     _dailyLaneSelectorCtx = null;
     
     if(addedCount > 0){
-      // 补充缺失 dist：dist 必须存在 port[i] 上
-      // 第 1 步 post-loop 已用 getDistanceAsync 填了一部分（getDistanceAsync 会写 DIST_MAP）
-      // 第 2 步：确保所有相邻对的 voy.ports[i].dist 都已赋值，未赋值的再补查
+      // Fill missing dist: dist must exist on port[i]
+      // Step 1 post-loop already filled some via getDistanceAsync (which writes DIST_MAP)
+      // Step 2: ensure all adjacent pair voy.ports[i].dist are assigned, re-query unassigned ones
       const allCodes = voy.ports.map(p => p.code);
       const needFetch = [];
       for(let i = 0; i < allCodes.length - 1; i++){
@@ -3169,7 +3169,7 @@ async function executeLanePortSelector(){
         }
       }
       if(needFetch.length > 0){
-        showToast(`正在查询 ${needFetch.length} 条距离…`, 'info', 6000);
+        showToast(`Querying ${needFetch.length} distances...`, 'info', 6000);
         for(const [f, t] of needFetch){
           const res = await fetchSearouteDistance(f, t);
           if(res && res.distance > 0){
@@ -3182,9 +3182,9 @@ async function executeLanePortSelector(){
       renderDailyDetail();
       autoSaveFleet();
       const fetched = needFetch.length;
-      showToast(`已添加 ${addedCount} 个港口${fetched > 0 ? '，' + fetched + ' 条距离已查询' : ''}`, 'success');
+      showToast(`Added ${addedCount} port(s)${fetched > 0 ? ', ' + fetched + '  distances queried' : ''}`, 'success');
     } else {
-      showToast('所有港口已存在，无需添加', 'info');
+      showToast('All ports already exist, nothing to add', 'info');
     }
     
     closeLanePortSelector();
@@ -3833,8 +3833,8 @@ function parseFuelMt(id){
 })();
 
 // ==================== FUEL ADJUSTMENT FACTORS (hidden percentages) ====================
-const FUEL_ADJUST_CONGESTION = 0.10;  // 塞港 +10% (not shown to user)
-const FUEL_ADJUST_MONSOON    = 0.10;  // 季风 +10% (not shown to user)
+const FUEL_ADJUST_CONGESTION = 0.10;  // Congestion +10% (not shown to user)
+const FUEL_ADJUST_MONSOON    = 0.10;  // Monsoon +10% (not shown to user)
 
 function getFuelAdjustMultiplier(){
   let m = 1.0;
@@ -4201,17 +4201,18 @@ function runSchedule(){
 
   const btn = document.getElementById('btnRun');
   btn.classList.add('loading');
-  btn.textContent='🔍 查询距离中...';
+  btn.textContent='🔍 Querying distance...';
 
   // First auto-fill missing distances, then generate schedule
   autoFillMissingDistances(selectedPorts).then(({filled, failed}) => {
     if(filled > 0){
-      showToast('已自动查询并填入 ' + filled + ' 段航行距离', 'success');
+      showToast('Auto-queried and filled ' + filled + ' sailing distance(s)', 'success');
     }
     if(failed.length > 0){
-      const msg = failed.length + ' 段距离自动查询失败:\n\n' +
+      const msg = failed.length + ' sailing distance queries failed:
+\n\n' +
         failed.map(f => f.from + ' → ' + f.to + ': ' + f.error).join('\n') +
-        '\n\n已添加到距离列表（距离=0），请手动填写实际航行距离。';
+        '\n\nAdded to distance list (dist=0). Enter actual sailing distance manually.';
       console.warn('Auto-fill distance failures:', failed);
       showToast(msg, 'warning', 8000);
     }
@@ -4254,7 +4255,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
   firstEtd.setMinutes(0,0,0);
 
   // First port: run/dist to NEXT port
-  // runHrs = sea passage（纯航行时间）
+  // runHrs = sea passage (pure sailing time)
   let firstDist = 0, firstRun = 0, firstFuel = 0;
   if(ports.length > 1){
     firstDist = getDistance(ports[0].code, ports[1].code);
@@ -4269,7 +4270,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
 
   for(let i=1; i<ports.length; i++){
     const p = ports[i];
-    // ETA = prev ETD + sea（纯航行时间，不含manIn）
+    // ETA = prev ETD + sea (pure sailing time, excl. manIn)
     const seaRun = rows[i-1].dist > 0 && speed > 0 ? rows[i-1].dist / speed : 0;
     const eta = ceilToHour(new Date(prevEtd.getTime() + seaRun * 3600000));
     const manIn = getPortManIn(p.code); // from port data or default
@@ -4283,7 +4284,7 @@ function computeSchedule(ports, speed, voyNo, startDt, vessel){
     etd.setMinutes(0,0,0);
 
     // Run/dist to NEXT port (empty for last port)
-    // runHrs = sea passage（纯航行时间）
+    // runHrs = sea passage (pure sailing time)
     let dist = 0, runHrs = 0;
     if(i < ports.length - 1){
       dist = getDistance(ports[i].code, ports[i+1].code);
@@ -4400,12 +4401,12 @@ function renderTable(){
   banner.innerHTML = `
     <div class="sync-banner-info">
       <strong>📋 ${currentVessel.code || document.getElementById('vesselInput').value.split('–')[0].trim()}</strong>
-      <span>航次: <input type="text" id="syncVoyNoInput" value="${document.getElementById('voyNoInput').value || '001W'}" style="width:70px;padding:2px 6px;border:1px solid #ccc;border-radius:4px;font-size:.85rem;"/></span>
+      <span>Voyage: <input type="text" id="syncVoyNoInput" value="${document.getElementById('voyNoInput').value || '001W'}" style="width:70px;padding:2px 6px;border:1px solid #ccc;border-radius:4px;font-size:.85rem;"/></span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <div style="position:relative;">
         <button class="btn-dm" onclick="toggleSVColPanel()" style="padding:6px 14px;font-size:.82rem;background:#0d6efd;border-color:#0d6efd;color:#fff;">
-          ☰ 列
+          ☰ Columns
         </button>
         <div id="svColPanel" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #bbb;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:9999;min-width:160px;padding:6px 0;max-height:320px;overflow-y:auto;">
           ${COL_DEFS.filter(c=>c.hideable).map(c=>
@@ -4415,7 +4416,7 @@ function renderTable(){
         </div>
       </div>
       <button class="btn-dm" onclick="syncToDaily()" style="padding:6px 16px;font-size:.85rem;background:#198754;border-color:#198754;color:#fff;">
-        💾 添加到 Daily 船期
+        💾 Add to Daily Schedule
       </button>
     </div>
   `;
@@ -4588,7 +4589,7 @@ function cascadeRecalc(changedIdx, changedKey){
       }
       // Case 7: Distance or Speed changed -> recalc Run hours (sea passage only)
       else if(changedKey === 'dist' || changedKey === 'speed'){
-        // runHrs = sea passage（纯航行时间）
+        // runHrs = sea passage (pure sailing time)
         const seaRun = row.speed>0 ? +(row.dist/row.speed).toFixed(2) : 0;
         row.runHrs = seaRun;
         // Recalc fuel for this row
@@ -4598,7 +4599,7 @@ function cascadeRecalc(changedIdx, changedKey){
       }
       // Case 8: Run hours changed -> recalc speed and fuel
       else if(changedKey === 'runHrs'){
-        // runHrs就是纯航行时间
+        // runHrs is pure sailing time
         const seaRun = row.runHrs;
         row.speed = seaRun > 0 ? +(row.dist / seaRun).toFixed(1) : 0;
         // Recalc fuel for this row
@@ -4608,7 +4609,7 @@ function cascadeRecalc(changedIdx, changedKey){
 
     // ---- SUBSEQUENT ROWS (i > changedIdx): full recalc from prev ETD ----
     if(i > changedIdx && prev){
-      // ETA = prev ETD + prev sea hours（纯航行时间）
+      // ETA = prev ETD + prev sea hours (pure sailing time)
       const prevSeaHrs = prev.runHrs || 0;
       const etaRaw = new Date(prev.etd.getTime() + prevSeaHrs*3600000);
       row.eta = ceilToHour(etaRaw);
@@ -4723,7 +4724,7 @@ function openParseVesselModal(){
   document.getElementById('parseVesselOverlay').style.display = 'flex';
   document.getElementById('parseVesselInput').value = '';
   document.getElementById('parseVesselResult').style.display = 'none';
-  // 清空表单
+  // Clear form
   ['vessel_name','vessel_code','imo','call_sign','flag','year_built','teu','homogeneous','dwt','loa','breadth','depth','reefer','class'].forEach(function(id){
     var el = document.getElementById('pv_' + id);
     if(el) el.value = '';
@@ -4739,7 +4740,7 @@ function closeParseVesselModal(){
   document.getElementById('parseVesselOverlay').style.display = 'none';
 }
 
-// ==================== 文件上传处理 ====================
+// ==================== File upload handler ====================
 function handleFileUpload(input){
   var file = input.files[0];
   if(!file) return;
@@ -4747,30 +4748,30 @@ function handleFileUpload(input){
   var fileName = file.name.toLowerCase();
   var ext = fileName.split('.').pop();
 
-  // 先打开弹窗
+  // Open modal first
   openParseVesselModal();
-  showToast('正在读取文件...', 'info');
+  showToast('Reading file...', 'info');
 
   var reader = new FileReader();
   reader.onload = function(e){
     var content = e.target.result;
 
     if(ext === 'txt' || ext === 'csv'){
-      // 纯文本文件
+      // Plain text file
       document.getElementById('parseVesselInput').value = content;
       parseVesselText();
     } else if(ext === 'pdf'){
-      // PDF 文件 - 使用 pdf.js
+      // PDF file - use pdf.js
       parsePDFContent(content, fileName);
     } else if(ext === 'docx' || ext === 'doc'){
-      // Word 文件 - 使用 mammoth.js
+      // Word file - use mammoth.js
       parseWordContent(content, fileName);
     } else {
-      showToast('不支持的文件格式：' + ext, 'error');
+      showToast('Unsupported file format: ' + ext, 'error');
     }
   };
   reader.onerror = function(){
-    showToast('文件读取失败', 'error');
+    showToast('File read failed', 'error');
   };
 
   if(ext === 'pdf' || ext === 'docx' || ext === 'doc'){
@@ -4779,14 +4780,14 @@ function handleFileUpload(input){
     reader.readAsText(file);
   }
 
-  // 清空 input，允许重复选择同一文件
+  // Clear input for re-selecting same file
   input.value = '';
 }
 
 function parsePDFContent(arrayBuffer, fileName){
-  showToast('正在解析 PDF...', 'info');
+  showToast('Parsing PDF...', 'info');
 
-  // 动态加载 pdf.js
+  // Dynamically load pdf.js
   if(typeof pdfjsLib === 'undefined'){
     var script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -4795,7 +4796,7 @@ function parsePDFContent(arrayBuffer, fileName){
       extractPDFText(arrayBuffer, fileName);
     };
     script.onerror = function(){
-      showToast('PDF 库加载失败，请检查网络', 'error');
+      showToast('PDF library failed to load, check network', 'error');
     };
     document.head.appendChild(script);
   } else {
@@ -4818,17 +4819,17 @@ function extractPDFText(arrayBuffer, fileName){
       var fullText = pages.join('\n');
       document.getElementById('parseVesselInput').value = fullText;
       parseVesselText();
-      showToast('PDF 解析完成，共 ' + pdf.numPages + ' 页', 'success');
+      showToast('PDF parsed, total  ' + pdf.numPages + '  pages', 'success');
     });
   }).catch(function(err){
-    showToast('PDF 解析失败：' + err.message, 'error');
+    showToast('PDF parse failed: ' + err.message, 'error');
   });
 }
 
 function parseWordContent(arrayBuffer, fileName){
-  showToast('正在解析 Word...', 'info');
+  showToast('Parsing Word...', 'info');
 
-  // 动态加载 mammoth.js
+  // Dynamically load mammoth.js
   if(typeof mammoth === 'undefined'){
     var script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
@@ -4836,7 +4837,7 @@ function parseWordContent(arrayBuffer, fileName){
       extractWordText(arrayBuffer, fileName);
     };
     script.onerror = function(){
-      showToast('Word 库加载失败，请检查网络', 'error');
+      showToast('Word library failed to load, check network', 'error');
     };
     document.head.appendChild(script);
   } else {
@@ -4849,29 +4850,29 @@ function extractWordText(arrayBuffer, fileName){
     var text = result.value;
     document.getElementById('parseVesselInput').value = text;
     parseVesselText();
-    showToast('Word 解析完成', 'success');
+    showToast('Word parsed successfully', 'success');
 
     if(result.messages && result.messages.length > 0){
-      console.log('Word 解析消息：', result.messages);
+      console.log('Word parse message: ', result.messages);
     }
   }).catch(function(err){
-    showToast('Word 解析失败：' + err.message, 'error');
+    showToast('Word parse failed: ' + err.message, 'error');
   });
 }
 
 function parseVesselText(){
   var text = document.getElementById('parseVesselInput').value.trim();
   if(!text){
-    showToast('请输入船舶数据', 'error');
+    showToast('Enter vessel data', 'error');
     return;
   }
 
-  // 纯前端解析
+  // Client-side parse
   var result = parseVesselTextClient(text);
   displayParseResult(result);
 }
 
-// 纯前端解析函数
+// Client-side parse function
 function parseVesselTextClient(text){
   var result = {
     particular: {},
@@ -4882,21 +4883,21 @@ function parseVesselTextClient(text){
 
   var lines = text.split('\n');
   var fieldMap = {
-    'vessel_name': ['vessel name', 'ship name', 'name', '船名', 'shipname'],
-    'call_sign': ['call sign', 'callsign', '呼号'],
+    'vessel_name': ['vessel name', 'ship name', 'name', 'Vessel Name', 'shipname'],
+    'call_sign': ['call sign', 'callsign', 'Call Sign'],
     'imo': ['imo'],
-    'flag': ['flag', '旗籍', 'country'],
-    'year_built': ['year built', 'built year', '建造', 'built'],
-    'teu': ['teu', 'capacity', '集装箱', 'teu capacity'],
+    'flag': ['flag', 'Flag', 'country'],
+    'year_built': ['year built', 'built year', 'Built', 'built'],
+    'teu': ['teu', 'capacity', 'TEU', 'teu capacity'],
     'homogeneous': ['homogeneous', 'homo', 'homog'],
     'grt': ['grt'],
     'nrt': ['nrt'],
-    'scantling_draft': ['scantling draft', 'draft', '吃水'],
+    'scantling_draft': ['scantling draft', 'draft', 'Draft'],
     'dwt': ['dwt', 'deadweight'],
-    'loa': ['loa', 'length', '总长'],
-    'breadth': ['breadth', 'beam', '船宽'],
-    'depth': ['depth', '型深'],
-    'reefer_plugs': ['reefer plug', 'reefer', '冷藏']
+    'loa': ['loa', 'length', 'LOA'],
+    'breadth': ['breadth', 'beam', 'Breadth'],
+    'depth': ['depth', 'Depth'],
+    'reefer_plugs': ['reefer plug', 'reefer', 'Reefer']
   };
 
   var numFields = ['teu', 'homogeneous', 'grt', 'nrt', 'dwt', 'loa', 'breadth', 'depth', 'reefer_plugs', 'year_built', 'scantling_draft'];
@@ -4905,18 +4906,18 @@ function parseVesselTextClient(text){
     var line = lines[i].trim();
     if(!line) continue;
 
-    // 尝试提取键值对
+    // Try extract key-value pairs
     var parts = line.split(/[:\t]/);
     if(parts.length < 2) continue;
 
     var key = parts[0].trim().toLowerCase();
     var value = parts.slice(1).join(':').trim();
 
-    // 清理数值
+    // Clean value
     var numMatch = value.match(/^[\d,]+\.?\d*/);
     var valueNum = numMatch ? numMatch[0].replace(/,/g, '') : '';
 
-    // 匹配 Particular 字段
+    // Match Particular fields
     for(var field in fieldMap){
       var aliases = fieldMap[field];
       for(var j = 0; j < aliases.length; j++){
@@ -4931,7 +4932,7 @@ function parseVesselTextClient(text){
       }
     }
 
-    // 尝试解析油耗行
+    // Try parse fuel rows
     var lineLower = line.toLowerCase();
     if(lineLower.indexOf('kn') !== -1 || lineLower.indexOf('speed') !== -1 || lineLower.indexOf('knot') !== -1){
       var speedMatch = line.match(/(\d+)\s*(?:kn|kt|knot)/i);
@@ -4939,23 +4940,23 @@ function parseVesselTextClient(text){
         var speed = parseInt(speedMatch[1]);
         var fuelRow = {speed: speed, lsfo: '', hsfo: '', mgo: '', port_lsfo: '', port_mgo: ''};
 
-        // 提取 LSFO
+        // Extract LSFO
         var lsfoMatch = line.match(/lsfo[:\s]*(\d+\.?\d*)/i);
         if(lsfoMatch) fuelRow.lsfo = lsfoMatch[1];
 
-        // 提取 HSFO
+        // Extract HSFO
         var hsfoMatch = line.match(/hsfo[:\s]*(\d+\.?\d*)/i);
         if(hsfoMatch) fuelRow.hsfo = hsfoMatch[1];
 
-        // 提取 MGO
+        // Extract MGO
         var mgoMatch = line.match(/mgo[:\s]*(\d+\.?\d*)/i);
         if(mgoMatch) fuelRow.mgo = mgoMatch[1];
 
-        // 提取 ME (当作 LSFO)
+        // Extract ME (as LSFO)
         var meMatch = line.match(/me\s*(\d+\.?\d*)/i);
         if(meMatch && !lsfoMatch) fuelRow.lsfo = meMatch[1];
 
-        // 提取 AUX
+        // Extract AUX
         var auxMatch = line.match(/aux[:\s]*(\d+\.?\d*)/i);
         if(auxMatch){
           var auxVal = parseFloat(auxMatch[1]);
@@ -4963,7 +4964,7 @@ function parseVesselTextClient(text){
           fuelRow.mgo = (currentMgo + auxVal).toFixed(1);
         }
 
-        // 提取 Port Stay
+        // Extract Port Stay
         var portMatch = line.match(/port[:\s]*(\d+\.?\d*)/i);
         if(portMatch) fuelRow.port_lsfo = portMatch[1];
 
@@ -4972,10 +4973,10 @@ function parseVesselTextClient(text){
     }
   }
 
-  // 如果没有解析到数据
+  // If no data parsed
   if(!result.particular.vessel_name && result.fuel.length === 0){
     result.success = false;
-    result.warnings.push('无法识别船舶数据，请检查格式');
+    result.warnings.push('Cannot recognize vessel data, please check format');
   }
 
   return result;
@@ -4985,7 +4986,7 @@ function displayParseResult(result){
   var el = document.getElementById('parseVesselResult');
   el.style.display = 'block';
 
-  // 填充船舶参数
+  // Fill vessel particulars
   var p = result.particular || {};
   var fieldMap = {
     'vessel_name': 'pv_vessel_name',
@@ -5009,37 +5010,37 @@ function displayParseResult(result){
     }
   }
 
-  // 自动生成船舶代码
+  // Auto-generate Vessel Code
   var vesselName = p.vessel_name || '';
   var vesselCode = vesselName.split(' ').map(function(w){ return w[0] || ''; }).join('').toUpperCase().substring(0,6);
   document.getElementById('pv_vessel_code').value = vesselCode;
 
-  // 显示解析状态
+  // Show parse status
   var statusEl = document.getElementById('parseParticularStatus');
   if(Object.keys(p).length > 0){
-    statusEl.textContent = '✓ 已解析 ' + Object.keys(p).length + ' 个字段';
+    statusEl.textContent = 'Parsed ' + Object.keys(p).length + '  Fields';
     statusEl.style.background = '#d4edda';
     statusEl.style.color = '#155724';
   } else {
-    statusEl.textContent = '⚠ 未识别到船舶参数';
+    statusEl.textContent = 'No particular data detected';
     statusEl.style.background = '#fff3cd';
     statusEl.style.color = '#856404';
   }
 
-  // 填充油耗数据
+  // Fill fuel data
   var fuelStatusEl = document.getElementById('parseFuelStatus');
   var fuelRowsEl = document.getElementById('parseFuelRows');
   fuelRowsEl.innerHTML = '';
 
   if(result.fuel && result.fuel.length > 0){
-    fuelStatusEl.textContent = '✓ 已解析 ' + result.fuel.length + ' 个速度档';
+    fuelStatusEl.textContent = 'Parsed ' + result.fuel.length + '  Speed Tier(s)';
     fuelStatusEl.style.background = '#d4edda';
     fuelStatusEl.style.color = '#155724';
     result.fuel.forEach(function(f){
       addParseFuelRow(f);
     });
   } else {
-    fuelStatusEl.textContent = '⚠ 未识别到油耗数据';
+    fuelStatusEl.textContent = 'No fuel data detected';
     fuelStatusEl.style.background = '#fff3cd';
     fuelStatusEl.style.color = '#856404';
     addParseFuelRow();
@@ -5060,7 +5061,7 @@ function addParseFuelRow(data){
     '<input type="number" step="0.1" value="'+data.port_mgo+'" placeholder="Port MGO" style="padding:6px;border:1px solid #ddd;border-radius:4px;"/>' +
     '<button onclick="this.parentElement.remove()" style="padding:4px 8px;background:#dc3545;color:#fff;border:none;border-radius:4px;cursor:pointer;">×</button>';
 
-  // 添加列标签
+  // Add column labels
   if(container.children.length === 0){
     var labels = document.createElement('div');
     labels.style.cssText = 'display:grid;grid-template-columns:80px repeat(5,1fr);gap:8px;margin-bottom:4px;font-size:.7rem;color:#adb5bd;';
@@ -5075,11 +5076,11 @@ function saveParseVessel(){
   var vesselName = document.getElementById('pv_vessel_name').value.trim();
 
   if(!vesselCode){
-    showToast('船舶代码不能为空', 'error');
+    showToast('Vessel Code cannot be empty', 'error');
     return;
   }
 
-  // 收集油耗数据
+  // Collect fuel data
   var fuelData = [];
   var rows = document.querySelectorAll('#parseFuelRows > div:not(:first-child)');
   rows.forEach(function(row){
@@ -5099,7 +5100,7 @@ function saveParseVessel(){
     }
   });
 
-  // 收集船舶参数
+  // Collect vessel particulars
   var particular = {};
   var pMap = {
     'vessel_name': 'vessel_name',
@@ -5124,16 +5125,16 @@ function saveParseVessel(){
     if(v) particular[k] = v;
   }
 
-  // 收集装载能力
+  // Collect loading capacity
   var lane = document.getElementById('pv_lane').value.trim();
   var maxCargo = document.getElementById('pv_max_cargo').value.trim();
   var maxTeu = document.getElementById('pv_max_teu').value.trim();
   var bsa = document.getElementById('pv_bsa').value.trim();
 
-  // 生成 vessels.csv 行
+  // Generate vessels.csv rows
   var vesselsCsv = '';
   if(fuelData.length > 0){
-    // 按速度降序排列
+    // Sort by speed descending
     fuelData.sort(function(a, b){ return parseFloat(b.speed) - parseFloat(a.speed); });
     fuelData.forEach(function(f){
       vesselsCsv += vesselCode + ',' + vesselName + ',' + f.speed + ',' + f.lsfo + ',' + f.hsfo + ',' + f.mgo + ',' + f.port_lsfo + ',' + f.port_mgo + ',' + (f.hire||0) + '\n';
@@ -5142,13 +5143,13 @@ function saveParseVessel(){
     vesselsCsv += vesselCode + ',' + vesselName + ',,,,,\n';
   }
 
-  // 生成 particular.csv 行
+  // Generate particular.csv rows
   var pHeaders = ['Vessel Name','Call Sign','IMO','Flag','Year Built','TEU','HOMOG @14 MT','GRT','NRT','Scantling Draft (m)','DWT (MT)','LOA (m)','Breadth (m)','Depth (m)','Reefer Plugs','Class'];
   var pFields = ['vessel_name','call_sign','imo','flag','year_built','teu','homogeneous','grt','nrt','scantling_draft','dwt','loa','breadth','depth','reefer_plugs','class'];
   var pValues = pFields.map(function(f){ return particular[f] || ''; });
   var particularCsv = pValues.join(',') + '\n';
 
-  // 生成 bestmodel.csv 行
+  // Generate bestmodel.csv rows
   var bestmodelCsv = '';
   if(lane && maxCargo){
     var teuVal = maxTeu || particular.teu || '';
@@ -5156,15 +5157,15 @@ function saveParseVessel(){
     bestmodelCsv = vesselName + ',' + lane + ',' + maxCargo + ',' + teuVal + ',,,,,' + bsaVal + ',,,,,,,,,,,,\n';
   }
 
-  // 显示结果
+  // Show results
   var resultDiv = document.getElementById('parseVesselResult');
   resultDiv.innerHTML = '<div style="margin-top:16px;padding:16px;background:#f8f9fa;border-radius:8px;">' +
-    '<h4 style="margin:0 0 12px 0;">📋 生成的数据（请复制到对应文件）</h4>' +
+    '<h4 style="margin:0 0 12px 0;">📋 Generated Data (copy to matching files)</h4>' +
 
     '<div style="margin-bottom:16px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
         '<strong>vessels.csv</strong>' +
-        '<button onclick="copyToClipboard(document.getElementById(\'vesselsCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 复制</button>' +
+        '<button onclick="copyToClipboard(document.getElementById(\'vesselsCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button>' +
       '</div>' +
       '<pre id="vesselsCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + vesselsCsv + '</pre>' +
     '</div>' +
@@ -5172,7 +5173,7 @@ function saveParseVessel(){
     '<div style="margin-bottom:16px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
         '<strong>cul_ship_particular.csv</strong>' +
-        '<button onclick="copyToClipboard(document.getElementById(\'particularCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 复制</button>' +
+        '<button onclick="copyToClipboard(document.getElementById(\'particularCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button>' +
       '</div>' +
       '<pre id="particularCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + particularCsv + '</pre>' +
     '</div>' +
@@ -5180,30 +5181,30 @@ function saveParseVessel(){
     (bestmodelCsv ? '<div style="margin-bottom:16px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
         '<strong>cul_vessel_bestmodel.csv</strong>' +
-        '<button onclick="copyToClipboard(document.getElementById(\'bestmodelCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 复制</button>' +
+        '<button onclick="copyToClipboard(document.getElementById(\'bestmodelCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button>' +
       '</div>' +
       '<pre id="bestmodelCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + bestmodelCsv + '</pre>' +
     '</div>' : '') +
 
-    '<p style="margin:16px 0 0 0;font-size:.75rem;color:#6c757d;">💡 复制内容后，打开对应的 CSV 文件，在最后一行后粘贴即可</p>' +
-    '<p style="margin:8px 0 0 0;font-size:.75rem;color:#6c757d;">⚠️ particular.csv 是横向格式，粘贴时请添加到最后一列</p>' +
+    '<p style="margin:16px 0 0 0;font-size:.75rem;color:#6c757d;">💡 After copying, open the matching CSV file and paste at the end.</p>' +
+    '<p style="margin:8px 0 0 0;font-size:.75rem;color:#6c757d;">⚠️ particular.csv is horizontal format; paste as last column.</p>' +
   '</div>';
 
-  showToast('数据已生成，请复制到 CSV 文件', 'success');
+  showToast('Data generated, please copy to CSV files', 'success');
 }
 
 function copyToClipboard(text){
   navigator.clipboard.writeText(text).then(function(){
-    showToast('已复制到剪贴板', 'success');
+    showToast('Copied to clipboard', 'success');
   }).catch(function(){
-    // 备用方案
+    // Fallback method
     var textarea = document.createElement('textarea');
     textarea.value = text;
     document.body.appendChild(textarea);
     textarea.select();
     document.execCommand('copy');
     document.body.removeChild(textarea);
-    showToast('已复制到剪贴板', 'success');
+    showToast('Copied to clipboard', 'success');
   });
 }
 
@@ -5216,7 +5217,7 @@ function openVesselInfo(initialName){
     var overlay = document.createElement('div');
     overlay.id = 'viLoadingOverlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML = '<div style="background:#fff;padding:36px 48px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center;font-family:Segoe UI,Arial,sans-serif;"><div style="font-size:2rem;margin-bottom:12px;">⏳</div><div style="font-size:1rem;color:#333;font-weight:600;">正在加载船舶数据...</div><div style="font-size:.82rem;color:#888;margin-top:8px;">Particular / BestModel CSV</div></div>';
+    overlay.innerHTML = '<div style="background:#fff;padding:36px 48px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.25);text-align:center;font-family:Segoe UI,Arial,sans-serif;"><div style="font-size:2rem;margin-bottom:12px;">⏳</div><div style="font-size:1rem;color:#333;font-weight:600;">Loading vessel data...</div><div style="font-size:.82rem;color:#888;margin-top:8px;">Particular / BestModel CSV</div></div>';
     document.body.appendChild(overlay);
     // Wait and retry up to 15 seconds
     var attempts = 0;
@@ -5234,7 +5235,7 @@ function openVesselInfo(initialName){
         clearInterval(retryTimer);
         var ov = document.getElementById('viLoadingOverlay');
         if(ov) ov.remove();
-        alert('船舶数据加载超时，请稍后重试。\n\n提示：首次加载需要从 GitHub 获取 Particular 和 BestModel 数据。');
+        alert('Vessel data loading timeout, please retry later.\n\nTip: First load needs to fetch Particular and BestModel data from GitHub.');
       }
     }, 500);
     return;
@@ -5271,7 +5272,7 @@ function openVesselInfo(initialName){
   }
   if(!autoSelect && uniqNames.length > 0) autoSelect = uniqNames[0];
   
-  if(!autoSelect) { alert('没有船舶数据'); return; }
+  if(!autoSelect) { alert('No vessel data'); return; }
   
   function normalizeName(s){ return (s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -5287,7 +5288,7 @@ function openVesselInfo(initialName){
     nameOptions += '<option value="' + escapeHtml(n) + '"' + sel + '>' + escapeHtml(n) + '</option>';
   });
   
-  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>📋 船舶信息</title>');
+  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>📋 Vessel Info</title>');
   doc.write('<style>');
   doc.write('*{box-sizing:border-box;margin:0;padding:0;}');
   doc.write('body{font-family:Segoe UI,Arial,sans-serif;padding:20px;background:#f0f4f8;color:#333;}');
@@ -5308,15 +5309,15 @@ function openVesselInfo(initialName){
 
   // Top bar with vessel selector
   doc.write('<div class="top-bar">');
-  doc.write('<h2>📋 船舶详细信息</h2>');
+  doc.write('<h2>📋 Vessel Details</h2>');
   doc.write('<select id="vSel" onchange="renderAll(this.value)">' + nameOptions + '</select>');
   doc.write('</div>');
 
   // Tabs — no inline onclick, bind after doc.write
   doc.write('<div class="tab-bar">');
-  doc.write('<button class="tab-btn active" id="tab1">📋 船舶参数</button>');
-  doc.write('<button class="tab-btn" id="tab2">📦 装载能力</button>');
-  doc.write('<button class="tab-btn" id="tab3">⛽ 油耗参数</button>');
+  doc.write('<button class="tab-btn active" id="tab1">📋 Particulars</button>');
+  doc.write('<button class="tab-btn" id="tab2">📦 Capacity</button>');
+  doc.write('<button class="tab-btn" id="tab3">⛽ Fuel</button>');
   doc.write('</div>');
   doc.write('<div id="content"></div>');
 
@@ -5378,7 +5379,7 @@ function openVesselInfo(initialName){
         if(isMatch(pV[pi])){ mCol = pV[pi]; break; }
       }
       if(mCol && fKey){
-        html += '<table><tr><th style="width:220px;">字段</th><th>数值</th></tr>';
+        html += '<table><tr><th style="width:220px;">Field</th><th>Value</th></tr>';
         for(var ri=0;ri<win.PARTICULAR_DATA.length;ri++){
           var prow = win.PARTICULAR_DATA[ri];
           var fn = prow[fKey]||''; if(!fn.trim()) continue;
@@ -5421,7 +5422,7 @@ function openVesselInfo(initialName){
     });
     if(fr.length > 0){
       fr.sort(function(a,b){return a.speed-b.speed;});
-      html+='<table><tr><th>速度(kn)</th><th>LSFO mt/d</th><th>HSFO mt/d</th><th>MGO mt/d</th><th>PS LSFO</th><th>PS MGO</th></tr>';
+      html+='<table><tr><th>Speed (kn)</th><th>LSFO mt/d</th><th>HSFO mt/d</th><th>MGO mt/d</th><th>PS LSFO</th><th>PS MGO</th></tr>';
       fr.forEach(function(vv){
         html+='<tr><td style="font-weight:700">'+vv.speed+'</td><td>'+(vv.lsfo||'-')+'</td><td>'+(vv.hsfo||'-')+'</td><td>'+(vv.mgo||'-')+'</td><td>'+(vv.ps_lsfo||'-')+'</td><td>'+(vv.ps_mgo||('-'))+'</td></tr>';
       });
@@ -5453,7 +5454,7 @@ function openVesselInfo(initialName){
     })(ti);
   }
 
-  doc.write('<div class="tip"><b>💡 提示：</b>使用上方下拉框切换船舶 · 完整航次油耗估算请在「单船调度」Simulator 中查看</div>');
+  doc.write('<div class="tip"><b>Tip: </b>Use dropdown to switch vessels. Full voyage fuel estimate in Simulator.</div>');
   doc.write('</body></html>');
   doc.close();
 }
@@ -5471,7 +5472,7 @@ function switchViTab(tab, btn){
   const vname = document.getElementById('viVesselSelect').value;
   const body = document.getElementById('viBody');
   
-  if(!vname){ body.innerHTML = '<div class="vi-no-data">请先选择一艘船舶</div>'; return; }
+  if(!vname){ body.innerHTML = '<div class="vi-no-data">Select a vessel first</div>'; return; }
   
   if(tab === 'particular'){
     body.innerHTML = renderViParticular(vname);
@@ -5521,9 +5522,9 @@ function renderViParticular(vname){
   function normalizeName(s){ return (s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
   function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  if(!vname) return '<div style="padding:24px;text-align:center;color:#999;">未选择船舶</div>';
+  if(!vname) return '<div style="padding:24px;text-align:center;color:#999;">No vessel selected</div>';
   if(PARTICULAR_DATA.length === 0){
-    return '<div style="padding:24px;text-align:center;color:#999;">数据加载中...</div>';
+    return '<div style="padding:24px;text-align:center;color:#999;">Loading data...</div>';
   }
   // Determine the field-name column key from first data row
   // Particular CSV is transposed: header row = vessel names, first col = field labels
@@ -5533,7 +5534,7 @@ function renderViParticular(vname){
     if(fk) fieldKey = fk;
   }
   if(!fieldKey){
-    return '<div style="padding:24px;text-align:center;color:#999;">无法识别字段列</div>';
+    return '<div style="padding:24px;text-align:center;color:#999;">Cannot identify field column</div>';
   }
   var norm = normalizeName(vname);
   var vessels = window._particularVessels || [];
@@ -5546,7 +5547,7 @@ function renderViParticular(vname){
     }
   }
   if(!matchCol){
-    return '<div style="padding:24px;text-align:center;color:#999;">未找到 <b>'+escapeHtml(vname)+'</b> 的参数数据<br><span style="font-size:.78rem;">（可尝试切换船名）</span></div>';
+    return '<div style="padding:24px;text-align:center;color:#999;">Not found:  <b>'+escapeHtml(vname)+'</b>  parameter data<br><span style="font-size:.78rem;">(try switching vessel name)</span></div>';
   }
   // Show ALL available fields (not just hardcoded ones) so nothing is missed
   var html = '<table class="vi-table">';
@@ -5561,7 +5562,7 @@ function renderViParticular(vname){
   }
   html += '</table>';
   if(html === '<table class="vi-table"></table>'){
-    return '<div style="padding:24px;text-align:center;color:#999;">该船舶暂无参数数据</div>';
+    return '<div style="padding:24px;text-align:center;color:#999;">No particular data for this vessel</div>';
   }
   return html;
 }
@@ -5571,7 +5572,7 @@ function renderViCapacity(vname){
   const records = findCapacityRecords(vname);
   
   if(records.length === 0){
-    body.innerHTML = `<div class="vi-no-data">未找到 "${vname}" 的装载能力数据<br><small style="color:#999">数据来源: CULVesselBest Model 2026</small></div>`;
+    body.innerHTML = `<div class="vi-no-data">Not found:  "${vname}"  loading capacity data<br><small style="color:#999">Source: CULVesselBest Model 2026</small></div>`;
     return;
   }
   
@@ -5583,9 +5584,9 @@ function renderViCapacity(vname){
   } else {
     // Lane selector
     const lanes = [...new Set(records.map(r => r['Service Lane']))].sort();
-    html += `<div class="vi-lane-select-wrap"><label>📍 选择航线:</label>`;
+    html += `<div class="vi-lane-select-wrap"><label>Select Lane:</label>`;
     html += `<select id="viLaneSelect" onchange="renderViCapacityLane('${vname}')">`;
-    html += `<option value="">-- 全部航线 (${records.length} 条) --</option>`;
+    html += `<option value="">-- All Lanes (${records.length}) --</option>`;
     lanes.forEach(l => { html += `<option value="${l}">${l}</option>`; });
     html += `</select></div>`;
     
@@ -5615,17 +5616,17 @@ function renderViCapacityLane(vname){
 function renderCapacityTable(records, laneLabel){
   let html = `<div class="vi-capacity-table-container">`;
   if(laneLabel && records.length <= 1){
-    html += `<div style="margin-bottom:10px;font-weight:600;color:#1a73e8;">航线: ${laneLabel}</div>`;
+    html += `<div style="margin-bottom:10px;font-weight:600;color:#1a73e8;">Lane: ${laneLabel}</div>`;
   }
   html += `<table class="vi-capacity-table">
     <thead><tr>
-      <th>航线 Service Lane</th>
-      <th>最大货重 (Ton)</th>
-      <th>最大 TEU</th>
-      <th>最小 20\' (底座)</th>
-      <th>最小 20\' (无槽损)</th>
-      <th>建议 BSA (TEU)</th>
-      <th>备注</th>
+      <th>Service Lane</th>
+      <th>Max Cargo (Ton)</th>
+      <th>Max TEU</th>
+      <th>Min 20' (Base)</th>
+      <th>Min 20' (No slot loss)</th>
+      <th>Suggested BSA (TEU)</th>
+      <th>Remark</th>
     </tr></thead><tbody>`;
   
   records.forEach(r => {
@@ -5663,7 +5664,7 @@ function renderViFuel(vname){
       renderFuelTable(partial, vname, body);
       return;
     }
-    body.innerHTML = `<div class="vi-no-data">未找到 "${vname}" 的油耗参数数据<br><small style="color:#999">数据来源: vessels.csv</small></div>`;
+    body.innerHTML = `<div class="vi-no-data">Not found:  "${vname}"  fuel parameter data<br><small style="color:#999">Source: vessels.csv</small></div>`;
     return;
   }
   
@@ -5672,15 +5673,15 @@ function renderViFuel(vname){
 
 function renderFuelTable(rows, vname, body){
   // Group by speed ranges
-  let html = `<div style="margin-bottom:10px;"><strong style="color:#e65100;">${rows[0].name || vname}</strong> — 油耗参数表 (按航速)</div>`;
+  let html = `<div style="margin-bottom:10px;"><strong style="color:#e65100;">${rows[0].name || vname}</strong> — Fuel Parameters (by speed)</div>`;
   html += `<table class="vi-fuel-table">
     <thead><tr>
-      <th>速度 (节)</th>
-      <th>LSFO (MT/天)</th>
-      <th>HSFO (MT/天)</th>
-      <th>MGO (MT/天)</th>
-      <th>停泊 LSFO (MT/天)</th>
-      <th>停泊 MGO (MT/天)</th>
+      <th>Speed (kn)</th>
+      <th>LSFO (MT/day)</th>
+      <th>HSFO (MT/day)</th>
+      <th>MGO (MT/day)</th>
+      <th>PS LSFO (MT/day)</th>
+      <th>PS MGO (MT/day)</th>
     </tr></thead><tbody>`;
   
   rows.sort((a,b) => a.speed - b.speed);
@@ -5697,8 +5698,8 @@ function renderFuelTable(rows, vname, body){
   
   html += `</tbody></table>`;
   html += `<div style="margin-top:12px;padding:10px;background:#fff8e1;border-radius:8px;font-size:.78rem;color:#666;">
-    <strong>💡 提示：</strong>海上航行油耗根据实际航速从上表中插值计算。港口停泊使用停泊行数值。
-    完整的航次油耗估算请在「单船调度」Simulator 中查看。
+    <strong>Tip: </strong>Sailing fuel is interpolated from table above based on actual speed. Port stay uses PS row values.
+    Full voyage fuel estimate available in Simulator.
   </div>`;
   
   body.innerHTML = html;
@@ -5707,8 +5708,8 @@ function renderFuelTable(rows, vname, body){
 // Called when vessel selection changes in the modal
 function onViVesselChange(){
   const activeTab = document.querySelector('.vi-tab.active');
-  const tabName = activeTab ? (activeTab.textContent.includes('船舶参数') ? 'particular' : 
-                                activeTab.textContent.includes('装载能力') ? 'capacity' : 'fuel') : 'particular';
+  const tabName = activeTab ? (activeTab.textContent.includes('Particulars') ? 'particular' : 
+                                activeTab.textContent.includes('Capacity') ? 'capacity' : 'fuel') : 'particular';
   switchViTab(tabName, activeTab);
 }
 
@@ -5881,9 +5882,9 @@ function refreshVoyageWaits(){
     if(window.dailySelectedVessel){
       renderDailyDetail();
     }
-    showToast(`已刷新 ${count} 个港口的 Wait 时间`, 'success');
+    showToast(`Refreshed ${count} port Wait times`, 'success');
   } else {
-    showToast('没有需要刷新的 Wait 值（ports.csv 中 wait_time 都为 0）', 'warning');
+    showToast('No Wait values to refresh (all ports.csv wait_time are 0)', 'warning');
   }
 }
 
@@ -5891,7 +5892,7 @@ function refreshVoyageWaits(){
 function openLaneQuickAdd(){
   // Populate lane select
   const select = document.getElementById('lqaLaneSelect');
-  let options = '<option value="">-- 选择一条 Lane --</option>';
+  let options = '<option value="">-- Select a Lane --</option>';
   LANES_DATA.forEach(l => {
     options += `<option value="${l.code}">${l.code} - ${l.name}</option>`;
   });
@@ -5947,17 +5948,17 @@ function updateLaneQuickAddPreview(){
   
   let html = '';
   if(newPorts.length > 0){
-    html += '<div style="margin-bottom:8px;"><span style="color:#28a745;font-weight:600;">新增：</span> ';
+    html += '<div style="margin-bottom:8px;"><span style="color:#28a745;font-weight:600;">New: </span> ';
     html += newPorts.map(c => `<span style="display:inline-block;padding:2px 8px;background:#d4edda;color:#155724;border-radius:4px;font-size:.78rem;margin:2px;">${c}</span>`).join('');
     html += '</div>';
   }
   if(existingPorts.length > 0){
-    html += '<div><span style="color:#6c757d;font-weight:600;">已存在：</span> ';
+    html += '<div><span style="color:#6c757d;font-weight:600;">Existing: </span> ';
     html += existingPorts.map(c => `<span style="display:inline-block;padding:2px 8px;background:#e9ecef;color:#6c757d;border-radius:4px;font-size:.78rem;margin:2px;">${c}</span>`).join('');
     html += '</div>';
   }
   if(newPorts.length === 0 && existingPorts.length === 0){
-    html = '<div style="color:var(--muted);">该 Lane 没有港口配置</div>';
+    html = '<div style="color:var(--muted);">No port configuration for this lane</div>';
   }
   
   previewContent.innerHTML = html;
@@ -5967,8 +5968,8 @@ function updateLaneQuickAddPreview(){
   const hasExisting = existingPorts.length > 0;
   addBtn.disabled = !forceAdd && !hasNew;
   addBtn.textContent = forceAdd && hasExisting
-    ? `导入全部 ${rotation.length} 个 Ports（含 ${existingPorts.length} 个已存在）`
-    : hasNew ? `导入 ${newPorts.length} 个新 Port` : '导入 Ports';
+    ? `Import All ${rotation.length}  Ports (incl. ${existingPorts.length}  existing)`
+    : hasNew ? ` imported ${newPorts.length}  New Ports` : 'Import Ports';
 }
 
 async function executeLaneQuickAdd(){
@@ -6005,8 +6006,8 @@ async function executeLaneQuickAdd(){
     initPortCombobox();
     renderDmPorts(document.getElementById('dmPortSearch').value);
     const msg = skippedCount > 0
-      ? `已从 Lane "${laneCode}" 导入 ${addedCount} 个新 Port，跳过 ${skippedCount} 个已存在`
-      : `已从 Lane "${laneCode}" 导入 ${addedCount} 个新 Port`;
+      ? `From Lane "${laneCode}" imported ${addedCount}  New Ports, skipped ${skippedCount}  existing`
+      : `From Lane "${laneCode}" imported ${addedCount}  New Ports`;
     showToast(msg, 'success', 5000);
 
     // Also add new ports to the currently active voyage in Daily (if any)
@@ -6027,14 +6028,14 @@ async function executeLaneQuickAdd(){
         if(addedToVoy > 0){
           recalcDailyFromPort(vObj, voyIdx, 0);
           if(typeof refreshDailyLaneSelector === 'function') refreshDailyLaneSelector();
-          showToast(`已将 ${addedToVoy} 个新 Port 加入当前航次`, 'success', 3000);
+          showToast(`Added ${addedToVoy}  New Ports  added to current voyage`, 'success', 3000);
         }
       }
     }
 
     await fetchDistancesForNewPorts(newPortCodes);
   } else {
-    showToast('所有 Port 已存在，无需导入', 'info');
+    showToast('All ports already exist, nothing to import', 'info');
   }
   
   // Close modal only AFTER distance fetch is done
@@ -6064,11 +6065,11 @@ async function fetchDistancesForNewPorts(newPortCodes){
   });
 
   if(pairsToFetch.length === 0){
-    // DIST_MAP 里已有数据，同步到 voyage 里缺失的 dist
+    // DIST_MAP has data, sync missing dist to voyage
     syncDistancesToFleet();
     return;
   }
-  showToast(`正在查询 ${pairsToFetch.length} 条新航线距离，请稍候…`, 'info', 8000);
+  showToast(`Querying ${pairsToFetch.length}  new route distances, please wait…`, 'info', 8000);
 
   let fetched = 0;
   let failed = 0;
@@ -6085,7 +6086,7 @@ async function fetchDistancesForNewPorts(newPortCodes){
   }
 
   if(fetched > 0){
-    // 同步：dist 必须存在 port[i] 上（出发港）
+    // Sync: dist  must exist on  port[i]  (departure port)
     pairsToFetch.forEach(pair => {
       const k = distKey(pair.from, pair.to);
       const d = DIST_MAP[k];
@@ -6094,15 +6095,15 @@ async function fetchDistancesForNewPorts(newPortCodes){
       if(!v) return;
       const voy = v.voyages[pair.vi];
       if(!voy || !voy.ports) return;
-      voy.ports[pair.portIdx].dist = d; // 只写出发港，不写到达港
+      voy.ports[pair.portIdx].dist = d; // Write departure port only, skip arrival port
     });
     syncDistancesToFleet();
     const msg = failed > 0
-      ? `✓ 已获取 ${fetched} 条距离；${failed} 条查询失败：${failedPairs.join('、')}，请手动填写`
-      : `✓ 已获取 ${fetched} 条新航线距离并更新船期`;
+      ? `✓ Fetched  ${fetched}  distances; ${failed}  queries failed: ${failedPairs.join(', ')}, enter manually`
+      : `✓ Fetched  ${fetched}  new route distances and updated schedule`;
     showToast(msg, failed > 0 ? 'warning' : 'success', 6000);
   } else if(failed > 0){
-    showToast(`全部 ${failed} 条航线查询失败：${failedPairs.join('、')}，请在 Data Manager 中手动填写`, 'warning', 8000);
+    showToast(`All ${failed} routes failed: ${failedPairs.join(', ')}. Enter manually in Data Manager.`, 'warning', 8000);
   }
 }
 
@@ -6203,8 +6204,8 @@ function renderDmDists(filter=''){
     const hasFromTo = from && to;
     // Source badge
     let srcBadge = '';
-    if(src === 'auto') srcBadge = '<span class="dm-src-badge dm-src-auto" title="自动查询（searoute）">🔍 自动</span>';
-    else if(src === 'manual') srcBadge = '<span class="dm-src-badge dm-src-manual" title="人工输入">✏️ 人工</span>';
+    if(src === 'auto') srcBadge = '<span class="dm-src-badge dm-src-auto" title="Auto (searoute)">🔍 Auto</span>';
+    else if(src === 'manual') srcBadge = '<span class="dm-src-badge dm-src-manual" title="Manual input">✏️ Manual</span>';
     else srcBadge = '<span style="color:var(--muted);font-size:.7rem;">—</span>';
 
     html += `<tr>
@@ -6214,8 +6215,8 @@ function renderDmDists(filter=''){
       <td><input type="number" value="${dist}" min="0" step="1" onchange="editDmDist(${i},2,this.value)" style="width:85px"/></td>
       <td style="text-align:center">${srcBadge}</td>
       <td class="dm-actions-cell">
-        <button class="dm-btn dm-btn-sm" id="lookupBtn_${i}" onclick="lookupDistance(${i})" title="自动查询航行距离（searoute）" ${!hasFromTo?'disabled':''}>🔍</button>
-        <a class="dm-btn dm-btn-sm dm-btn-external" href="javascript:void(0)" onclick="openDiaodubao(${i})" title="在调度宝中查询实际航行距离" ${!hasFromTo?'style="opacity:.4;pointer-events:none"':''}>🚢</a>
+        <button class="dm-btn dm-btn-sm" id="lookupBtn_${i}" onclick="lookupDistance(${i})" title="Auto-query sailing distance (searoute)" ${!hasFromTo?'disabled':''}>🔍</button>
+        <a class="dm-btn dm-btn-sm dm-btn-external" href="javascript:void(0)" onclick="openDiaodubao(${i})" title="Check actual sailing distance in Diaodubao" ${!hasFromTo?'style="opacity:.4;pointer-events:none"':''}>🚢</a>
         <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmDist(${i})">✕</button>
       </td>
     </tr>`;
@@ -6232,17 +6233,17 @@ function editDmDist(i,col,val){
   DIST_RAW[i][col] = val;
   buildDistMap();
   if(col<=1){
-    // 港口代码变化后重新渲染，以更新🔍和🚢按钮的启用/禁用状态
+    // Re-render to update 🔍 and 🚢 button states when port code changes
     const filter = document.getElementById('dmDistSearch').value;
     renderDmDists(filter);
-    // 重新聚焦到对应输入框
+    // Re-focus on corresponding input
     requestAnimationFrame(()=>{
       const tbody = document.getElementById('dmDistBody');
       const row = tbody && tbody.rows[i];
       if(row) (col===0?row.cells[1]:row.cells[2]).querySelector('input').focus();
     });
   } else if(col===2){
-    // 距离值手动编辑后刷新 source badge
+    // Refresh after manual distance edit source badge
     const filter = document.getElementById('dmDistSearch').value;
     renderDmDists(filter);
   }
@@ -6357,7 +6358,7 @@ function closeBulkImportLanes(){
 function executeBulkImportLanes(){
   const input = document.getElementById('bulkLanesInput').value.trim();
   if(!input){
-    showToast('请输入 Lane 数据', 'warning');
+    showToast('Enter Lane data', 'warning');
     return;
   }
   
@@ -6397,14 +6398,14 @@ function executeBulkImportLanes(){
   closeBulkImportLanes();
   
   if(added > 0){
-    showToast(`已导入 ${added} 个新 Lane${skipped > 0 ? '，跳过 ' + skipped + ' 个已存在' : ''}`, 'success');
+    showToast(` imported ${added}  new  Lane${skipped > 0 ? ', skipped ' + skipped + '  existing' : ''}`, 'success');
   } else {
-    showToast('所有 Lane 已存在，无需导入', 'info');
+    showToast('All lanes already exist, nothing to import', 'info');
   }
 }
 
 // ========== DIAODUBAO LINK ==========
-// 调度宝 URL base - opens diaodubao for manual distance lookup
+// Diaodubao URL base - opens diaodubao for manual distance lookup
 const DIAODUBAO_URL = 'https://www.myvessel.cn';
 
 function openDiaodubao(rowIdx){
@@ -6420,7 +6421,7 @@ function openDiaodubao(rowIdx){
   const searchHint = encodeURIComponent(fromCode + (fromName ? ' ' + fromName : '') + ' to ' + toCode + (toName ? ' ' + toName : ''));
   const url = 'https://www.myvessel.cn';
   window.open(url, '_blank');
-  showToast('请在调度宝中搜索: ' + fromCode + ' → ' + toCode + '，然后手动填入距离');
+  showToast('Search in Diaodubao: ' + fromCode + ' → ' + toCode + ', then enter distance');
 }
 
 // Auto-fill missing distances via searoute service before generating schedule
@@ -6587,8 +6588,8 @@ async function fetchSearouteDistance(fromCode, toCode){
     const c1 = await lookupPortCoords(fromCode);
     const c2 = await lookupPortCoords(toCode);
 
-    if(!c1) return {error: '未找到港口坐标: ' + fromCode};
-    if(!c2) return {error: '未找到港口坐标: ' + toCode};
+    if(!c1) return {error: 'Not found:  port coordinates: : ' + fromCode};
+    if(!c2) return {error: 'Not found:  port coordinates: : ' + toCode};
 
     // Try actual sea route calculation (Dijkstra on marnet network)
     const routeResult = await calcSearoute(c1.lng, c1.lat, c2.lng, c2.lat);
@@ -6606,10 +6607,10 @@ async function fetchSearouteDistance(fromCode, toCode){
     }
 
     // Searoute failed — do NOT estimate, require manual input
-    return {error: 'searoute 无法计算该航线距离，请在 Data Manager 中手动填写'};
+    return {error: 'searoute cannot calculate this route. Enter in Data Manager manually.'};
   } catch(err){
     console.warn('Distance lookup failed:', err);
-    return {error: '距离查询失败（' + err.message + '），请手动填写 Dist 列'};
+    return {error: 'Distance query failed (' + err.message + '）, enter manually Dist  column'};
   }
 }
 
@@ -6631,9 +6632,9 @@ async function lookupDistance(rowIdx){
     DIST_RAW[rowIdx][3] = 'auto';  // Mark as auto-queried
     buildDistMap();
     renderDmDists(document.getElementById('dmDistSearch').value);
-    showToast(fromCode + ' → ' + toCode + ': ' + result.distance + ' NM（航行距离）', 'success');
+    showToast(fromCode + ' → ' + toCode + ': ' + result.distance + ' NM (sailing distance)', 'success');
   } else {
-    showToast('查询失败: ' + result.error + ' — 请手动输入', 'warning');
+    showToast('Query failed:  ' + result.error + ' — enter manually', 'warning');
   }
   if(btn){ btn.disabled = false; btn.textContent = '🔍'; }
 }
@@ -6821,7 +6822,7 @@ const GH_REPO_API = 'https://api.github.com/repos/LeahLiuL/Schedule-Simulation/c
 const GH_TOKEN_KEY = 'gh_pat_token';
 
 // ========== DATA SOURCE MODE ==========
-// 'local' = P盘 (data_server.py), 'github' = GitHub API
+// 'local' = PLocal (data_server.py), 'github' = GitHub API
 const DATA_MODE_KEY = 'data_source_mode';
 function getDataSourceMode(){
   return localStorage.getItem(DATA_MODE_KEY) || 'local';
@@ -6841,7 +6842,7 @@ function toggleDataSource(){
   const current = getDataSourceMode();
   const next = current === 'local' ? 'github' : 'local';
   setDataSourceMode(next);
-  showToast('数据源已切换为: ' + (next === 'local' ? 'P盘 (本地)' : 'GitHub'), 'success');
+  showToast('Data source switched to:  ' + (next === 'local' ? 'Local (P drive)' : 'GitHub'), 'success');
   // Reload current page to refresh data
   window.location.reload();
 }
@@ -6981,13 +6982,13 @@ const GHQ = {
     if(!q.length) return;
     const token = getGhToken();
     if(!token) return;
-    showToast('🔄 正在后台同步 ' + q.length + ' 个文件到 GitHub...', 'info');
+    showToast('🔄 Syncing in background:  ' + q.length + '  files to  GitHub...', 'info');
     let ok = 0;
     for(const item of q){
       const r = await this._pushOne(token, item.type, item.content);
       if(r) { this.remove(item.type); ok++; }
     }
-    if(ok>0) showToast('✓ 后台同步完成：' + ok + ' 个文件已上传', 'success');
+    if(ok>0) showToast('✓ Background sync done: ' + ok + ' files uploaded', 'success');
   },
   async _pushOne(token, type, content) {
     const filename = type === 'fleet' ? 'fleet_schedule.json' : csvFilename(type);
@@ -7031,15 +7032,15 @@ async function commitToGitHub(type){
   btns.forEach(b=>b.classList.add('loading'));
 
   try {
-    // STEP 1: Always save to local P盘 first
-    setCommitStatus('Saving to Local (P盘)...');
+    // STEP 1: Always save to local PLocal first
+    setCommitStatus('Saving to Local (PLocal)...');
     const localResp = await fetch('/data/' + filename, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: content
     });
     if(localResp.ok){
-      console.log('Saved to P盘: ' + filename);
+      console.log('Saved to PLocal: ' + filename);
     }
     saveLocalCSV(type, content);
 
@@ -7085,18 +7086,18 @@ async function commitToGitHub(type){
       if(putResp.ok){
         const result = await putResp.json();
         ghSuccess = true;
-        setCommitStatus('✓ Saved: P盘 + GitHub (' + result.commit.sha.slice(0,7) + ')');
-        showToast(filename + ' ✓ 已保存: P盘 + GitHub', 'success');
+        setCommitStatus('✓ Saved: PLocal + GitHub (' + result.commit.sha.slice(0,7) + ')');
+        showToast(filename + ' Saved:  PLocal + GitHub', 'success');
       } else {
         const errText = await putResp.text();
-        setCommitStatus('⚠ GitHub 失败，已保存本地，后台自动重试');
+        setCommitStatus('GitHub failed, saved locally, auto-retrying');
         GHQ.add(type, content);
-        showToast(filename + ' ⚠ GitHub 提交失败，已保存到 P盘 + 本地队列\n将在下次打开页面时自动重试上传', 'warning');
+        showToast(filename + ' GitHub commit failed. Saved locally, auto-retry on next load.', 'warning');
         console.warn('GitHub PUT failed (' + putResp.status + '): ' + errText);
       }
     } else {
-      setCommitStatus('✓ Saved to P盘');
-      showToast(filename + ' ✓ 已保存: P盘', 'success');
+      setCommitStatus('Saved to Local');
+      showToast(filename + ' Saved:  PLocal', 'success');
     }
 
     // Reload data from GitHub to update in-memory state
@@ -7148,7 +7149,7 @@ async function syncDistancesToFleet(){
     if(detailEl && detailEl.querySelector('.daily-detail-body')){
       renderDailyDetail();
     }
-    showToast('✓ 已同步 ' + updated + ' 条距离到 Fleet 调度，日期已重算', 'success');
+    showToast('Synced ' + updated + ' distances to Fleet, dates recalculated', 'success');
   }
 }
 
@@ -7161,7 +7162,7 @@ async function commitAllToGitHub(){
 
   btnAll.classList.add('loading');
 
-  // STEP 1: Save all files to local P盘
+  // STEP 1: Save all files to local PLocal
   setCommitStatus('Saving to Local...');
   for(const type of types){
     const filename = csvFilename(type);
@@ -7175,7 +7176,7 @@ async function commitAllToGitHub(){
       if(localResp.ok){
         localOk++;
         saveLocalCSV(type, content);
-        console.log('Saved to P盘: ' + filename);
+        console.log('Saved to PLocal: ' + filename);
       }
     } catch(err){
       console.error('Local save error for ' + filename + ':', err);
@@ -7197,14 +7198,14 @@ async function commitAllToGitHub(){
         });
 
         if(getResp.status === 401){
-          showToast('⚠️ GitHub Token 已失效，请重新设置！', 'warning');
-          setCommitStatus('✗ Token 已失效');
+          showToast('GitHub Token expired, please reset!', 'warning');
+          setCommitStatus('Token expired');
           openTokenSetup();
           break;
         }
         if(getResp.status === 403){
-          showToast('⚠️ GitHub Token 无写入权限！', 'warning');
-          setCommitStatus('✗ 权限不足');
+          showToast('⚠️ GitHub Token  lacks write permission!', 'warning');
+          setCommitStatus('Insufficient permissions');
           openTokenSetup();
           break;
         }
@@ -7246,13 +7247,13 @@ async function commitAllToGitHub(){
   btnAll.classList.remove('loading');
   if(fail === 0 && ghOk > 0){
     setCommitStatus('✓ ' + localOk + ' saved, ' + ghOk + ' → GitHub');
-    showToast('✓ 已保存: ' + localOk + ' 个文件到 P盘 + ' + ghOk + ' 个到 GitHub', 'success');
+    showToast('Saved:  ' + localOk + '  files to  PLocal + ' + ghOk + '  to  GitHub', 'success');
   } else if(fail === 0){
-    setCommitStatus('✓ ' + localOk + ' files saved to P盘');
-    showToast('✓ 已保存: ' + localOk + ' 个文件到 P盘', 'success');
+    setCommitStatus('✓ ' + localOk + ' files saved to PLocal');
+    showToast('Saved:  ' + localOk + '  files to  PLocal', 'success');
   } else {
     setCommitStatus('⚠ ' + localOk + ' ok, ' + fail + ' failed');
-    showToast('部分保存失败: ' + localOk + ' 成功, ' + fail + ' 失败。\n数据已保存在 P盘。下次网络好时重新点「⬆ Commit All」即可重试。', 'warning');
+    showToast('Partial save: ' + localOk + ' OK, ' + fail + ' failed. Data in Local. Click Commit All later.', 'warning');
   }
 
   // Reload all data only if all GitHub commits succeeded
@@ -7571,7 +7572,7 @@ function populateLaneFilter(){
 // Force reload fleet data from GitHub (clears localStorage cache)
 async function forceReloadFleet(){
   try {
-    showToast('正在从 GitHub 加载...', 'info');
+    showToast('Loading from GitHub...', 'info');
     // Reload from GitHub API first
     await loadFleetSchedule();
     // Only clear cache AFTER successful load
@@ -7581,9 +7582,9 @@ async function forceReloadFleet(){
     autoSaveFleet();
     renderDailyFleet();
     renderDailyDetail();
-    showToast('✓ 已从 GitHub 加载最新数据', 'success');
+    showToast('Latest data loaded from GitHub', 'success');
   } catch(e) {
-    showToast('刷新失败: ' + e.message, 'error');
+    showToast('Refresh failed:  ' + e.message, 'error');
     console.error('forceReloadFleet error:', e);
   }
 }
@@ -7611,7 +7612,7 @@ async function loadFleetSchedule(){
           if(remoteData && remoteData.vessels){
             fixFleetDatetimeFormat(remoteData);
             FLEET_DATA = remoteData;
-            console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from Local (P盘)');
+            console.log('Loaded ' + remoteData.vessels.length + ' vessel(s) from Local (PLocal)');
           }
         } else {
           console.warn('Local fetch failed (' + resp.status + '), falling back to GitHub');
@@ -7771,7 +7772,7 @@ function openLinkVoyagesModal(vesselCode, e){
   });
 
   if(!voyages.length){
-    html = '<div style="text-align:center;color:var(--muted);padding:20px;">该船暂无航次</div>';
+    html = '<div style="text-align:center;color:var(--muted);padding:20px;">No voyages for this vessel</div>';
   }
 
   container.innerHTML = html;
@@ -7803,12 +7804,12 @@ function saveLinkedVoyages(){
   if(indices.length <= 1){
     // No need for a group with only 1 voyage
     delete linkedVoyageGroups[_linkModalVesselCode];
-    showToast('需要选择至少2个航次才能链接', 'warning');
+    showToast('Need at least 2 voyages to link', 'warning');
   } else {
     // Sort by index
     indices.sort(function(a, b){ return a - b; });
     linkedVoyageGroups[_linkModalVesselCode] = [indices];
-    showToast('✓ 已链接 ' + indices.length + ' 个航次', 'success');
+    showToast('Linked ' + indices.length + '  voyages', 'success');
 
     // Trigger cascade from the first voyage — recalcCrossVoyageCascade handles dist calculation internally
     const vessel = FLEET_DATA.vessels.find(v => v.code === _linkModalVesselCode);
@@ -7832,14 +7833,14 @@ function saveLinkedVoyages(){
 
 function clearLinkedVoyages(){
   if(!_linkModalVesselCode) return;
-  if(!confirm('确定清除该船的所有航次链接？')) return;
+  if(!confirm('Clear all voyage links for this vessel?')) return;
   delete linkedVoyageGroups[_linkModalVesselCode];
   saveLinkedGroups();
   continuousViewActive = false;
   closeLinkVoyagesModal();
   renderDailyFleet();
   renderDailyDetail();
-  showToast('已清除航次链接', 'success');
+  showToast('Voyage links cleared', 'success');
 }
 
 function toggleContinuousView(){
@@ -7848,7 +7849,7 @@ function toggleContinuousView(){
     const group = getLinkedGroup(dailySelectedVessel.code, dailySelectedVessel.voyIdx);
     if(!group || group.length <= 1){
       continuousViewActive = false;
-      showToast('当前航次未链接其他航次，请先在左侧卡片点击🔗配置链接', 'warning');
+      showToast('Current voyage not linked. Click 🔗 in left panel to configure.', 'warning');
       return;
     }
   }
@@ -7903,7 +7904,7 @@ function getCrossVoyageInfo(vessel, prevVoyIdx, nextVoyIdx){
       } else if(result.gapHrs === 0){
         result.gapText = '0h';
       } else {
-        result.gapText = '⚠️ 时间冲突';
+        result.gapText = '⚠️ Time conflict';
       }
     }
   }
@@ -7936,7 +7937,7 @@ function applyCrossVoyageDist(vesselCode, prevVoyIdx, nextVoyIdx, dist){
   autoSaveFleet();
   renderDailyDetail();
   updateUndoRedoButtons();
-  showToast('✓ 已设置跨航次距离: ' + dist + ' nm，已级联更新后续航次时间', 'success');
+  showToast('Cross-voyage distance: ' + dist + ' nm, downstream updated', 'success');
 }
 
 // ===== Cross-voyage cascade recalculation =====
@@ -8009,7 +8010,7 @@ function recalcCrossVoyageCascade(vessel, voyIdx, lastAffectedPortIdx){
   if(firstPort.fromExcel && firstPort.eta){
     const impEtaDt = new Date(firstPort.eta);
     if(!isNaN(impEtaDt.getTime())){
-      // seaHrs = ETA - ETD（纯航行时间）
+      // seaHrs = ETA - ETD (pure sailing time)
       const seaHrs2 = (impEtaDt.getTime() - prevEtdDt.getTime()) / 3600000;
       if(seaHrs2 > 0 && lastPort.dist > 0){
         firstPort.speed = +(lastPort.dist / seaHrs2).toFixed(2);
@@ -8203,7 +8204,7 @@ function renderDailyFleet(){
         (voy.lane||'').toUpperCase().includes(qf)
       )) return true;
 
-      // 2. Compound: vessel code + voyageNo拼接匹配
+      // 2. Compound: vessel code + voyageNo concatenated match
       // e.g. query "CUBK2601W" → vessel "CUBK" + voyageNo "2601W"
       const vc = v.code.toUpperCase();
       if(qf.startsWith(vc)){
@@ -8270,7 +8271,7 @@ function renderDailyFleet(){
     if(totalVessels === 0){
       container.innerHTML = '<div class="daily-empty"><div class="icon">📭</div><div>No fleet data yet.<br/>Use <b>+ New Voyage</b> to create one, or <b>📤 Import</b> to import from Excel.</div></div>';
     } else if(dailyTimeRangeFilter !== 'all'){
-      container.innerHTML = '<div class="daily-empty"><div class="icon">📅</div><div>当前时间范围内无船期数据。<br/><span style="font-size:.75rem;color:var(--muted);">点击 <b>全部</b> 查看所有 ' + totalVessels + ' 艘船的历史数据。</span></div></div>';
+      container.innerHTML = '<div class="daily-empty"><div class="icon">📅</div><div>No schedule data in the current time range.<br/><span style="font-size:.75rem;color:var(--muted);">Click <b>All</b> to view all ' + totalVessels + ' vessels.</span></div></div>';
     } else {
       container.innerHTML = '<div class="daily-empty"><div class="icon">🔍</div><div>No matching vessels for current filters.<br/><span style="font-size:.75rem;color:var(--muted);">Try clearing filters (click ✕ in search box) — ' + totalVessels + ' voyage(s) in total.</span></div></div>';
     }
@@ -8306,7 +8307,7 @@ function renderDailyFleet(){
         <span class="vessel-arrow">${arrow}</span>
         <span class="vc-code">${esc(v.code)}</span>
         <span style="font-size:.78rem;color:var(--muted);margin-left:6px;">${esc(v.name)}</span>
-        <span class="voy-count">(${voyCount}航次)</span>
+        <span class="voy-count">(${voyCount} voyages)</span>
       </div>
       <div class="vessel-group-content${isCollapsed ? ' collapsed' : ''}">
     `;
@@ -8334,14 +8335,14 @@ function renderDailyFleet(){
             <span style="font-size:.75rem;font-weight:600;color:var(--primary);">${esc(voy.voyNo||'—')}</span>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
-            <button class="daily-link-btn${thisVoyInGroup?' linked':''}" onclick="openLinkVoyagesModal('${esc(v.code)}',event)" title="🔗 链接航次（连续视图配置）">🔗</button>
+            <button class="daily-link-btn${thisVoyInGroup?' linked':''}" onclick="openLinkVoyagesModal('${esc(v.code)}',event)" title="🔗 Link Voyages (Continuous View config)">🔗</button>
             <input type="checkbox" ${isChecked?'checked':''} onclick="event.stopPropagation();toggleDailyCheck('${esc(v.code)}',${voy._vIdx},this.checked)" title="Select for export"/>
             <span class="vc-lane">${esc(voy.lane||'—')}</span>
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px;">
           <span class="vc-status ${statusCls}">${statusText}</span>
-          ${thisVoyInGroup && thisVoyInGroup.length > 1 ? '<span class="cv-badge">🔗已链接</span>' : ''}
+          ${thisVoyInGroup && thisVoyInGroup.length > 1 ? '<span class="cv-badge">🔗Linked</span>' : ''}
         </div>
         <div class="vc-summary">${esc(summaryShort)}</div>
       </div>`;
@@ -8425,9 +8426,9 @@ function renderDailyDetail(){
   ).join('');
 
   // Continuous view toggle button
-  const cvBtnLabel = showContinuous ? '🔗 连续视图 (ON)' : '🔗 连续视图';
+  const cvBtnLabel = showContinuous ? 'Continuous View (ON)' : 'Continuous View';
   const cvBtnCls = showContinuous ? 'dm-btn dm-btn-primary cv-active' : 'dm-btn';
-  const cvBtnDisabled = (!linkedGroup || linkedGroup.length <= 1) ? ' disabled title="请先在左侧卡片配置航次链接"' : '';
+  const cvBtnDisabled = (!linkedGroup || linkedGroup.length <= 1) ? ' disabled title="Configure voyage links in left panel"' : '';
 
   // Build ports HTML
   let portsHtml = '';
@@ -8435,7 +8436,7 @@ function renderDailyDetail(){
   const addPortRow = `
     <div class="daily-add-port-bar">
       <div class="combobox-wrap" style="position:relative;flex:1;max-width:200px;">
-        <input type="text" id="dailyAddPortInput" placeholder="输入港口代码或名称" autocomplete="off"
+        <input type="text" id="dailyAddPortInput" placeholder="Enter port code or name" autocomplete="off"
           oninput="dailyPortSearch(this.value,'${vessel.code}',${curIdx})"
           onblur="setTimeout(()=>document.getElementById('dailyAddPortDropdown').style.display='none',200)"
           onkeydown="if(event.key==='Enter')dailyAddPortConfirm('${vessel.code}',${curIdx})"/>
@@ -8491,15 +8492,15 @@ function renderDailyDetail(){
               '<div class="cv-transition-info cv-trans-suggest">' +
                 '<span class="cv-trans-route">🚢 ' + esc(fromLabel) + ' → ' + esc(toLabel) + '</span>' +
                 '<span class="cv-trans-stat">⏱ ' + cvInfo.gapText + '</span>' +
-                '<span class="cv-trans-stat cv-trans-hint">💡 建议 ' + cvInfo.suggestedDist + ' nm / ' + cvInfo.suggestedSeaHrs.toFixed(1) + 'h</span>' +
-                '<button class="dm-btn dm-btn-primary" style="padding:2px 10px;font-size:.72rem;margin-left:8px;" onclick="applyCrossVoyageDist(\'' + vessel.code + '\',' + prevVoyIdx + ',' + voyIdx + ',' + cvInfo.suggestedDist + ')">应用</button>' +
+                '<span class="cv-trans-stat cv-trans-hint">Suggested  ' + cvInfo.suggestedDist + ' nm / ' + cvInfo.suggestedSeaHrs.toFixed(1) + 'h</span>' +
+                '<button class="dm-btn dm-btn-primary" style="padding:2px 10px;font-size:.72rem;margin-left:8px;" onclick="applyCrossVoyageDist(\'' + vessel.code + '\',' + prevVoyIdx + ',' + voyIdx + ',' + cvInfo.suggestedDist + ')">Apply</button>' +
               '</div>';
           } else {
             // No data at all
             transitionHtml =
               '<div class="cv-transition-info cv-trans-suggest">' +
                 '<span class="cv-trans-route">🚢 ' + esc(fromLabel) + ' → ' + esc(toLabel) + '</span>' +
-                '<span class="cv-trans-stat cv-trans-hint">⚠️ 跨航次距离未设置，请在前航次末港填写 Dist(nm)</span>' +
+                '<span class="cv-trans-stat cv-trans-hint">Cross-voyage distance not set. Enter Dist(nm) at last port of preceding voyage.</span>' +
               '</div>';
           }
         }
@@ -8530,20 +8531,20 @@ function renderDailyDetail(){
           DAILY_COLUMNS.forEach(function(c){
             if(isDailyColHidden(c.key)) return;
             switch(c.key){
-              case 'drag': portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.85rem;cursor:grab;" title="拖拽排序">⠿</td>'; break;
+              case 'drag': portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.85rem;cursor:grab;" title="Drag to reorder">⠿</td>'; break;
               case 'num':  portsHtml += '<td>' + globalPortNum + '</td>'; break;
               case 'port': portsHtml += '<td class="port-code">' + esc(p.code) + '<br/><span style="font-size:.7rem;color:var(--muted);font-weight:400;">' + esc(portDisplay) + '</span></td>'; break;
               case 'manIn': portsHtml += '<td><input type="number" value="' + (p.manIn != null ? p.manIn : getPortManIn(p.code)) + '" min="0" step="0.5" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'manIn\',this.value)"/></td>'; break;
               case 'wait': portsHtml += '<td><input type="number" value="' + (p.waitHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'waitHrs\',this.value)"/></td>'; break;
-              case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="此港口所属航次号" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
+              case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="Voyage number for this port" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
               case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.eta) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
               case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.etb) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
               case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.etd) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
               case 'stay': portsHtml += '<td><input type="number" value="' + (p.stayHrs != null ? p.stayHrs : getPortStay(p.code)) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'stayHrs\',this.value)"/></td>'; break;
-              case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="航速（节）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
-              case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="海上航行时间">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
-              case 'dist': portsHtml += '<td><input type="number" value="' + (p.dist||0) + '" min="0" step="1" style="width:64px;" title="到下一港距离（海里）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'dist\',this.value)"/></td>'; break;
-              case 'del':  portsHtml += '<td><button class="dm-btn" style="padding:2px 8px;font-size:.72rem;background:#e74c3c;color:#fff;border:none;" title="删除此港口" onclick="deleteDailyPort(\'' + vessel.code + '\',' + voyIdx + ',' + i + ')">✕</button></td>'; break;
+              case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="Speed (knots)" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
+              case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="Sea passage time">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
+              case 'dist': portsHtml += '<td><input type="number" value="' + (p.dist||0) + '" min="0" step="1" style="width:64px;" title="Distance to next port (nm)" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + voyIdx + ',' + i + ',\'dist\',this.value)"/></td>'; break;
+              case 'del':  portsHtml += '<td><button class="dm-btn" style="padding:2px 8px;font-size:.72rem;background:#e74c3c;color:#fff;border:none;" title="Delete this port" onclick="deleteDailyPort(\'' + vessel.code + '\',' + voyIdx + ',' + i + ')">✕</button></td>'; break;
             }
           });
           portsHtml += '</tr>';
@@ -8599,20 +8600,20 @@ function renderDailyDetail(){
         DAILY_COLUMNS.forEach(function(c){
           if(isDailyColHidden(c.key)) return;
           switch(c.key){
-            case 'drag': portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.85rem;cursor:grab;" title="拖拽排序">⠿</td>'; break;
+            case 'drag': portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.85rem;cursor:grab;" title="Drag to reorder">⠿</td>'; break;
             case 'num':  portsHtml += '<td>' + (i+1) + '</td>'; break;
             case 'port': portsHtml += '<td class="port-code">' + esc(p.code) + '<br/><span style="font-size:.7rem;color:var(--muted);font-weight:400;">' + esc(portDisplay) + '</span></td>'; break;
             case 'manIn': portsHtml += '<td><input type="number" value="' + (p.manIn||0) + '" min="0" step="0.5" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'manIn\',this.value)"/></td>'; break;
             case 'wait': portsHtml += '<td><input type="number" value="' + (p.waitHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'waitHrs\',this.value)"/></td>'; break;
-            case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="此港口所属航次号，修改后 commit 生效" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
+            case 'voyNo': portsHtml += '<td><input type="text" value="' + esc(portVoyNo) + '" style="width:72px;text-transform:uppercase;font-size:.78rem;" title="Voyage number for this port (takes effect after commit)" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'voyNo\',this.value)"/></td>'; break;
             case 'eta':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.eta) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'eta\',this.value)"/></td>'; break;
             case 'etb':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.etb) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'etb\',this.value)"/></td>'; break;
             case 'etd':  portsHtml += '<td><input type="datetime-local" value="' + fmtDtLocal(p.etd) + '" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'etd\',this.value)"/></td>'; break;
             case 'stay': portsHtml += '<td><input type="number" value="' + (p.stayHrs||0) + '" min="0" step="1" style="width:52px;" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'stayHrs\',this.value)"/></td>'; break;
-            case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="本港出发到下一港的航速（节）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
-            case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="海上航行时间 = 距离 ÷ 速度">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
-            case 'dist': portsHtml += '<td><input type="number" value="' + (p.dist||0) + '" min="0" step="1" style="width:64px;" title="到下一港距离（海里）" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'dist\',this.value)"/></td>'; break;
-            case 'del':  portsHtml += '<td><button class="dm-btn" style="padding:2px 8px;font-size:.72rem;background:#e74c3c;color:#fff;border:none;" title="删除此港口" onclick="deleteDailyPort(\'' + vessel.code + '\',' + curIdx + ',' + i + ')">✕</button></td>'; break;
+            case 'speed': portsHtml += '<td><input type="number" value="' + rowSpeed + '" min="1" max="30" step="0.5" style="width:58px;" title="Speed to next port (knots)" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'speed\',this.value)"/></td>'; break;
+            case 'sea':  portsHtml += '<td style="text-align:center;color:var(--muted);font-size:.82rem;width:52px;" title="Sea passage time = Dist / Speed">' + (seaHrs > 0 ? seaHrs.toFixed(1) : '—') + '</td>'; break;
+            case 'dist': portsHtml += '<td><input type="number" value="' + (p.dist||0) + '" min="0" step="1" style="width:64px;" title="Distance to next port (nm)" onchange="onDailyPortEdit(\'' + vessel.code + '\',' + curIdx + ',' + i + ',\'dist\',this.value)"/></td>'; break;
+            case 'del':  portsHtml += '<td><button class="dm-btn" style="padding:2px 8px;font-size:.72rem;background:#e74c3c;color:#fff;border:none;" title="Delete this port" onclick="deleteDailyPort(\'' + vessel.code + '\',' + curIdx + ',' + i + ')">✕</button></td>'; break;
           }
         });
         portsHtml += '</tr>';
@@ -8622,8 +8623,8 @@ function renderDailyDetail(){
     } else {
       portsHtml = `<div class="daily-empty-ports">
         <div style="font-size:2rem;margin-bottom:8px;">⚓</div>
-        <div style="font-weight:600;color:var(--primary);margin-bottom:4px;">此航次暂无港口数据</div>
-        <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px;">可在下方搜索并添加港口，建立完整的靠泊计划</div>
+        <div style="font-weight:600;color:var(--primary);margin-bottom:4px;">No port data for this voyage</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px;">Search and add ports below to build complete berthing plan</div>
         ${addPortRow}
       </div>`;
     }
@@ -8662,10 +8663,10 @@ function renderDailyDetail(){
       <button class="${cvBtnCls}" onclick="toggleContinuousView()" ${cvBtnDisabled}>${cvBtnLabel}</button>
       <button class="dm-btn dm-btn-undo" id="undoBtn" onclick="undoDailyEdit()" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
       <button class="dm-btn dm-btn-redo" id="redoBtn" onclick="redoDailyEdit()" title="Redo (Ctrl+Y)" disabled>↪ Redo</button>
-      <button class="dm-btn" onclick="archiveCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;background:#198754;color:#fff;" ${curVoy&&curVoy.status==='completed'?'disabled':''} title="标记当前航次为已完成">✅ Complete</button>
-      <button class="dm-btn" onclick="deleteCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;background:#e74c3c;color:#fff;" title="删除此航次">🗑 Delete</button>
+      <button class="dm-btn" onclick="archiveCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;background:#198754;color:#fff;" ${curVoy&&curVoy.status==='completed'?'disabled':''} title="Mark current voyage as completed">✅ Complete</button>
+      <button class="dm-btn" onclick="deleteCurrentVoyage('${vessel.code}',${curIdx})" style="font-size:.72rem;padding:3px 8px;background:#e74c3c;color:#fff;" title="Delete this voyage">🗑 Delete</button>
       <div style="position:relative;display:inline-block;">
-        <button class="dm-btn" onclick="toggleColVisDropdown()" title="显示/隐藏列">☰ 列</button>
+        <button class="dm-btn" onclick="toggleColVisDropdown()" title="Show/Hide Columns">☰ Columns</button>
         <div id="colVisDropdown" style="display:none;position:absolute;top:100%;right:0;z-index:100;background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 0;min-width:140px;box-shadow:0 4px 12px rgba(0,0,0,.15);">
           ${DAILY_COLUMNS.filter(c => c.hideable).map(c =>
             '<label style="display:flex;align-items:center;gap:6px;padding:4px 12px;font-size:.78rem;cursor:pointer;white-space:nowrap;">' +
@@ -8678,7 +8679,7 @@ function renderDailyDetail(){
     <div class="daily-detail-footer">
       <span class="commit-status" id="dailyCommitStatus">${FLEET_DATA.lastSync?'Last sync: '+new Date(FLEET_DATA.lastSync).toLocaleString('zh-CN'):'Not synced yet'}</span>
       <div style="display:flex;gap:6px;">
-        <button class="dm-btn" onclick="forceReloadFleet()" title="从 GitHub 强制刷新最新数据" style="background:#6f42c1;color:#fff;">🔄 刷新</button>
+        <button class="dm-btn" onclick="forceReloadFleet()" title="Force reload latest data from GitHub" style="background:#6f42c1;color:#fff;">🔄 Refresh</button>
         <button class="dm-btn dm-btn-commit" onclick="commitFleetSchedule()">⬆ Commit</button>
       </div>
     </div>`;
@@ -8702,12 +8703,12 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
     port[field] = value;
   }
 
-  // ===== 级联重算后续日期 =====
+  // ===== Cascaded Recalc of Downstream Dates =====
   const ports = vessel.voyages[voyIdx].ports;
   const speed = getDailySpeed(vessel, voyIdx);
 
   if(field === 'eta'){
-    // 修改了本港 ETA → 计算/重算 ETB/ETD，以及重算后续
+    // ETA changed -> calc/recalc ETB/ETD, then cascade downstream
     if(port.eta){
       const etaDt = new Date(port.eta);
       if(!isNaN(etaDt.getTime())){
@@ -8720,27 +8721,27 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
         round6Min(etdDt);
         port.etb = toDatetimeLocal(etbDt);
         port.etd = toDatetimeLocal(etdDt);
-        // 级联推算后续
+        // Cascade downstream
         recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
       }
     }
   } else if(field === 'etb'){
-    // 修改了 ETB → 只更新ETB，不要覆盖waitHrs和stayHrs（保持手工设定的值不变）
+    // ETB changed -> update ETB only, preserve waitHrs and stayHrs
     if(port.etb){
       const etbDt = new Date(port.etb);
       if(!isNaN(etbDt.getTime())){
-        // 级联推算后续
+        // Cascade downstream
         recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
       }
     }
   } else if(field === 'etd'){
-    // 修改了 ETD → 只更新ETD，不要覆盖stayHrs（保持手工设定的值不变）
+    // ETD changed -> update ETD only, preserve stayHrs
     if(port.etd && port.etb){
-      // 级联推算后续
+      // Cascade downstream
       recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
     }
   } else if(field === 'stayHrs'){
-    // 修改了 Stay → 重算本港 ETD，以及后续
+    // Stay changed -> recalc local ETD, then cascade
     if(port.etb){
       const etbDt = new Date(port.etb);
       if(!isNaN(etbDt.getTime())){
@@ -8751,7 +8752,7 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
       }
     }
   } else if(field === 'manIn' || field === 'waitHrs'){
-    // 修改了 ManIn 或 Wait → 重算本港 ETB/ETD，以及后续
+    // ManIn or Wait changed -> recalc local ETB/ETD, then cascade
     if(port.eta){
       const etaDt = new Date(port.eta);
       if(!isNaN(etaDt.getTime())){
@@ -8768,10 +8769,10 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
       }
     }
   } else if(field === 'dist'){
-    // 修改了本港 dist（到下一港的距离）→ 级联推算下一港起的日期
+    // Dist (to next port) changed -> cascade from next port
     recalcDailyFromPort(vessel, voyIdx, portIdx + 1);
   } else if(field === 'speed'){
-    // 修改了本港的出发速度 → 先清除后续港口的ETA强制重算
+    // Departure speed changed -> clear downstream ETA, force recalc
     const ports = vessel.voyages[voyIdx].ports;
     for(let i = portIdx + 1; i < ports.length; i++){
       ports[i].eta = null;
@@ -8787,11 +8788,11 @@ function onDailyPortEdit(vesselCode, voyIdx, portIdx, field, value){
   autoSaveFleet();
   // Re-render to show updated dates
   renderDailyDetail();
-  // 恢复 Undo/Redo 按钮状态（render 重建 DOM 后按钮会回到 disabled）
+  // Restore Undo/Redo button state (render rebuilds DOM, buttons go back to disabled)
   updateUndoRedoButtons();
 }
 
-// 修改航次速度 → 全局重算所有港口日期
+// Voyage speed changed -> global recalc all port dates
 function onDailySpeedChange(vesselCode, voyIdx, value){
   const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
   if(!vessel || !vessel.voyages[voyIdx]) return;
@@ -8799,7 +8800,7 @@ function onDailySpeedChange(vesselCode, voyIdx, value){
   const oldSpeed = vessel.voyages[voyIdx].speed || 14;
   vessel.voyages[voyIdx].speed = speed;
   pushUndoSnapshot(vesselCode, voyIdx);
-  // 将所有港口中 speed 等于旧航次速度（即未单独调整过）的行，同步更新为新速度
+  // Sync all ports with speed == old voyage speed (not individually adjusted) to new speed
   (vessel.voyages[voyIdx].ports || []).forEach(p => {
     if(p.speed == null || p.speed === oldSpeed) p.speed = speed;
   });
@@ -8809,7 +8810,7 @@ function onDailySpeedChange(vesselCode, voyIdx, value){
   autoSaveFleet();
   renderDailyDetail();
   updateUndoRedoButtons();
-  showToast('✓ 速度已更新：' + speed + ' kn，已重算后续港口日期', 'success');
+  showToast('Speed updated: ' + speed + ' kn, downstream recalculated', 'success');
 }
 
 // ===== Daily: Add / Delete Port =====
@@ -8840,7 +8841,7 @@ function dailyAddPortPick(portCode, vesselCode, voyIdx){
   if(dd) dd.style.display = 'none';
 }
 
-// ===== Fleet Daily: 从 Lane 添加所有 Ports =====
+// ===== Fleet Daily: Add All Ports from Lane =====
 let _dailyLaneSelectorCtx = null; // { vesselCode, voyIdx }
 
 function openDailyLanePortSelector(vesselCode, voyIdx){
@@ -8848,7 +8849,7 @@ function openDailyLanePortSelector(vesselCode, voyIdx){
   openLanePortSelector();
 }
 
-// ===== Fleet Daily: 获取航次速度（优先 voyage.speed，其次 VESSELS_DATA，默认14） =====
+// ===== Fleet Daily: Get Voyage Speed (prefer voyage.speed, then VESSELS_DATA, default 14) =====
 function getDailySpeed(vessel, voyIdx){
   const voy = vessel && vessel.voyages && vessel.voyages[voyIdx];
   if(voy && voy.speed) return parseFloat(voy.speed);
@@ -8856,14 +8857,14 @@ function getDailySpeed(vessel, voyIdx){
   return (vd && vd.speed) ? vd.speed : 14;
 }
 
-// ===== Fleet Daily: 将 Date 格式化为 datetime-local 字符串 =====
+// ===== Fleet Daily: Format Date to datetime-local String =====
 function toDatetimeLocal(d){
   if(!d || isNaN(d.getTime())) return '';
   const pad = n => String(n).padStart(2,'0');
   return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
 }
 
-// ===== Fleet Daily: 将 Date 的分钟四舍五入到 6 的倍数（0.1小时精度） =====
+// ===== Fleet Daily: Round Date Minutes to Multiple of 6 (0.1h Precision) =====
 function round6Min(d){
   if(!d || isNaN(d.getTime())) return d;
   const ms = d.getSeconds() * 1000 + d.getMilliseconds();
@@ -8875,7 +8876,7 @@ function round6Min(d){
   return d;
 }
 
-// ===== Fleet Daily: 列可见性配置 =====
+// ===== Fleet Daily: Column Visibility Config =====
 const DAILY_COLUMNS = [
   { key: 'drag',   label: '',             hideable: false },
   { key: 'num',    label: '#',            hideable: false },
@@ -8920,8 +8921,8 @@ document.addEventListener('click', function(e){
   }
 });
 
-// ===== Fleet Daily: 从上一港 ETD 推算本港 ETA/ETB/ETD =====
-// prevPort: {etd, dist(到本港距离)} | null
+// ===== Fleet Daily: Calc ETA/ETB/ETD from Previous Port ETD =====
+// prevPort: {etd, dist(to this port)} | null
 // thisPort: {code}
 // speed: knots
 function calcDailyPortTimes(prevPort, thisPortCode, speed){
@@ -8932,7 +8933,7 @@ function calcDailyPortTimes(prevPort, thisPortCode, speed){
   if(prevPort && prevPort.etd){
     const prevEtdDt = new Date(prevPort.etd);
     if(!isNaN(prevEtdDt.getTime()) && prevPort.dist > 0 && speed > 0){
-      // ETA = 上一港ETD + 海上航行时间
+      // ETA = prev ETD + Sea passage time
       const seaHrs = prevPort.dist / speed;
       eta = new Date(prevEtdDt.getTime() + seaHrs * 3600000);
       // round to nearest 6-min
@@ -8954,16 +8955,16 @@ function calcDailyPortTimes(prevPort, thisPortCode, speed){
   };
 }
 
-// ===== Fleet Daily: 级联重算从 fromIdx 开始后续所有港口的 ETA/ETB/ETD =====
-// 不重算 manIn/stayHrs/waitHrs/dist（用户可能已手动修改），只推算日期
+// ===== Fleet Daily: Cascade Recalc ETA/ETB/ETD from fromIdx =====
+// Skip recalc of manIn/stayHrs/waitHrs/dist (may be manually edited), only recalc dates
 function recalcDailyFromPort(vessel, voyIdx, fromIdx, skipSpeedBackfill){
   const voy = vessel.voyages[voyIdx];
   if(!voy || !voy.ports || fromIdx >= voy.ports.length) return;
-  const voySpeed = getDailySpeed(vessel, voyIdx); // 航次默认速度（兜底）
+  const voySpeed = getDailySpeed(vessel, voyIdx); // Voyage default speed (fallback)
   for(let i = fromIdx; i < voy.ports.length; i++){
     const p = voy.ports[i];
     if(i === 0){
-      // 第一港：若有 ETA 则基于 ETA 推算 ETB/ETD，否则跳过
+      // First port: if ETA exists, calc ETB/ETD from ETA, else skip
       if(p.eta){
         const etaDt = new Date(p.eta);
         if(!isNaN(etaDt.getTime())){
@@ -8980,29 +8981,29 @@ function recalcDailyFromPort(vessel, voyIdx, fromIdx, skipSpeedBackfill){
       }
       continue;
     }
-    // i > 0：由上一港 ETD + 上一港 dist + 上一港 speed 推算
+    // i > 0: calc from previous port ETD + dist + speed
     const prev = voy.ports[i - 1];
     if(!prev.etd) continue;
     const prevEtdDt = new Date(prev.etd);
     if(isNaN(prevEtdDt.getTime())) continue;
 
-    // 如果下一港已有 ETA，优先反推 seaHrs 和 speed
+    // If next port has ETA, prefer back-calc seaHrs and speed
     if(p.eta){
       const etaDt = new Date(p.eta);
       if(!isNaN(etaDt.getTime())){
-        // seaHrs = ETA - ETD（纯航行时间）
+        // seaHrs = ETA - ETD (pure sailing time)
         const seaHrs = (etaDt - prevEtdDt) / 3600000;
-        // 反推 dist 或 speed（编辑speed字段时跳过，否则会覆盖用户刚输入的值）
+        // Back-calc dist or speed (skip when editing speed to avoid overwriting user input)
         if(!skipSpeedBackfill){
           if(prev.dist && prev.dist > 0){
-            // 有 dist，反推 speed
+            // Has dist, back-calc speed
             prev.speed = Math.round((prev.dist / seaHrs) * 10) / 10;
           } else if(prev.speed && prev.speed > 0){
-            // 有 speed，反推 dist
+            // Has speed, back-calc dist
             prev.dist = Math.round(seaHrs * prev.speed);
           }
         }
-        // 继续推算本港 ETB/ETD
+        // Continue calc local ETB/ETD
         const manIn = p.manIn != null ? p.manIn : getPortManIn(p.code);
         const waitHrs = p.waitHrs || 0;
         const stayHrs = p.stayHrs != null ? p.stayHrs : getPortStay(p.code);
@@ -9016,15 +9017,15 @@ function recalcDailyFromPort(vessel, voyIdx, fromIdx, skipSpeedBackfill){
       }
     }
 
-    // 正向推算
+    // Forward calc
     if(!prev.dist || prev.dist <= 0) continue;
-    // 每段使用上一港自己的 speed（上一港出发的速度），兜底用航次速度
+    // Each segment uses previous port speed, fallback to voyage speed
     const segSpeed = (prev.speed != null && prev.speed > 0) ? prev.speed : voySpeed;
     if(segSpeed <= 0) continue;
     const manIn = p.manIn != null ? p.manIn : getPortManIn(p.code);
     const waitHrs = p.waitHrs || 0;
     const stayHrs = p.stayHrs != null ? p.stayHrs : getPortStay(p.code);
-    // ETA = 上一港ETD + 海上航行时间
+    // ETA = prev ETD + Sea passage time
     const seaHrs = prev.dist / segSpeed;
     const etaDt = new Date(prevEtdDt.getTime() + seaHrs * 3600000);
     round6Min(etaDt);
@@ -9049,7 +9050,7 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
   const inp = document.getElementById('dailyAddPortInput');
   if(!inp) return;
   const portCode = inp.value.trim().toUpperCase();
-  if(!portCode){ showToast('请输入港口代码', 'warning'); return; }
+  if(!portCode){ showToast('Enter port code', 'warning'); return; }
   const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
   if(!vessel || !vessel.voyages[voyIdx]) return;
 
@@ -9063,23 +9064,23 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
   const prevPort = ports.length > 0 ? ports[ports.length - 1] : null;
   const speed = getDailySpeed(vessel, voyIdx);
 
-  // 先计算出到本港的距离（上一港 → 本港）
+  // First calculate distance to this port (prev port -> this port)
   let dist = 0;
   if(prevPort){
     const cachedDist = await getDistanceAsync(prevPort.code, portCode);
     if(cachedDist > 0){
       dist = cachedDist;
-      // 更新上一港 dist 字段
+      // Update previous port dist field
       prevPort.dist = dist;
     }
   }
 
-  // 推算 ETA/ETB/ETD（使用上一港的 dist 到本港）
+  // Calculate ETA/ETB/ETD (using prev port dist to this port)
   let etaStr = '', etbStr = '', etdStr = '';
   if(prevPort && prevPort.etd && prevPort.dist > 0 && speed > 0){
     const prevEtdDt = new Date(prevPort.etd);
     if(!isNaN(prevEtdDt.getTime())){
-      // ETA = 上一港ETD + 海上航行时间
+      // ETA = prev ETD + Sea passage time
       const seaHrs = prevPort.dist / speed;
       const etaDt = new Date(prevEtdDt.getTime() + seaHrs * 3600000);
       round6Min(etaDt);
@@ -9101,7 +9102,7 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
     name: pp.en || portCode,
     eta: etaStr, etb: etbStr, etd: etdStr,
     stayHrs: stayHrs, manIn: manIn, waitHrs: getPortWait(portCode), dist: 0,
-    speed: speed  // 默认继承航次速度，用户可逐行修改
+    speed: speed  // Default inherit voyage speed, user can modify per row
   });
 
   vessel.voyages[voyIdx].lastModified = new Date().toISOString();
@@ -9116,39 +9117,39 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
     if(newInp){ newInp.value = ''; newInp.focus(); }
   }, 50);
 
-  showToast('✓ 港口已添加：' + portCode + (dist > 0 ? '（距离已从缓存填入）' : ''), 'success');
+  showToast('Port added: ' + portCode + (dist > 0 ? '(distance from cache)' : ''), 'success');
 
-  // 若本地缓存中没有距离，异步查询 searoute
+  // If no distance in local cache, async query searoute
   if(prevPort && (!dist || dist === 0)){
-    showToast('🔍 正在查询 ' + prevPort.code + ' → ' + portCode + ' 的航行距离...', 'info', 3000);
+    showToast('Querying ' + prevPort.code + ' -> ' + portCode + ' distance...', 'info', 3000);
     try {
       const result = await fetchSearouteDistance(prevPort.code, portCode);
       if(result && result.distance > 0){
-        // 回填到上一港 dist
+        // Back-fill to previous port dist
         const vessel2 = FLEET_DATA.vessels.find(v => v.code === vesselCode);
         if(vessel2 && vessel2.voyages[voyIdx]){
           const ports2 = vessel2.voyages[voyIdx].ports;
           const prevIdx = ports2.length - 2;
           if(prevIdx >= 0){
             ports2[prevIdx].dist = Math.round(result.distance);
-            // 同时更新 DIST_MAP 缓存
+            // Also update DIST_MAP cache
             const k = distKey(prevPort.code, portCode);
             DIST_MAP[k] = Math.round(result.distance);
-            // 级联重算本港（最后一港）的日期
+            // Cascade recalc dates for this port (last port)
             recalcDailyFromPort(vessel2, voyIdx, prevIdx);
             vessel2.voyages[voyIdx].lastModified = new Date().toISOString();
             autoSaveFleet();
             renderDailyDetail();
             updateUndoRedoButtons();
-            showToast('✓ ' + prevPort.code + ' → ' + portCode + ' 距离：' + Math.round(result.distance) + ' nm', 'success');
+            showToast(prevPort.code + ' -> ' + portCode + ': ' + Math.round(result.distance) + ' nm', 'success');
           }
         }
       } else {
-        showToast('⚠️ 未能自动查询到距离，请手动填写 Dist 列', 'warning');
+        showToast('Could not auto-query distance, enter Dist column manually', 'warning');
       }
     } catch(e){
       console.warn('Searoute query failed:', e);
-      showToast('⚠️ 距离查询失败，请手动填写 Dist 列', 'warning');
+      showToast('Distance query failed, enter Dist column manually', 'warning');
     }
   }
 }
@@ -9203,7 +9204,7 @@ function onPortDrop(event, vesselCode, voyIdx, targetIdx){
   autoSaveFleet();
   renderDailyDetail();
   updateUndoRedoButtons();
-  showToast('港口顺序已调整', 'success');
+  showToast('Port order adjusted', 'success');
   _dragPortIdx = null;
 }
 
@@ -9220,7 +9221,7 @@ function deleteDailyPort(vesselCode, voyIdx, portIdx){
   const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
   if(!vessel || !vessel.voyages[voyIdx]) return;
   const portCode = vessel.voyages[voyIdx].ports[portIdx] ? vessel.voyages[voyIdx].ports[portIdx].code : '';
-  if(!confirm('确认删除港口 ' + portCode + '？')) return;
+  if(!confirm('Delete this port? ' + portCode + '？')) return;
   pushUndoSnapshot(vesselCode, voyIdx);
   vessel.voyages[voyIdx].ports.splice(portIdx, 1);
   vessel.voyages[voyIdx].lastModified = new Date().toISOString();
@@ -9228,7 +9229,7 @@ function deleteDailyPort(vesselCode, voyIdx, portIdx){
   autoSaveFleet();
   renderDailyDetail();
   updateUndoRedoButtons();
-  showToast('港口已删除：' + portCode, 'success');
+  showToast('Port deleted: ' + portCode, 'success');
 }
 
 async function commitFleetSchedule(){
@@ -9243,10 +9244,10 @@ async function commitFleetSchedule(){
   const content = JSON.stringify(FLEET_DATA, null, 2);
   
   try {
-    // STEP 1: Save to local P盘 (skip in file:// mode)
+    // STEP 1: Save to local PLocal (skip in file:// mode)
     const isFileMode = window.location.protocol === 'file:';
     if(!isFileMode){
-      setStatus('Saving to Local (P盘)...');
+      setStatus('Saving to Local (PLocal)...');
       try {
         const localResp = await fetch('/data/' + FLEET_FILE, {
           method: 'POST',
@@ -9254,7 +9255,7 @@ async function commitFleetSchedule(){
           body: content
         });
         if(localResp.ok){
-          console.log('Saved to P盘: ' + FLEET_FILE);
+          console.log('Saved to PLocal: ' + FLEET_FILE);
         }
       } catch(localErr){
         console.warn('Local save skipped (file:// mode or server unavailable): ' + localErr.message);
@@ -9305,20 +9306,20 @@ async function commitFleetSchedule(){
         const result = await putResp.json();
         FLEET_SHA = result.content.sha;
         FLEET_DATA.lastSync = new Date().toISOString();
-        setStatus('✓ Saved: P盘 + GitHub (' + result.commit.sha.slice(0,7) + ')');
-        showToast('✓ 已保存到 P盘 + GitHub', 'success');
+        setStatus('✓ Saved: PLocal + GitHub (' + result.commit.sha.slice(0,7) + ')');
+        showToast('Saved to Local + GitHub', 'success');
       } else {
         const errText = await putResp.text();
-        setStatus('⚠ GitHub 失败，已保存本地，后台自动重试');
-        // 立即备份到 localStorage，并加入队列等待自动重试
+        setStatus('GitHub failed, saved locally, auto-retrying');
+        // Immediately backup to localStorage, queue for auto-retry
         try { localStorage.setItem('fleet_schedule_local', JSON.stringify(FLEET_DATA)); } catch(e){}
         GHQ.add('fleet', JSON.stringify(FLEET_DATA));
-        showToast('⚠ GitHub 提交失败。数据已保存到 P盘 + 本地队列\n将在下次打开页面时自动重试上传', 'warning');
+        showToast('GitHub commit failed. Saved locally, auto-retry on next load.', 'warning');
         console.warn('GitHub PUT failed (' + putResp.status + '): ' + errText);
       }
     } else {
       setStatus('✓ Saved locally (no token)');
-      showToast('✓ 已保存本地 (需设置 GitHub Token)', 'success');
+      showToast('Saved locally (GitHub Token required)', 'success');
     }
     
     clearUndoRedo();
@@ -9329,7 +9330,7 @@ async function commitFleetSchedule(){
   } catch(err){
     console.error('Fleet commit error:', err);
     setStatus('✗ Error: ' + err.message);
-    showToast('保存失败: ' + err.message, 'warning');
+    showToast('Save failed:  ' + err.message, 'warning');
   }
 }
 
@@ -9337,10 +9338,10 @@ function archiveCurrentVoyage(vesselCode, voyIdx){
   const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
   if(!vessel || !vessel.voyages[voyIdx]) return;
   if(vessel.voyages[voyIdx].status === 'completed') return;
-  if(!confirm('确认完成航次 ' + vessel.voyages[voyIdx].voyNo + '？完成后将不再显示在默认列表中。')) return;
+  if(!confirm('Complete voyage ' + vessel.voyages[voyIdx].voyNo + '? It will be hidden from default view.')) return;
   vessel.voyages[voyIdx].status = 'completed';
   vessel.voyages[voyIdx].lastModified = new Date().toISOString();
-  showToast('航次 ' + vessel.voyages[voyIdx].voyNo + ' 已标记为完成', 'success');
+  showToast('Voyage ' + vessel.voyages[voyIdx].voyNo + ' marked as completed', 'success');
   renderDailyFleet();
   renderDailyDetail();
 }
@@ -9348,8 +9349,8 @@ function archiveCurrentVoyage(vesselCode, voyIdx){
 function deleteCurrentVoyage(vesselCode, voyIdx){
   const vessel = FLEET_DATA.vessels.find(v => v.code === vesselCode);
   if(!vessel || !vessel.voyages[voyIdx]) return;
-  const voyNo = vessel.voyages[voyIdx].voyNo || '（未命名）';
-  if(!confirm('确认删除航次 ' + voyNo + '？此操作不可撤销。')) return;
+  const voyNo = vessel.voyages[voyIdx].voyNo || '(Unnamed)';
+  if(!confirm('Delete voyage ' + voyNo + '? This cannot be undone.')) return;
   vessel.voyages.splice(voyIdx, 1);
   // If vessel has no voyages left, remove it
   if(vessel.voyages.length === 0){
@@ -9362,40 +9363,40 @@ function deleteCurrentVoyage(vesselCode, voyIdx){
     selectDailyVessel(vesselCode, newIdx);
   }
   autoSaveFleet();
-  showToast('航次 ' + voyNo + ' 已删除', 'success');
+  showToast('Voyage ' + voyNo + ' deleted', 'success');
   renderDailyFleet();
   renderDailyDetail();
 }
 
 // Quick save from banner input
 // ===== Unified: Add current schedule to GitHub Fleet & show in Daily =====
-// Both "💾 添加到 Daily 船期" buttons (Simulator + Data Manager) call this.
+// Both "💾 Add to Daily Schedule" buttons (Simulator + Data Manager) call this.
 // SAFETY: Always loads from GitHub first, merges (never overwrites), validates before saving.
 async function syncToDaily(){
   if(!scheduleRows.length){
-    showToast('⚠️ 没有船期数据可添加，请先运行模拟', 'warning');
+    showToast('No schedule data to add. Run simulator first.', 'warning');
     return;
   }
 
   // STEP 1: Always reload from data source first — this prevents overwriting with stale/empty data
   const mode = getDataSourceMode();
-  showToast('⏳ 正在加载最新船期数据...', 'info');
+  showToast('Loading latest schedule data...', 'info');
   const prevVesselCount = FLEET_DATA.vessels ? FLEET_DATA.vessels.length : 0;
   await loadFleetSchedule();
   const loadedCount = FLEET_DATA.vessels ? FLEET_DATA.vessels.length : 0;
 
   // STEP 2: Validate — if data source returned empty and we had nothing before, abort
   if(loadedCount === 0 && prevVesselCount === 0){
-    showToast('❌ 无法加载数据！请检查数据源设置。\n点击右上角 📦 切换数据源模式。', 'error');
+    showToast('Cannot load data! Check data source settings.\nClick 📦 to switch.', 'error');
     return;
   }
   if(loadedCount === 0 && prevVesselCount > 0){
-    if(!confirm('⚠️ 数据源为空但本地有 ' + prevVesselCount + ' 艘船。\n\n确定要创建新船期吗？\n取消则中止。')){
+    if(!confirm('Data source is empty but local has ' + prevVesselCount + ' vessels.\n\nCreate new schedule?\nCancel to abort.')){
       return;
     }
   }
 
-  showToast('✓ 已加载 ' + loadedCount + ' 艘船，正在添加航次...', 'success');
+  showToast('Loaded ' + loadedCount + ' vessels, adding voyage...', 'success');
 
   // STEP 3: Get vessel info — support both Simulator and Data Manager contexts
   let vesselCode = currentVessel.code || '';
@@ -9413,7 +9414,7 @@ async function syncToDaily(){
   let voyNo = (dmVoyNo?.value || svVoyNo?.value || '').trim().toUpperCase();
   if(!voyNo) voyNo = '001W';
 
-  if(!vesselCode){ showToast('请先选择船只', 'warning'); return; }
+  if(!vesselCode){ showToast('Select a vessel first', 'warning'); return; }
 
   // STEP 4: Get lane code
   let laneCode = '';
@@ -9424,7 +9425,7 @@ async function syncToDaily(){
     laneCode = LANES_DATA[0].code;
   } else {
     const options = LANES_DATA.map(l => l.code + ' – ' + l.name).join('\n');
-    laneCode = prompt('选择航线:\n' + options);
+    laneCode = prompt('Select Lane:\n' + options);
     if(!laneCode) return;
     laneCode = laneCode.split('–')[0].trim().toUpperCase();
   }
@@ -9453,14 +9454,14 @@ async function syncToDaily(){
   }
   vessel.name = vesselName;
 
-  // Get speed from first row (航次默认速度)
+  // Get speed from first row (voyage default speed)
   const voyageSpeed = scheduleRows[0]?.speed || 14;
   console.log('[syncToDaily] voyageSpeed:', voyageSpeed, 'ports[0].speed:', ports[0]?.speed);
 
   // Check if voyage already exists in this vessel
   const existIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
   if(existIdx >= 0){
-    if(!confirm('航次 ' + voyNo + ' 已存在。是否覆盖？\n（点击"否"则取消本次操作）')) return;
+    if(!confirm('Voyage ' + voyNo + ' already exists. Overwrite?\n(Click No to cancel)')) return;
     vessel.voyages[existIdx] = {
       voyNo, lane: laneCode, status: 'current',
       speed: voyageSpeed,
@@ -9478,13 +9479,13 @@ async function syncToDaily(){
     console.log('[syncToDaily] Added new voyage:', voyNo, 'to', vesselCode);
   }
 
-  // 保持日期不变，反推 speed/dist
+  // Keep dates unchanged, back-calc speed/dist
   const syncedVoyIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
   if(syncedVoyIdx >= 0){
     recalcDailyFromPort(vessel, syncedVoyIdx, 0);
   }
 
-  showToast('✓ 已添加: ' + vesselCode + ' / ' + voyNo + ' / ' + laneCode + '（共 ' + FLEET_DATA.vessels.length + ' 艘船）', 'success');
+  showToast('Added: ' + vesselCode + ' / ' + voyNo + ' / ' + laneCode + ' (total: ' + FLEET_DATA.vessels.length + ' vessels)', 'success');
   autoSaveFleet();
 
   // STEP 7: Switch to daily tab, auto-expand this vessel, commit to GitHub
@@ -9582,9 +9583,9 @@ function submitNewVoyage(){
   const voyNo = document.getElementById('nvVoyNo').value.trim().toUpperCase();
   const laneCode = document.getElementById('nvLaneInput').value.trim().toUpperCase();
 
-  if(!vesselCode){ showToast('请输入船名代码', 'warning'); document.getElementById('nvVesselInput').focus(); return; }
-  if(!voyNo){ showToast('请输入航次号', 'warning'); document.getElementById('nvVoyNo').focus(); return; }
-  if(!laneCode){ showToast('请输入航线代码', 'warning'); document.getElementById('nvLaneInput').focus(); return; }
+  if(!vesselCode){ showToast('Enter Vessel Code', 'warning'); document.getElementById('nvVesselInput').focus(); return; }
+  if(!voyNo){ showToast('Enter voyage number', 'warning'); document.getElementById('nvVoyNo').focus(); return; }
+  if(!laneCode){ showToast('Enter lane code', 'warning'); document.getElementById('nvLaneInput').focus(); return; }
 
   const _vMatch = VESSELS_DATA.find(v => v.code === vesselCode);
   const vesselName = _vMatch ? _vMatch.name : vesselCode;
@@ -9601,7 +9602,7 @@ function submitNewVoyage(){
   const existIdx = vessel.voyages.findIndex(v => v.voyNo === voyNo);
   
   if(existIdx >= 0){
-    if(!confirm('航次 ' + voyNo + ' 已存在，是否覆盖？')) return;
+    if(!confirm('Voyage ' + voyNo + ' already exists, overwrite?')) return;
     vessel.voyages[existIdx] = {
       voyNo, lane: laneCode, status: 'current',
       ports: [], lastModified: new Date().toISOString(),
@@ -9623,38 +9624,38 @@ function submitNewVoyage(){
   renderDailyFleet();
   renderDailyDetail();
   autoSaveFleet();
-  showToast('✓ 航次已创建：' + vesselCode + ' / ' + voyNo + '，请添加港口', 'success');
+  showToast('Voyage created: ' + vesselCode + ' / ' + voyNo + ', add ports now', 'success');
 }
 
 // ===== Data Backup & Recovery System =====
-// 多层备份策略：
-//   1. 每次 autoSaveFleet 时自动滚动备份（保留最近5个快照）
-//   2. 用户手动导出 JSON 备份文件
-//   3. 用户手动导入 JSON 备份恢复
+// Multi-tier backup strategy:
+//   1. Auto rolling backup on each autoSaveFleet (keep last 5 snapshots)
+//   2. Manual JSON backup export
+//   3. Manual JSON backup import/restore
 
 const BACKUP_KEY_PREFIX = 'fleet_backup_';
-const BACKUP_SLOTS = 5; // 最多保留5个自动快照
-const BACKUP_META_KEY = 'fleet_backup_meta'; // 备份元数据（时间戳列表）
+const BACKUP_SLOTS = 5; // Keep max 5 auto snapshots
+const BACKUP_META_KEY = 'fleet_backup_meta'; // Backup metadata (timestamps)
 
-// 自动快照（在 autoSaveFleet 调用后触发，节流：每10分钟最多一次）
+// Auto snapshot (triggered after autoSaveFleet, throttled: max once per 10 min)
 let _lastAutoBackupTime = 0;
 function tryAutoBackup(){
   const now = Date.now();
-  if(now - _lastAutoBackupTime < 10 * 60 * 1000) return; // 10 分钟内不重复
+  if(now - _lastAutoBackupTime < 10 * 60 * 1000) return; // No repeat within 10 min
   if(!FLEET_DATA.vessels || FLEET_DATA.vessels.length === 0) return;
   _lastAutoBackupTime = now;
 
   try {
-    // 读取现有备份元数据
+    // Read existing backup metadata
     let meta = [];
     try { meta = JSON.parse(localStorage.getItem(BACKUP_META_KEY) || '[]'); } catch(e){}
 
-    // 生成新备份 key 和时间戳
+    // Generate new backup key and timestamp
     const ts = new Date().toISOString();
     const key = BACKUP_KEY_PREFIX + now;
     localStorage.setItem(key, JSON.stringify({ ts, vessels: FLEET_DATA.vessels.length, data: FLEET_DATA }));
 
-    // 加入元数据，保留最新 BACKUP_SLOTS 个
+    // Add to metadata, keep latest BACKUP_SLOTS
     meta.push({ key, ts, vessels: FLEET_DATA.vessels.length });
     if(meta.length > BACKUP_SLOTS){
       const removed = meta.splice(0, meta.length - BACKUP_SLOTS);
@@ -9667,7 +9668,7 @@ function tryAutoBackup(){
   }
 }
 
-// 手动导出 JSON 备份文件
+// Manual export JSON backup file
 function exportBackupJSON(){
   try {
     const data = {
@@ -9685,13 +9686,13 @@ function exportBackupJSON(){
     a.download = 'fleet_backup_' + dateStr + '.json';
     a.click();
     URL.revokeObjectURL(url);
-    showToast('✅ 备份文件已导出：fleet_backup_' + dateStr + '.json', 'success');
+    showToast('Backup exported: fleet_backup_' + dateStr + '.json', 'success');
   } catch(e){
-    showToast('❌ 导出备份失败：' + e.message, 'warning');
+    showToast('Backup export failed: ' + e.message, 'warning');
   }
 }
 
-// 从文件恢复备份
+// Restore backup from file
 function importBackupJSON(input){
   const file = input.files[0];
   if(!file) return;
@@ -9701,68 +9702,68 @@ function importBackupJSON(input){
       const parsed = JSON.parse(e.target.result);
       let restored;
       if(parsed.data && parsed.data.vessels){
-        restored = parsed.data; // 带 metadata 的格式
+        restored = parsed.data; // Format with metadata
       } else if(parsed.vessels){
-        restored = parsed; // 直接是 FLEET_DATA 格式
+        restored = parsed; // Direct FLEET_DATA format
       } else {
-        throw new Error('不是有效的备份文件格式');
+        throw new Error('Invalid backup file format');
       }
       const vesselCount = restored.vessels ? restored.vessels.length : 0;
-      const exportedAt = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleString('zh-CN') : '未知';
+      const exportedAt = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleString() : 'Unknown';
       if(!confirm(
-        '⚠️ 确认从备份恢复？\n\n' +
-        '备份时间：' + exportedAt + '\n' +
-        '包含 ' + vesselCount + ' 艘船的数据\n\n' +
-        '当前内存中的未提交数据将被覆盖。\n' +
-        '确定继续？'
+        'Confirm restore from backup?\n\n' +
+        'Backup time: ' + exportedAt + '\n' +
+        'Contains ' + vesselCount + ' vessels\n\n' +
+        'Uncommitted in-memory data will be overwritten.\n' +
+        'Continue?'
       )) return;
       FLEET_DATA = restored;
       autoSaveFleet();
       renderDailyFleet();
       if(dailySelectedVessel) renderDailyDetail();
-      showToast('✅ 备份恢复成功！共 ' + vesselCount + ' 艘船。请记得点 Commit 同步到 GitHub。', 'success');
+      showToast('Backup restored! Total: ' + vesselCount + ' vessels. Click Commit to sync to GitHub.', 'success');
     } catch(err){
-      showToast('❌ 备份文件解析失败：' + err.message, 'warning');
+      showToast('Backup file parse failed: ' + err.message, 'warning');
     }
     input.value = ''; // reset file input
   };
   reader.readAsText(file, 'utf-8');
 }
 
-// 从自动快照恢复
+// Restore from auto snapshot
 function restoreFromSnapshot(key){
   try {
     const raw = localStorage.getItem(key);
-    if(!raw) { showToast('快照不存在', 'warning'); return; }
+    if(!raw) { showToast('Snapshot not found', 'warning'); return; }
     const snap = JSON.parse(raw);
     const vesselCount = snap.data && snap.data.vessels ? snap.data.vessels.length : 0;
-    const tsStr = snap.ts ? new Date(snap.ts).toLocaleString('zh-CN') : '未知';
+    const tsStr = snap.ts ? new Date(snap.ts).toLocaleString() : 'Unknown';
     if(!confirm(
-      '确认恢复到此快照？\n\n' +
-      '快照时间：' + tsStr + '\n' +
-      '包含 ' + vesselCount + ' 艘船\n\n' +
-      '当前内存数据将被此快照覆盖。'
+      'Restore to this snapshot?\n\n' +
+      'Snapshot time: ' + tsStr + '\n' +
+      'Contains  ' + vesselCount + '  vessels\n\n' +
+      'Current in-memory data will be overwritten by this snapshot.'
     )) return;
     FLEET_DATA = snap.data;
     autoSaveFleet();
     renderDailyFleet();
     if(dailySelectedVessel) renderDailyDetail();
     closeBackupModal();
-    showToast('✅ 已恢复到快照：' + tsStr + '。请记得点 Commit 同步到 GitHub。', 'success');
+    showToast('Restored to snapshot: ' + tsStr + '. Click Commit to sync to GitHub.', 'success');
   } catch(e){
-    showToast('❌ 快照恢复失败：' + e.message, 'warning');
+    showToast('Snapshot restore failed: ' + e.message, 'warning');
   }
 }
 
-// 显示备份管理面板
+// Show backup management panel
 function showBackupMenu(){
   let meta = [];
   try { meta = JSON.parse(localStorage.getItem(BACKUP_META_KEY) || '[]'); } catch(e){}
-  meta = meta.slice().reverse(); // 最新的显示在前
+  meta = meta.slice().reverse(); // Most recent first
 
   let snapshotsHtml = '';
   if(meta.length === 0){
-    snapshotsHtml = '<div style="color:var(--muted);font-size:.82rem;padding:8px 0;">暂无自动快照（系统每10分钟自动保存一次）</div>';
+    snapshotsHtml = '<div style="color:var(--muted);font-size:.82rem;padding:8px 0;">No auto-snapshots (system saves every 10 min)</div>';
   } else {
     snapshotsHtml = meta.map((m, i) => {
       const timeStr = new Date(m.ts).toLocaleString('zh-CN');
@@ -9770,9 +9771,9 @@ function showBackupMenu(){
         <div>
           <span style="font-size:.82rem;font-weight:600;">#${meta.length - i}</span>
           <span style="font-size:.8rem;color:var(--muted);margin-left:10px;">${timeStr}</span>
-          <span style="font-size:.78rem;color:var(--accent);margin-left:8px;">${m.vessels} 艘船</span>
+          <span style="font-size:.78rem;color:var(--accent);margin-left:8px;">${m.vessels}  vessels</span>
         </div>
-        <button class="dm-btn dm-btn-primary" style="padding:3px 10px;font-size:.75rem;" onclick="restoreFromSnapshot('${m.key}')">恢复</button>
+        <button class="dm-btn dm-btn-primary" style="padding:3px 10px;font-size:.75rem;" onclick="restoreFromSnapshot('${m.key}')">Restore</button>
       </div>`;
     }).join('');
   }
@@ -9787,7 +9788,7 @@ function showBackupMenu(){
 
   const modal = document.getElementById('backupModal');
   document.getElementById('backupSnapshotList').innerHTML = snapshotsHtml;
-  document.getElementById('backupStorageInfo').textContent = '本地存储已用约 ' + usedKB + ' KB（上限约 5120 KB）';
+  document.getElementById('backupStorageInfo').textContent = 'Local storage used: ~ ' + usedKB + ' KB (limit ~5120 KB)';
   modal.style.display = 'flex';
 }
 
@@ -9795,13 +9796,13 @@ function closeBackupModal(){
   document.getElementById('backupModal').style.display = 'none';
 }
 
-// ===== 辅助函数：解析datetime-local格式字符串，返回本地Date对象 =====
+// ===== Helper: Parse datetime-local string, return local Date object =====
 function parseLocalDate(str){
   if(!str) return null;
-  // datetime-local格式: "2026-05-14T02:00"
+  // datetime-local format: "2026-05-14T02:00"
   const parts = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   if(!parts) return null;
-  // 创建本地时间（避免UTC偏移）
+  // Create local time (avoid UTC offset)
   return new Date(parts[1], parts[2]-1, parts[3], parts[4], parts[5]);
 }
 
@@ -9879,7 +9880,7 @@ function exportFleetExcel(){
       
       // D: Proforma - only first row has value (the initial ETD from previous voyage)
       if(i === 0 && p.etd){
-        // D: Proforma - 解析datetime-local格式，保持本地时间
+        // D: Proforma - parse datetime-local format, keep local time
         const d = parseLocalDate(p.etd);
         row[3] = d ? { t: 'd', v: d, z: 'yyyy/mm/dd\\ hh:mm;@' } : '';
       }
@@ -9891,10 +9892,10 @@ function exportFleetExcel(){
       const dist = p.dist || 0;
       row[13] = dist;
       
-      // L: run (sea hours) - 使用每个port自己的speed（与网页显示一致）
+      // L: run (sea hours) - use each port speed (consistent with page display)
       const rowSpeed = p.speed != null ? p.speed : defaultSpeed;
       const seaHrs = (rowSpeed > 0 && dist > 0) ? +(dist / rowSpeed).toFixed(1) : 0;
-      row[11] = seaHrs; // 直接值
+      row[11] = seaHrs; // Direct value
       
       // M: Port Stay(hr)
       const stay = p.stayHrs != null ? p.stayHrs : 0;
@@ -9905,9 +9906,9 @@ function exportFleetExcel(){
       
       // I: ETA
       // - First row: use actual value (from data)
-      // - Subsequent rows: =K{当前行-1}+L{当前行-1}/24 (previous ETD + previous run)
+      // - Subsequent rows: = prev_K + prev_L/24 (previous ETD + previous run)
       if(i === 0){
-        // First port: direct value - 用日期对象保留本地时间
+        // First port: direct value - use Date object to preserve local time
         const etaDate = parseLocalDate(p.eta);
         row[8] = etaDate ? { t: 'd', v: etaDate, z: 'yyyy/mm/dd\\ hh:mm;@' } : '';
       } else {
@@ -10555,7 +10556,7 @@ function handleImportExcel(input){
               modifiedBy: 'Excel Import'
             });
           }
-          // 保持日期不变，反推 speed/dist
+          // Keep dates unchanged, back-calc speed/dist
           const voyIdx = vessel.voyages.findIndex(function(v){ return v.voyNo === voy.voyNo && v.lane === voy.lane; });
           recalcDailyFromPort(vessel, voyIdx, 0);
           imported++;
@@ -10592,19 +10593,19 @@ function handleImportExcel(input){
   <div class="vi-overlay" id="viOverlay" onclick="closeVesselInfo(event)">
     <div class="vi-modal" id="viModal" onclick="event.stopPropagation()">
       <div class="vi-header">
-        <h2>📋 船舶详细信息</h2>
+        <h2>📋 Vessel Details</h2>
         <select id="viVesselSelect" onchange="onViVesselChange()">
-          <option value="">-- 选择船舶 --</option>
+          <option value="">-- Select Vessel --</option>
         </select>
         <button class="vi-close" onclick="closeVesselInfo()">&times;</button>
       </div>
       <div class="vi-tabs">
-        <button class="vi-tab active" onclick="switchViTab('particular',this)">📋 船舶参数</button>
-        <button class="vi-tab" onclick="switchViTab('capacity',this)">📦 装载能力</button>
-        <button class="vi-tab" onclick="switchViTab('fuel',this)">⛽ 油耗参数</button>
+        <button class="vi-tab active" onclick="switchViTab('particular',this)">📋 Particulars</button>
+        <button class="vi-tab" onclick="switchViTab('capacity',this)">📦 Capacity</button>
+        <button class="vi-tab" onclick="switchViTab('fuel',this)">⛽ Fuel</button>
       </div>
       <div class="vi-body" id="viBody">
-        <div class="vi-no-data">请选择一艘船舶</div>
+        <div class="vi-no-data">Select a vessel</div>
       </div>
     </div>
   </div>
