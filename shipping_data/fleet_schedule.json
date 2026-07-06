@@ -11249,6 +11249,113 @@
           "modifiedBy": "anonymous"
         }
       ]
+    },
+    {
+      "code": "ZYHS",
+      "name": "ZHI YING HE SHUN",
+      "voyages": [
+        {
+          "voyNo": "001W",
+          "lane": "SGX",
+          "status": "current",
+          "speed": 11,
+          "ports": [
+            {
+              "code": "CNNGB",
+              "name": "NINGBO",
+              "eta": "2026-07-18T05:00",
+              "etb": "2026-07-18T08:00",
+              "etd": "2026-07-19T08:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 737,
+              "speed": 11,
+              "fromExcel": false
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-07-22T03:00",
+              "etb": "2026-07-22T06:00",
+              "etd": "2026-07-23T06:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 1655,
+              "speed": 11,
+              "fromExcel": false
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-07-29T13:00",
+              "etb": "2026-07-29T15:00",
+              "etd": "2026-07-30T15:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 1655,
+              "speed": 11,
+              "fromExcel": false
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-08-05T22:00",
+              "etb": "2026-08-06T01:00",
+              "etd": "2026-08-07T01:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 50,
+              "speed": 10,
+              "fromExcel": false
+            },
+            {
+              "code": "CNNAS",
+              "name": "NANSHA",
+              "eta": "2026-08-07T06:00",
+              "etb": "2026-08-07T09:00",
+              "etd": "2026-08-08T09:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 1659,
+              "speed": 11,
+              "fromExcel": false
+            },
+            {
+              "code": "MYPKG",
+              "name": "PORT KLANG",
+              "eta": "2026-08-14T16:00",
+              "etb": "2026-08-14T18:00",
+              "etd": "2026-08-15T18:00",
+              "stayHrs": 24,
+              "manIn": 2,
+              "waitHrs": 0,
+              "dist": 1655,
+              "speed": 11,
+              "fromExcel": false
+            },
+            {
+              "code": "CNSHK",
+              "name": "SHEKOU",
+              "eta": "2026-08-22T01:00",
+              "etb": "2026-08-22T04:00",
+              "etd": "2026-08-23T04:00",
+              "stayHrs": 24,
+              "manIn": 3,
+              "waitHrs": 0,
+              "dist": 0,
+              "speed": 11,
+              "fromExcel": false
+            }
+          ],
+          "lastModified": "2026-07-06T09:38:18.777Z",
+          "modifiedBy": "anonymous"
+        }
+      ]
     }
   ],
   "lastSync": null
