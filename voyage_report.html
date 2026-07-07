@@ -127,13 +127,12 @@ const COLS = [
 ];
 
 function init() {
-  // Populate vessel filter
   const vessels = [...new Set(ALL_DATA.map(v => v.vessel))].sort();
   const sel = document.getElementById('vesselFilter');
   vessels.forEach(v => {
     const opt = document.createElement('option');
     opt.value = v;
-    opt.textContent = v + ' (' + VESSEL_INFO[v]?.home_terminal + ')';
+    opt.textContent = v + ' (' + (VESSEL_INFO[v]?.home_terminal || '') + ')';
     sel.appendChild(opt);
   });
   applyFilter();
@@ -176,20 +175,16 @@ function toggleSort(key) {
 function applySort() {
   filtered.sort((a, b) => {
     let va = a[sortKey], vb = b[sortKey];
-    // Keep vessel grouping
     if (a.vessel !== b.vessel) return a.vessel.localeCompare(b.vessel);
-    // For voyage, sort numerically
     if (sortKey === 'voyage') {
       va = parseInt(va); vb = parseInt(vb);
       return sortDir === 'asc' ? va - vb : vb - va;
     }
-    // For numeric fields
     const col = COLS.find(c => c.key === sortKey);
     if (col && col.num) {
       va = parseFloat(va) || 0; vb = parseFloat(vb) || 0;
       return sortDir === 'asc' ? va - vb : vb - va;
     }
-    // For string fields
     va = String(va || ''); vb = String(vb || '');
     return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
   });
@@ -199,7 +194,6 @@ function renderTable() {
   const thead = document.getElementById('dataTable').querySelector('thead');
   const tbody = document.getElementById('dataTable').querySelector('tbody');
 
-  // Header with group row
   let groupHtml = '<tr class="group-header"><th colspan="7">Voyage Info</th><th colspan="5">Load (Boxes)</th><th colspan="5">Load (TEU)</th><th colspan="5">Discharge (Boxes)</th><th rowspan="2">Restows</th></tr>';
   let colHtml = '<tr>';
   COLS.forEach(c => {
