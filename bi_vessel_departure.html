@@ -234,7 +234,12 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 </div>
 
 <script>
-const CSV_URL = 'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv';
+// Use jsDelivr CDN (no rate limit) with GitHub raw as fallback
+const CSV_URLS = [
+  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/bi_vessel_departure.csv',
+  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv'
+];
+let CSV_URL = CSV_URLS[0];
 let DATA = [];
 let filtered = [];
 let colVisibility = {};
@@ -471,12 +476,15 @@ function loadCSVWithRetry(retry) {
   fetchCSV(false, retry);
 }
 
-function fetchCSV(isBackground, retry) {
+function fetchCSV(isBackground, retry, urlIdx) {
   const wrap = document.getElementById('tableWrap');
   const CACHE_KEY = 'bi_vessel_csv_cache_v1';
   const CACHE_TIME_KEY = 'bi_vessel_csv_cache_time_v1';
+  if (urlIdx === undefined) urlIdx = 0;
+  const url = CSV_URLS[urlIdx] || CSV_URLS[CSV_URLS.length - 1];
+  CSV_URL = url;
 
-  fetch(CSV_URL)
+  fetch(url)
     .then(res => {
       if (res.status === 429 && retry < 3) {
         const wait = Math.pow(2, retry) * 2000; // 2s, 4s, 8s
@@ -506,6 +514,12 @@ function fetchCSV(isBackground, retry) {
       }
     })
     .catch(err => {
+      // Try next URL source before giving up
+      if (urlIdx + 1 < CSV_URLS.length) {
+        console.warn('Source ' + urlIdx + ' failed (' + err.message + '), trying next source...');
+        fetchCSV(isBackground, retry, urlIdx + 1);
+        return;
+      }
       if (isBackground) return;
       // Try cache as fallback
       const cached = localStorage.getItem(CACHE_KEY);
@@ -514,7 +528,7 @@ function fetchCSV(isBackground, retry) {
           DATA = parseCSV(cached);
           buildOptions(DATA);
           applyDefaults();
-          const banner = '<div class="loading" style="color:#b58900;background:#fff3cd;padding:6px 10px;border-radius:4px;margin-bottom:8px;display:inline-block;">⚠️ GitHub rate limit hit. Showing cached data from ' +
+          const banner = '<div class="loading" style="color:#b58900;background:#fff3cd;padding:6px 10px;border-radius:4px;margin-bottom:8px;display:inline-block;">⚠️ All sources rate-limited. Showing cached data from ' +
             new Date(Number(localStorage.getItem(CACHE_TIME_KEY))).toLocaleTimeString() + '. Will auto-refresh when available.</div>';
           wrap.innerHTML = banner + wrap.innerHTML;
           return;
@@ -522,7 +536,7 @@ function fetchCSV(isBackground, retry) {
           console.warn('Cache fallback failed:', e);
         }
       }
-      wrap.innerHTML = '<div class="no-data">Failed to load data: ' + err.message + '<br>Make sure ' + CSV_URL + ' is accessible.<br><br><button onclick="loadCSVWithRetry(0)" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;">Retry</button> <button onclick="location.reload()" style="padding:6px 14px;background:#666;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:8px;">Refresh Page</button></div>';
+      wrap.innerHTML = '<div class="no-data">Failed to load data: ' + err.message + '<br><br><button onclick="loadCSVWithRetry(0)" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;">Retry</button> <button onclick="location.reload()" style="padding:6px 14px;background:#666;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:8px;">Refresh Page</button></div>';
     });
 }
 
