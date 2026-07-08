@@ -439,29 +439,98 @@ function setDefaultDateRange() {
 function init() {
   loadColVisibility();
   document.addEventListener('click', closeAllPanels);
+  loadCSVWithRetry(0);
+}
+
+function loadCSVWithRetry(retry) {
   const wrap = document.getElementById('tableWrap');
-  wrap.innerHTML = '<div class="loading">Loading data from GitHub...</div>';
+  const CACHE_KEY = 'bi_vessel_csv_cache_v1';
+  const CACHE_TIME_KEY = 'bi_vessel_csv_cache_time_v1';
+  const CACHE_TTL_MS = 30 * 60 * 1000; // 30 min
+
+  wrap.innerHTML = '<div class="loading">Loading data from GitHub' + (retry ? ' (retry ' + retry + '/3)...' : '...') + '</div>';
+
+  if (retry === 0) {
+    const cached = localStorage.getItem(CACHE_KEY);
+    const cacheTime = Number(localStorage.getItem(CACHE_TIME_KEY) || 0);
+    if (cached && (Date.now() - cacheTime) < CACHE_TTL_MS) {
+      console.log('Using cached CSV (' + cached.length + ' bytes)');
+      try {
+        DATA = parseCSV(cached);
+        buildOptions(DATA);
+        applyDefaults();
+        // Continue fetching in background to refresh cache
+        fetchCSV(true);
+        return;
+      } catch (e) {
+        console.warn('Cache parse failed, fetching fresh:', e);
+      }
+    }
+  }
+  fetchCSV(false, retry);
+}
+
+function fetchCSV(isBackground, retry) {
+  const wrap = document.getElementById('tableWrap');
+  const CACHE_KEY = 'bi_vessel_csv_cache_v1';
+  const CACHE_TIME_KEY = 'bi_vessel_csv_cache_time_v1';
+
   fetch(CSV_URL)
-    .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.text(); })
+    .then(res => {
+      if (res.status === 429 && retry < 3) {
+        const wait = Math.pow(2, retry) * 2000; // 2s, 4s, 8s
+        return new Promise(r => setTimeout(r, wait))
+          .then(() => loadCSVWithRetry(retry + 1))
+          .then(() => undefined); // signal to skip main success path
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
     .then(text => {
-      DATA = parseCSV(text);
-      buildOptions(DATA);
-      renderMultiSelect('terminal');
-      renderMultiSelect('svc');
-      renderMultiSelect('operator');
-      // Default: select CUL operator only
-      selected.operator.clear();
-      selected.operator.add('CUL');
-      renderMultiSelect('operator');
-      // Default: departure date within +/- 3 months
-      setDefaultDateRange();
-      // Default: sort by Vessel/Voyage asc, then Arrival asc
-      sortKeys = [{ key: 'vessel_voyage', dir: 'asc' }, { key: 'arrived_anchorage', dir: 'asc' }];
-      applyFilter();
+      if (text === undefined) return; // retry branch already loaded
+      try {
+        localStorage.setItem(CACHE_KEY, text);
+        localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+      } catch (e) {
+        console.warn('Failed to save cache:', e);
+      }
+      if (!isBackground) {
+        DATA = parseCSV(text);
+        buildOptions(DATA);
+        applyDefaults();
+      }
     })
     .catch(err => {
-      wrap.innerHTML = '<div class="no-data">Failed to load data: ' + err.message + '<br>Make sure ' + CSV_URL + ' is accessible.</div>';
+      if (isBackground) return;
+      // Try cache as fallback
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          DATA = parseCSV(cached);
+          buildOptions(DATA);
+          applyDefaults();
+          const banner = '<div class="loading" style="color:#b58900;background:#fff3cd;padding:6px 10px;border-radius:4px;margin-bottom:8px;display:inline-block;">⚠️ GitHub rate limit hit. Showing cached data from ' +
+            new Date(Number(localStorage.getItem(CACHE_TIME_KEY))).toLocaleTimeString() + '. Will auto-refresh when available.</div>';
+          wrap.innerHTML = banner + wrap.innerHTML;
+          return;
+        } catch (e) {
+          console.warn('Cache fallback failed:', e);
+        }
+      }
+      wrap.innerHTML = '<div class="no-data">Failed to load data: ' + err.message + '<br>Make sure ' + CSV_URL + ' is accessible.<br><br><button onclick="loadCSVWithRetry(0)" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;">Retry</button> <button onclick="location.reload()" style="padding:6px 14px;background:#666;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:8px;">Refresh Page</button></div>';
     });
+}
+
+function applyDefaults() {
+  renderMultiSelect('terminal');
+  renderMultiSelect('svc');
+  renderMultiSelect('operator');
+  selected.operator.clear();
+  selected.operator.add('CUL');
+  renderMultiSelect('operator');
+  setDefaultDateRange();
+  sortKeys = [{ key: 'vessel_voyage', dir: 'asc' }, { key: 'arrived_anchorage', dir: 'asc' }];
+  applyFilter();
 }
 
 function applyFilter() {
