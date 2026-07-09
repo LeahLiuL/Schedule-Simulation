@@ -1,0 +1,4047 @@
+{
+  "ASHK": {
+    "CNNAS": {
+      "avg": 6292.68,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 6753.54,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 8434.81,
+      "n": 1,
+      "terminals": [
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 6092.85,
+      "n": 1,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 25857.26,
+      "n": 1,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 16701.13,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "ASHP": {
+    "CNNAS": {
+      "avg": 8391.98,
+      "n": 4,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNGB": {
+      "avg": 9332.82,
+      "n": 4,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT05"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 11466.34,
+      "n": 6,
+      "terminals": [
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSWA": {
+      "avg": 5516.77,
+      "n": 1,
+      "terminals": [
+        "CNSWAT02"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSOK": {
+      "avg": 29084.62,
+      "n": 5,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "MYPKG": {
+      "avg": 715.17,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 12412.82,
+      "n": 5,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "AVOS": {
+    "CNNAS": {
+      "avg": 6585.57,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNGB": {
+      "avg": 7236.65,
+      "n": 1,
+      "terminals": [
+        "CNNGBT06"
+      ],
+      "source": "fallback_all"
+    },
+    "CNTAO": {
+      "avg": 11150.95,
+      "n": 1,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "fallback_all"
+    },
+    "MYPKN": {
+      "avg": 2748.32,
+      "n": 1,
+      "terminals": [
+        "MYPKNT01"
+      ],
+      "source": "fallback_all"
+    },
+    "VNSGN": {
+      "avg": 312.51,
+      "n": 1,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "BZCF": {
+    "CNNAS": {
+      "avg": 1356.49,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 19036.64,
+      "n": 1,
+      "terminals": [
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 66239.2,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 8912.43,
+      "n": 2,
+      "terminals": [
+        "CNTAOT02",
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    }
+  },
+  "CHCE": {
+    "AEJEA": {
+      "avg": 7167.9,
+      "n": 1,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNAS": {
+      "avg": 6846.68,
+      "n": 10,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNGB": {
+      "avg": 6466.61,
+      "n": 1,
+      "terminals": [
+        "CNNGBT06"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 6517.51,
+      "n": 1,
+      "terminals": [
+        "CNSHAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 9769.4,
+      "n": 10,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSOK": {
+      "avg": 21221.6,
+      "n": 1,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "INNSA": {
+      "avg": 19195.74,
+      "n": 1,
+      "terminals": [
+        "INNSAT04"
+      ],
+      "source": "fallback_all"
+    },
+    "MYPKN": {
+      "avg": 1594.01,
+      "n": 2,
+      "terminals": [
+        "MYPKNT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 6885.54,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKK": {
+      "avg": 10080.17,
+      "n": 6,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THLCH": {
+      "avg": 6046.1,
+      "n": 7,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "fallback_all"
+    },
+    "THSCS": {
+      "avg": 3174.31,
+      "n": 3,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "fallback_all"
+    },
+    "VNSGN": {
+      "avg": 11226.42,
+      "n": 5,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "CSJ7": {
+    "CNNAS": {
+      "avg": 6046.79,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 7307.69,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 5013.93,
+      "n": 4,
+      "terminals": [
+        "CNTAOT01",
+        "CNTAOT02"
+      ],
+      "source": "direct"
+    },
+    "CNXMN": {
+      "avg": 4413.33,
+      "n": 3,
+      "terminals": [
+        "CNXMNT01",
+        "CNXMNT03"
+      ],
+      "source": "direct"
+    },
+    "PHMNL": {
+      "avg": 13855.8,
+      "n": 1,
+      "terminals": [
+        "PHMNLT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "CUBK": {
+    "CNNAS": {
+      "avg": 13526.28,
+      "n": 3,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 7165.52,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT05",
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 7016.53,
+      "n": 2,
+      "terminals": [
+        "CNSHAT02",
+        "CNSHAT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 11998.75,
+      "n": 8,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "CNTAO": {
+      "avg": 6136.06,
+      "n": 1,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 22915.25,
+      "n": 3,
+      "terminals": [
+        "DJJIBT01",
+        "DJJIBT02"
+      ],
+      "source": "fallback_all"
+    },
+    "EGALY": {
+      "avg": 22850.21,
+      "n": 3,
+      "terminals": [
+        "EGALYT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 31765.05,
+      "n": 7,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSUZ": {
+      "avg": 260695.1,
+      "n": 3,
+      "terminals": [
+        "EGSUZT01",
+        "EGSUZT02"
+      ],
+      "source": "direct"
+    },
+    "MYPKG": {
+      "avg": 2832.45,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "direct"
+    },
+    "MYPKN": {
+      "avg": 2519.89,
+      "n": 1,
+      "terminals": [
+        "MYPKNT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 6647.43,
+      "n": 3,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1375.04,
+      "n": 1,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKK": {
+      "avg": 4911.15,
+      "n": 1,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "direct"
+    },
+    "THBKS": {
+      "avg": 4934.69,
+      "n": 1,
+      "terminals": [
+        "THBKST01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 8780.77,
+      "n": 2,
+      "terminals": [
+        "THLCHT04"
+      ],
+      "source": "direct"
+    },
+    "TRIST": {
+      "avg": 36027.78,
+      "n": 2,
+      "terminals": [
+        "TRISTT02"
+      ],
+      "source": "direct"
+    },
+    "TRIZT": {
+      "avg": 14725.21,
+      "n": 2,
+      "terminals": [
+        "TRIZTT03"
+      ],
+      "source": "direct"
+    },
+    "TWKEL": {
+      "avg": 4117.8,
+      "n": 1,
+      "terminals": [
+        "TWKELT01"
+      ],
+      "source": "fallback_all"
+    },
+    "YEADE": {
+      "avg": 9658.8,
+      "n": 1,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "CUHA": {
+    "CNHMN": {
+      "avg": 1394.1,
+      "n": 27,
+      "terminals": [
+        "CNHMNT01"
+      ],
+      "source": "direct"
+    },
+    "CNHUA": {
+      "avg": 1120.9,
+      "n": 29,
+      "terminals": [
+        "CNHUAT01"
+      ],
+      "source": "direct"
+    },
+    "CNNAS": {
+      "avg": 2073.16,
+      "n": 38,
+      "terminals": [
+        "CNNAST04",
+        "CNNAST05"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 3908.03,
+      "n": 36,
+      "terminals": [
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 14094.34,
+      "n": 1,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "direct"
+    },
+    "THBKK": {
+      "avg": 7529.97,
+      "n": 3,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 4547.64,
+      "n": 4,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "direct"
+    },
+    "THSCS": {
+      "avg": 2657.29,
+      "n": 3,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "direct"
+    },
+    "TWKEL": {
+      "avg": 4990.34,
+      "n": 20,
+      "terminals": [
+        "TWKELT01"
+      ],
+      "source": "direct"
+    },
+    "TWKHH": {
+      "avg": 4211.34,
+      "n": 20,
+      "terminals": [
+        "TWKHHT05"
+      ],
+      "source": "direct"
+    },
+    "TWTXG": {
+      "avg": 4465.99,
+      "n": 20,
+      "terminals": [
+        "TWTXGT01"
+      ],
+      "source": "direct"
+    },
+    "VNSGN": {
+      "avg": 5276.48,
+      "n": 5,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "CUHC": {
+    "CNNAS": {
+      "avg": 4356.08,
+      "n": 2,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 4439.95,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT05",
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 13747.89,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 10506.5,
+      "n": 1,
+      "terminals": [
+        "CNSHKT01",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 13143.5,
+      "n": 1,
+      "terminals": [
+        "CNTAOT02"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 38016.75,
+      "n": 7,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSUZ": {
+      "avg": 396371.53,
+      "n": 2,
+      "terminals": [
+        "EGSUZT01",
+        "EGSUZT02"
+      ],
+      "source": "direct"
+    },
+    "MYPKG": {
+      "avg": 1896.59,
+      "n": 2,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 7424.51,
+      "n": 2,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1864.09,
+      "n": 2,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "CUHM": {
+    "CNNAS": {
+      "avg": 6495.47,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 7487.69,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 7781.37,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 9195.03,
+      "n": 2,
+      "terminals": [
+        "CNTAOT01",
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    },
+    "CNXMN": {
+      "avg": 6958.17,
+      "n": 1,
+      "terminals": [
+        "CNXMNT01"
+      ],
+      "source": "direct"
+    },
+    "PHMNL": {
+      "avg": 14444.68,
+      "n": 1,
+      "terminals": [
+        "PHMNLT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 19000.0,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "CUHP": {
+    "CNNAS": {
+      "avg": 1878.81,
+      "n": 38,
+      "terminals": [
+        "CNNAST04",
+        "CNNAST05"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 2978.24,
+      "n": 39,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNSWA": {
+      "avg": 2448.83,
+      "n": 39,
+      "terminals": [
+        "CNSWAT02"
+      ],
+      "source": "direct"
+    },
+    "THBKK": {
+      "avg": 5073.55,
+      "n": 2,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THLCH": {
+      "avg": 4274.84,
+      "n": 3,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "fallback_all"
+    },
+    "THSCS": {
+      "avg": 2471.16,
+      "n": 1,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "fallback_all"
+    },
+    "TWKEL": {
+      "avg": 5146.33,
+      "n": 29,
+      "terminals": [
+        "TWKELT01"
+      ],
+      "source": "direct"
+    },
+    "TWKHH": {
+      "avg": 4308.5,
+      "n": 29,
+      "terminals": [
+        "TWKHHT01"
+      ],
+      "source": "direct"
+    },
+    "TWTXG": {
+      "avg": 4217.3,
+      "n": 29,
+      "terminals": [
+        "TWTXGT02"
+      ],
+      "source": "direct"
+    },
+    "VNSGN": {
+      "avg": 6827.74,
+      "n": 3,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "CUJK": {
+    "CNNAS": {
+      "avg": 9885.83,
+      "n": 4,
+      "terminals": [
+        "CNNAST04",
+        "CNNAST05"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 11899.6,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 11848.39,
+      "n": 3,
+      "terminals": [
+        "CNSHAT02",
+        "CNSHAT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 25725.83,
+      "n": 4,
+      "terminals": [
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 8643.75,
+      "n": 3,
+      "terminals": [
+        "CNTAOT01",
+        "CNTAOT02",
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 28363.32,
+      "n": 2,
+      "terminals": [
+        "DJJIBT01"
+      ],
+      "source": "direct"
+    },
+    "EGALY": {
+      "avg": 40138.23,
+      "n": 2,
+      "terminals": [
+        "EGALYT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 40146.75,
+      "n": 1,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "EGSUZ": {
+      "avg": 403462.77,
+      "n": 4,
+      "terminals": [
+        "EGSUZT01",
+        "EGSUZT02"
+      ],
+      "source": "direct"
+    },
+    "MYPKG": {
+      "avg": 5695.81,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 9619.4,
+      "n": 6,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1691.99,
+      "n": 2,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "TRALI": {
+      "avg": 37455.23,
+      "n": 1,
+      "terminals": [
+        "TRALIT01"
+      ],
+      "source": "direct"
+    },
+    "TRIST": {
+      "avg": 52212.07,
+      "n": 2,
+      "terminals": [
+        "TRISTT02"
+      ],
+      "source": "direct"
+    },
+    "TRIZT": {
+      "avg": 32527.21,
+      "n": 1,
+      "terminals": [
+        "TRIZTT03"
+      ],
+      "source": "direct"
+    },
+    "TRMER": {
+      "avg": 25114.08,
+      "n": 1,
+      "terminals": [
+        "TRMERT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 16431.08,
+      "n": 1,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "CUKL": {
+    "AEKLF": {
+      "avg": 6887.78,
+      "n": 1,
+      "terminals": [
+        "AEKLFT01"
+      ],
+      "source": "direct"
+    },
+    "CNNAS": {
+      "avg": 7642.98,
+      "n": 3,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 12174.04,
+      "n": 3,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 31681.49,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 11048.53,
+      "n": 2,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 4083.69,
+      "n": 2,
+      "terminals": [
+        "CNTAOT01",
+        "CNTAOT02"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 27376.35,
+      "n": 3,
+      "terminals": [
+        "DJJIBT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 33617.99,
+      "n": 2,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "INMUN": {
+      "avg": 43152.75,
+      "n": 1,
+      "terminals": [
+        "INMUNT04"
+      ],
+      "source": "direct"
+    },
+    "INNSA": {
+      "avg": 20639.91,
+      "n": 1,
+      "terminals": [
+        "INNSAT05"
+      ],
+      "source": "direct"
+    },
+    "MYPKG": {
+      "avg": 584.22,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 8649.0,
+      "n": 5,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1507.34,
+      "n": 2,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 22548.14,
+      "n": 2,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "CULC": {
+    "AEJEA": {
+      "avg": 5986.41,
+      "n": 1,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "direct"
+    },
+    "CNNAS": {
+      "avg": 6933.81,
+      "n": 13,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 8110.7,
+      "n": 7,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT05"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 6984.96,
+      "n": 3,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 8855.94,
+      "n": 12,
+      "terminals": [
+        "CNSHKT01",
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 10241.32,
+      "n": 2,
+      "terminals": [
+        "CNTAOT01",
+        "CNTAOT02"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 28128.18,
+      "n": 4,
+      "terminals": [
+        "DJJIBT01",
+        "DJJIBT02"
+      ],
+      "source": "fallback_all"
+    },
+    "EGALY": {
+      "avg": 21894.54,
+      "n": 2,
+      "terminals": [
+        "EGALYT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 27633.31,
+      "n": 8,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSUZ": {
+      "avg": 264570.27,
+      "n": 2,
+      "terminals": [
+        "EGSUZT01",
+        "EGSUZT02"
+      ],
+      "source": "direct"
+    },
+    "INMUN": {
+      "avg": 21867.25,
+      "n": 1,
+      "terminals": [
+        "INMUNT01"
+      ],
+      "source": "fallback_all"
+    },
+    "INNSA": {
+      "avg": 17666.57,
+      "n": 1,
+      "terminals": [
+        "INNSAT03"
+      ],
+      "source": "fallback_all"
+    },
+    "MYPKG": {
+      "avg": 2519.89,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 14453.29,
+      "n": 4,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1213.86,
+      "n": 1,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "THBKK": {
+      "avg": 6382.64,
+      "n": 9,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 7949.34,
+      "n": 18,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "direct"
+    },
+    "THSCS": {
+      "avg": 3594.92,
+      "n": 9,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "direct"
+    },
+    "TRIST": {
+      "avg": 33547.33,
+      "n": 1,
+      "terminals": [
+        "TRISTT02"
+      ],
+      "source": "direct"
+    },
+    "TRIZT": {
+      "avg": 14933.15,
+      "n": 1,
+      "terminals": [
+        "TRIZTT03"
+      ],
+      "source": "direct"
+    },
+    "VNSGN": {
+      "avg": 13091.69,
+      "n": 1,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 18538.2,
+      "n": 1,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "CUMN": {
+    "CNNAS": {
+      "avg": 35199.1,
+      "n": 2,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 11008.31,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 10787.37,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 12623.44,
+      "n": 2,
+      "terminals": [
+        "CNSHKT01",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 9228.42,
+      "n": 2,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 32514.84,
+      "n": 1,
+      "terminals": [
+        "DJJIBT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 41999.1,
+      "n": 1,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 8978.51,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1772.53,
+      "n": 1,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "USLAX": {
+      "avg": 82055.68,
+      "n": 1,
+      "terminals": [
+        "USLAXT04"
+      ],
+      "source": "direct"
+    }
+  },
+  "CUNS": {
+    "CNNAS": {
+      "avg": 7053.24,
+      "n": 12,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 8430.63,
+      "n": 5,
+      "terminals": [
+        "CNNGBT01",
+        "CNNGBT02",
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 6787.11,
+      "n": 1,
+      "terminals": [
+        "CNSHAT01",
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 8760.92,
+      "n": 12,
+      "terminals": [
+        "CNSHKT01",
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 7170.51,
+      "n": 1,
+      "terminals": [
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 15155.05,
+      "n": 1,
+      "terminals": [
+        "DJJIBT01",
+        "DJJIBT02"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 29382.71,
+      "n": 3,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "MYPKG": {
+      "avg": 3157.94,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 16959.89,
+      "n": 5,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "THBKK": {
+      "avg": 6796.89,
+      "n": 7,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 8059.42,
+      "n": 14,
+      "terminals": [
+        "THLCHT02",
+        "THLCHT04"
+      ],
+      "source": "direct"
+    },
+    "THSCS": {
+      "avg": 3280.05,
+      "n": 7,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "direct"
+    },
+    "TWKHH": {
+      "avg": 5471.84,
+      "n": 16,
+      "terminals": [
+        "TWKHHT10"
+      ],
+      "source": "fallback_all"
+    },
+    "TWTPE": {
+      "avg": 4774.75,
+      "n": 16,
+      "terminals": [
+        "TWTPET01"
+      ],
+      "source": "fallback_all"
+    },
+    "TWTXG": {
+      "avg": 5144.39,
+      "n": 16,
+      "terminals": [
+        "TWTXGT03"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "CUQD": {
+    "CNNAS": {
+      "avg": 8151.81,
+      "n": 4,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNGB": {
+      "avg": 8980.72,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT05"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 8295.49,
+      "n": 1,
+      "terminals": [
+        "CNSHAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 14170.1,
+      "n": 5,
+      "terminals": [
+        "CNSHKT01",
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "CNTAO": {
+      "avg": 7271.35,
+      "n": 1,
+      "terminals": [
+        "CNTAOT02"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSOK": {
+      "avg": 36449.54,
+      "n": 4,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 11333.19,
+      "n": 5,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "CUSK": {
+    "CNNAS": {
+      "avg": 7700.54,
+      "n": 5,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 8567.2,
+      "n": 4,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT05",
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 44733.39,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 10325.95,
+      "n": 5,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 5095.78,
+      "n": 3,
+      "terminals": [
+        "CNTAOT01",
+        "CNTAOT02"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 29518.12,
+      "n": 1,
+      "terminals": [
+        "DJJIBT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 33370.97,
+      "n": 4,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "EGSUZ": {
+      "avg": 432679.83,
+      "n": 1,
+      "terminals": [
+        "EGSUZT01",
+        "EGSUZT02"
+      ],
+      "source": "direct"
+    },
+    "MYPKG": {
+      "avg": 2983.72,
+      "n": 3,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 10313.2,
+      "n": 5,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1509.57,
+      "n": 2,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "TRIST": {
+      "avg": 42758.18,
+      "n": 6,
+      "terminals": [
+        "TRISTT01",
+        "TRISTT02"
+      ],
+      "source": "fallback_all"
+    },
+    "TRIZT": {
+      "avg": 28674.55,
+      "n": 5,
+      "terminals": [
+        "TRIZTT03"
+      ],
+      "source": "fallback_all"
+    },
+    "YEADE": {
+      "avg": 38764.84,
+      "n": 2,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "CUXM": {
+    "CNNGB": {
+      "avg": 6737.78,
+      "n": 31,
+      "terminals": [
+        "CNNGBT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 6936.58,
+      "n": 27,
+      "terminals": [
+        "CNSHAT01"
+      ],
+      "source": "direct"
+    },
+    "SADMM": {
+      "avg": 5997.66,
+      "n": 1,
+      "terminals": [
+        "SADMMT01"
+      ],
+      "source": "fallback_all"
+    },
+    "TWKHH": {
+      "avg": 6942.28,
+      "n": 25,
+      "terminals": [
+        "TWKHHT05",
+        "TWKHHT10"
+      ],
+      "source": "direct"
+    },
+    "TWTPE": {
+      "avg": 6542.48,
+      "n": 27,
+      "terminals": [
+        "TWTPET01"
+      ],
+      "source": "direct"
+    },
+    "TWTXG": {
+      "avg": 6782.54,
+      "n": 24,
+      "terminals": [
+        "TWTXGT03"
+      ],
+      "source": "direct"
+    }
+  },
+  "CUYP": {
+    "CNHUA": {
+      "avg": 6338.37,
+      "n": 1,
+      "terminals": [
+        "CNHUAT11"
+      ],
+      "source": "direct"
+    },
+    "CNNAS": {
+      "avg": 5849.71,
+      "n": 2,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 8282.48,
+      "n": 16,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT05",
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 7163.96,
+      "n": 14,
+      "terminals": [
+        "CNSHAT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 8778.72,
+      "n": 1,
+      "terminals": [
+        "CNSHKT01",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 32150.6,
+      "n": 1,
+      "terminals": [
+        "DJJIBT01"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSOK": {
+      "avg": 31287.68,
+      "n": 9,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "MYPKG": {
+      "avg": 2518.58,
+      "n": 2,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 20000.0,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "THBKK": {
+      "avg": 4538.02,
+      "n": 15,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "direct"
+    },
+    "THBKS": {
+      "avg": 4638.44,
+      "n": 13,
+      "terminals": [
+        "THBKST01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 7851.3,
+      "n": 29,
+      "terminals": [
+        "THLCHT02",
+        "THLCHT04"
+      ],
+      "source": "direct"
+    },
+    "THSCS": {
+      "avg": 3741.94,
+      "n": 2,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "direct"
+    },
+    "VNSGN": {
+      "avg": 12063.93,
+      "n": 10,
+      "terminals": [
+        "VNSGNT01",
+        "VNSGNT04"
+      ],
+      "source": "direct"
+    }
+  },
+  "EVHA": {
+    "CNNAS": {
+      "avg": 301.57,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 12385.76,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 9246.99,
+      "n": 1,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 17500.0,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "GFMQ": {
+    "AEJEA": {
+      "avg": 7335.55,
+      "n": 2,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 16752.48,
+      "n": 3,
+      "terminals": [
+        "DJJIBT01",
+        "DJJIBT02"
+      ],
+      "source": "direct"
+    },
+    "INMUN": {
+      "avg": 23891.79,
+      "n": 3,
+      "terminals": [
+        "INMUNT04"
+      ],
+      "source": "direct"
+    },
+    "INNSA": {
+      "avg": 10727.93,
+      "n": 3,
+      "terminals": [
+        "INNSAT05"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 7232.11,
+      "n": 3,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 16256.27,
+      "n": 3,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "H728": {
+    "CNNAS": {
+      "avg": 3977.67,
+      "n": 2,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 10160.29,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 7840.88,
+      "n": 1,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 19400.0,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "H811": {
+    "CNNGB": {
+      "avg": 7289.05,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 6814.52,
+      "n": 2,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 8940.89,
+      "n": 1,
+      "terminals": [
+        "CNSHKT02"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 6563.56,
+      "n": 1,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "HAMD": {
+    "CNNAS": {
+      "avg": 6496.46,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 11044.27,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 8988.03,
+      "n": 1,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 27694.59,
+      "n": 1,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 19537.35,
+      "n": 3,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1469.88,
+      "n": 1,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "HDHY": {
+    "CNNAS": {
+      "avg": 7768.17,
+      "n": 3,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 15866.38,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 17569.79,
+      "n": 4,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 29231.81,
+      "n": 1,
+      "terminals": [
+        "DJJIBT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 36651.86,
+      "n": 3,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 9906.54,
+      "n": 4,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "VNSGN": {
+      "avg": 18719.0,
+      "n": 1,
+      "terminals": [
+        "VNSGNT03"
+      ],
+      "source": "direct"
+    }
+  },
+  "HOGE": {
+    "CNNAS": {
+      "avg": 577.03,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 471.55,
+      "n": 2,
+      "terminals": [
+        "CNNGBT05"
+      ],
+      "source": "direct"
+    }
+  },
+  "IAFW": {
+    "CNNAS": {
+      "avg": 6260.39,
+      "n": 10,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 7796.51,
+      "n": 9,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKK": {
+      "avg": 3254.95,
+      "n": 10,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THLCH": {
+      "avg": 5946.37,
+      "n": 19,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "fallback_all"
+    },
+    "THSCS": {
+      "avg": 2986.54,
+      "n": 9,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "IDRO": {
+    "CNNAS": {
+      "avg": 7666.3,
+      "n": 25,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 286.25,
+      "n": 1,
+      "terminals": [
+        "CNSHAT04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 8608.9,
+      "n": 24,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKK": {
+      "avg": 4739.6,
+      "n": 25,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THLCH": {
+      "avg": 6260.51,
+      "n": 48,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "fallback_all"
+    },
+    "THSCS": {
+      "avg": 3271.78,
+      "n": 23,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "fallback_all"
+    },
+    "VNSGN": {
+      "avg": 9804.35,
+      "n": 4,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "KRTM": {
+    "AEJEA": {
+      "avg": 7696.5,
+      "n": 6,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "direct"
+    },
+    "CNNAS": {
+      "avg": 7752.91,
+      "n": 2,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 7237.94,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 9588.39,
+      "n": 1,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 22412.38,
+      "n": 6,
+      "terminals": [
+        "DJJIBT02"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 23257.72,
+      "n": 1,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "INMUN": {
+      "avg": 28694.93,
+      "n": 6,
+      "terminals": [
+        "INMUNT01",
+        "INMUNT04"
+      ],
+      "source": "direct"
+    },
+    "INNSA": {
+      "avg": 15462.85,
+      "n": 6,
+      "terminals": [
+        "INNSAT03",
+        "INNSAT05"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 11643.89,
+      "n": 9,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 17893.8,
+      "n": 7,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "LAPA": {
+    "AEJEA": {
+      "avg": 7152.34,
+      "n": 2,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 17179.46,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 20591.69,
+      "n": 2,
+      "terminals": [
+        "DJJIBT01",
+        "DJJIBT02"
+      ],
+      "source": "direct"
+    },
+    "INMUN": {
+      "avg": 29579.81,
+      "n": 2,
+      "terminals": [
+        "INMUNT01",
+        "INMUNT04"
+      ],
+      "source": "direct"
+    },
+    "INNSA": {
+      "avg": 12352.3,
+      "n": 2,
+      "terminals": [
+        "INNSAT05"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 6790.1,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 4670.41,
+      "n": 1,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 20585.8,
+      "n": 2,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "LTAN": {
+    "CNNAS": {
+      "avg": 10218.2,
+      "n": 3,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNGB": {
+      "avg": 7831.49,
+      "n": 8,
+      "terminals": [
+        "CNNGBT05"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 6736.87,
+      "n": 8,
+      "terminals": [
+        "CNSHAT04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 8331.22,
+      "n": 2,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "SGSIN": {
+      "avg": 1167.77,
+      "n": 1,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKK": {
+      "avg": 5276.95,
+      "n": 10,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKS": {
+      "avg": 4731.32,
+      "n": 8,
+      "terminals": [
+        "THBKST01"
+      ],
+      "source": "fallback_all"
+    },
+    "THLCH": {
+      "avg": 5775.97,
+      "n": 20,
+      "terminals": [
+        "THLCHT02",
+        "THLCHT04"
+      ],
+      "source": "fallback_all"
+    },
+    "THSCS": {
+      "avg": 3384.77,
+      "n": 2,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "fallback_all"
+    },
+    "VNSGN": {
+      "avg": 13479.93,
+      "n": 7,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "MGSH": {
+    "CNNGB": {
+      "avg": 7735.97,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 14796.54,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 19000.0,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "MMRN": {
+    "CNNAS": {
+      "avg": 4242.51,
+      "n": 9,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 404.75,
+      "n": 1,
+      "terminals": [
+        "CNNGBT05"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 8060.89,
+      "n": 5,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "THBKK": {
+      "avg": 3834.05,
+      "n": 5,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 4602.32,
+      "n": 10,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "direct"
+    },
+    "THSCS": {
+      "avg": 2543.48,
+      "n": 5,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "direct"
+    }
+  },
+  "MODS": {
+    "CNNAS": {
+      "avg": 4883.37,
+      "n": 9,
+      "terminals": [
+        "CNNAST04",
+        "CNNAST05"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 10373.32,
+      "n": 8,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "THBKK": {
+      "avg": 3943.15,
+      "n": 7,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 4859.26,
+      "n": 14,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "direct"
+    },
+    "THSCS": {
+      "avg": 2850.7,
+      "n": 7,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "direct"
+    }
+  },
+  "OSGB": {
+    "CNHMN": {
+      "avg": 783.18,
+      "n": 14,
+      "terminals": [
+        "CNHMNT01"
+      ],
+      "source": "direct"
+    },
+    "CNHUA": {
+      "avg": 813.45,
+      "n": 14,
+      "terminals": [
+        "CNHUAT01"
+      ],
+      "source": "direct"
+    },
+    "CNNAS": {
+      "avg": 672.41,
+      "n": 14,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 2079.86,
+      "n": 14,
+      "terminals": [
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "TWKEL": {
+      "avg": 4622.58,
+      "n": 14,
+      "terminals": [
+        "TWKELT01"
+      ],
+      "source": "direct"
+    },
+    "TWKHH": {
+      "avg": 4103.94,
+      "n": 14,
+      "terminals": [
+        "TWKHHT01",
+        "TWKHHT05",
+        "TWKHHT06"
+      ],
+      "source": "direct"
+    },
+    "TWTXG": {
+      "avg": 3903.09,
+      "n": 14,
+      "terminals": [
+        "TWTXGT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "OSGT": {
+    "CNSHK": {
+      "avg": 2838.21,
+      "n": 13,
+      "terminals": [
+        "CNSHKT01",
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSWA": {
+      "avg": 2078.07,
+      "n": 13,
+      "terminals": [
+        "CNSWAT02"
+      ],
+      "source": "fallback_all"
+    },
+    "HKHKG": {
+      "avg": 1152.59,
+      "n": 1,
+      "terminals": [
+        "HKHKGT02"
+      ],
+      "source": "fallback_all"
+    },
+    "TWKEL": {
+      "avg": 3955.31,
+      "n": 13,
+      "terminals": [
+        "TWKELT01"
+      ],
+      "source": "fallback_all"
+    },
+    "TWKHH": {
+      "avg": 3790.7,
+      "n": 13,
+      "terminals": [
+        "TWKHHT01"
+      ],
+      "source": "fallback_all"
+    },
+    "TWTXG": {
+      "avg": 3576.37,
+      "n": 13,
+      "terminals": [
+        "TWTXGT02"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "RACE": {
+    "CNNGB": {
+      "avg": 22531.24,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 25317.88,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 39897.85,
+      "n": 1,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 10467.55,
+      "n": 2,
+      "terminals": [
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    }
+  },
+  "SHTG": {
+    "CNNGB": {
+      "avg": 720.19,
+      "n": 1,
+      "terminals": [
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 8254.0,
+      "n": 1,
+      "terminals": [
+        "CNTAOT02"
+      ],
+      "source": "direct"
+    }
+  },
+  "SMTJ": {
+    "CNNGB": {
+      "avg": 11406.55,
+      "n": 1,
+      "terminals": [
+        "CNNGBT05"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 20633.55,
+      "n": 3,
+      "terminals": [
+        "CNSHAT01",
+        "CNSHAT03"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 10241.41,
+      "n": 2,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "INMUN": {
+      "avg": 31734.26,
+      "n": 5,
+      "terminals": [
+        "INMUNT04"
+      ],
+      "source": "fallback_all"
+    },
+    "INNSA": {
+      "avg": 47546.6,
+      "n": 2,
+      "terminals": [
+        "INNSAT03"
+      ],
+      "source": "fallback_all"
+    },
+    "MYPKG": {
+      "avg": 6206.45,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "fallback_all"
+    },
+    "PKKHI": {
+      "avg": 52959.82,
+      "n": 2,
+      "terminals": [
+        "PKKHIT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SGSIN": {
+      "avg": 21593.79,
+      "n": 1,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "fallback_all"
+    },
+    "VNHPH": {
+      "avg": 18572.39,
+      "n": 3,
+      "terminals": [
+        "VNHPHT06"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "SNSO": {
+    "CNNAS": {
+      "avg": 5783.0,
+      "n": 4,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 7629.27,
+      "n": 4,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "THBKK": {
+      "avg": 5026.51,
+      "n": 5,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 6117.21,
+      "n": 8,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "direct"
+    },
+    "THSCS": {
+      "avg": 2731.14,
+      "n": 4,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "direct"
+    }
+  },
+  "SSSE": {
+    "CNNAS": {
+      "avg": 5856.5,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNGB": {
+      "avg": 7684.34,
+      "n": 8,
+      "terminals": [
+        "CNNGBT05",
+        "CNNGBT06"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 8043.68,
+      "n": 10,
+      "terminals": [
+        "CNSHAT04"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKK": {
+      "avg": 4105.3,
+      "n": 9,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKS": {
+      "avg": 4004.2,
+      "n": 8,
+      "terminals": [
+        "THBKST01"
+      ],
+      "source": "fallback_all"
+    },
+    "THLCH": {
+      "avg": 7004.16,
+      "n": 18,
+      "terminals": [
+        "THLCHT02",
+        "THLCHT04"
+      ],
+      "source": "fallback_all"
+    },
+    "VNSGN": {
+      "avg": 12645.28,
+      "n": 6,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "STBE": {
+    "AEJEA": {
+      "avg": 7022.37,
+      "n": 3,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "direct"
+    },
+    "CNNAS": {
+      "avg": 6498.83,
+      "n": 3,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 15160.46,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 13892.58,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 9467.45,
+      "n": 3,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 20449.38,
+      "n": 8,
+      "terminals": [
+        "DJJIBT01",
+        "DJJIBT02"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 23713.45,
+      "n": 3,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "INMUN": {
+      "avg": 28489.78,
+      "n": 4,
+      "terminals": [
+        "INMUNT04"
+      ],
+      "source": "direct"
+    },
+    "INNSA": {
+      "avg": 12855.11,
+      "n": 4,
+      "terminals": [
+        "INNSAT05"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 12859.5,
+      "n": 8,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1268.24,
+      "n": 2,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 15764.27,
+      "n": 4,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "SY68": {
+    "CNNGB": {
+      "avg": 6648.44,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 8251.83,
+      "n": 1,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 16377.89,
+      "n": 3,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 6807.82,
+      "n": 12,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 16982.0,
+      "n": 10,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "TGLK": {
+    "CNNAS": {
+      "avg": 7851.62,
+      "n": 6,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 9145.68,
+      "n": 5,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 6967.68,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 9323.33,
+      "n": 5,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 30745.32,
+      "n": 1,
+      "terminals": [
+        "DJJIBT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 31122.27,
+      "n": 4,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 15220.67,
+      "n": 7,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1299.93,
+      "n": 2,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "YEADE": {
+      "avg": 18726.88,
+      "n": 3,
+      "terminals": [
+        "YEADET01"
+      ],
+      "source": "direct"
+    }
+  },
+  "TMOS": {
+    "MYPKG": {
+      "avg": 3039.75,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "UGSZ": {
+    "CNNAS": {
+      "avg": 6532.84,
+      "n": 2,
+      "terminals": [
+        "CNNAST04",
+        "CNNAST05"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 7531.11,
+      "n": 5,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 9359.48,
+      "n": 4,
+      "terminals": [
+        "CNTAOT01",
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    },
+    "CNXMN": {
+      "avg": 8140.19,
+      "n": 4,
+      "terminals": [
+        "CNXMNT01"
+      ],
+      "source": "direct"
+    },
+    "PHMNL": {
+      "avg": 12413.26,
+      "n": 4,
+      "terminals": [
+        "PHMNLT01"
+      ],
+      "source": "direct"
+    },
+    "THLCH": {
+      "avg": 7065.83,
+      "n": 1,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "direct"
+    }
+  },
+  "WNFD": {
+    "CNNAS": {
+      "avg": 7837.47,
+      "n": 2,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 14935.15,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 10765.9,
+      "n": 2,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 31769.36,
+      "n": 2,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 16668.82,
+      "n": 4,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "X106": {
+    "CNSHA": {
+      "avg": 4983.33,
+      "n": 3,
+      "terminals": [
+        "CNSHAT04"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "XD88": {
+    "CNNAS": {
+      "avg": 318.29,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    }
+  },
+  "XHDP": {
+    "AEJEA": {
+      "avg": 9185.81,
+      "n": 1,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNAS": {
+      "avg": 8243.67,
+      "n": 4,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 10710.76,
+      "n": 7,
+      "terminals": [
+        "CNNGBT04",
+        "CNNGBT05"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 7341.57,
+      "n": 3,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 11625.7,
+      "n": 6,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "CNTAO": {
+      "avg": 6379.42,
+      "n": 3,
+      "terminals": [
+        "CNTAOT01"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 27334.49,
+      "n": 3,
+      "terminals": [
+        "DJJIBT01",
+        "DJJIBT02"
+      ],
+      "source": "fallback_all"
+    },
+    "EGALY": {
+      "avg": 23247.3,
+      "n": 4,
+      "terminals": [
+        "EGALYT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 28778.25,
+      "n": 4,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSUZ": {
+      "avg": 285049.4,
+      "n": 4,
+      "terminals": [
+        "EGSUZT01",
+        "EGSUZT02"
+      ],
+      "source": "direct"
+    },
+    "INMUN": {
+      "avg": 22102.27,
+      "n": 1,
+      "terminals": [
+        "INMUNT01"
+      ],
+      "source": "fallback_all"
+    },
+    "INNSA": {
+      "avg": 18032.02,
+      "n": 1,
+      "terminals": [
+        "INNSAT03"
+      ],
+      "source": "fallback_all"
+    },
+    "MYPKG": {
+      "avg": 3238.66,
+      "n": 1,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 6888.24,
+      "n": 4,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SGSIN": {
+      "avg": 1226.84,
+      "n": 2,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "direct"
+    },
+    "TRIST": {
+      "avg": 38592.32,
+      "n": 2,
+      "terminals": [
+        "TRISTT02"
+      ],
+      "source": "direct"
+    },
+    "TRIZT": {
+      "avg": 19763.5,
+      "n": 2,
+      "terminals": [
+        "TRIZTT03"
+      ],
+      "source": "direct"
+    }
+  },
+  "XPBL": {
+    "CNNAS": {
+      "avg": 4992.52,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 2995.51,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 35660.88,
+      "n": 1,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 60243.5,
+      "n": 1,
+      "terminals": [
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    },
+    "CNXMN": {
+      "avg": 2496.26,
+      "n": 1,
+      "terminals": [
+        "CNXMNT03"
+      ],
+      "source": "direct"
+    }
+  },
+  "ZGBJ": {
+    "AEJEA": {
+      "avg": 9453.78,
+      "n": 1,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 20180.42,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 9365.27,
+      "n": 1,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "ZGCC": {
+    "AEJEA": {
+      "avg": 11120.15,
+      "n": 2,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNAS": {
+      "avg": 11223.61,
+      "n": 2,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNGB": {
+      "avg": 13574.76,
+      "n": 1,
+      "terminals": [
+        "CNNGBT06"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 22920.55,
+      "n": 3,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 13341.29,
+      "n": 1,
+      "terminals": [
+        "CNSHKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "QAHMD": {
+      "avg": 7037.58,
+      "n": 1,
+      "terminals": [
+        "QAHMDT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SADMM": {
+      "avg": 5904.96,
+      "n": 3,
+      "terminals": [
+        "SADMMT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SGSIN": {
+      "avg": 4858.14,
+      "n": 2,
+      "terminals": [
+        "SGSINT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "ZGCD": {
+    "CNNGB": {
+      "avg": 1499.81,
+      "n": 2,
+      "terminals": [
+        "CNNGBT05",
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 10104.44,
+      "n": 1,
+      "terminals": [
+        "CNTAOT02"
+      ],
+      "source": "direct"
+    }
+  },
+  "ZGCS": {
+    "AEJEA": {
+      "avg": 11261.48,
+      "n": 4,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNAS": {
+      "avg": 22494.35,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "IDJKT": {
+      "avg": 28509.9,
+      "n": 2,
+      "terminals": [
+        "IDJKTT01"
+      ],
+      "source": "fallback_all"
+    },
+    "INMUN": {
+      "avg": 80590.05,
+      "n": 3,
+      "terminals": [
+        "INMUNT01",
+        "INMUNT06"
+      ],
+      "source": "fallback_all"
+    },
+    "INNSA": {
+      "avg": 38264.89,
+      "n": 5,
+      "terminals": [
+        "INNSAT02",
+        "INNSAT03",
+        "INNSAT05"
+      ],
+      "source": "fallback_all"
+    },
+    "MYPKG": {
+      "avg": 5462.07,
+      "n": 6,
+      "terminals": [
+        "MYPKGT01"
+      ],
+      "source": "fallback_all"
+    },
+    "OMSOH": {
+      "avg": 11655.65,
+      "n": 1,
+      "terminals": [
+        "OMSOHT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SADMM": {
+      "avg": 9399.93,
+      "n": 4,
+      "terminals": [
+        "SADMMT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THLCH": {
+      "avg": 17254.4,
+      "n": 2,
+      "terminals": [
+        "THLCHT08"
+      ],
+      "source": "fallback_all"
+    },
+    "VNVUT": {
+      "avg": 13966.97,
+      "n": 2,
+      "terminals": [
+        "VNVUTT04"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "ZGDZ": {
+    "AEJEA": {
+      "avg": 7393.82,
+      "n": 1,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNAS": {
+      "avg": 7833.13,
+      "n": 7,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 6551.53,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 8675.92,
+      "n": 3,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "CNTAO": {
+      "avg": 6429.67,
+      "n": 1,
+      "terminals": [
+        "CNTAOT02"
+      ],
+      "source": "fallback_all"
+    },
+    "THBKK": {
+      "avg": 6502.47,
+      "n": 5,
+      "terminals": [
+        "THBKKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "THLCH": {
+      "avg": 4788.86,
+      "n": 4,
+      "terminals": [
+        "THLCHT02"
+      ],
+      "source": "fallback_all"
+    },
+    "THSCS": {
+      "avg": 2419.15,
+      "n": 3,
+      "terminals": [
+        "THSCST01"
+      ],
+      "source": "fallback_all"
+    },
+    "VNSGN": {
+      "avg": 13158.72,
+      "n": 4,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "ZGNC": {
+    "SAJED": {
+      "avg": 18000.0,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "ZGOA": {
+    "CNNAS": {
+      "avg": 7236.91,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 9254.55,
+      "n": 1,
+      "terminals": [
+        "CNNGBT05"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 15593.97,
+      "n": 1,
+      "terminals": [
+        "CNSHAT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 10173.73,
+      "n": 1,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "VNSGN": {
+      "avg": 10630.18,
+      "n": 1,
+      "terminals": [
+        "VNSGNT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "ZGYC": {
+    "CNNGB": {
+      "avg": 15624.21,
+      "n": 1,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 6951.86,
+      "n": 1,
+      "terminals": [
+        "CNTAOT02"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 19000.0,
+      "n": 1,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "ZGYK": {
+    "AEJEA": {
+      "avg": 11252.5,
+      "n": 5,
+      "terminals": [
+        "AEJEAT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNGB": {
+      "avg": 8520.38,
+      "n": 4,
+      "terminals": [
+        "CNNGBT06",
+        "CNNGBT07"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHA": {
+      "avg": 14655.22,
+      "n": 6,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 9516.77,
+      "n": 5,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "ZGZH": {
+    "CNNAS": {
+      "avg": 495.92,
+      "n": 1,
+      "terminals": [
+        "CNNAST05"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 9006.22,
+      "n": 1,
+      "terminals": [
+        "CNNGBT06"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 21046.11,
+      "n": 1,
+      "terminals": [
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    }
+  },
+  "ZLST": {
+    "CNHUI": {
+      "avg": 747.98,
+      "n": 18,
+      "terminals": [
+        "CNHUIT01"
+      ],
+      "source": "fallback_all"
+    },
+    "CNNAS": {
+      "avg": 944.67,
+      "n": 33,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSHK": {
+      "avg": 1901.56,
+      "n": 14,
+      "terminals": [
+        "CNSHKT02",
+        "CNSHKT07"
+      ],
+      "source": "fallback_all"
+    },
+    "CNSWA": {
+      "avg": 1859.45,
+      "n": 28,
+      "terminals": [
+        "CNSWAT02"
+      ],
+      "source": "fallback_all"
+    },
+    "CNYTN": {
+      "avg": 411.66,
+      "n": 17,
+      "terminals": [
+        "CNYTNT01"
+      ],
+      "source": "fallback_all"
+    },
+    "EGSOK": {
+      "avg": 13785.82,
+      "n": 1,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "fallback_all"
+    },
+    "SAJED": {
+      "avg": 5912.2,
+      "n": 45,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    },
+    "SDPZU": {
+      "avg": 11181.17,
+      "n": 2,
+      "terminals": [
+        "SDPZUT01"
+      ],
+      "source": "direct"
+    },
+    "TWKEL": {
+      "avg": 4341.95,
+      "n": 14,
+      "terminals": [
+        "TWKELT01"
+      ],
+      "source": "fallback_all"
+    },
+    "TWKHH": {
+      "avg": 3930.71,
+      "n": 27,
+      "terminals": [
+        "TWKHHT01"
+      ],
+      "source": "fallback_all"
+    },
+    "TWTXG": {
+      "avg": 4511.03,
+      "n": 27,
+      "terminals": [
+        "TWTXGT02"
+      ],
+      "source": "fallback_all"
+    }
+  },
+  "ZPYY": {
+    "CNHMN": {
+      "avg": 13462.06,
+      "n": 1,
+      "terminals": [
+        "CNHMNT01"
+      ],
+      "source": "direct"
+    },
+    "CNNAS": {
+      "avg": 6627.23,
+      "n": 2,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 11088.08,
+      "n": 3,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHA": {
+      "avg": 7348.47,
+      "n": 1,
+      "terminals": [
+        "CNSHAT02"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 10671.12,
+      "n": 2,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "DJJIB": {
+      "avg": 25870.48,
+      "n": 2,
+      "terminals": [
+        "DJJIBT01"
+      ],
+      "source": "direct"
+    },
+    "EGSOK": {
+      "avg": 25027.82,
+      "n": 2,
+      "terminals": [
+        "EGSOKT01"
+      ],
+      "source": "direct"
+    },
+    "SAJED": {
+      "avg": 8518.47,
+      "n": 3,
+      "terminals": [
+        "SAJEDT01"
+      ],
+      "source": "direct"
+    }
+  },
+  "ZYHS": {
+    "CNNAS": {
+      "avg": 5899.37,
+      "n": 1,
+      "terminals": [
+        "CNNAST04"
+      ],
+      "source": "direct"
+    },
+    "CNNGB": {
+      "avg": 7203.91,
+      "n": 2,
+      "terminals": [
+        "CNNGBT04"
+      ],
+      "source": "direct"
+    },
+    "CNSHK": {
+      "avg": 8648.31,
+      "n": 3,
+      "terminals": [
+        "CNSHKT07"
+      ],
+      "source": "direct"
+    },
+    "CNTAO": {
+      "avg": 9387.85,
+      "n": 1,
+      "terminals": [
+        "CNTAOT03"
+      ],
+      "source": "direct"
+    },
+    "CNXMN": {
+      "avg": 3300.2,
+      "n": 2,
+      "terminals": [
+        "CNXMNT03"
+      ],
+      "source": "direct"
+    }
+  }
+}
