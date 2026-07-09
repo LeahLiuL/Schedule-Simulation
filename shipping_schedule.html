@@ -1514,10 +1514,10 @@
             <div class="cost-card-value" id="ccHireCost">--</div>
             <div class="cost-card-sub" id="ccHireCostSub">awaiting simulation</div>
           </div>
-          <div class="cost-card cost-placeholder" id="ccPtx">
+          <div class="cost-card" id="ccPtx">
             <div class="cost-card-label">PTX (Port Charges)</div>
-            <div class="cost-card-value" style="color:var(--muted);">--</div>
-            <div class="cost-card-sub">coming soon</div>
+            <div class="cost-card-value" id="ccPtxCost" style="color:var(--muted);">--</div>
+            <div class="cost-card-sub" id="ccPtxSub">awaiting simulation</div>
           </div>
         </div>
       </div>
@@ -2871,6 +2871,7 @@ let VESSELS_DATA = [];  // [{code, name, speed, lsfo, hsfo, mgo}, ...]
 let DIST_RAW = [];      // [[from, to, distance, source], ...] source: 'auto' | 'manual'
 let PARTICULAR_DATA = [];  // vessel particular info (array of row objects from cul_ship_particular.csv)
 let BESTMODEL_DATA = [];   // vessel capacity per lane (from cul_vessel_bestmodel.csv)
+let PTX_AVG = {};          // precomputed PTX averages: { shipCode: { portCode: { avg, n, terminals, source } } }
 
 // Load all CSV data from GitHub (including lanes.json)
 async function loadAllData(){
@@ -2921,6 +2922,8 @@ async function loadAllData(){
   // Load vessel particular & best-model data (fire-and-forget)
   loadParticularData().catch(function(){});
   loadBestModelData().catch(function(){});
+  // Load PTX averages (fire-and-forget)
+  loadPtxData().catch(function(){});
 }
 
 // Load CUL Ship Particular data (transposed CSV: rows=fields, cols=vessels)
@@ -2960,6 +2963,36 @@ async function loadBestModelData(){
   } catch(e){ console.warn('Load best model failed:', e.message); }
 }
 
+// Load PTX averages (precomputed port charge averages per ship/port)
+async function loadPtxData(){
+  try {
+    // Try local server first, then GitHub API, then raw CDN
+    let json = null;
+    try {
+      const resp = await fetch('shipping_data/ptx_averages.json', { cache: 'no-store' });
+      if(resp.ok) json = await resp.json();
+    } catch(e){}
+    if(!json){
+      const headers = { 'Accept': 'application/vnd.github.v3.raw' };
+      try {
+        const resp = await fetch(GH_REPO_API + '/shipping_data/ptx_averages.json', { headers, cache: 'no-store' });
+        if(resp.ok) json = await resp.json();
+      } catch(e2){}
+    }
+    if(!json){
+      const resp = await fetch('https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/ptx_averages.json', { cache: 'no-store' });
+      if(resp.ok) json = await resp.json();
+    }
+    if(json){
+      PTX_AVG = json;
+      const ships = Object.keys(PTX_AVG);
+      const combos = ships.reduce((s,k) => s + Object.keys(PTX_AVG[k]).length, 0);
+      console.log('[loadPtxData] Loaded ' + ships.length + ' PTX ships, ' + combos + ' ship-port combos');
+    } else {
+      console.warn('[loadPtxData] Failed to load ptx_averages.json from all sources');
+    }
+  } catch(e){ console.warn('[loadPtxData] Error:', e.message); }
+}
 
 // Build distance lookup
 let DIST_MAP = {};
@@ -3801,6 +3834,9 @@ function updateCostPanel(){
   const showHire    = isFinite(hireCost) && hireDaily > 0 && voyageDays > 0;
   document.getElementById('ccHireCost').textContent    = showHire ? fmtUSD(hireCost) : '--';
   document.getElementById('ccHireCostSub').textContent = showHire ? voyageDays.toFixed(1)+' days × $'+hireDaily+'/day' : 'awaiting simulation';
+
+  // PTX (Port Charges)
+  updatePtxCard();
 }
 
 function parseFloatDay(id){
@@ -3815,6 +3851,258 @@ function parseFuelMt(id){
   if(!el) return 0;
   const m = el.textContent.match(/([\d.]+)/);
   return m ? parseFloat(m[1]) : 0;
+}
+
+// ==================== PTX (Port Charges) Calculation ====================
+
+/**
+ * Calculate PTX for the current voyage.
+ * For each port in selectedPorts:
+ *  1. Direct match: currentVessel.code in PTX_AVG → that portCode → use avg
+ *  2. Similar vessel: find PTX_AVG shipCode whose GRT/NRT/TEU is closest → use that portCode avg
+ *  3. No data: write 0, annotate reason
+ *
+ * Returns { total: number, ports: [{code, name, amount, source, reason, detail}] }
+ */
+function calcPtxForVoyage(){
+  if(!currentVessel || !currentVessel.code || selectedPorts.length === 0){
+    return { total: 0, ports: [] };
+  }
+  if(Object.keys(PTX_AVG).length === 0){
+    return { total: 0, ports: selectedPorts.map(p => ({
+      code: p.code, amount: 0,
+      source: 'no_data', reason: 'PTX data not loaded'
+    })) };
+  }
+
+  const vesselCode = currentVessel.code;
+  const vesselGrt  = getVesselGrt(vesselCode);
+  const vesselNrt  = getVesselNrt(vesselCode);
+  const vesselTeu  = getVesselTeu(vesselCode);
+
+  // Pre-compute similarity scores for all PTX ships (if we need fallback)
+  let similarShipCache = null;
+  function getSimilarShip(portCode){
+    if(!similarShipCache) similarShipCache = buildSimilarShipList(vesselGrt, vesselNrt, vesselTeu);
+    // Find the first similar ship that has data for this port
+    for(const sim of similarShipCache){
+      if(PTX_AVG[sim.shipCode] && PTX_AVG[sim.shipCode][portCode]){
+        return sim;
+      }
+    }
+    return null;
+  }
+
+  const portResults = [];
+  let totalPtx = 0;
+
+  for(const p of selectedPorts){
+    const portCode = p.code;
+    let amount = 0;
+    let source = 'no_data';
+    let reason = '';
+    let detail = '';
+
+    // 1. Direct match
+    if(PTX_AVG[vesselCode] && PTX_AVG[vesselCode][portCode]){
+      const entry = PTX_AVG[vesselCode][portCode];
+      amount = entry.avg;
+      source = 'direct';
+      detail = 'n=' + entry.n + (entry.source === 'fallback_all' ? ' (all periods)' : ' (recent 12mo)');
+      if(entry.terminals && entry.terminals.length > 1){
+        detail += ', terminals: ' + entry.terminals.join(', ');
+      }
+    } else if(PTX_AVG[vesselCode]){
+      // Vessel has PTX data, but not for this specific port
+      // 2. Try similar vessel for this port
+      const sim = getSimilarShip(portCode);
+      if(sim){
+        const entry = PTX_AVG[sim.shipCode][portCode];
+        amount = entry.avg;
+        source = 'similar';
+        detail = 'similar vessel: ' + sim.shipCode + ' (score=' + sim.score.toFixed(2) + ', n=' + entry.n + ')';
+      } else {
+        amount = 0;
+        source = 'no_data';
+        reason = 'No PTX data for vessel ' + vesselCode + ' at port ' + portCode + ', and no similar vessel with data at this port';
+      }
+    } else {
+      // Vessel code not found in PTX_AVG at all
+      // Could be a typo or a vessel not in PTX system
+      // 2. Try similar vessel for each port
+      const sim = getSimilarShip(portCode);
+      if(sim){
+        const entry = PTX_AVG[sim.shipCode][portCode];
+        amount = entry.avg;
+        source = 'similar';
+        detail = 'vessel ' + vesselCode + ' not in PTX data; similar vessel: ' + sim.shipCode + ' (score=' + sim.score.toFixed(2) + ')';
+      } else {
+        amount = 0;
+        source = 'no_data';
+        reason = 'Vessel ' + vesselCode + ' not found in PTX data (possible code mismatch/typo), and no similar vessel available for port ' + portCode;
+      }
+    }
+
+    totalPtx += amount;
+    portResults.push({ code: portCode, amount, source, reason, detail });
+  }
+
+  return { total: totalPtx, ports: portResults };
+}
+
+/**
+ * Build a list of PTX ships ranked by similarity to the current vessel.
+ * Uses GRT, NRT, TEU to compute a similarity score.
+ */
+function buildSimilarShipList(grt, nrt, teu){
+  const ptxShipCodes = Object.keys(PTX_AVG);
+  const candidates = [];
+
+  for(const shipCode of ptxShipCodes){
+    const sGrt = getVesselGrt(shipCode);
+    const sNrt = getVesselNrt(shipCode);
+    const sTeu = getVesselTeu(shipCode);
+
+    // Skip if no size data at all
+    if(!sGrt && !sNrt && !sTeu) continue;
+
+    // Compute similarity score (lower = more similar)
+    // Normalize each dimension by max value to avoid dominance
+    const maxGrt = Math.max(grt || 1, sGrt || 1);
+    const maxNrt = Math.max(nrt || 1, sNrt || 1);
+    const maxTeu = Math.max(teu || 1, sTeu || 1);
+
+    const dGrt = grt && sGrt ? Math.abs(grt - sGrt) / maxGrt : (grt || sGrt) ? 1 : 0;
+    const dNrt = nrt && sNrt ? Math.abs(nrt - sNrt) / maxNrt : (nrt || sNrt) ? 1 : 0;
+    const dTeu = teu && sTeu ? Math.abs(teu - sTeu) / maxTeu : (teu || sTeu) ? 1 : 0;
+
+    // Weight: GRT=0.4, NRT=0.3, TEU=0.3 (GRT most important for port charges)
+    const score = dGrt * 0.4 + dNrt * 0.3 + dTeu * 0.3;
+    candidates.push({ shipCode, score, grt: sGrt, nrt: sNrt, teu: sTeu });
+  }
+
+  // Sort by score ascending (most similar first)
+  candidates.sort((a, b) => a.score - b.score);
+  return candidates;
+}
+
+/**
+ * Get vessel GRT from PARTICULAR_DATA (transposed CSV).
+ * The particular CSV has vessels as columns, field labels as rows.
+ * Access: PARTICULAR_DATA[rowIdx][vesselColumnKey]
+ */
+function getVesselGrt(code){
+  const vName = getVesselName(code);
+  return _getParticularField(vName, 'GRT');
+}
+function getVesselNrt(code){
+  const vName = getVesselName(code);
+  return _getParticularField(vName, 'NRT');
+}
+function getVesselTeu(code){
+  // TEU comes from bestmodel CSV, not particular
+  return _getBestModelTeu(code);
+}
+
+function _getParticularField(vesselName, fieldLabel){
+  if(!vesselName || PARTICULAR_DATA.length === 0) return 0;
+  // Find the row with this field label
+  const row = PARTICULAR_DATA.find(r => {
+    const firstKey = Object.keys(r)[0];
+    return r[firstKey] === fieldLabel;
+  });
+  if(!row) return 0;
+  // Find the column matching the vessel name (exact or partial)
+  // Column keys in particular CSV are vessel names
+  const keys = Object.keys(row);
+  // Exact match
+  if(row[vesselName] !== undefined) return parseFloat(row[vesselName]) || 0;
+  // Partial match (vessel name might differ slightly)
+  for(const k of keys){
+    if(k && String(k).toUpperCase().includes(vesselName.toUpperCase().split(' ')[0])){
+      return parseFloat(row[k]) || 0;
+    }
+  }
+  return 0;
+}
+
+function _getBestModelTeu(code){
+  if(BESTMODEL_DATA.length === 0) return 0;
+  const vName = getVesselName(code);
+  if(!vName) return 0;
+  // Find matching row in bestmodel
+  for(const r of BESTMODEL_DATA){
+    const bvName = r['Vessel Name'] || r.vessel_name || '';
+    if(bvName.toUpperCase() === vName.toUpperCase()){
+      return parseFloat(r['Max TEU'] || r.max_teu || 0) || 0;
+    }
+  }
+  // Partial match
+  for(const r of BESTMODEL_DATA){
+    const bvName = r['Vessel Name'] || r.vessel_name || '';
+    if(bvName.toUpperCase().includes(vName.toUpperCase().split(' ')[0])){
+      return parseFloat(r['Max TEU'] || r.max_teu || 0) || 0;
+    }
+  }
+  return 0;
+}
+
+function getVesselName(code){
+  if(!code) return '';
+  // Look up from VESSELS_DATA
+  const v = VESSELS_DATA.find(v => v.code === code);
+  return v ? v.name : code;
+}
+
+/** Update the PTX cost card in the cost panel */
+function updatePtxCard(){
+  const card = document.getElementById('ccPtx');
+  if(!card) return;
+
+  const result = calcPtxForVoyage();
+
+  // Remove placeholder styling
+  card.classList.remove('cost-placeholder');
+
+  // Update card content
+  const valueEl = document.getElementById('ccPtxCost');
+  const subEl   = document.getElementById('ccPtxSub');
+  if(!valueEl || !subEl) return;
+
+  if(result.total > 0){
+    valueEl.textContent = fmtUSD(result.total);
+    valueEl.style.color = '';
+    // Build sub text: total + count of ports with data
+    const directCount = result.ports.filter(p => p.source === 'direct').length;
+    const simCount    = result.ports.filter(p => p.source === 'similar').length;
+    const noDataCount = result.ports.filter(p => p.source === 'no_data').length;
+    let subText = result.ports.length + ' ports';
+    if(directCount > 0) subText += ' | ' + directCount + ' direct';
+    if(simCount > 0)    subText += ' | ' + simCount + ' similar';
+    if(noDataCount > 0) subText += ' | ' + noDataCount + ' no data';
+    subEl.textContent = subText;
+  } else if(result.ports.length > 0){
+    valueEl.textContent = '$0';
+    valueEl.style.color = 'var(--muted)';
+    subEl.textContent = 'No PTX data available for this vessel/port combination';
+  } else {
+    valueEl.textContent = '--';
+    valueEl.style.color = 'var(--muted)';
+    subEl.textContent = 'awaiting simulation';
+  }
+
+  // Build hover tooltip with per-port details
+  let tooltipLines = [];
+  for(const p of result.ports){
+    if(p.amount > 0){
+      tooltipLines.push(p.code + ': ' + fmtUSD(p.amount) + ' [' + p.source + '] ' + p.detail);
+    } else if(p.reason){
+      tooltipLines.push(p.code + ': $0 — ' + p.reason);
+    }
+  }
+  if(tooltipLines.length > 0){
+    card.title = tooltipLines.join('\n');
+  }
 }
 
 // ==================== COST PANEL RESIZER ====================
