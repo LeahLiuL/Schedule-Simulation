@@ -7304,6 +7304,16 @@ function switchAppTab(tab){
   const el = document.getElementById(tabId);
   if(tab==='portcharges'||tab==='dailymovement'){ el.classList.add('active'); }
   else { el.classList.add('active','block'); }
+  // Force-refresh iframe for external tabs (bypass browser cache)
+  if(tab==='portcharges'||tab==='dailymovement'){
+    var iframe = el.querySelector('iframe');
+    if(iframe){
+      var src = iframe.getAttribute('src');
+      // Strip any existing cache-bust param, then add new one
+      var base = src.split('?')[0];
+      iframe.setAttribute('src', base + '?_t=' + Date.now());
+    }
+  }
   if(tab==='daily') initDailyPage();
 }
 
