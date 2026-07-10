@@ -3903,10 +3903,12 @@ function calcPtxForVoyage(){
 
   // Pre-compute similarity scores for all PTX ships (if we need fallback)
   let similarShipCache = null;
+  const SIMILARITY_THRESHOLD = 0.60; // minimum similarity ratio to use similar vessel data
   function getSimilarShip(portCode){
     if(!similarShipCache) similarShipCache = buildSimilarShipList(vesselGrt, vesselNrt, vesselTeu);
-    // Find the first similar ship that has data for this port
+    // Find the first similar ship that has data for this port AND meets threshold
     for(const sim of similarShipCache){
+      if(sim.similarity < SIMILARITY_THRESHOLD) break; // remaining ships are even less similar (sorted descending)
       if(PTX_AVG[sim.shipCode] && PTX_AVG[sim.shipCode][portCode]){
         return sim;
       }
@@ -3948,12 +3950,12 @@ function calcPtxForVoyage(){
         source = 'similar';
         similarShip = sim;
         matchedShipCode = sim.shipCode;
-        detail = 'similar vessel: ' + sim.shipCode + ' (score=' + sim.score.toFixed(2) + ', n=' + entry.n + ')';
+        detail = 'similar vessel: ' + sim.shipCode + ' (similarity=' + sim.similarity.toFixed(2) + ', n=' + entry.n + ')';
         voyages = entry.voyages || [];
       } else {
         amount = 0;
         source = 'no_data';
-        reason = 'No PTX data for vessel ' + vesselCode + ' at port ' + portCode + ', and no similar vessel with data at this port';
+        reason = 'No PTX data for vessel ' + vesselCode + ' at port ' + portCode + ', and no similar vessel with data at this port (similarity < ' + SIMILARITY_THRESHOLD + ')';
       }
     } else {
       // Vessel code not found in PTX_AVG at all
@@ -3966,12 +3968,12 @@ function calcPtxForVoyage(){
         source = 'similar';
         similarShip = sim;
         matchedShipCode = sim.shipCode;
-        detail = 'vessel ' + vesselCode + ' not in PTX data; similar vessel: ' + sim.shipCode + ' (score=' + sim.score.toFixed(2) + ')';
+        detail = 'vessel ' + vesselCode + ' not in PTX data; similar vessel: ' + sim.shipCode + ' (similarity=' + sim.similarity.toFixed(2) + ')';
         voyages = entry.voyages || [];
       } else {
         amount = 0;
         source = 'no_data';
-        reason = 'Vessel ' + vesselCode + ' not found in PTX data (possible code mismatch/typo), and no similar vessel available for port ' + portCode;
+        reason = 'Vessel ' + vesselCode + ' not found in PTX data (possible code mismatch/typo), and no similar vessel available for port ' + portCode + ' (similarity < ' + SIMILARITY_THRESHOLD + ')';
       }
     }
 
@@ -3984,7 +3986,8 @@ function calcPtxForVoyage(){
 
 /**
  * Build a list of PTX ships ranked by similarity to the current vessel.
- * Uses GRT, NRT, TEU to compute a similarity score.
+ * Uses GRT, NRT, TEU to compute a similarity ratio (1=identical, 0=completely different).
+ * Returns candidates sorted by similarity DESC (most similar first).
  */
 function buildSimilarShipList(grt, nrt, teu){
   const ptxShipCodes = Object.keys(PTX_AVG);
@@ -3998,7 +4001,7 @@ function buildSimilarShipList(grt, nrt, teu){
     // Skip if no size data at all
     if(!sGrt && !sNrt && !sTeu) continue;
 
-    // Compute similarity score (lower = more similar)
+    // Compute distance score (lower = more similar)
     // Normalize each dimension by max value to avoid dominance
     const maxGrt = Math.max(grt || 1, sGrt || 1);
     const maxNrt = Math.max(nrt || 1, sNrt || 1);
@@ -4009,12 +4012,13 @@ function buildSimilarShipList(grt, nrt, teu){
     const dTeu = teu && sTeu ? Math.abs(teu - sTeu) / maxTeu : (teu || sTeu) ? 1 : 0;
 
     // Weight: GRT=0.4, NRT=0.3, TEU=0.3 (GRT most important for port charges)
-    const score = dGrt * 0.4 + dNrt * 0.3 + dTeu * 0.3;
-    candidates.push({ shipCode, score, grt: sGrt, nrt: sNrt, teu: sTeu });
+    const distance = dGrt * 0.4 + dNrt * 0.3 + dTeu * 0.3;
+    const similarity = 1 - distance; // similarity ratio: 1=identical, 0=completely different
+    candidates.push({ shipCode, score: distance, similarity, grt: sGrt, nrt: sNrt, teu: sTeu });
   }
 
-  // Sort by score ascending (most similar first)
-  candidates.sort((a, b) => a.score - b.score);
+  // Sort by similarity DESC (most similar first) — allows early break at threshold
+  candidates.sort((a, b) => b.similarity - a.similarity);
   return candidates;
 }
 
@@ -4179,7 +4183,7 @@ function showPtxPopup(){
     if(p.source === 'similar' && p.similarShip){
       html += '<div style="font-size:11px;color:#6c757d;margin-top:2px;">';
       html += 'Matched: <b>' + p.matchedShipCode + '</b>';
-      html += ' (similarity: ' + p.similarShip.score.toFixed(2) + ')';
+      html += ' (similarity: ' + p.similarShip.similarity.toFixed(2) + ')';
       html += '<br>GRT: ' + p.similarShip.grt + ' | NRT: ' + p.similarShip.nrt + ' | TEU: ' + p.similarShip.teu;
       html += '</div>';
     }
