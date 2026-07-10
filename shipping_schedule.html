@@ -1514,8 +1514,8 @@
             <div class="cost-card-value" id="ccHireCost">--</div>
             <div class="cost-card-sub" id="ccHireCostSub">awaiting simulation</div>
           </div>
-          <div class="cost-card" id="ccPtx">
-            <div class="cost-card-label">PTX (Port Charges)</div>
+          <div class="cost-card" id="ccPtx" style="cursor:pointer;" onclick="showPtxPopup()">
+            <div class="cost-card-label">PTX (Port Charges) 📋</div>
             <div class="cost-card-value" id="ccPtxCost" style="color:var(--muted);">--</div>
             <div class="cost-card-sub" id="ccPtxSub">awaiting simulation</div>
           </div>
@@ -1523,6 +1523,27 @@
       </div>
     </div>
   </main>
+
+  <!-- PTX Popup Modal -->
+  <div id="ptxPopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:rgba(0,0,0,0.5);">
+    <div style="position:relative;max-width:800px;width:90%;margin:0 auto;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,#1a3a5c 0%,#2c5f8a 100%);border-radius:12px;padding:0;box-shadow:0 8px 32px rgba(0,0,0,0.3);overflow:hidden;">
+      <!-- Header with bright white text -->
+      <div style="padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.15);display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="color:#ffffff;font-size:18px;font-weight:600;margin:0;" id="ptxPopupTitle">PTX Port Charges Detail</h3>
+        <button onclick="closePtxPopup()" style="background:none;border:none;color:#ffffff;font-size:24px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+      </div>
+      <!-- Body with lighter background for readability -->
+      <div style="padding:20px 24px;background:#f0f4f8;" id="ptxPopupBody">
+        <!-- Dynamic content inserted here -->
+      </div>
+      <!-- Footer legend -->
+      <div style="padding:12px 24px;background:#f0f4f8;border-top:1px solid #d0d9e4;font-size:12px;color:#6c757d;">
+        <span style="color:#28a745;font-weight:600;">■ Direct</span> = vessel's own PTX data&nbsp;&nbsp;
+        <span style="color:#e67e22;font-weight:600;">■ Similar</span> = nearest vessel by GRT/NRT/TEU&nbsp;&nbsp;
+        <span style="color:#dc3545;font-weight:600;">■ No Data</span> = $0 (code mismatch/typo or no similar vessel)
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- END TAB 1: Simulator -->
@@ -3866,13 +3887,13 @@ function parseFuelMt(id){
  */
 function calcPtxForVoyage(){
   if(!currentVessel || !currentVessel.code || selectedPorts.length === 0){
-    return { total: 0, ports: [] };
+    return { total: 0, ports: [], vesselCode: currentVessel?.code || '' };
   }
   if(Object.keys(PTX_AVG).length === 0){
     return { total: 0, ports: selectedPorts.map(p => ({
       code: p.code, amount: 0,
       source: 'no_data', reason: 'PTX data not loaded'
-    })) };
+    })), vesselCode: currentVessel.code };
   }
 
   const vesselCode = currentVessel.code;
@@ -3902,6 +3923,9 @@ function calcPtxForVoyage(){
     let source = 'no_data';
     let reason = '';
     let detail = '';
+    let similarShip = null;
+    let voyages = [];
+    let matchedShipCode = vesselCode;
 
     // 1. Direct match
     if(PTX_AVG[vesselCode] && PTX_AVG[vesselCode][portCode]){
@@ -3912,6 +3936,8 @@ function calcPtxForVoyage(){
       if(entry.terminals && entry.terminals.length > 1){
         detail += ', terminals: ' + entry.terminals.join(', ');
       }
+      voyages = entry.voyages || [];
+      matchedShipCode = vesselCode;
     } else if(PTX_AVG[vesselCode]){
       // Vessel has PTX data, but not for this specific port
       // 2. Try similar vessel for this port
@@ -3920,7 +3946,10 @@ function calcPtxForVoyage(){
         const entry = PTX_AVG[sim.shipCode][portCode];
         amount = entry.avg;
         source = 'similar';
+        similarShip = sim;
+        matchedShipCode = sim.shipCode;
         detail = 'similar vessel: ' + sim.shipCode + ' (score=' + sim.score.toFixed(2) + ', n=' + entry.n + ')';
+        voyages = entry.voyages || [];
       } else {
         amount = 0;
         source = 'no_data';
@@ -3935,7 +3964,10 @@ function calcPtxForVoyage(){
         const entry = PTX_AVG[sim.shipCode][portCode];
         amount = entry.avg;
         source = 'similar';
+        similarShip = sim;
+        matchedShipCode = sim.shipCode;
         detail = 'vessel ' + vesselCode + ' not in PTX data; similar vessel: ' + sim.shipCode + ' (score=' + sim.score.toFixed(2) + ')';
+        voyages = entry.voyages || [];
       } else {
         amount = 0;
         source = 'no_data';
@@ -3944,10 +3976,10 @@ function calcPtxForVoyage(){
     }
 
     totalPtx += amount;
-    portResults.push({ code: portCode, amount, source, reason, detail });
+    portResults.push({ code: portCode, amount, source, reason, detail, similarShip, voyages, matchedShipCode });
   }
 
-  return { total: totalPtx, ports: portResults };
+  return { total: totalPtx, ports: portResults, vesselCode };
 }
 
 /**
@@ -4105,6 +4137,103 @@ function updatePtxCard(){
   }
 }
 
+/** Show PTX detail popup on click */
+function showPtxPopup(){
+  const result = calcPtxForVoyage();
+  if(!result || result.ports.length === 0) return;
+
+  const popup = document.getElementById('ptxPopup');
+  const titleEl = document.getElementById('ptxPopupTitle');
+  const bodyEl = document.getElementById('ptxPopupBody');
+
+  // Title: vessel name + total PTX
+  const vName = currentVessel ? getVesselName(currentVessel.code) : '';
+  titleEl.textContent = vName + ' — PTX Total: ' + fmtUSD(result.total);
+
+  // Build per-port table
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+  html += '<thead><tr style="background:#1a3a5c;color:#ffffff;">';
+  html += '<th style="padding:8px 12px;text-align:left;">Port</th>';
+  html += '<th style="padding:8px 12px;text-align:right;">PTX Amount</th>';
+  html += '<th style="padding:8px 12px;text-align:left;">Source</th>';
+  html += '<th style="padding:8px 12px;text-align:left;">Voyages Used</th>';
+  html += '</tr></thead><tbody>';
+
+  for(const p of result.ports){
+    let sourceColor, sourceText;
+    if(p.source === 'direct'){
+      sourceColor = '#28a745'; sourceText = 'Direct';
+    } else if(p.source === 'similar'){
+      sourceColor = '#e67e22'; sourceText = 'Similar';
+    } else {
+      sourceColor = '#dc3545'; sourceText = 'No Data';
+    }
+
+    html += '<tr style="background:#ffffff;border-bottom:1px solid #e8e8e8;">';
+    html += '<td style="padding:8px 12px;font-weight:600;">' + p.code + '</td>';
+    html += '<td style="padding:8px 12px;text-align:right;color:' + (p.amount > 0 ? '#212529' : '#dc3545') + ';">' + (p.amount > 0 ? fmtUSD(p.amount) : '$0') + '</td>';
+
+    // Source column
+    html += '<td style="padding:8px 12px;">';
+    html += '<span style="color:' + sourceColor + ';font-weight:600;">' + sourceText + '</span>';
+    if(p.source === 'similar' && p.similarShip){
+      html += '<div style="font-size:11px;color:#6c757d;margin-top:2px;">';
+      html += 'Matched: <b>' + p.matchedShipCode + '</b>';
+      html += ' (similarity: ' + p.similarShip.score.toFixed(2) + ')';
+      html += '<br>GRT: ' + p.similarShip.grt + ' | NRT: ' + p.similarShip.nrt + ' | TEU: ' + p.similarShip.teu;
+      html += '</div>';
+    }
+    if(p.source === 'no_data' && p.reason){
+      html += '<div style="font-size:11px;color:#dc3545;margin-top:2px;">' + p.reason + '</div>';
+    }
+    html += '</td>';
+
+    // Voyages column
+    html += '<td style="padding:8px 12px;">';
+    if(p.voyages && p.voyages.length > 0){
+      html += '<div style="font-size:11px;">';
+      for(const v of p.voyages){
+        html += '<div style="margin-bottom:4px;padding:2px 6px;background:#f7fafd;border-radius:3px;">';
+        html += '<b>' + v.vesselVoyage + '</b>: ' + fmtUSD(v.voyageUSD);
+        html += ' <span style="color:#6c757d;">(' + v.dateMin + '~' + v.dateMax + ', ' + v.terminalCode + ')</span>';
+        html += '</div>';
+      }
+      html += '</div>';
+    } else if(p.source === 'no_data'){
+      html += '<span style="color:#dc3545;font-size:11px;">N/A</span>';
+    } else {
+      html += '<span style="color:#6c757d;font-size:11px;">No voyage detail</span>';
+    }
+    html += '</td>';
+
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+
+  // Summary row
+  const directCount = result.ports.filter(p => p.source === 'direct').length;
+  const simCount    = result.ports.filter(p => p.source === 'similar').length;
+  const noDataCount = result.ports.filter(p => p.source === 'no_data').length;
+  html += '<div style="margin-top:12px;font-size:13px;color:#212529;font-weight:600;">';
+  html += 'Summary: ' + result.ports.length + ' ports | ';
+  if(directCount > 0) html += '<span style="color:#28a745;">' + directCount + ' direct</span> | ';
+  if(simCount > 0)    html += '<span style="color:#e67e22;">' + simCount + ' similar</span> | ';
+  if(noDataCount > 0) html += '<span style="color:#dc3545;">' + noDataCount + ' no data</span>';
+  html += '</div>';
+
+  bodyEl.innerHTML = html;
+  popup.style.display = 'block';
+
+  // Close on click outside
+  popup.onclick = function(ev){
+    if(ev.target === popup) closePtxPopup();
+  };
+}
+
+function closePtxPopup(){
+  document.getElementById('ptxPopup').style.display = 'none';
+}
 // ==================== COST PANEL RESIZER ====================
 (function initCostResizer(){
   document.addEventListener('DOMContentLoaded', function(){
