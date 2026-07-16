@@ -1209,7 +1209,7 @@
   </div>
   <div class="app-tabs">
     <div class="app-tab active" data-tab="simulator" onclick="switchAppTab('simulator')">🚢 Simulator</div>
-    <div class="app-tab" data-tab="daily" onclick="switchAppTab('daily')">📋 Daily Schedule</div>
+    <div class="app-tab" data-tab="daily" onclick="switchAppTab('daily')">📋 Simulator Save</div>
     <div class="app-tab" data-tab="portcharges" onclick="switchAppTab('portcharges')">💰 Port Charges</div>
     <div class="app-tab" data-tab="dailymovement" onclick="switchAppTab('dailymovement')">📋 Daily Movement</div>
   </div>
@@ -4848,7 +4848,7 @@ function renderTable(){
         </div>
       </div>
       <button class="btn-dm" onclick="syncToDaily()" style="padding:6px 16px;font-size:.85rem;background:#198754;border-color:#198754;color:#fff;">
-        💾 Add to Daily Schedule
+        💾 Add to Simulator Save
       </button>
     </div>
   `;
@@ -9814,7 +9814,7 @@ function deleteCurrentVoyage(vesselCode, voyIdx){
 
 // Quick save from banner input
 // ===== Unified: Add current schedule to GitHub Fleet & show in Daily =====
-// Both "💾 Add to Daily Schedule" buttons (Simulator + Data Manager) call this.
+// Both "💾 Add to Simulator Save" buttons (Simulator + Data Manager) call this.
 // SAFETY: Always loads from GitHub first, merges (never overwrites), validates before saving.
 async function syncToDaily(){
   if(!scheduleRows.length){
