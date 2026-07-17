@@ -1,4 +1,4 @@
-vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day,hire_daily
+﻿vessel_code,vessel_name,speed_knots,lsfo_mt_day,hsfo_mt_day,mgo_mt_day,portstay_lsfo_mt_day,portstay_mgo_mt_day,hire_daily
 ASHK,ASL HONG KONG,0,0,0,0,0,0,0
 ASHP,ASL HAIPHONG,0,0,0,0,0,0,0
 AVOS,AVIOS,0,0,0,0,0,0,0
@@ -414,3 +414,4 @@ ZK61,ZHONG KUN 611,12.5,18.5,0,0,2.3,0,0
 ZLST,ZHONG LIAN SHAN TOU,12,11.2,0,0,0,0,6440
 ZPYY,ZHONG PENG YOU YI,0,0,0,0,0,0,0
 ZYHS,ZHI YING HE SHUN,11,13.5,0,0,0,3,0
+CSJ8,CHANG SHENG JI 8,12,15,0,2.3,0,0,0

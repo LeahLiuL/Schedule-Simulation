@@ -1,4 +1,4 @@
-﻿Vessel Name,Service Lane,Norminal Capacity,Max Cargo Weight (Ton),Max TEU,Min 20' required (only for footpad),Max TEU,Min 20' required (without slot loss),Suggested BSA,Suggested BSA (Monsoon),Reefer Plug,Remark
+﻿Vessel Name,Service Lane,Norminal Capacity,Max Cargo Weight (Ton),Max TEU,Min 20' required (only for footpad),Max TEU2,Min 20' required (without slot loss),Suggested BSA,Suggested BSA (Monsoon),Reefer Plug,Remark
 CUL HAIPHONG,ST3,938,8400,679,17,790,205,680,,97,
 CUL HUANGPU,CHT,702,7100,594,10,672,280,590,,80,
 CUL HUANGPU,NSCT1,702,7100,594,10,672,280,590,,80,
@@ -68,3 +68,13 @@ ZBM,RTS,1684,18000,1204,28,1322,452,1220,1180,40,
 NEW THINKER,RTS,933,9520,640,88,736,268,680,655,10,
 CUL BANGKOK,REX,,18500,1514,24,1670,250-300,1600,,,"Actual loading capacity will always be subject to various factors such as vessel status , cargo structure and weather condition etc"
 CUL BANGKOK,AEM,,18500,1514,24,1670,250-300,1600,,,
+CUL JAKARTA,REX,,29000,2280,22,2470,1419,2280,,,
+CUL JAKARTA,AEM,,29000,2280,22,2470,1419,2280,,,
+GUO FU MIN QIANG,IMR,,18500,1046,76,970,0,1000,,,
+HDX HONGYUAN,REX,,24000,1672,6,1800,636,1700,,,
+HE YUAN SHUN 92,REX,,34000,2358 - 2430,20,2596 - 2668,300,2500 - 2550,,,
+OSG BOSSTEC,ST1,,5500,450,16,564,116,520,,,
+OSG BOSSTEC,AEM,,5500,450,16,564,116,520,,,
+XIN DONG 88,CGS,,15000,1208,16,,368,1130,,30,
+XIN DONG 88,REX,,15000,1086,16,1208,368,1130,,,
+ZHONG PENG YOU YI,REX,,26000,1302,16,1440,302,1370,,,
