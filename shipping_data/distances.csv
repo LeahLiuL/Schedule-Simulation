@@ -1,4 +1,7 @@
 from_port,to_port,distance_nm,source
+LYMRA,DZALG,782,manual
+TRALI,LYMRA,704,manual
+TRALI,DZALG,1258,auto
 SAJED,PKKHI,2198,manual
 AEJEA,AEKLF,233,
 AEJEA,BDCGP,3238,
