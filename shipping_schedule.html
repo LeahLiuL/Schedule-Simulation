@@ -1382,6 +1382,10 @@
           <span class="fuel-label">Grand Total MGO</span>
           <span class="fuel-val" id="fs-total-mgo">-- mt</span>
         </div>
+        <div class="fuel-row fuel-total">
+          <span class="fuel-label">Grand Total HSFO</span>
+          <span class="fuel-val" id="fs-total-hsfo">-- mt</span>
+        </div>
         <!-- Adjustment Factors -->
         <div class="fuel-row" style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);display:flex;gap:12px;flex-wrap:wrap;">
           <label style="font-size:.75rem;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;">
@@ -1408,6 +1412,10 @@
           <span>MGO ($/mt)</span>
           <input type="number" class="fuel-price-input" id="fpMgoPrice" value="720" min="0" step="1" oninput="updateCostPanel()"/>
         </div>
+        <div class="fuel-price-row">
+          <span>HSFO ($/mt)</span>
+          <input type="number" class="fuel-price-input" id="fpHsfoPrice" value="480" min="0" step="1" oninput="updateCostPanel()"/>
+        </div>
         <div class="fuel-price-total-row">
           <span style="color:var(--muted);">LSFO Cost</span>
           <span id="fpLsfoCost" style="color:var(--primary);font-weight:600;">-- </span>
@@ -1415,6 +1423,10 @@
         <div class="fuel-price-row">
           <span style="color:var(--muted);">MGO Cost</span>
           <span id="fpMgoCost" style="color:var(--primary);font-weight:600;">-- </span>
+        </div>
+        <div class="fuel-price-row">
+          <span style="color:var(--muted);">HSFO Cost</span>
+          <span id="fpHsfoCost" style="color:var(--primary);font-weight:600;">-- </span>
         </div>
         <div class="fuel-price-row" style="border-top:1px solid var(--border);padding-top:5px;margin-top:3px;">
           <span style="font-weight:600;">Total Fuel Cost</span>
@@ -1503,6 +1515,11 @@
             <div class="cost-card-label">MGO Cost</div>
             <div class="cost-card-value" id="ccMgoCost">--</div>
             <div class="cost-card-sub" id="ccMgoCostSub">awaiting simulation</div>
+          </div>
+          <div class="cost-card" id="ccHsfo">
+            <div class="cost-card-label">HSFO Cost</div>
+            <div class="cost-card-value" id="ccHsfoCost">--</div>
+            <div class="cost-card-sub" id="ccHsfoCostSub">awaiting simulation</div>
           </div>
           <div class="cost-card cost-total" id="ccFuelTotal">
             <div class="cost-card-label">Total Fuel Cost</div>
@@ -3828,25 +3845,35 @@ function fmtUSD(v){
 function updateCostPanel(){
   const lsfoMt  = parseFuelMt('fs-total-lsfo');
   const mgoMt   = parseFuelMt('fs-total-mgo');
+  const hsfoMt  = parseFuelMt('fs-total-hsfo');
   const lsfoP   = parseFloat(document.getElementById('fpLsfoPrice')?.value) || 0;
   const mgoP    = parseFloat(document.getElementById('fpMgoPrice')?.value) || 0;
+  const hsfoP   = parseFloat(document.getElementById('fpHsfoPrice')?.value) || 0;
 
   const lsfoCost = lsfoMt * lsfoP;
   const mgoCost  = mgoMt  * mgoP;
-  const total    = lsfoCost + mgoCost;
+  const hsfoCost = hsfoMt * hsfoP;
+  const total    = lsfoCost + mgoCost + hsfoCost;
+
+  const showL = isFinite(lsfoCost) && lsfoMt > 0;
+  const showM = isFinite(mgoCost) && mgoMt > 0;
+  const showH = isFinite(hsfoCost) && hsfoMt > 0;
+  const showAny = showL || showM || showH;
 
   // Left panel mini display
-  const showL = isFinite(lsfoCost) && lsfoMt > 0;
   document.getElementById('fpLsfoCost').textContent = showL ? fmtUSD(lsfoCost) : '--';
-  document.getElementById('fpMgoCost').textContent  = (isFinite(mgoCost) && mgoMt > 0) ? fmtUSD(mgoCost) : '--';
-  document.getElementById('fpTotalCost').textContent= (showL) ? fmtUSD(total) : '--';
+  document.getElementById('fpMgoCost').textContent  = showM ? fmtUSD(mgoCost) : '--';
+  document.getElementById('fpHsfoCost').textContent = showH ? fmtUSD(hsfoCost) : '--';
+  document.getElementById('fpTotalCost').textContent= showAny ? fmtUSD(total) : '--';
 
   // Right panel cards
   document.getElementById('ccLsfoCost').textContent     = showL ? fmtUSD(lsfoCost) : '--';
   document.getElementById('ccLsfoCostSub').textContent  = showL ? lsfoMt.toFixed(1)+' mt × $'+lsfoP : 'awaiting simulation';
-  document.getElementById('ccMgoCost').textContent      = (isFinite(mgoCost) && mgoMt > 0) ? fmtUSD(mgoCost) : '--';
-  document.getElementById('ccMgoCostSub').textContent   = (isFinite(mgoCost) && mgoMt > 0) ? mgoMt.toFixed(1)+' mt × $'+mgoP : 'awaiting simulation';
-  document.getElementById('ccFuelTotalCost').textContent= showL ? fmtUSD(total) : '--';
+  document.getElementById('ccMgoCost').textContent      = showM ? fmtUSD(mgoCost) : '--';
+  document.getElementById('ccMgoCostSub').textContent   = showM ? mgoMt.toFixed(1)+' mt × $'+mgoP : 'awaiting simulation';
+  document.getElementById('ccHsfoCost').textContent     = showH ? fmtUSD(hsfoCost) : '--';
+  document.getElementById('ccHsfoCostSub').textContent  = showH ? hsfoMt.toFixed(1)+' mt × $'+hsfoP : 'awaiting simulation';
+  document.getElementById('ccFuelTotalCost').textContent= showAny ? fmtUSD(total) : '--';
 
   // Hire = total voyage days × daily hire rate
   const hireDaily   = (currentVessel && currentVessel.hire) ? currentVessel.hire : 0;
@@ -4304,6 +4331,7 @@ function updateFuelEstimate(){
 
   const lsfo = +(runDays*currentVessel.lsfo).toFixed(1);
   const mgo  = +(runDays*currentVessel.mgo).toFixed(1);
+  const hsfo = +(runDays*currentVessel.hsfo).toFixed(1);
 
   // Port stay fuel: sum of (stayHrs + waitHrs) / 24 * ps rate
   let totalStayHrs = 0, totalWaitHrs = 0;
@@ -4311,6 +4339,7 @@ function updateFuelEstimate(){
   const totalPortStayDays = (totalStayHrs + totalWaitHrs) / 24;
   const psLsfo = +(totalPortStayDays * (currentVessel.ps_lsfo||0)).toFixed(1);
   const psMgo  = +(totalPortStayDays * (currentVessel.ps_mgo||0)).toFixed(1);
+  const psHsfo = 0; // no port-stay HSFO column in current data model
 
   document.getElementById('fs-dist').textContent      = totalDist ? totalDist.toFixed(0)+' nm' : '-- nm';
   document.getElementById('fs-seadays').textContent   = seaDays   ? seaDays.toFixed(2)+' days' : '-- days';
@@ -4326,6 +4355,7 @@ function updateFuelEstimate(){
   const adj = getFuelAdjustMultiplier();
   document.getElementById('fs-total-lsfo').textContent = +((lsfo + psLsfo) * adj).toFixed(1)+' mt';
   document.getElementById('fs-total-mgo').textContent  = +((mgo + psMgo) * adj).toFixed(1)+' mt';
+  document.getElementById('fs-total-hsfo').textContent = +((hsfo + psHsfo) * adj).toFixed(1)+' mt';
   updateCostPanel();
 }
 
@@ -4345,12 +4375,14 @@ function updateFuelFromSchedule(){
   const runDays = totalRunHrs / 24;
   const lsfo = +(runDays * currentVessel.lsfo).toFixed(1);
   const mgo  = +(runDays * currentVessel.mgo).toFixed(1);
+  const hsfo = +(runDays * currentVessel.hsfo).toFixed(1);
 
   // Port stay fuel (stayHrs + waitHrs)
   const totalPortStayHrs = totalStayHrs + totalWaitHrs;
   const totalPortStayDays = totalPortStayHrs / 24;
   const psLsfo = +(totalPortStayDays * (currentVessel.ps_lsfo||0)).toFixed(1);
   const psMgo  = +(totalPortStayDays * (currentVessel.ps_mgo||0)).toFixed(1);
+  const psHsfo = 0; // no port-stay HSFO column in current data model
 
   document.getElementById('fs-dist').textContent      = totalDist ? totalDist.toFixed(0)+' nm' : '-- nm';
   document.getElementById('fs-seadays').textContent   = seaDays   ? seaDays.toFixed(2)+' days' : '-- days';
@@ -4366,6 +4398,7 @@ function updateFuelFromSchedule(){
   const adj2 = getFuelAdjustMultiplier();
   document.getElementById('fs-total-lsfo').textContent = +((lsfo + psLsfo) * adj2).toFixed(1)+' mt';
   document.getElementById('fs-total-mgo').textContent  = +((mgo + psMgo) * adj2).toFixed(1)+' mt';
+  document.getElementById('fs-total-hsfo').textContent = +((hsfo + psHsfo) * adj2).toFixed(1)+' mt';
   updateCostPanel();
 }
 
@@ -4450,10 +4483,12 @@ function runSpeedOptimizer(){
     // Look up fuel rates for this specific speed from VESSELS_DATA
     let lsfoRate = currentVessel.lsfo;
     let mgoRate  = currentVessel.mgo;
+    let hsfoRate = currentVessel.hsfo;
     VESSELS_DATA.forEach(function(v){
       if((v.code === currentVessel.code || v.name === currentVessel.name) && v.speed === spd){
         if(v.lsfo != null) lsfoRate = v.lsfo;
         if(v.mgo  != null) mgoRate  = v.mgo;
+        if(v.hsfo != null) hsfoRate = v.hsfo;
         if(v.ps_lsfo != null && v.ps_lsfo > 0) psLsfoRate = v.ps_lsfo;
         if(v.ps_mgo  != null && v.ps_mgo  > 0) psMgoRate  = v.ps_mgo;
       }
@@ -4464,16 +4499,18 @@ function runSpeedOptimizer(){
 
     const seaLsfo  = +(seaDays * lsfoRate).toFixed(1);
     const seaMgo   = +(seaDays * mgoRate).toFixed(1);
+    const seaHsfo  = +(seaDays * hsfoRate).toFixed(1);
     const psLsfo   = +(portStayDays * psLsfoRate).toFixed(1);
     const psMgo    = +(portStayDays * psMgoRate).toFixed(1);
     const totalLsfo = +(seaLsfo + psLsfo).toFixed(1);
     const totalMgo  = +(seaMgo + psMgo).toFixed(1);
-    const totalFuel  = +(totalLsfo + totalMgo).toFixed(1);
+    const totalHsfo = +(seaHsfo).toFixed(1);
+    const totalFuel  = +(totalLsfo + totalMgo + totalHsfo).toFixed(1);
 
     results.push({ speed: spd, seaDays: seaDays, totalDays: totalDays,
-      seaLsfo: seaLsfo, seaMgo: seaMgo,
+      seaLsfo: seaLsfo, seaMgo: seaMgo, seaHsfo: seaHsfo,
       psLsfo: psLsfo, psMgo: psMgo,
-      totalLsfo: totalLsfo, totalMgo: totalMgo, totalFuel: totalFuel
+      totalLsfo: totalLsfo, totalMgo: totalMgo, totalHsfo: totalHsfo, totalFuel: totalFuel
     });
   }
 
