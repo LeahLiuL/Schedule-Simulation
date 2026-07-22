@@ -3370,7 +3370,7 @@ function portLabel(code){
 function portShortLabel(code){
   const p=PORT_MAP[code];
   if(!p) return code;
-  return p.cn||p.en.split(',')[0].trim()||code;
+  return p.en.split(',')[0].trim()||p.cn||code;
 }
 
 // ==================== COMBOBOX ====================
@@ -8801,7 +8801,7 @@ function renderDailyFleet(){
 
       const ports = voy.ports || [];
       const summary = ports.length > 0
-        ? ports.map(p => { const pp = PORT_MAP[p.code]; return (pp?pp.cn:pp?pp.en:p.code); }).join(' → ')
+        ? ports.map(p => { const pp = PORT_MAP[p.code]; return (pp?pp.en:pp?pp.cn:p.code); }).join(' → ')
         : 'No ports';
 
       const summaryShort = summary.length > 50 ? summary.slice(0,50) + '…' : summary;
@@ -9001,7 +9001,7 @@ function renderDailyDetail(){
       voy.ports.forEach(function(p, i){
         globalPortNum++;
         const pp = PORT_MAP[p.code] || {};
-        const portDisplay = (pp.cn || pp.en || p.code);
+        const portDisplay = (pp.en || pp.cn || p.code);
         const rowSpeed = p.speed != null ? p.speed : voySpeed;
         const seaHrs = (rowSpeed > 0 && p.dist > 0) ? (p.dist / rowSpeed) : 0;
         const portVoyNo = p.voyNo || defaultVoyNo;
@@ -9072,7 +9072,7 @@ function renderDailyDetail(){
         '</tr></thead><tbody>';
       curVoy.ports.forEach((p, i) => {
         const pp = PORT_MAP[p.code] || {};
-        const portDisplay = (pp.cn || pp.en || p.code);
+        const portDisplay = (pp.en || pp.cn || p.code);
         const rowSpeed = p.speed != null ? p.speed : voySpeed;
         const seaHrs = (rowSpeed > 0 && p.dist > 0) ? (p.dist / rowSpeed) : 0;
         const portVoyNo = p.voyNo || defaultVoyNo;
@@ -10741,7 +10741,7 @@ function buildPdfNative(exportItems){
 
         globalPortNum++;
         const pp = PORT_MAP[p.code] || {};
-        const portDisplay = pp.cn || pp.en || p.code;
+        const portDisplay = pp.en || pp.cn || p.code;
         const rowSpeed = (p.speed != null && p.speed > 0) ? p.speed : voySpeed;
         const seaHrs = (rowSpeed > 0 && p.dist > 0) ? (p.dist / rowSpeed) : 0;
         const portVoyNo = p.voyNo || defaultVoyNo;
