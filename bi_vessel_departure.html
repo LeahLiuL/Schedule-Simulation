@@ -7,7 +7,7 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f6f7; color: #333; }
-header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: white; padding: 14px 22px; font-size: 18px; font-weight: 600; box-shadow: 0 2px 6px rgba(15,39,71,0.25); display: flex; justify-content: space-between; align-items: center; letter-spacing: .3px; }
 #update-time { font-size: 12px; font-weight: 400; opacity: 0.85; }
 .container { max-width: 1800px; margin: 0 auto; padding: 12px; display: flex; gap: 12px; min-height: calc(100vh - 60px); }
 .left { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -38,25 +38,28 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 .multi-select-btns button { flex: 1; font-size: 11px; padding: 4px; }
 
 .table-wrap { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex: 1; overflow: auto; position: relative; }
-.data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .data-table thead { position: sticky; top: 0; z-index: 10; }
-.data-table th { background: #e8f0fe; padding: 7px 8px; text-align: left; font-weight: 600; color: #1a73e8; border-bottom: 2px solid #c6d9f1; white-space: nowrap; font-size: 10px; cursor: pointer; user-select: none; position: relative; }
-.data-table th:hover { background: #d2e3fc; }
-.data-table th .sort-arrow { margin-left: 4px; font-size: 9px; color: #888; }
-.data-table th.sorted-asc .sort-arrow::after { content: '▲'; color: #1a73e8; }
-.data-table th.sorted-desc .sort-arrow::after { content: '▼'; color: #1a73e8; }
-.data-table th.sorted-asc { background: #d2e3fc; }
-.data-table th.sorted-desc { background: #d2e3fc; }
-.data-table td { padding: 5px 8px; border-bottom: 1px solid #eee; white-space: nowrap; }
-.data-table tr:hover { background: #f8f9fa; }
-.data-table .warn { background: #fff8e1; }
-.data-table .danger { background: #ffebee; }
-.data-table .good { background: #e8f5e9; }
-.data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table th { background: #16335a; color: #fff; padding: 9px 10px; text-align: left; font-weight: 700; border-bottom: 2px solid #0f2747; white-space: nowrap; font-size: 10.5px; letter-spacing: .4px; text-transform: uppercase; cursor: pointer; user-select: none; position: relative; }
+.data-table th:hover { background: #1f4a7a; }
+.data-table th .sort-arrow { margin-left: 5px; font-size: 9px; color: #9fc0e8; }
+.data-table th.sorted-asc .sort-arrow::after { content: '▲'; color: #ffd54f; }
+.data-table th.sorted-desc .sort-arrow::after { content: '▼'; color: #ffd54f; }
+.data-table th.sorted-asc { background: #1f4a7a; }
+.data-table th.sorted-desc { background: #1f4a7a; }
+.data-table td { padding: 7px 10px; border-bottom: 1px solid #eef1f5; white-space: nowrap; color: #334155; }
+.data-table tbody tr:hover td { background: #eef4fb; color: #0f2747; }
+.data-table .warn { background: #fff4e5; }
+.data-table .danger { background: #fdecea; }
+.data-table .good { background: #eafaf1; }
+.data-table tbody tr:hover td.warn { background: #ffedcf; }
+.data-table tbody tr:hover td.danger { background: #fbd9d4; }
+.data-table tbody tr:hover td.good { background: #d8f5e3; }
+.data-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .data-table .col-small { width: 45px; }
-.data-table .col-date { width: 120px; }
-.data-table .col-num { width: 55px; }
-.data-table .col-teu { width: 60px; }
+.data-table .col-date { width: 128px; }
+.data-table .col-num { width: 62px; }
+.data-table .col-teu { width: 62px; }
 .data-table .col-hidden { display: none; }
 .data-table th.th-discharge { background: #fce8e6; color: #c5221f; border-bottom: 2px solid #f5a9a6; }
 .data-table th.th-discharge:hover { background: #fadad8; }
@@ -73,6 +76,28 @@ header { background: #1a73e8; color: white; padding: 14px 20px; font-size: 18px;
 .data-table tr:hover td.td-discharge { background: #fde8e8; }
 .data-table tr:hover td.td-load { background: #e8f5e9; }
 .data-table tr:hover td.td-fuel { background: #ede7f6; }
+
+/* ===== Frozen first 3 columns (SVC / Vessel-Voyage / Terminal) for horizontal-scroll readability ===== */
+.data-table th.col-svc  { position: sticky; left: 0;   z-index: 13; }
+.data-table th.col-vsl  { position: sticky; left: 80px;  z-index: 13; }
+.data-table th.col-term { position: sticky; left: 222px; z-index: 13; }
+.data-table td.col-svc  { position: sticky; left: 0;   z-index: 4; background: #fff; }
+.data-table td.col-vsl  { position: sticky; left: 80px;  z-index: 4; background: #fff; }
+.data-table td.col-term { position: sticky; left: 222px; z-index: 4; background: #fff; border-right: 2px solid #dbe2ea; box-shadow: 2px 0 5px -2px rgba(15,39,71,.18); }
+.data-table th.col-term { border-right: 2px solid #0f2747; box-shadow: 2px 0 5px -2px rgba(0,0,0,.30); }
+.data-table th.col-svc,  .data-table td.col-svc  { width: 80px;  min-width: 80px; }
+.data-table th.col-vsl,  .data-table td.col-vsl  { width: 142px; min-width: 142px; }
+.data-table th.col-term, .data-table td.col-term { width: 98px;  min-width: 98px; }
+.data-table tbody tr:hover td.col-svc,
+.data-table tbody tr:hover td.col-vsl,
+.data-table tbody tr:hover td.col-term { background: #fff; }
+
+/* ===== Cell components ===== */
+.data-table td .svc-pill { display: inline-block; padding: 3px 9px; border-radius: 11px; font-size: 11px; font-weight: 700; letter-spacing: .4px; line-height: 1.4; }
+.data-table td .vsl-code { font-weight: 700; color: #16335a; font-size: 12.5px; }
+.data-table td .voy-no { margin-left: 6px; color: #64748b; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 11px; }
+.data-table td .term-code { font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; font-weight: 600; color: #334155; letter-spacing: .3px; }
+.data-table td .op-tag { color: #64748b; font-weight: 600; font-size: 11.5px; }
 .cargo-box.discharge { border-color: #f5a9a6; background: #fef5f5; }
 .cargo-box.discharge .cargo-title { color: #c5221f; }
 .cargo-box.discharge .value { color: #c5221f; }
@@ -246,11 +271,22 @@ let colVisibility = {};
 let colOrder = [];
 let sortKeys = []; // [{key, dir}] multi-column sort
 
+function svcColor(svc) {
+  const map = {
+    REX: { bg: '#e3f2fd', fg: '#1565c0' },
+    RES: { bg: '#e8f5e9', fg: '#2e7d32' },
+    AEM: { bg: '#fff3e0', fg: '#e65100' },
+    CGX: { bg: '#f3e5f5', fg: '#7b1fa2' },
+    SGX: { bg: '#e0f2f1', fg: '#00796b' }
+  };
+  return map[svc] || { bg: '#eceff1', fg: '#455a64' };
+}
+
 const COL_DEFS = [
-  { key: 'terminal', label: 'TERMINAL', cls: '', fmt: v => v || '' },
-  { key: 'svc', label: 'SVC', cls: '', fmt: v => v || '' },
-  { key: 'vessel_voyage', label: 'VESSEL/VOYAGE', cls: '', fmt: v => v || '' },
-  { key: 'operator', label: 'OPERATOR', cls: '', fmt: v => v || '' },
+  { key: 'svc', label: 'SVC', cls: 'col-svc', fmt: v => { const c = svcColor(v); return '<span class="svc-pill" style="background:' + c.bg + ';color:' + c.fg + '">' + (v || '') + '</span>'; } },
+  { key: 'vessel_voyage', label: 'VESSEL / VOYAGE', cls: 'col-vsl', fmt: v => { const m = /^([A-Z0-9]{4})([0-9]{4}[A-Z]?)$/.exec(v || ''); return m ? '<span class="vsl-code">' + m[1] + '</span><span class="voy-no">' + m[2] + '</span>' : (v || ''); } },
+  { key: 'terminal', label: 'TERMINAL', cls: 'col-term', fmt: v => '<span class="term-code">' + (v || '') + '</span>' },
+  { key: 'operator', label: 'OPERATOR', cls: '', fmt: v => '<span class="op-tag">' + (v || '') + '</span>' },
   { key: 'arrived_anchorage', label: 'Arrival', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
   { key: 'berth', label: 'Berth', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
   { key: 'departure', label: 'Departure', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
@@ -311,16 +347,19 @@ function buildOptions(data) {
 
 function loadColVisibility() {
   try {
-    const saved = localStorage.getItem('bi_col_visibility');
+    const saved = localStorage.getItem('bi_col_visibility_v3');
     if (saved) colVisibility = JSON.parse(saved);
   } catch (e) {}
-  COL_DEFS.forEach(c => {
+  const movesIdx = COL_DEFS.findIndex(c => c.key === 'total_moves');
+  COL_DEFS.forEach((c, i) => {
     if (!(c.key in colVisibility)) {
-      colVisibility[c.key] = c.group !== 'fuel';
+      // Default: show columns up to and including MOVES; hide everything after
+      // (the colored discharge/load/fuel blocks + Restows/TEU/MPG H).
+      colVisibility[c.key] = (movesIdx >= 0 ? (i <= movesIdx) : true);
     }
   });
   try {
-    const savedOrder = localStorage.getItem('bi_col_order');
+    const savedOrder = localStorage.getItem('bi_col_order_v3');
     if (savedOrder) {
       colOrder = JSON.parse(savedOrder);
       // validate: ensure all visible keys are in colOrder
@@ -337,14 +376,14 @@ function loadColVisibility() {
 }
 
 function saveColVisibility() {
-  localStorage.setItem('bi_col_visibility', JSON.stringify(colVisibility));
+  localStorage.setItem('bi_col_visibility_v3', JSON.stringify(colVisibility));
   // sync colOrder with visibility changes
   const visibleKeys = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
   const newOrder = [];
   colOrder.forEach(k => { if (visibleKeys.includes(k)) newOrder.push(k); });
   visibleKeys.forEach(k => { if (!newOrder.includes(k)) newOrder.push(k); });
   colOrder = newOrder;
-  localStorage.setItem('bi_col_order', JSON.stringify(colOrder));
+  localStorage.setItem('bi_col_order_v3', JSON.stringify(colOrder));
   document.getElementById('colPickerPanel').classList.remove('show');
   renderTable();
 }
@@ -352,8 +391,8 @@ function saveColVisibility() {
 function resetColVisibility() {
   COL_DEFS.forEach(c => colVisibility[c.key] = true);
   colOrder = COL_DEFS.map(c => c.key);
-  localStorage.removeItem('bi_col_visibility');
-  localStorage.removeItem('bi_col_order');
+  localStorage.removeItem('bi_col_visibility_v3');
+  localStorage.removeItem('bi_col_order_v3');
   renderColPicker();
   renderTable();
 }
@@ -669,7 +708,7 @@ function renderTable() {
     colOrder.forEach(key => {
       const c = COL_DEFS.find(d => d.key === key);
       if (!c || !colVisibility[c.key]) return;
-      let cls = c.num ? 'num' : '';
+      let cls = (c.cls || '') + (c.num ? ' num' : '');
       if (c.group === 'discharge') cls += ' td-discharge';
       if (c.group === 'load') cls += ' td-load';
       if (c.group === 'fuel') cls += ' td-fuel';
@@ -725,7 +764,7 @@ function handleDrop(e) {
   if (srcIdx === -1 || dstIdx === -1) return;
   colOrder.splice(srcIdx, 1);
   colOrder.splice(dstIdx, 0, dragSrcKey);
-  localStorage.setItem('bi_col_order', JSON.stringify(colOrder));
+  localStorage.setItem('bi_col_order_v3', JSON.stringify(colOrder));
   renderTable();
 }
 
