@@ -311,16 +311,19 @@ function buildOptions(data) {
 
 function loadColVisibility() {
   try {
-    const saved = localStorage.getItem('bi_col_visibility');
+    const saved = localStorage.getItem('bi_col_visibility_v2');
     if (saved) colVisibility = JSON.parse(saved);
   } catch (e) {}
-  COL_DEFS.forEach(c => {
+  const movesIdx = COL_DEFS.findIndex(c => c.key === 'total_moves');
+  COL_DEFS.forEach((c, i) => {
     if (!(c.key in colVisibility)) {
-      colVisibility[c.key] = c.group !== 'fuel';
+      // Default: show columns up to and including MOVES; hide everything after
+      // (the colored discharge/load/fuel blocks + Restows/TEU/MPG H).
+      colVisibility[c.key] = (movesIdx >= 0 ? (i <= movesIdx) : true);
     }
   });
   try {
-    const savedOrder = localStorage.getItem('bi_col_order');
+    const savedOrder = localStorage.getItem('bi_col_order_v2');
     if (savedOrder) {
       colOrder = JSON.parse(savedOrder);
       // validate: ensure all visible keys are in colOrder
@@ -337,14 +340,14 @@ function loadColVisibility() {
 }
 
 function saveColVisibility() {
-  localStorage.setItem('bi_col_visibility', JSON.stringify(colVisibility));
+  localStorage.setItem('bi_col_visibility_v2', JSON.stringify(colVisibility));
   // sync colOrder with visibility changes
   const visibleKeys = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
   const newOrder = [];
   colOrder.forEach(k => { if (visibleKeys.includes(k)) newOrder.push(k); });
   visibleKeys.forEach(k => { if (!newOrder.includes(k)) newOrder.push(k); });
   colOrder = newOrder;
-  localStorage.setItem('bi_col_order', JSON.stringify(colOrder));
+  localStorage.setItem('bi_col_order_v2', JSON.stringify(colOrder));
   document.getElementById('colPickerPanel').classList.remove('show');
   renderTable();
 }
@@ -352,8 +355,8 @@ function saveColVisibility() {
 function resetColVisibility() {
   COL_DEFS.forEach(c => colVisibility[c.key] = true);
   colOrder = COL_DEFS.map(c => c.key);
-  localStorage.removeItem('bi_col_visibility');
-  localStorage.removeItem('bi_col_order');
+  localStorage.removeItem('bi_col_visibility_v2');
+  localStorage.removeItem('bi_col_order_v2');
   renderColPicker();
   renderTable();
 }
@@ -725,7 +728,7 @@ function handleDrop(e) {
   if (srcIdx === -1 || dstIdx === -1) return;
   colOrder.splice(srcIdx, 1);
   colOrder.splice(dstIdx, 0, dragSrcKey);
-  localStorage.setItem('bi_col_order', JSON.stringify(colOrder));
+  localStorage.setItem('bi_col_order_v2', JSON.stringify(colOrder));
   renderTable();
 }
 
