@@ -234,10 +234,6 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <div class="summary-grid" id="summaryGrid"></div>
 </div>
 <div class="panel">
-<div class="panel-title">Wait Time Dist.</div>
-<div class="bar-chart" id="waitChart"></div>
-</div>
-<div class="panel">
 <div class="panel-title">Terminal Wait Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头等泊分布</span></div>
 <div class="band-controls">
   <span>Periods (h):</span>
@@ -248,10 +244,6 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 </div>
 <div class="band-legend" id="bandLegend"></div>
 <div class="twb-scroll"><div id="terminalWaitBreakdown"></div></div>
-</div>
-<div class="panel">
-<div class="panel-title">Port Stay Dist.</div>
-<div class="bar-chart" id="stayChart"></div>
 </div>
 <div class="panel">
 <div class="panel-title">Terminal Port Stay Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头在港时长分布</span></div>
@@ -865,20 +857,6 @@ function renderAnalysis() {
     '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay&gt;72h</div></div>' +
     '<div class="summary-card orange"><div class="val">' + avgMpgh + '</div><div class="lbl">Avg MPG H</div></div>' +
     '<div class="summary-card"><div class="val">' + mpghCount + '</div><div class="lbl">MPG H Data</div></div>';
-  renderBarChart('waitChart', waits, [
-    { label: '<=6h', min: -1, max: 6, color: '#34a853' },
-    { label: '6-12h', min: 6, max: 12, color: '#4285f4' },
-    { label: '12-24h', min: 12, max: 24, color: '#f9ab00' },
-    { label: '24-48h', min: 24, max: 48, color: '#fa7b17' },
-    { label: '>48h', min: 48, max: 9999, color: '#d93025' }
-  ]);
-  renderBarChart('stayChart', stays, [
-    { label: '<=12h', min: -1, max: 12, color: '#34a853' },
-    { label: '12-24h', min: 12, max: 24, color: '#4285f4' },
-    { label: '24-48h', min: 24, max: 48, color: '#f9ab00' },
-    { label: '48-72h', min: 48, max: 72, color: '#fa7b17' },
-    { label: '>72h', min: 72, max: 9999, color: '#d93025' }
-  ]);
   renderMpghChart(mpghs);
   renderTerminalChart();
   renderTeuChart();
@@ -888,21 +866,6 @@ function renderAnalysis() {
   renderFuelSummary();
   renderTerminalWaitBreakdown();
   renderTerminalStayBreakdown();
-}
-
-function renderBarChart(id, values, buckets) {
-  const counts = buckets.map(b => ({ ...b, count: values.filter(v => v > b.min && v <= b.max).length }));
-  const maxCount = Math.max.apply(null, counts.map(c => c.count).concat([1]));
-  const container = document.getElementById(id);
-  container.innerHTML = counts.map(c =>
-    '<div class="bar-row">' +
-    '<div class="bar-label">' + c.label + '</div>' +
-    '<div class="bar-track">' +
-    '<div class="bar-fill" style="width:' + (c.count / maxCount * 100) + '%;background:' + c.color + '"></div>' +
-    '</div>' +
-    '<div class="bar-val">' + c.count + '</div>' +
-    '</div>'
-  ).join('');
 }
 
 function renderMpghChart(values) {
