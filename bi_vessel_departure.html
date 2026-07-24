@@ -712,6 +712,12 @@ function toggleSort(key) {
   renderTable();
 }
 
+function vesselName(vv) {
+  // Extract the alphabetic ship name prefix, ignoring the voyage number/letter
+  // e.g. "CUHP2612E" -> "CUHP", "TWKELT01" -> "TWKELT"
+  const m = String(vv == null ? '' : vv).match(/^[A-Za-z]+/);
+  return m ? m[0] : String(vv == null ? '' : vv);
+}
 function sortFiltered() {
   if (!sortKeys.length) return;
   filtered.sort((a, b) => {
@@ -719,6 +725,7 @@ function sortFiltered() {
       const colDef = COL_DEFS.find(c => c.key === key);
       const isNum = colDef && colDef.num;
       let va = a[key], vb = b[key];
+      if (key === 'vessel_voyage') { va = vesselName(va); vb = vesselName(vb); }
       if (va == null && vb == null) continue;
       if (va == null) return dir === 'asc' ? 1 : -1;
       if (vb == null) return dir === 'asc' ? -1 : 1;
