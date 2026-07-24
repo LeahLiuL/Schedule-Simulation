@@ -340,6 +340,36 @@ function parseCSV(text) {
   return rows;
 }
 
+// Deduplicate duplicate vessel calls: when the same vessel (first 4 chars of
+// vessel_voyage), same terminal and same departure time appear more than once,
+// keep only the row with the largest voyage number (numeric part), dropping the
+// smaller ones. If voyage numbers tie, keep the row that has cargo data (more moves).
+function vesselVoyageNum(vv) {
+  const m = /(\d+)/.exec(vv || '');
+  return m ? parseInt(m[1], 10) : -1;
+}
+function dedupeVesselRows(rawText) {
+  const data = parseCSV(rawText);
+  const groups = {};
+  for (const r of data) {
+    const vv = r.vessel_voyage || '';
+    const vcode = vv.slice(0, 4);
+    const key = vcode + '|' + (r.terminal || '') + '|' + (r.departure || '');
+    (groups[key] = groups[key] || []).push(r);
+  }
+  const out = [];
+  for (const k in groups) {
+    const arr = groups[k];
+    if (arr.length === 1) { out.push(arr[0]); continue; }
+    arr.sort((a, b) => {
+      const d = vesselVoyageNum(b.vessel_voyage) - vesselVoyageNum(a.vessel_voyage);
+      return d !== 0 ? d : (b.total_moves || 0) - (a.total_moves || 0);
+    });
+    out.push(arr[0]);
+  }
+  return out;
+}
+
 function buildOptions(data) {
   OPTIONS.terminals = [...new Set(data.map(r => r.terminal).filter(Boolean))].sort();
   OPTIONS.svcs = [...new Set(data.map(r => r.svc).filter(Boolean))].sort();
@@ -502,7 +532,7 @@ function loadCSVWithRetry(retry) {
     if (cached && (Date.now() - cacheTime) < CACHE_TTL_MS) {
       console.log('Using cached CSV (' + cached.length + ' bytes)');
       try {
-        DATA = parseCSV(cached);
+        DATA = dedupeVesselRows(cached);
         buildOptions(DATA);
         applyDefaults();
         // Continue fetching in background to refresh cache
@@ -544,7 +574,7 @@ function fetchCSV(isBackground, retry, urlIdx) {
         console.warn('Failed to save cache:', e);
       }
       if (!isBackground) {
-        DATA = parseCSV(text);
+        DATA = dedupeVesselRows(text);
         buildOptions(DATA);
         applyDefaults();
         // Update timestamp
@@ -565,7 +595,7 @@ function fetchCSV(isBackground, retry, urlIdx) {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
-          DATA = parseCSV(cached);
+          DATA = dedupeVesselRows(cached);
           buildOptions(DATA);
           applyDefaults();
           const banner = '<div class="loading" style="color:#b58900;background:#fff3cd;padding:6px 10px;border-radius:4px;margin-bottom:8px;display:inline-block;">⚠️ All sources rate-limited. Showing cached data from ' +
