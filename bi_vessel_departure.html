@@ -254,6 +254,18 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <div class="bar-chart" id="stayChart"></div>
 </div>
 <div class="panel">
+<div class="panel-title">Terminal Port Stay Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头在港时长分布</span></div>
+<div class="band-controls">
+  <span>Periods (h):</span>
+  <input type="number" id="bandS1" value="24" min="1" step="1" /> &lt;
+  <input type="number" id="bandS2" value="48" min="1" step="1" /> &lt;
+  <input type="number" id="bandS3" value="72" min="1" step="1" />
+  <button class="btn btn-primary" onclick="applyStayBands()">Apply</button>
+</div>
+<div class="band-legend" id="bandStayLegend"></div>
+<div class="twb-scroll"><div id="terminalStayBreakdown"></div></div>
+</div>
+<div class="panel">
 <div class="panel-title">MPG H Dist.</div>
 <div class="histogram" id="mpghChart"></div>
 </div>
@@ -875,6 +887,7 @@ function renderAnalysis() {
   renderCargoSummary();
   renderFuelSummary();
   renderTerminalWaitBreakdown();
+  renderTerminalStayBreakdown();
 }
 
 function renderBarChart(id, values, buckets) {
@@ -952,6 +965,7 @@ function renderTeuChart() {
 
 // ---- Terminal wait-time breakdown (per-terminal share across adjustable bands) ----
 let WAIT_BANDS = [6, 24, 48]; // 4 buckets: <=b1, b1-b2, b2-b3, >b3 (hours)
+let STAY_BANDS = [24, 48, 72]; // port-stay buckets (hours), independent from WAIT_BANDS
 function applyBands() {
   const b1 = parseFloat(document.getElementById('band1').value);
   const b2 = parseFloat(document.getElementById('band2').value);
@@ -979,6 +993,49 @@ function renderTerminalWaitBreakdown() {
   filtered.forEach(r => {
     if (!r.terminal) return;
     const w = r.wait_time;
+    if (w == null) return;
+    const g = tmap[r.terminal] || (tmap[r.terminal] = { total: 0, buckets: [0, 0, 0, 0] });
+    g.total++;
+    const idx = w <= b1 ? 0 : w <= b2 ? 1 : w <= b3 ? 2 : 3;
+    g.buckets[idx]++;
+  });
+  const terms = Object.keys(tmap).sort((a, b) => tmap[b].total - tmap[a].total);
+  if (!terms.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
+  container.innerHTML = terms.map(t => {
+    const g = tmap[t];
+    const pct = g.buckets.map(c => g.total ? c / g.total * 100 : 0);
+    const segs = pct.map((p, i) => p > 0 ? '<div class="twb-seg" style="width:' + p + '%;background:' + colors[i] + '" title="' + labels[i] + ': ' + g.buckets[i] + ' (' + p.toFixed(1) + '%)"></div>' : '').join('');
+    const detail = pct.map((p, i) => '<span style="color:' + colors[i] + '">' + labels[i].replace('h', '') + ': ' + p.toFixed(0) + '%</span>').join('');
+    return '<div class="twb-row"><div class="twb-name">' + t + ' <span class="twb-count">(' + g.total + ')</span></div><div class="twb-bar">' + segs + '</div><div class="twb-detail">' + detail + '</div></div>';
+  }).join('');
+}
+function applyStayBands() {
+  const b1 = parseFloat(document.getElementById('bandS1').value);
+  const b2 = parseFloat(document.getElementById('bandS2').value);
+  const b3 = parseFloat(document.getElementById('bandS3').value);
+  if ([b1, b2, b3].some(isNaN) || !(b1 > 0 && b2 > b1 && b3 > b2)) {
+    alert('阈值需为正数且严格升序：b1 < b2 < b3');
+    return;
+  }
+  STAY_BANDS = [b1, b2, b3];
+  renderTerminalStayBreakdown();
+}
+function stayBandLabels() {
+  const [b1, b2, b3] = STAY_BANDS;
+  return ['≤' + b1 + 'h', b1 + '-' + b2 + 'h', b2 + '-' + b3 + 'h', '>' + b3 + 'h'];
+}
+function renderTerminalStayBreakdown() {
+  const container = document.getElementById('terminalStayBreakdown');
+  const legendEl = document.getElementById('bandStayLegend');
+  const labels = stayBandLabels();
+  const colors = ['#34a853', '#f9ab00', '#fa7b17', '#d93025'];
+  if (legendEl) legendEl.innerHTML = labels.map((l, i) => '<span class="legend-item"><i style="background:' + colors[i] + '"></i>' + l + '</span>').join('');
+  if (!filtered.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
+  const [b1, b2, b3] = STAY_BANDS;
+  const tmap = {};
+  filtered.forEach(r => {
+    if (!r.terminal) return;
+    const w = r.port_stay;
     if (w == null) return;
     const g = tmap[r.terminal] || (tmap[r.terminal] = { total: 0, buckets: [0, 0, 0, 0] });
     g.total++;
