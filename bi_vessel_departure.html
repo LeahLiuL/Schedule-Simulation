@@ -151,6 +151,10 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 .twb-bar { display: flex; height: 16px; border-radius: 3px; overflow: hidden; background: #f1f3f4; }
 .twb-seg { height: 100%; }
 .twb-detail { font-size: 10px; margin-top: 2px; color: #64748b; display: flex; gap: 8px; flex-wrap: wrap; }
+.mpg-track { height: 13px; background: #f1f3f4; border-radius: 7px; overflow: hidden; margin: 4px 0 3px; }
+.mpg-fill { height: 100%; border-radius: 7px; }
+.mpg-detail { font-size: 10px; margin-top: 1px; color: #64748b; }
+.mpg-detail b { color: #334155; font-size: 11px; }
 .terminal-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
 .terminal-item:last-child { border-bottom: none; }
 .terminal-name { font-weight: 500; color: #3c4043; }
@@ -260,6 +264,10 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <div class="panel">
 <div class="panel-title">MPG H Dist.</div>
 <div class="histogram" id="mpghChart"></div>
+</div>
+<div class="panel">
+<div class="panel-title">Terminal MPG H Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头平均油耗</span></div>
+<div class="twb-scroll"><div id="terminalMpghBreakdown"></div></div>
 </div>
 <div class="panel">
 <div class="panel-title">Terminal Moves Top10</div>
@@ -873,6 +881,7 @@ function renderAnalysis() {
   renderFuelSummary();
   renderTerminalWaitBreakdown();
   renderTerminalStayBreakdown();
+  renderTerminalMpghBreakdown();
 }
 
 function renderMpghChart(values) {
@@ -1020,6 +1029,33 @@ function renderTerminalStayBreakdown() {
     const segs = pct.map((p, i) => p > 0 ? '<div class="twb-seg" style="width:' + p + '%;background:' + colors[i] + '" title="' + labels[i] + ': ' + g.buckets[i] + ' (' + p.toFixed(1) + '%)"></div>' : '').join('');
     const detail = pct.map((p, i) => '<span style="color:' + colors[i] + '">' + labels[i].replace('h', '') + ': ' + p.toFixed(0) + '%</span>').join('');
     return '<div class="twb-row"><div class="twb-name">' + t + ' <span class="twb-count">(' + g.total + ')</span></div><div class="twb-bar">' + segs + '</div><div class="twb-detail">' + detail + '</div></div>';
+  }).join('');
+}
+function renderTerminalMpghBreakdown() {
+  const container = document.getElementById('terminalMpghBreakdown');
+  if (!filtered.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
+  const tmap = {};
+  filtered.forEach(r => {
+    if (!r.terminal || r.vessel_mpgh == null) return;
+    const g = tmap[r.terminal] || (tmap[r.terminal] = { sum: 0, n: 0 });
+    g.sum += r.vessel_mpgh;
+    g.n++;
+  });
+  const terms = Object.keys(tmap).map(t => ({ t: t, avg: tmap[t].sum / tmap[t].n, n: tmap[t].n }));
+  if (!terms.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No MPG H data</div>'; return; }
+  const avgs = terms.map(x => x.avg);
+  const minA = Math.min.apply(null, avgs), maxA = Math.max.apply(null, avgs);
+  terms.sort((a, b) => b.avg - a.avg); // highest avg consumption first (highlight anomalies)
+  container.innerHTML = terms.map(x => {
+    const ratio = maxA > minA ? (x.avg - minA) / (maxA - minA) : 0.5;
+    const hue = (120 - ratio * 120).toFixed(0); // 120 green (low) -> 0 red (high)
+    const color = 'hsl(' + hue + ',62%,45%)';
+    const widthPct = (12 + ratio * 88).toFixed(0);
+    return '<div class="twb-row">' +
+      '<div class="twb-name">' + x.t + ' <span class="twb-count">(' + x.n + ')</span></div>' +
+      '<div class="mpg-track"><div class="mpg-fill" style="width:' + widthPct + '%;background:' + color + '"></div></div>' +
+      '<div class="mpg-detail">avg <b>' + x.avg.toFixed(1) + '</b> MPG H</div>' +
+      '</div>';
   }).join('');
 }
 
