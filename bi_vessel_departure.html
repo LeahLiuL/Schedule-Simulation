@@ -138,6 +138,19 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 .bar-val { width: 30px; text-align: left; color: #3c4043; font-weight: 600; font-size: 12px; }
 .histogram { display: flex; flex-direction: column; gap: 5px; }
 .terminal-list { font-size: 12px; }
+.band-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; font-size: 11px; color: #5f6368; }
+.band-controls input { width: 46px; padding: 3px 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; text-align: center; }
+.band-controls .btn { padding: 3px 10px; font-size: 11px; margin-left: 4px; }
+.band-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; font-size: 10.5px; color: #5f6368; }
+.legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.legend-item i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.twb-scroll { max-height: 340px; overflow-y: auto; }
+.twb-row { margin-bottom: 9px; }
+.twb-name { font-size: 11.5px; font-weight: 600; color: #334155; margin-bottom: 3px; font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; }
+.twb-count { color: #94a3b8; font-weight: 400; font-family: -apple-system, sans-serif; }
+.twb-bar { display: flex; height: 16px; border-radius: 3px; overflow: hidden; background: #f1f3f4; }
+.twb-seg { height: 100%; }
+.twb-detail { font-size: 10px; margin-top: 2px; color: #64748b; display: flex; gap: 8px; flex-wrap: wrap; }
 .terminal-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
 .terminal-item:last-child { border-bottom: none; }
 .terminal-name { font-weight: 500; color: #3c4043; }
@@ -223,6 +236,18 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <div class="panel">
 <div class="panel-title">Wait Time Dist.</div>
 <div class="bar-chart" id="waitChart"></div>
+</div>
+<div class="panel">
+<div class="panel-title">Terminal Wait Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头等泊分布</span></div>
+<div class="band-controls">
+  <span>Periods (h):</span>
+  <input type="number" id="band1" value="6" min="1" step="1" /> &lt;
+  <input type="number" id="band2" value="24" min="1" step="1" /> &lt;
+  <input type="number" id="band3" value="48" min="1" step="1" />
+  <button class="btn btn-primary" onclick="applyBands()">Apply</button>
+</div>
+<div class="band-legend" id="bandLegend"></div>
+<div class="twb-scroll"><div id="terminalWaitBreakdown"></div></div>
 </div>
 <div class="panel">
 <div class="panel-title">Port Stay Dist.</div>
@@ -849,6 +874,7 @@ function renderAnalysis() {
   renderCargoLoadSummary();
   renderCargoSummary();
   renderFuelSummary();
+  renderTerminalWaitBreakdown();
 }
 
 function renderBarChart(id, values, buckets) {
@@ -922,6 +948,52 @@ function renderTeuChart() {
   container.innerHTML = arr.map(a =>
     '<div class="terminal-item"><span class="terminal-name">' + a[0] + '</span><span class="terminal-val">' + Math.round(a[1]) + ' TEU</span></div>'
   ).join('');
+}
+
+// ---- Terminal wait-time breakdown (per-terminal share across adjustable bands) ----
+let WAIT_BANDS = [6, 24, 48]; // 4 buckets: <=b1, b1-b2, b2-b3, >b3 (hours)
+function applyBands() {
+  const b1 = parseFloat(document.getElementById('band1').value);
+  const b2 = parseFloat(document.getElementById('band2').value);
+  const b3 = parseFloat(document.getElementById('band3').value);
+  if ([b1, b2, b3].some(isNaN) || !(b1 > 0 && b2 > b1 && b3 > b2)) {
+    alert('阈值需为正数且严格升序：b1 < b2 < b3');
+    return;
+  }
+  WAIT_BANDS = [b1, b2, b3];
+  renderTerminalWaitBreakdown();
+}
+function waitBandLabels() {
+  const [b1, b2, b3] = WAIT_BANDS;
+  return ['≤' + b1 + 'h', b1 + '-' + b2 + 'h', b2 + '-' + b3 + 'h', '>' + b3 + 'h'];
+}
+function renderTerminalWaitBreakdown() {
+  const container = document.getElementById('terminalWaitBreakdown');
+  const legendEl = document.getElementById('bandLegend');
+  const labels = waitBandLabels();
+  const colors = ['#34a853', '#f9ab00', '#fa7b17', '#d93025'];
+  if (legendEl) legendEl.innerHTML = labels.map((l, i) => '<span class="legend-item"><i style="background:' + colors[i] + '"></i>' + l + '</span>').join('');
+  if (!filtered.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
+  const [b1, b2, b3] = WAIT_BANDS;
+  const tmap = {};
+  filtered.forEach(r => {
+    if (!r.terminal) return;
+    const w = r.wait_time;
+    if (w == null) return;
+    const g = tmap[r.terminal] || (tmap[r.terminal] = { total: 0, buckets: [0, 0, 0, 0] });
+    g.total++;
+    const idx = w <= b1 ? 0 : w <= b2 ? 1 : w <= b3 ? 2 : 3;
+    g.buckets[idx]++;
+  });
+  const terms = Object.keys(tmap).sort((a, b) => tmap[b].total - tmap[a].total);
+  if (!terms.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
+  container.innerHTML = terms.map(t => {
+    const g = tmap[t];
+    const pct = g.buckets.map(c => g.total ? c / g.total * 100 : 0);
+    const segs = pct.map((p, i) => p > 0 ? '<div class="twb-seg" style="width:' + p + '%;background:' + colors[i] + '" title="' + labels[i] + ': ' + g.buckets[i] + ' (' + p.toFixed(1) + '%)"></div>' : '').join('');
+    const detail = pct.map((p, i) => '<span style="color:' + colors[i] + '">' + labels[i].replace('h', '') + ': ' + p.toFixed(0) + '%</span>').join('');
+    return '<div class="twb-row"><div class="twb-name">' + t + ' <span class="twb-count">(' + g.total + ')</span></div><div class="twb-bar">' + segs + '</div><div class="twb-detail">' + detail + '</div></div>';
+  }).join('');
 }
 
 function renderCargoDisSummary() {
