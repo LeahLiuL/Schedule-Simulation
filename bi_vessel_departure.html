@@ -128,6 +128,7 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 .summary-card { background: #f8f9fa; border-radius: 6px; padding: 10px; text-align: center; border: 1px solid #e8eaed; }
 .summary-card .val { font-size: 22px; font-weight: 700; color: #1a73e8; }
 .summary-card .lbl { font-size: 11px; color: #5f6368; margin-top: 4px; }
+.summary-card .sub { font-size: 10px; color: #9aa0a6; margin-top: 2px; }
 .summary-card.red .val { color: #d93025; }
 .summary-card.orange .val { color: #f9ab00; }
 .bar-chart { display: flex; flex-direction: column; gap: 5px; }
@@ -872,10 +873,10 @@ function renderAnalysis() {
     '<div class="summary-card"><div class="val">' + n + '</div><div class="lbl">Vessels</div></div>' +
     '<div class="summary-card"><div class="val">' + avgWait + '</div><div class="lbl">Avg Wait(h)</div></div>' +
     '<div class="summary-card"><div class="val">' + avgStay + '</div><div class="lbl">Avg Stay(h)</div></div>' +
-    '<div class="summary-card"><div class="val">' + avgMoves + '</div><div class="lbl">Avg Moves</div></div>' +
+    '<div class="summary-card"><div class="val">' + avgMoves + '</div><div class="lbl">Avg Moves</div><div class="sub">' + moves.length + '/' + n + ' voyages</div></div>' +
     '<div class="summary-card red"><div class="val">' + wait24 + '</div><div class="lbl">Wait&gt;24h</div></div>' +
     '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay&gt;72h</div></div>' +
-    '<div class="summary-card orange"><div class="val">' + avgMph + '</div><div class="lbl">Avg MPH</div></div>' +
+    '<div class="summary-card orange"><div class="val">' + avgMph + '</div><div class="lbl">Avg MPH</div><div class="sub">' + mphs.length + '/' + n + ' voyages</div></div>' +
     '<div class="summary-card"><div class="val">' + mphCount + '</div><div class="lbl">MPH Data</div></div>';
   renderTerminalChart();
   renderTeuChart();
@@ -1003,6 +1004,15 @@ function renderTerminalStayBreakdown() {
     return '<div class="twb-row"><div class="twb-name">' + t + ' <span class="twb-count">(' + g.total + ')</span></div><div class="twb-bar">' + segs + '</div><div class="twb-detail">' + detail + '</div></div>';
   }).join('');
 }
+function percentile(arr, p) {
+  if (!arr.length) return 0;
+  const s = arr.slice().sort((a, b) => a - b);
+  const idx = (s.length - 1) * p;
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  if (lo === hi) return s[lo];
+  return s[lo] + (s[hi] - s[lo]) * (idx - lo);
+}
+
 function renderTerminalProductivityBreakdown() {
   const container = document.getElementById('terminalProdBreakdown');
   if (!filtered.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
@@ -1018,10 +1028,13 @@ function renderTerminalProductivityBreakdown() {
   const terms = Object.keys(tmap).map(t => ({ t: t, avg: tmap[t].sum / tmap[t].n, n: tmap[t].n }));
   if (!terms.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No MPH data</div>'; return; }
   const avgs = terms.map(x => x.avg);
-  const minA = Math.min.apply(null, avgs), maxA = Math.max.apply(null, avgs);
+  // Robust scaling: clamp to P10–P90 so a single extreme outlier (e.g. CNSHAT07=186.5)
+  // does not wash out the colour range for every other terminal.
+  const pLow = percentile(avgs, 0.10), pHigh = percentile(avgs, 0.90);
   terms.sort((a, b) => b.avg - a.avg); // highest efficiency first (green = best)
   container.innerHTML = terms.map(x => {
-    const ratio = maxA > minA ? (x.avg - minA) / (maxA - minA) : 0.5;
+    const raw = pHigh > pLow ? (x.avg - pLow) / (pHigh - pLow) : 0.5;
+    const ratio = Math.max(0, Math.min(1, raw)); // clamp outliers to endpoints
     const hue = (ratio * 120).toFixed(0); // 0 red (low) -> 120 green (high)
     const color = 'hsl(' + hue + ',62%,45%)';
     const widthPct = (12 + ratio * 88).toFixed(0);
