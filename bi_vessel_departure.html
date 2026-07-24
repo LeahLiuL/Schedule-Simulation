@@ -262,12 +262,8 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <div class="twb-scroll"><div id="terminalStayBreakdown"></div></div>
 </div>
 <div class="panel">
-<div class="panel-title">MPG H Dist.</div>
-<div class="histogram" id="mpghChart"></div>
-</div>
-<div class="panel">
-<div class="panel-title">Terminal MPG H Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头平均油耗</span></div>
-<div class="twb-scroll"><div id="terminalMpghBreakdown"></div></div>
+<div class="panel-title">Terminal Productivity Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头作业效率 (MPH)</span></div>
+<div class="twb-scroll"><div id="terminalProdBreakdown"></div></div>
 </div>
 <div class="panel">
 <div class="panel-title">Terminal Moves Top10</div>
@@ -330,6 +326,7 @@ const COL_DEFS = [
   { key: 'departure', label: 'Departure', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
   { key: 'wait_time', label: 'Wait(h)', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true },
   { key: 'port_stay', label: 'Stay(h)', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true },
+  { key: 'mph', label: 'MPH', cls: 'col-num', fmt: (v, r) => { const m = mphOf(r); return m != null ? m.toFixed(1) : ''; }, num: true },
   { key: 'total_moves', label: 'MOVES', cls: 'col-num', fmt: v => v != null ? Math.round(v) : '', num: true },
   { key: 'discharge_full_20gp', label: 'Dis F20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
   { key: 'discharge_empty_20gp', label: 'Dis E20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
@@ -341,7 +338,6 @@ const COL_DEFS = [
   { key: 'load_empty_40hc', label: 'Load E40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'load' },
   { key: 'restows', label: 'Restows', cls: 'col-num', fmt: v => v != null ? Math.round(v) : '', num: true },
   { key: 'total_teu', label: 'TEU', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, bold: true },
-  { key: 'vessel_mpgh', label: 'MPG H', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true },
   { key: 'arr_fuel_oil', label: 'Arr FO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
   { key: 'arr_lsfo', label: 'Arr LSFO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
   { key: 'arr_diesel_oil', label: 'Arr DO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
@@ -422,7 +418,7 @@ function loadColVisibility() {
   COL_DEFS.forEach((c, i) => {
     if (!(c.key in colVisibility)) {
       // Default: show columns up to and including MOVES; hide everything after
-      // (the colored discharge/load/fuel blocks + Restows/TEU/MPG H).
+      // (the colored discharge/load/fuel blocks + Restows/TEU).
       colVisibility[c.key] = (movesIdx >= 0 ? (i <= movesIdx) : true);
     }
   });
@@ -726,6 +722,14 @@ function vesselName(vv) {
   const m = String(vv == null ? '' : vv).match(/^[A-Za-z]+/);
   return m ? m[0] : String(vv == null ? '' : vv);
 }
+function mphOf(r) {
+  // Terminal handling efficiency = moves per hour of actual berth work
+  // (port_stay - wait_time = time spent at berth, excluding waiting at anchor)
+  if (r.total_moves == null || r.port_stay == null || r.wait_time == null) return null;
+  const work = r.port_stay - r.wait_time;
+  if (work <= 0) return null;
+  return r.total_moves / work;
+}
 function sortFiltered() {
   if (!sortKeys.length) return;
   filtered.sort((a, b) => {
@@ -734,6 +738,7 @@ function sortFiltered() {
       const isNum = colDef && colDef.num;
       let va = a[key], vb = b[key];
       if (key === 'vessel_voyage') { va = vesselName(va); vb = vesselName(vb); }
+      if (key === 'mph') { va = mphOf(a); vb = mphOf(b); }
       if (va == null && vb == null) continue;
       if (va == null) return dir === 'asc' ? 1 : -1;
       if (vb == null) return dir === 'asc' ? -1 : 1;
@@ -791,7 +796,7 @@ function renderTable() {
       if (c.key === 'port_stay' && stayClass) cls += ' ' + stayClass;
       if (c.bold) cls += ' bold';
       let style = c.bold ? ' style="font-weight:600;color:#1a73e8"' : '';
-      html += '<td class="' + cls + '"' + style + '>' + c.fmt(r[c.key]) + '</td>';
+      html += '<td class="' + cls + '"' + style + '>' + c.fmt(r[c.key], r) + '</td>';
     });
     html += '</tr>';
   });
@@ -853,15 +858,15 @@ function renderAnalysis() {
   const n = filtered.length;
   const waits = filtered.map(r => r.wait_time).filter(v => v != null);
   const stays = filtered.map(r => r.port_stay).filter(v => v != null);
-  const mpghs = filtered.map(r => r.vessel_mpgh).filter(v => v != null);
+  const mphs = filtered.map(r => mphOf(r)).filter(v => v != null);
   const moves = filtered.map(r => r.total_moves).filter(v => v != null);
   const avgWait = waits.length ? (waits.reduce((a, b) => a + b, 0) / waits.length).toFixed(1) : '-';
   const avgStay = stays.length ? (stays.reduce((a, b) => a + b, 0) / stays.length).toFixed(1) : '-';
   const avgMoves = moves.length ? (moves.reduce((a, b) => a + b, 0) / moves.length).toFixed(0) : '-';
   const wait24 = waits.filter(v => v > 24).length;
   const stay72 = stays.filter(v => v > 72).length;
-  const avgMpgh = mpghs.length ? (mpghs.reduce((a, b) => a + b, 0) / mpghs.length).toFixed(1) : '-';
-  const mpghCount = mpghs.length;
+  const avgMph = mphs.length ? (mphs.reduce((a, b) => a + b, 0) / mphs.length).toFixed(1) : '-';
+  const mphCount = mphs.length;
   const grid = document.getElementById('summaryGrid');
   grid.innerHTML =
     '<div class="summary-card"><div class="val">' + n + '</div><div class="lbl">Vessels</div></div>' +
@@ -870,9 +875,8 @@ function renderAnalysis() {
     '<div class="summary-card"><div class="val">' + avgMoves + '</div><div class="lbl">Avg Moves</div></div>' +
     '<div class="summary-card red"><div class="val">' + wait24 + '</div><div class="lbl">Wait&gt;24h</div></div>' +
     '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay&gt;72h</div></div>' +
-    '<div class="summary-card orange"><div class="val">' + avgMpgh + '</div><div class="lbl">Avg MPG H</div></div>' +
-    '<div class="summary-card"><div class="val">' + mpghCount + '</div><div class="lbl">MPG H Data</div></div>';
-  renderMpghChart(mpghs);
+    '<div class="summary-card orange"><div class="val">' + avgMph + '</div><div class="lbl">Avg MPH</div></div>' +
+    '<div class="summary-card"><div class="val">' + mphCount + '</div><div class="lbl">MPH Data</div></div>';
   renderTerminalChart();
   renderTeuChart();
   renderCargoDisSummary();
@@ -881,39 +885,7 @@ function renderAnalysis() {
   renderFuelSummary();
   renderTerminalWaitBreakdown();
   renderTerminalStayBreakdown();
-  renderTerminalMpghBreakdown();
-}
-
-function renderMpghChart(values) {
-  const container = document.getElementById('mpghChart');
-  if (!values.length) {
-    container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>';
-    return;
-  }
-  const min = Math.min.apply(null, values);
-  const max = Math.max.apply(null, values);
-  const bins = 8;
-  const step = (max - min) / bins || 1;
-  const arr = [];
-  for (let i = 0; i < bins; i++) {
-    arr.push({ label: (min + i * step).toFixed(0) + '-' + (min + (i + 1) * step).toFixed(0), min: min + i * step, max: min + (i + 1) * step, count: 0 });
-  }
-  values.forEach(v => {
-    for (let i = 0; i < arr.length; i++) {
-      if (v >= arr[i].min && v < arr[i].max) { arr[i].count++; break; }
-      if (i === arr.length - 1 && v >= arr[i].min) { arr[i].count++; break; }
-    }
-  });
-  const maxCount = Math.max.apply(null, arr.map(b => b.count).concat([1]));
-  container.innerHTML = arr.map(b =>
-    '<div class="bar-row">' +
-    '<div class="bar-label">' + b.label + '</div>' +
-    '<div class="bar-track">' +
-    '<div class="bar-fill" style="width:' + (b.count / maxCount * 100) + '%;background:#6c757d"></div>' +
-    '</div>' +
-    '<div class="bar-val">' + b.count + '</div>' +
-    '</div>'
-  ).join('');
+  renderTerminalProductivityBreakdown();
 }
 
 function renderTerminalChart() {
@@ -1031,30 +1003,32 @@ function renderTerminalStayBreakdown() {
     return '<div class="twb-row"><div class="twb-name">' + t + ' <span class="twb-count">(' + g.total + ')</span></div><div class="twb-bar">' + segs + '</div><div class="twb-detail">' + detail + '</div></div>';
   }).join('');
 }
-function renderTerminalMpghBreakdown() {
-  const container = document.getElementById('terminalMpghBreakdown');
+function renderTerminalProductivityBreakdown() {
+  const container = document.getElementById('terminalProdBreakdown');
   if (!filtered.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
   const tmap = {};
   filtered.forEach(r => {
-    if (!r.terminal || r.vessel_mpgh == null) return;
+    if (!r.terminal) return;
+    const m = mphOf(r);
+    if (m == null) return;
     const g = tmap[r.terminal] || (tmap[r.terminal] = { sum: 0, n: 0 });
-    g.sum += r.vessel_mpgh;
+    g.sum += m;
     g.n++;
   });
   const terms = Object.keys(tmap).map(t => ({ t: t, avg: tmap[t].sum / tmap[t].n, n: tmap[t].n }));
-  if (!terms.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No MPG H data</div>'; return; }
+  if (!terms.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No MPH data</div>'; return; }
   const avgs = terms.map(x => x.avg);
   const minA = Math.min.apply(null, avgs), maxA = Math.max.apply(null, avgs);
-  terms.sort((a, b) => b.avg - a.avg); // highest avg consumption first (highlight anomalies)
+  terms.sort((a, b) => b.avg - a.avg); // highest efficiency first (green = best)
   container.innerHTML = terms.map(x => {
     const ratio = maxA > minA ? (x.avg - minA) / (maxA - minA) : 0.5;
-    const hue = (120 - ratio * 120).toFixed(0); // 120 green (low) -> 0 red (high)
+    const hue = (ratio * 120).toFixed(0); // 0 red (low) -> 120 green (high)
     const color = 'hsl(' + hue + ',62%,45%)';
     const widthPct = (12 + ratio * 88).toFixed(0);
     return '<div class="twb-row">' +
       '<div class="twb-name">' + x.t + ' <span class="twb-count">(' + x.n + ')</span></div>' +
       '<div class="mpg-track"><div class="mpg-fill" style="width:' + widthPct + '%;background:' + color + '"></div></div>' +
-      '<div class="mpg-detail">avg <b>' + x.avg.toFixed(1) + '</b> MPG H</div>' +
+      '<div class="mpg-detail">avg <b>' + x.avg.toFixed(1) + '</b> MPH</div>' +
       '</div>';
   }).join('');
 }
