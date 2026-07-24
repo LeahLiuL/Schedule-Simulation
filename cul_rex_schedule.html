@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>REX / RES / AEM / CGX / SGX Schedule</title>
+<style>
+  body { font-family: Arial, "Segoe UI", "Microsoft YaHei", sans-serif; margin: 0; padding: 0; background: #fff; color: #222; font-size: 12px; }
+  .topbar { background: #1f3a5f; color: #fff; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+  .topbar h1 { font-size: 16px; margin: 0 12px 0 0; }
+  .topbar label { color: #d6e3f3; font-size: 12px; }
+  .topbar select, .topbar input { padding: 4px 8px; font-size: 12px; border: 1px solid #4f6d8e; border-radius: 3px; background: #fff; color: #222; }
+  .topbar input[type=date] { padding: 3px 6px; }
+  .chk { display: inline-flex; align-items: center; gap: 4px; background: #2a4a72; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
+  .chk input { margin: 0; }
+  .chk.on { background: #3b7dd8; }
+  .summary { background: #f5f7fa; padding: 6px 16px; font-size: 11px; color: #555; border-bottom: 1px solid #d0d7e2; }
+  .summary span { margin-right: 14px; }
+  .wrap { overflow: auto; max-height: calc(100vh - 110px); border-top: 1px solid #c0c8d4; }
+  table { border-collapse: collapse; table-layout: auto; min-width: 100%; }
+  thead th { position: sticky; top: 0; background: #1f3a5f; color: #fff; font-weight: 700; text-align: center; padding: 6px 8px; border: 1px solid #2f5d8a; z-index: 2; white-space: nowrap; font-size: 12px; cursor: default; box-shadow: 0 2px 5px rgba(0,0,0,.18); }
+  thead th.grp-west,
+  thead th.grp-east,
+  thead th.grp-mid,
+  thead th.grp-vessel,
+  thead th.sub-header { background: #1f3a5f; color: #fff; font-weight: 700; }
+  thead th.sortable { cursor: pointer; }
+  thead th.sortable:hover { background: #2f5d8a; }
+  thead th.sort-active { background: #e8a020; color: #1f3a5f; }
+  thead th .arrow { font-size: 10px; margin-left: 2px; }
+  tbody td { padding: 4px 6px; border: 1px solid #d8dee7; text-align: center; white-space: nowrap; font-size: 11px; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody td.vessel { text-align: left; font-weight: 700; font-size: 13px; color: #16335a; letter-spacing: .2px; }
+  tbody td.voy { font-weight: 700; font-size: 12px; color: #16335a; }
+  tbody td.remark-cell { min-width: 180px; padding: 0; background: #fffce6; }
+  tbody td.remark-cell input { width: 100%; border: none; background: transparent; padding: 4px 6px; font-size: 11px; outline: none; box-sizing: border-box; }
+  tbody td.remark-cell input:focus { background: #fff8c2; }
+  tbody td.eta { background: #fff7d6; }
+  tbody td.eta-w { background: #e7f0fb; }   /* West bound cell - 浅蓝 */
+  tbody td.eta-e { background: #fce4e4; }   /* East bound cell - 浅红 */
+  tbody td.eta-m { background: #fff3d6; }   /* Middle cell - 浅黄 */
+  tbody td.empty { background: #fafbfd; color: #c0c8d4; }
+  tbody td.cell-has { background: #ffffff; }
+  /* 按 service 整行上色（不同航线不同底色），港口有挂靠=白、空=淡灰，行首彩色竖条 */
+  tbody tr.row-REX > td:not(.remark-cell):not(.cell-has):not(.empty) { background: #e3f3e8; }
+  tbody tr.row-RES > td:not(.remark-cell):not(.cell-has):not(.empty) { background: #e6effb; }
+  tbody tr.row-AEM > td:not(.remark-cell):not(.cell-has):not(.empty) { background: #fcecd9; }
+  tbody tr.row-CGX > td:not(.remark-cell):not(.cell-has):not(.empty) { background: #efe8fb; }
+  tbody tr.row-SGX > td:not(.remark-cell):not(.cell-has):not(.empty) { background: #fff3d4; }
+  tbody tr.row-REX > td:first-child { border-left: 3px solid #2e8b57; }
+  tbody tr.row-RES > td:first-child { border-left: 3px solid #2f6db0; }
+  tbody tr.row-AEM > td:first-child { border-left: 3px solid #d98324; }
+  tbody tr.row-CGX > td:first-child { border-left: 3px solid #8e5fc0; }
+  tbody tr.row-SGX > td:first-child { border-left: 3px solid #d4a017; }
+  tbody tr:hover td { background: #fff7c0 !important; }
+  tbody tr:hover td.remark-cell { background: #fff2a0 !important; }
+  .pill { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; color: #fff; }
+  .pill-REX { background: #2f5d8a; }
+  .pill-RES { background: #b94747; }
+  .pill-AEM { background: #d39e00; }
+  .pill-CGX { background: #4a7a4a; }
+  .pill-SGX { background: #6b4d8a; }
+  .pill-OP  { background: #777; }
+  .date-cell { font-weight: 600; color: #1f3a5f; }
+  .date-cell.eta-w { color: #1f3a5f; }
+  .date-cell.eta-e { color: #b94747; }
+  /* Add Call (simulated) time — distinct purple highlight so it stands out from real calls */
+  .date-cell.addcall { color: #7a2fb0; background: #f3e6fb; font-weight: 700; padding: 1px 5px; border-radius: 3px; border: 1px solid #d9b3ef; }
+  tbody td.addcall { background: #f3e6fb !important; }
+  .loading { padding: 30px; text-align: center; color: #666; }
+  .toolbar { display: flex; gap: 8px; align-items: center; }
+  .btn { background: #1f3a5f; color: #fff; border: none; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; }
+  .btn:hover { background: #2f5d8a; }
+  .btn.secondary { background: #6b7d92; }
+  .saved-flash { animation: flash 1s ease; }
+  @keyframes flash { 0% { background: #9fdf6f; } 100% { background: transparent; } }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+  .modal-bg.show { display: flex; }
+  .modal { background: #fff; border-radius: 6px; padding: 20px; min-width: 420px; max-width: 560px; }
+  .modal h3 { margin: 0 0 12px 0; color: #1f3a5f; }
+  .modal label { display: block; margin: 8px 0 4px; font-weight: 600; }
+  .modal input, .modal select { width: 100%; padding: 6px 8px; border: 1px solid #c0c8d4; border-radius: 3px; box-sizing: border-box; }
+  .modal .row { display: flex; gap: 8px; margin-top: 12px; }
+  .modal .row .btn { flex: 1; padding: 8px; }
+  .info-line { font-size: 11px; color: #555; margin: 4px 0; }
+  .port-sticky { position: sticky; left: 0; background: #e7ecf3; z-index: 3; }
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🚢 REX / RES / AEM / CGX / SGX Schedule</h1>
+  <label>Operator:</label>
+  <select id="opSel">
+    <option value="CUL" selected>CUL (default)</option>
+    <option value="ALL">ALL</option>
+  </select>
+  <label>Services:</label>
+  <span id="svcChecks"></span>
+  <label>From:</label>
+  <input type="date" id="dateFrom" value="">
+  <label>To:</label>
+  <input type="date" id="dateTo" value="">
+  <label>Search:</label>
+  <input type="text" id="searchBox" placeholder="vessel / voyage / remark" style="width: 160px;">
+  <div class="toolbar">
+    <button class="btn" id="btnApply">🔄 Retrieve</button>
+    <button class="btn secondary" id="btnReset">Reset</button>
+  </div>
+</div>
+
+<div class="summary" id="summaryBar">Loading…</div>
+
+<div class="wrap">
+  <table id="schedTable">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="modal-bg" id="addCallModal">
+  <div class="modal">
+    <h3>Add Call Simulation</h3>
+    <div class="info-line" id="acVessel"></div>
+    <label>Vessel speed (knots):</label>
+    <input type="number" id="acSpeed" value="12" step="0.5">
+    <label>From port (5-letter):</label>
+    <input type="text" id="acFrom" placeholder="e.g. CNSHA">
+    <label>To port (5-letter):</label>
+    <input type="text" id="acTo" placeholder="e.g. MYPKG">
+    <label>Depart from <span id="acFromLabel"></span> (ETA to depart):</label>
+    <input type="date" id="acDepDate">
+    <div class="info-line" id="acDistance"></div>
+    <label>Computed ETA at <span id="acToLabel"></span>:</label>
+    <input type="date" id="acArrDate">
+    <div class="row">
+      <button class="btn" id="acSave">Save (add as call)</button>
+      <button class="btn secondary" id="acCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Local data snapshot: lets the page work when opened via file:// (browsers block
+     fetch() of https CDNs from a file:// origin). Online (http/https) still prefers CDN. -->
+<script src="cul_rex_data.js"></script>
+
+<script>
+/* ================= config ================= */
+const TARGET_SVCS = ['REX', 'RES', 'AEM', 'CGX', 'SGX'];
+
+// CSV sources (jsDelivr CDN with GitHub raw fallback)
+const CSV_URLS = [
+  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/bi_vessel_departure.csv',
+  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv',
+];
+
+const PORTS_URLS = [
+  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/ports.csv',
+  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/ports.csv',
+];
+
+const LANES_URLS = [
+  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/lanes.json',
+  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/lanes.json',
+];
+
+const BESTMODEL_URLS = [
+  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/cul_vessel_bestmodel.csv',
+  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/cul_vessel_bestmodel.csv',
+];
+
+const DISTANCES_URLS = [
+  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/distances.csv',
+  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/distances.csv',
+];
+
+const VESSELS_URLS = [
+  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/vessels.csv',
+  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/vessels.csv',
+];
+
+/* ================= state ================= */
+let RAW = [];             // bi_vessel_departure rows
+let PORTS = {};           // 5-letter code -> name
+let LANES = {};           // svc code -> [ports]
+let BESTMODEL = {};       // vessel_code -> suggested BSA
+let DISTANCES = {};       // "FROM,TO" -> distance_nm
+let VESSELS = {};         // vessel_code -> {speed_knots, name}
+
+/* ================= utils ================= */
+async function fetchWithFallback(urls) {
+  let lastErr;
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) { lastErr = new Error('HTTP ' + r.status); continue; }
+      const t = await r.text();
+      if (t && t.length > 10) return t;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('All sources failed');
+}
+
+function parseCSV(text) {
+  // minimal CSV parser
+  const lines = text.replace(/\r\n/g, '\n').split('\n').filter(l => l.length);
+  if (!lines.length) return { header: [], rows: [] };
+  const header = splitCSVLine(lines[0]);
+  const rows = lines.slice(1).map(l => {
+    const cells = splitCSVLine(l);
+    const obj = {};
+    header.forEach((h, i) => obj[h] = (cells[i] || '').trim());
+    return obj;
+  });
+  return { header, rows };
+}
+function splitCSVLine(line) {
+  const out = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === ',' && !inQ) { out.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+function fmtDateFull(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return ymd(d);
+}
+
+function portKey(term) { return (term || '').slice(0, 5); }
+// Local-date formatter (avoids toISOString UTC shift that caused off-by-one days)
+function ymd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function vesselFromVV(vv) { return vv ? vv.slice(0, 4) : ''; }
+function voyageFromVV(vv) { return vv ? vv.slice(4) : ''; }
+
+// Parse vessel_voyage into vessel code + voyage number + direction suffix (W/E/S/N).
+// Example: "BIBK2626W" -> { vessel:"BIBK", voyageNo:"2626", dir:"W", base:"BIBK2626" }
+// The base (vessel + voyage number, WITHOUT direction) is the row key so that a
+// vessel's West-bound and East-bound legs land on the SAME row.
+function parseVV(vv) {
+  const m = /^([A-Z0-9]{4})(\d{4})([A-Z])$/.exec(vv || '');
+  if (m) return { vessel: m[1], voyageNo: m[2], dir: m[3], base: m[1] + m[2] };
+  const v = vv || '';
+  const vessel = v.slice(0, 4);
+  let rest = v.slice(4), dir = '';
+  if (rest && /[A-Z]$/.test(rest)) { dir = rest.slice(-1); rest = rest.slice(0, -1); }
+  return { vessel, voyageNo: rest, dir, base: vessel + rest };
+}
+
+function isPKG(p) { return p === 'MYPKG'; }
+
+/* ================= load data ================= */
+// Load a text resource. Under file:// the browser blocks fetch() of remote CDNs,
+// so we fall back to the bundled local snapshot (window.CUL_REX_DATA). Online we
+// still prefer the live CDN (keeps data fresh), and only use the snapshot on failure.
+async function loadText(key, urls) {
+  const local = window.CUL_REX_DATA && window.CUL_REX_DATA[key];
+  if (location.protocol === 'file:') {
+    if (local) return local;
+    throw new Error('No local snapshot for ' + key + ' (file:// mode)');
+  }
+  try {
+    return await fetchWithFallback(urls);
+  } catch (e) {
+    if (local) { console.warn('CDN failed, using local snapshot for', key); return local; }
+    throw e;
+  }
+}
+
+async function loadAll() {
+  const offline = location.protocol === 'file:';
+  document.getElementById('summaryBar').textContent = offline
+    ? 'Loading local snapshot …'
+    : 'Loading CSV …';
+
+  // ports
+  try {
+    const t = await loadText('ports', PORTS_URLS);
+    const { rows } = parseCSV(t);
+    rows.forEach(r => { if (r.code) PORTS[r.code] = r.name_en || r.code; });
+  } catch (e) { console.warn('ports.csv load fail', e); }
+
+  // lanes
+  try {
+    const t = await loadText('lanes', LANES_URLS);
+    const data = JSON.parse(t);
+    data.forEach(l => { if (l.code && l.ports) LANES[l.code] = l.ports; });
+  } catch (e) { console.warn('lanes.json load fail', e); }
+
+  // bestmodel (BOM has BOM)
+  try {
+    const t = await loadText('bestmodel', BESTMODEL_URLS).then(s => s.replace(/^\uFEFF/, ''));
+    const { rows } = parseCSV(t);
+    rows.forEach(r => { if (r['Vessel Name']) BESTMODEL[r['Vessel Name'].toUpperCase().trim()] = r; });
+  } catch (e) { console.warn('bestmodel fail', e); }
+
+  // distances
+  try {
+    const t = await loadText('distances', DISTANCES_URLS);
+    const { rows } = parseCSV(t);
+    rows.forEach(r => { if (r.from_port && r.to_port) DISTANCES[r.from_port + ',' + r.to_port] = parseFloat(r.distance_nm); });
+  } catch (e) { console.warn('distances fail', e); }
+
+  // vessels (for speed)
+  try {
+    const t = await loadText('vessels', VESSELS_URLS).then(s => s.replace(/^\uFEFF/, ''));
+    const { rows } = parseCSV(t);
+    rows.forEach(r => { if (r.vessel_code) VESSELS[r.vessel_code.toUpperCase()] = r; });
+  } catch (e) { console.warn('vessels fail', e); }
+
+  // main
+  const t = await loadText('bi', CSV_URLS);
+  const { rows } = parseCSV(t);
+  RAW = rows;
+
+  document.getElementById('summaryBar').textContent =
+    (offline ? '📁 Local snapshot · ' : '') +
+    `Loaded ${RAW.length} rows. Ports:${Object.keys(PORTS).length}, Lanes:${Object.keys(LANES).length}, BestModel:${Object.keys(BESTMODEL).length}.`;
+
+  initFilters();
+  render();
+}
+
+/* ================= filter + render ================= */
+function getSelectedServices() {
+  return Array.from(document.querySelectorAll('.svc-chk:checked')).map(c => c.value);
+}
+
+function getFiltered() {
+  const op = document.getElementById('opSel').value;
+  const svcs = getSelectedServices();
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  const q = (document.getElementById('searchBox').value || '').toLowerCase();
+
+  return RAW.filter(r => {
+    if (op !== 'ALL' && r.operator !== op) return false;
+    if (svcs.length && !svcs.includes(r.svc)) return false;
+    if (from) {
+      const dep = r.departure || r.berth || r.arrived_anchorage;
+      if (dep && dep.slice(0, 10) < from) return false;
+    }
+    if (to) {
+      const arr = r.arrived_anchorage || r.berth;
+      if (arr && arr.slice(0, 10) > to) return false;
+    }
+    if (q) {
+      const hay = (r.vessel_voyage + ' ' + r.svc + ' ' + r.terminal + ' ' + (r.trade_remark || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+// Group rows by vessel + voyage number (base, WITHOUT direction letter) so that one
+// physical vessel voyage (e.g. BIBK2626) occupies a SINGLE row, with its West-bound
+// and East-bound port calls placed into the matching column groups.
+function groupByVoyage(rows) {
+  const map = new Map();
+  for (const r of rows) {
+    const pv = parseVV(r.vessel_voyage);
+    const key = pv.base + '|' + r.svc + '|' + r.operator;
+    if (!map.has(key)) {
+      map.set(key, {
+        vessel_voyage: pv.base,   // used as stable id (remark / addcall keys)
+        base: pv.base,
+        vessel: pv.vessel,
+        voyage: pv.voyageNo,
+        svc: r.svc,
+        operator: r.operator,
+        west: {}, east: {}, other: {},   // dir bucket -> port5 -> call
+        trade_remarks: [],
+      });
+    }
+    const g = map.get(key);
+    const dirBucket = pv.dir === 'W' ? 'west' : (pv.dir === 'E' ? 'east' : 'other');
+    const p5 = portKey(r.terminal);
+    g[dirBucket][p5] = {
+      terminal_full: r.terminal,
+      arr: r.arrived_anchorage,
+      berth: r.berth,
+      dep: r.departure,
+      total_moves: r.total_moves,
+      total_teu: r.total_teu,
+      wait_time: r.wait_time,
+    };
+    if (r.trade_remark && r.trade_remark.trim()) g.trade_remarks.push(r.trade_remark.trim());
+  }
+  return Array.from(map.values());
+}
+
+// Look up the call for port p in group g (any directional leg; West/East grouping
+// is no longer used, so just return whichever leg actually calls this port).
+function getCall(g, p) {
+  return g.west[p] || g.east[p] || g.other[p] || null;
+}
+function findPortAny(g, p) { return g.west[p] || g.east[p] || g.other[p] || null; }
+
+function getServicePortList(svcs) {
+  // union of all port codes from selected services, preserving order
+  const seen = new Set();
+  const list = [];
+  for (const s of svcs) {
+    const seq = LANES[s] || [];
+    for (const p of seq) {
+      if (!seen.has(p)) { seen.add(p); list.push(p); }
+    }
+  }
+  // if a port not in any lane, append
+  for (const r of RAW) {
+    if (!svcs.includes(r.svc)) continue;
+    const p5 = portKey(r.terminal);
+    if (!seen.has(p5)) { seen.add(p5); list.push(p5); }
+  }
+  return list;
+}
+
+// Determine West/East bound column groups
+function classifyPortOrder(portList, svc) {
+  // If we have a lane seq for a single service, split at midpoint
+  // Otherwise use geography: simple rule
+  // For multi-service view, just return the ports in lane order
+  // and let user know west/east visually based on position
+  return portList.map((p, idx) => ({
+    code: p,
+    group: 'W', // we mark by order below
+  }));
+}
+
+function classifyPort(p, svcs) {
+  // For each svc containing this port, find its position in the lane.
+  // If avg position < (lane length/2), it's West bound; else East bound.
+  if (!svcs.length) return 'W';
+  let sumIdx = 0, cnt = 0;
+  for (const s of svcs) {
+    const seq = LANES[s] || [];
+    const idx = seq.indexOf(p);
+    if (idx === -1) continue;
+    sumIdx += idx; cnt++;
+  }
+  if (!cnt) return 'O';
+  const avg = sumIdx / cnt;
+  // find any svc that has the port, use that svc's midIdx
+  for (const s of svcs) {
+    const seq = LANES[s] || [];
+    if (seq.includes(p)) {
+      const mid = seq.length / 2;
+      return avg < mid ? 'W' : 'E';
+    }
+  }
+  return 'O';
+}
+
+// West/East grouping is driven by the vessel_voyage DIRECTION SUFFIX (W=West bound,
+// E=East bound), exactly as the user specified. We count, across all filtered rows,
+// how many times each port is called on a W-suffixed voyage vs an E-suffixed voyage,
+// then assign the port to West / East / Other accordingly.
+function computePortGroups(rows, portList) {
+  const wc = {}, ec = {};
+  for (const r of rows) {
+    const pv = parseVV(r.vessel_voyage);
+    if (pv.dir !== 'W' && pv.dir !== 'E') continue;
+    const p5 = portKey(r.terminal);
+    if (pv.dir === 'W') wc[p5] = (wc[p5] || 0) + 1;
+    else ec[p5] = (ec[p5] || 0) + 1;
+  }
+  const west = [], east = [], other = [];
+  for (const p of portList) {
+    const w = wc[p] || 0, e = ec[p] || 0;
+    if (w > e) west.push(p);
+    else if (e > w) east.push(p);
+    else other.push(p); // equal counts (both present) or neither -> Other
+  }
+  return { west, east, other };
+}
+
+function remarkKey(g) { return 'remark_' + g.svc + '_' + g.vessel_voyage; }
+function remarkLoad(g) { return localStorage.getItem(remarkKey(g)) || ''; }
+function remarkSave(g, val) { localStorage.setItem(remarkKey(g), val); }
+
+function addCallKey(g, port) { return 'addcall_' + g.svc + '_' + g.vessel_voyage + '_' + port; }
+function addCallLoad(g, port) { try { return JSON.parse(localStorage.getItem(addCallKey(g, port)) || 'null'); } catch (e) { return null; } }
+function addCallSave(g, port, val) { localStorage.setItem(addCallKey(g, port), JSON.stringify(val)); }
+
+function getBestModelTEU(g) {
+  // try vessel name (e.g. CUL HAIPHONG) by code
+  const code = (g.vessel || '').toUpperCase();
+  // vessels in bestmodel use full name; map via vessels.csv vessel_name
+  const vInfo = VESSELS[code];
+  if (vInfo) {
+    const name = (vInfo.vessel_name || '').toUpperCase().trim();
+    if (BESTMODEL[name]) return BESTMODEL[name]['Suggested BSA'] || '';
+  }
+  // try direct code match
+  for (const k in BESTMODEL) {
+    if (k.startsWith(code) || code.startsWith(k.slice(0,4))) {
+      return BESTMODEL[k]['Suggested BSA'] || '';
+    }
+  }
+  return '';
+}
+
+// Fixed port column order requested by the user (no West/East grouping).
+// NOTE: the user wrote "PKAQJ" but that code does not exist in the data — the
+// intended port is JOAQJ (Johor), so it is corrected here.
+const FIXED_PORTS = ['CNTAO', 'CNSHA', 'CNNGB', 'CNSHK', 'CNNAS', 'CNXMN', 'MYPKG', 'EGSOK', 'SAJED', 'PKKHI', 'JOAQJ', 'INMUN', 'DJJIB'];
+function getFixedPortList(rows) {
+  const fixedSet = new Set(FIXED_PORTS);
+  const extraSet = new Set();
+  for (const r of rows) {
+    const p5 = portKey(r.terminal);
+    if (!fixedSet.has(p5)) extraSet.add(p5);
+  }
+  // fixed ports first (in exact order), then any remaining data ports (sorted, stable)
+  return FIXED_PORTS.concat(Array.from(extraSet).sort());
+}
+
+/* ================= sorting ================= */
+// Default terminal sort = MYPKG (Port Klang / 巴生), per user request.
+let sortCol = 'MYPKG';
+let sortDir = 'asc';
+
+// ETA date used for sorting a group at a given port (real call or simulated add-call).
+function getETADate(g, p) {
+  const call = getCall(g, p);
+  if (call) return call.arr || call.berth || call.dep || '';
+  const added = addCallLoad(g, p);
+  if (added) return added.arr || '';
+  return '';
+}
+
+// Sort key with upstream fallback: when sorting by `targetPort`, a vessel that does
+// NOT call that terminal falls back to the PREVIOUS terminal in the column order
+// (e.g. MYPKG -> CNXMN -> CNNAS -> ...), using the first upstream terminal it actually
+// calls. Vessels calling none of the upstream ports fall back to the nearest downstream
+// port so everything stays interleaved (nothing sinks to the bottom).
+function getETADateFallback(g, targetPort, portList) {
+  const idx = portList.indexOf(targetPort);
+  if (idx < 0) return getETADate(g, targetPort);
+  for (let i = idx; i >= 0; i--) {            // walk backward (earlier terminals)
+    const d = getETADate(g, portList[i]);
+    if (d) return d;
+  }
+  for (let i = idx + 1; i < portList.length; i++) {   // last resort: nearest downstream
+    const d = getETADate(g, portList[i]);
+    if (d) return d;
+  }
+  return '';
+}
+
+function sortGroups(groups, portList) {
+  groups.sort((a, b) => {
+    if (sortCol === '__vessel') {
+      const cmp = (a.vessel_voyage + a.svc).localeCompare(b.vessel_voyage + b.svc);
+      return sortDir === 'asc' ? cmp : -cmp;
+    }
+    // sort by the target terminal's ETA, falling back to the nearest upstream terminal
+    // (or downstream as a last resort) so all vessels stay interleaved.
+    const da = getETADateFallback(a, sortCol, portList);
+    const db = getETADateFallback(b, sortCol, portList);
+    if (!da && !db) return (a.vessel_voyage + a.svc).localeCompare(b.vessel_voyage + b.svc);
+    if (!da) return 1;
+    if (!db) return -1;
+    const cmp = da.localeCompare(db);
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+}
+
+function render() {
+  const rows = getFiltered();
+  const svcs = getSelectedServices();
+  // Fixed port order (no West/East grouping), then any extra data ports appended.
+  const portList = getFixedPortList(rows);
+
+  const groups = groupByVoyage(rows);
+  // default sort by terminal ETA (MYPKG / Port Klang), toggle via header click
+  sortGroups(groups, portList);
+
+  const srcTag = location.protocol === 'file:'
+    ? `<span style="background:#ffd9a0;color:#7a4a00;padding:1px 6px;border-radius:8px;font-weight:700">📁 Local snapshot</span>`
+    : `<span style="background:#d6f5d6;color:#1f6b1f;padding:1px 6px;border-radius:8px;font-weight:700">🌐 Live CDN</span>`;
+  document.getElementById('summaryBar').innerHTML =
+    srcTag +
+    `<span>📊 <b>${groups.length}</b> voyages</span>` +
+    `<span>Services: ${svcs.join(', ')}</span>` +
+    `<span>Ports: ${portList.length} (fixed ${FIXED_PORTS.length} + extra ${portList.length - FIXED_PORTS.length})</span>` +
+    `<span>Operator: ${document.getElementById('opSel').value}</span>` +
+    `<span>Sort by: <b>${sortCol === '__vessel' ? 'Vessel' : sortCol}</b> ${sortDir === 'asc' ? '↑' : '↓'}</span>`;
+
+  // Build single-row header (no West/East group split). Port columns are clickable
+  // to sort by that terminal's ETA; the active sort column is highlighted amber.
+  const thead = document.getElementById('thead');
+  thead.innerHTML = '';
+  const tr = document.createElement('tr');
+  const vActive = sortCol === '__vessel' ? ' sort-active' : '';
+  const vArrow = sortCol === '__vessel' ? `<span class="arrow">${sortDir === 'asc' ? '▲' : '▼'}</span>` : '';
+  tr.innerHTML = `<th class="sub-header">#</th>` +
+    `<th class="sub-header sortable${vActive}" data-sort="__vessel" title="Click to sort by vessel">Vessel${vArrow}</th>` +
+    `<th class="sub-header">VO/BS</th><th class="sub-header">SVC</th><th class="sub-header">OP</th>`;
+  for (const p of portList) {
+    const active = (p === sortCol) ? ' sort-active' : '';
+    const arrow = (p === sortCol) ? `<span class="arrow">${sortDir === 'asc' ? '▲' : '▼'}</span>` : '';
+    tr.innerHTML += `<th class="sub-header sortable${active}" data-sort="${p}" title="Click to sort by ${p} ETA">${p}${arrow}</th>`;
+  }
+  tr.innerHTML += `<th class="sub-header">TEU</th><th class="sub-header">Notes</th>`;
+  thead.appendChild(tr);
+
+  // click on a header to (re)sort by that terminal's ETA
+  thead.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (sortCol === col) sortDir = (sortDir === 'asc') ? 'desc' : 'asc';
+      else { sortCol = col; sortDir = 'asc'; }
+      render();
+    });
+  });
+
+  // body
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  groups.forEach((g, idx) => {
+    const tr = document.createElement('tr');
+    tr.className = 'row-' + (g.svc || '').toUpperCase();
+    // vessel info
+    const svcPill = `<span class="pill pill-${g.svc}">${g.svc}</span>`;
+    const opPill = `<span class="pill pill-OP">${g.operator}</span>`;
+    const wgt = findPortAny(g, 'CNNAS') ? (findPortAny(g, 'CNNAS').total_moves || '') : '';
+    const teu = getBestModelTEU(g);
+    const rmkVal = remarkLoad(g);
+
+    tr.innerHTML = `<td>${idx + 1}</td>` +
+      `<td class="vessel">${g.vessel}</td>` +
+      `<td class="voy">${g.voyage}</td>` +
+      `<td>${svcPill}</td>` +
+      `<td>${opPill}</td>`;
+
+    for (const p of portList) {
+      const call = getCall(g, p);
+      const added = addCallLoad(g, p);
+      let content = '<span style="color:#c0c8d4">—</span>';
+      let title = '';
+      if (call) {
+        const a = fmtDate(call.arr);
+        const b = fmtDate(call.berth);
+        const d = fmtDate(call.dep);
+        content = `<span class="date-cell" title="Arr:${call.arr||''} Berth:${call.berth||''} Dep:${call.dep||''}">${a || b || d || '?'}</span>`;
+        title = `Arr:${call.arr||''} Berth:${call.berth||''} Dep:${call.dep||''}`;
+      } else if (added) {
+        const aa = fmtDate(added.arr), ab = fmtDate(added.berth), ad = fmtDate(added.dep);
+        const txt = [aa, ab, ad].filter(Boolean).join(' / ') || '?';
+        content = `<span class="date-cell addcall" title="Add Call (simulated) · ETA:${added.arr || ''} · ETB:${added.berth || ''} · ETD:${added.dep || ''}">${txt} ⓢ</span>`;
+        title = 'Add Call (simulated) · ETA:' + (added.arr||'') + ' · ETB:' + (added.berth||'') + ' · ETD:' + (added.dep||'');
+      }
+      const addBtn = call ? '' :
+        `<a href="javascript:void(0)" onclick="openAddCall('${g.svc}','${g.vessel_voyage}','${p}')" style="margin-left:4px;font-size:10px;color:#7a2fb0;text-decoration:none" title="Add Call simulation">[+]</a>`;
+      tr.innerHTML += `<td class="${call?'cell-has':added?'addcall':'empty'}" title="${title}">${content}${addBtn}</td>`;
+    }
+
+    tr.innerHTML += `<td class="num"><b>${teu}</b></td>`;
+    tr.innerHTML += `<td class="remark-cell"><input type="text" data-rmk="${g.svc}|${g.vessel_voyage}" value="${rmkVal.replace(/"/g, '&quot;')}" placeholder="add remark…"></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // attach remark listeners
+  tbody.querySelectorAll('input[data-rmk]').forEach(inp => {
+    inp.addEventListener('change', e => {
+      const [svc, vv] = e.target.dataset.rmk.split('|');
+      remarkSave({ svc, vessel_voyage: vv }, e.target.value);
+      e.target.classList.add('saved-flash');
+      setTimeout(() => e.target.classList.remove('saved-flash'), 1000);
+    });
+  });
+}
+
+/* ================= Add Call modal ================= */
+let AC_CTX = null;
+function openAddCall(svc, vv, targetPort) {
+  AC_CTX = { svc, vv, targetPort };
+  document.getElementById('addCallModal').classList.add('show');
+  document.getElementById('acVessel').textContent = `Service: ${svc}  Vessel/Voy: ${vv}  Adding call to: ${targetPort}`;
+  // find last known port (across both W and E legs of this vessel voyage)
+  const rows = RAW.filter(r => parseVV(r.vessel_voyage).base === vv && r.svc === svc).sort((a, b) => (a.arrived_anchorage || '').localeCompare(b.arrived_anchorage || ''));
+  const last = rows[rows.length - 1];
+  document.getElementById('acFrom').value = last ? portKey(last.terminal) : 'CNNGB';
+  document.getElementById('acTo').value = targetPort;
+  document.getElementById('acFromLabel').textContent = document.getElementById('acFrom').value;
+  document.getElementById('acToLabel').textContent = targetPort;
+  // vessel speed median
+  const code = vesselFromVV(vv).toUpperCase();
+  const sp = parseFloat(VESSELS[code]?.speed_knots);
+  document.getElementById('acSpeed').value = (sp && sp > 0) ? sp : 12;
+  // Depart = 该航次里最近一次真实挂靠【用户选定的 From port】的 berth 时间 +1 天
+  recomputeDepart();
+  recomputeETA();
+}
+// 取 Add Call 之前、该航次里最近一次真实挂靠 From port 的时间，作为出发时间基准
+function recomputeDepart() {
+  if (!AC_CTX) return;
+  const fromPort = document.getElementById('acFrom').value.trim().toUpperCase();
+  // 该航次所有真实挂靠中，匹配 From port 的记录，按到港时间升序；取最晚（最近一次）那条
+  const fromRows = RAW.filter(r => {
+    try { return parseVV(r.vessel_voyage).base === AC_CTX.vv && r.svc === AC_CTX.svc && portKey(r.terminal).toUpperCase() === fromPort; }
+    catch (e) { return false; }
+  }).sort((a, b) => (a.arrived_anchorage || '').localeCompare(b.arrived_anchorage || ''));
+  const lastFrom = fromRows[fromRows.length - 1];
+  let dep = '';
+  if (lastFrom) {
+    const t = lastFrom.berth || lastFrom.departure;   // 优先靠泊时间，否则离港时间
+    if (t) { const d = new Date(fmtDateFull(t)); d.setDate(d.getDate() + 1); dep = ymd(d); }
+  }
+  document.getElementById('acDepDate').value = dep;
+}
+function recomputeETA() {
+  const from = document.getElementById('acFrom').value.trim().toUpperCase();
+  const to = document.getElementById('acTo').value.trim().toUpperCase();
+  const speed = parseFloat(document.getElementById('acSpeed').value) || 12;
+  const dep = document.getElementById('acDepDate').value;
+  let dist = DISTANCES[from + ',' + to];
+  if (!dist) dist = DISTANCES[to + ',' + from];
+  document.getElementById('acFromLabel').textContent = from;
+  document.getElementById('acToLabel').textContent = to;
+  if (dist) {
+    const days = dist / (speed * 24);
+    document.getElementById('acDistance').textContent = `Distance ${from}→${to}: ${dist} nm, transit ≈ ${days.toFixed(2)} days @${speed}kn`;
+    if (dep) {
+      const d = new Date(dep);
+      d.setDate(d.getDate() + Math.ceil(days));
+      document.getElementById('acArrDate').value = ymd(d);
+    }
+  } else {
+    document.getElementById('acDistance').textContent = `Distance not found in distances.csv. Please set ETA manually.`;
+  }
+}
+['acFrom', 'acTo', 'acSpeed', 'acDepDate'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => { if (id === 'acFrom') recomputeDepart(); recomputeETA(); });
+  document.getElementById(id).addEventListener('input',  () => { if (id === 'acFrom') recomputeDepart(); recomputeETA(); });
+});
+document.getElementById('acCancel').onclick = () => document.getElementById('addCallModal').classList.remove('show');
+document.getElementById('acSave').onclick = () => {
+  if (!AC_CTX) return;
+  const targetPort = AC_CTX.targetPort;
+  const arr = document.getElementById('acArrDate').value;
+  addCallSave({ svc: AC_CTX.svc, vessel_voyage: AC_CTX.vv }, targetPort, { arr, dep: document.getElementById('acDepDate').value });
+  document.getElementById('addCallModal').classList.remove('show');
+  render();
+};
+
+/* ================= init ================= */
+function initFilters() {
+  const div = document.getElementById('svcChecks');
+  div.innerHTML = '';
+  TARGET_SVCS.forEach(s => {
+    const lab = document.createElement('label');
+    lab.className = 'chk on';
+    lab.innerHTML = `<input type="checkbox" class="svc-chk" value="${s}" checked> ${s}`;
+    const cb = lab.querySelector('input');
+    cb.addEventListener('change', e => {
+      lab.classList.toggle('on', e.target.checked);
+      render();   // 实时刷新
+    });
+    div.appendChild(lab);
+  });
+  // set default date range: 3 months back to 6 months forward
+  const now = new Date();
+  const from = new Date(now); from.setMonth(from.getMonth() - 3);
+  const to = new Date(now); to.setMonth(to.getMonth() + 6);
+  document.getElementById('dateFrom').value = ymd(from);
+  document.getElementById('dateTo').value = ymd(to);
+  // 所有筛选控件实时响应
+  document.getElementById('dateFrom').addEventListener('change', render);
+  document.getElementById('dateTo').addEventListener('change', render);
+  document.getElementById('opSel').addEventListener('change', render);
+  document.getElementById('searchBox').addEventListener('input', render);
+  document.getElementById('btnApply').onclick = render;
+  document.getElementById('btnReset').onclick = () => {
+    document.getElementById('opSel').value = 'CUL';
+    document.querySelectorAll('.svc-chk').forEach(c => { c.checked = true; c.closest('.chk').classList.add('on'); });
+    document.getElementById('searchBox').value = '';
+    document.getElementById('dateFrom').value = ymd(from);
+    document.getElementById('dateTo').value = ymd(to);
+    render();
+  };
+}
+
+window.addEventListener('DOMContentLoaded', loadAll);
+</script>
+</body>
+</html>
