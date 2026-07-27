@@ -604,8 +604,8 @@ function closeAllPanels() {
 
 function setDefaultDateRange() {
   const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-  const to = new Date(now.getFullYear(), now.getMonth() + 2, 0); // last day of +1 month
+  const from = new Date(now); from.setMonth(from.getMonth() - 1); // one month before today
+  const to = new Date(now); to.setMonth(to.getMonth() + 1);       // one month after today
   const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   document.getElementById('f_from').value = fmt(from);
   document.getElementById('f_to').value = fmt(to);
@@ -720,7 +720,7 @@ function applyDefaults() {
   sortKeys = [{ key: 'vessel_voyage', dir: 'asc' }, { key: 'arrived_anchorage', dir: 'asc' }];
   applyFilter();
   const updateEl = document.getElementById('update-time');
-  if (updateEl) updateEl.textContent = 'Updated: ' + new Date().toLocaleString('zh-CN', { hour12: false });
+  if (updateEl) updateEl.textContent = 'Updated: ' + new Date().toLocaleString('en-GB', { hour12: false });
 }
 
 function applyFilter() {
