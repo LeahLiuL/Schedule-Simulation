@@ -12,6 +12,29 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 .container { max-width: 1800px; margin: 0 auto; padding: 12px; display: flex; gap: 12px; min-height: calc(100vh - 60px); }
 .left { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .right { width: 340px; flex-shrink: 0; }
+/* ===== Left navigation sidebar (TOC) ===== */
+.sidebar { width: 188px; flex-shrink: 0; align-self: flex-start; position: sticky; top: 12px; max-height: calc(100vh - 84px); overflow-y: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); padding: 12px 10px; }
+.nav-title { font-size: 11px; font-weight: 700; color: #9aa0a6; text-transform: uppercase; letter-spacing: .8px; margin: 2px 6px 10px; }
+.nav-item { display: block; padding: 10px 12px; margin-bottom: 5px; border-radius: 8px; font-size: 13.5px; font-weight: 600; color: #334155; cursor: pointer; user-select: none; border-left: 3px solid transparent; transition: background .15s, color .15s, border-color .15s; }
+.nav-item:hover { background: #f0f4fa; }
+.nav-item.active { background: #e8f0fe; color: #1a73e8; border-left-color: #1a73e8; }
+.main { flex: 1; min-width: 0; }
+section.view { display: block; }
+section.view[hidden] { display: none; }
+.sec-schedule { display: flex; flex-direction: column; height: calc(100vh - 84px); }
+.sec-schedule .filter-bar { flex-shrink: 0; }
+.sec-schedule .table-wrap { flex: 1; }
+/* ===== Combined terminal ranking ===== */
+.rank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.rank-col-title { font-size: 12px; font-weight: 700; color: #5f6368; margin-bottom: 6px; }
+.rank-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+.rank-row:last-child { border-bottom: none; }
+.rank-no { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; background: #eef2f7; color: #5f6368; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.rank-row.top .rank-no { background: #1a73e8; color: #fff; }
+.rank-term { font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; font-weight: 600; color: #334155; flex: 1; }
+.rank-val { font-weight: 700; color: #1a73e8; font-variant-numeric: tabular-nums; }
+.rank-val.green { color: #137333; }
+.rank-val.red { color: #d93025; }
 .filter-bar { background: white; border-radius: 8px; padding: 8px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .filter-bar label { font-size: 12px; color: #666; font-weight: 500; }
 .filter-bar input[type="date"] { padding: 5px 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; width: 120px; }
@@ -191,7 +214,18 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <body>
 <header><span>BI Vessel Departure Analysis</span><span id="update-time">Loading...</span></header>
 <div class="container">
-<div class="left">
+<nav class="sidebar">
+  <div class="nav-title">导航</div>
+  <div class="nav-item active" data-target="sec-schedule" onclick="showSection('sec-schedule')">船期</div>
+  <div class="nav-item" data-target="sec-summary" onclick="showSection('sec-summary')">摘要</div>
+  <div class="nav-item" data-target="sec-berth" onclick="showSection('sec-berth')">到靠率</div>
+  <div class="nav-item" data-target="sec-prod" onclick="showSection('sec-prod')">作业效率</div>
+  <div class="nav-item" data-target="sec-stay" onclick="showSection('sec-stay')">在港时长</div>
+  <div class="nav-item" data-target="sec-rank" onclick="showSection('sec-rank')">排名</div>
+  <div class="nav-item" data-target="sec-cargo" onclick="showSection('sec-cargo')">货量</div>
+</nav>
+<main class="main">
+<section class="view" id="sec-schedule">
 <div class="filter-bar">
 <label>Terminal</label>
 <div class="multi-select" id="ms_terminal">
@@ -248,12 +282,12 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <div class="table-wrap" id="tableWrap">
 <div class="loading">Loading...</div>
 </div>
-</div>
-<div class="right">
+</section>
+<section class="view" id="sec-summary" hidden>
 <div class="panel">
-<div class="panel-title">Summary</div>
-<div class="summary-grid" id="summaryGrid"></div>
-</div>
+<div class="panel-title">Summary</div><div class="summary-grid" id="summaryGrid"></div></div>
+</section>
+<section class="view" id="sec-berth" hidden>
 <div class="panel featured">
 <div class="panel-title">Terminal 到靠率 (Berth Rate) <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头按时靠泊率（等泊≤<b id="berthThr">6</b>h 占比）· 环形=到靠率</span></div>
 <div class="band-controls">
@@ -264,8 +298,9 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
   <button class="btn btn-primary" onclick="applyBands()">Apply</button>
 </div>
 <div class="band-legend" id="bandLegend"></div>
-<div id="terminalWaitBreakdown" class="gauge-grid"></div>
-</div>
+<div id="terminalWaitBreakdown" class="gauge-grid"></div></div>
+</section>
+<section class="view" id="sec-stay" hidden>
 <div class="panel">
 <div class="panel-title">Terminal Port Stay Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头在港时长分布</span></div>
 <div class="band-controls">
@@ -276,12 +311,14 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
   <button class="btn btn-primary" onclick="applyStayBands()">Apply</button>
 </div>
 <div class="band-legend" id="bandStayLegend"></div>
-<div class="twb-scroll"><div id="terminalStayBreakdown"></div></div>
-</div>
+<div class="twb-scroll"><div id="terminalStayBreakdown"></div></div></div>
+</section>
+<section class="view" id="sec-prod" hidden>
 <div class="panel featured">
 <div class="panel-title">Terminal 作业效率 (Productivity) <span style="font-weight:400;font-size:11px;color:#5f6368;">各码头 MPH 作业效率 · 环形=相对效率</span></div>
-<div id="terminalProdBreakdown" class="gauge-grid"></div>
-</div>
+<div id="terminalProdBreakdown" class="gauge-grid"></div></div>
+</section>
+<section class="view" id="sec-rank" hidden>
 <div class="panel">
 <div class="panel-title">Terminal Moves Top10</div>
 <div class="terminal-list" id="terminalChart"></div>
@@ -290,6 +327,12 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <div class="panel-title">TEU Top10</div>
 <div class="terminal-list" id="teuChart"></div>
 </div>
+<div class="panel">
+  <div class="panel-title">码头综合排名 <span style="font-weight:400;font-size:11px;color:#5f6368;">到靠率 &amp; 作业效率 Top10</span></div>
+  <div id="terminalRank" class="rank-grid"></div>
+</div>
+</section>
+<section class="view" id="sec-cargo" hidden>
 <div class="panel">
 <div class="panel-title">Discharge Summary</div>
 <div class="cargo-grid" id="cargoDisSummary"></div>
@@ -306,7 +349,8 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 <div class="panel-title">Fuel Summary</div>
 <div class="cargo-grid" id="fuelSummary"></div>
 </div>
-</div>
+</section>
+</main>
 </div>
 
 <script>
@@ -908,6 +952,49 @@ function renderAnalysis() {
   renderTerminalWaitBreakdown();
   renderTerminalStayBreakdown();
   renderTerminalProductivityBreakdown();
+  renderTerminalRanking();
+}
+
+function showSection(id) {
+  const secs = document.querySelectorAll('section.view');
+  for (let i = 0; i < secs.length; i++) secs[i].hidden = (secs[i].id !== id);
+  const navs = document.querySelectorAll('.nav-item');
+  for (let j = 0; j < navs.length; j++) navs[j].classList.toggle('active', navs[j].getAttribute('data-target') === id);
+  window.scrollTo(0, 0);
+}
+
+function renderTerminalRanking() {
+  const el = document.getElementById('terminalRank');
+  if (!el) return;
+  if (!filtered.length) { el.innerHTML = '<div class="no-data">No data</div>'; return; }
+  const [b1] = WAIT_BANDS;
+  const tmap = {};
+  filtered.forEach(r => {
+    if (!r.terminal) return;
+    const g = tmap[r.terminal] || (tmap[r.terminal] = { total: 0, onTime: 0, sumMph: 0, nMph: 0 });
+    g.total++;
+    const w = r.wait_time;
+    if (w != null && w <= b1) g.onTime++;
+    const m = mphOf(r);
+    if (m != null) { g.sumMph += m; g.nMph++; }
+  });
+  const arr = Object.keys(tmap).map(t => {
+    const g = tmap[t];
+    return { t: t, n: g.total, rate: g.total ? g.onTime / g.total : 0, mph: g.nMph ? g.sumMph / g.nMph : null };
+  }).filter(x => x.n >= 3); // require a minimal sample for ranking credibility
+  const byRate = arr.slice().sort((a, b) => b.rate - a.rate).slice(0, 10);
+  const byMph = arr.slice().filter(x => x.mph != null).sort((a, b) => b.mph - a.mph).slice(0, 10);
+  const rateRows = byRate.map((x, i) => {
+    const pct = (x.rate * 100).toFixed(0);
+    const col = x.rate >= 0.66 ? 'green' : x.rate >= 0.33 ? '' : 'red';
+    return '<div class="rank-row' + (i < 3 ? ' top' : '') + '"><div class="rank-no">' + (i + 1) + '</div><div class="rank-term">' + x.t + '</div><div class="rank-val ' + col + '">' + pct + '%</div></div>';
+  }).join('');
+  const mphRows = byMph.map((x, i) => {
+    return '<div class="rank-row' + (i < 3 ? ' top' : '') + '"><div class="rank-no">' + (i + 1) + '</div><div class="rank-term">' + x.t + '</div><div class="rank-val">' + x.mph.toFixed(1) + '</div></div>';
+  }).join('');
+  el.innerHTML =
+    '<div><div class="rank-col-title">到靠率 Top10 (≤' + b1 + 'h)</div>' + (rateRows || '<div class="no-data">No data</div>') + '</div>' +
+    '<div><div class="rank-col-title">作业效率 Top10 (MPH)</div>' + (mphRows || '<div class="no-data">No data</div>') + '</div>';
 }
 
 function renderTerminalChart() {
