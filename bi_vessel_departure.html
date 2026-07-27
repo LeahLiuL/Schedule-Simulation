@@ -383,7 +383,11 @@ function vesselVoyageNum(vv) {
   return m ? parseInt(m[1], 10) : -1;
 }
 function dedupeVesselRows(rawText) {
-  const data = parseCSV(rawText);
+  // Exclude placeholder vessel "TBN1" entirely from the schedule (table, panels and filters).
+  const data = parseCSV(rawText).filter(r => {
+    const vv = (r.vessel_voyage || '').toUpperCase();
+    return !vv.startsWith('TBN1');
+  });
   const groups = {};
   for (const r of data) {
     const vv = r.vessel_voyage || '';
