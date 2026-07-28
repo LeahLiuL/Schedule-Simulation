@@ -301,7 +301,12 @@ section.view[hidden] { display: none; }
 <div class="band-legend" id="bandLegend"></div>
 <div id="terminalWaitBreakdown" class="gauge-grid"></div></div>
 <div class="panel">
-<div class="panel-title">Berth Rate Ranking <span style="font-weight:400;font-size:11px;color:#5f6368;">Best vs worst · terminals with &lt;3 voyages excluded</span></div>
+<div class="panel-title">Berth Rate Ranking <span style="font-weight:400;font-size:11px;color:#5f6368;">Best vs worst · min voyages filter</span></div>
+<div class="band-controls">
+  <span>Min voyages ≥</span>
+  <input type="number" id="minVoyages" value="3" min="1" step="1" />
+  <button class="btn btn-primary" onclick="applyBerthRankMin()">Apply</button>
+</div>
 <div class="rank-grid" id="terminalBerthRank"></div>
 </div>
 </section>
@@ -1035,6 +1040,7 @@ function renderTeuChart() {
 // ---- Terminal wait-time breakdown (per-terminal share across adjustable bands) ----
 let WAIT_BANDS = [6, 24, 48]; // 4 buckets: <=b1, b1-b2, b2-b3, >b3 (hours)
 let STAY_BANDS = [24, 48, 72]; // port-stay buckets (hours), independent from WAIT_BANDS
+let BERTH_RANK_MIN = 3; // min voyages for a terminal to enter the Berth Rate Ranking
 function applyBands() {
   const b1 = parseFloat(document.getElementById('band1').value);
   const b2 = parseFloat(document.getElementById('band2').value);
@@ -1121,12 +1127,12 @@ function renderTerminalBerthRanking() {
     const w = r.wait_time;
     if (w != null && w <= b1) g.onTime++;
   });
-  // Require a minimum sample so a 1-voyage terminal at 100% does not top the list.
+  // Require a minimum sample (user-adjustable) so a 1-voyage terminal at 100% does not top the list.
   const arr = Object.keys(tmap).map(t => {
     const g = tmap[t];
     return { t: t, n: g.total, rate: g.total ? g.onTime / g.total : 0 };
-  }).filter(x => x.n >= 3);
-  if (!arr.length) { el.innerHTML = '<div class="no-data">No data (need ≥3 voyages)</div>'; return; }
+  }).filter(x => x.n >= BERTH_RANK_MIN);
+  if (!arr.length) { el.innerHTML = '<div class="no-data">No data (need ≥' + BERTH_RANK_MIN + ' voyages)</div>'; return; }
   const best = arr.slice().sort((a, b) => b.rate - a.rate).slice(0, 10);
   const worst = arr.slice().sort((a, b) => a.rate - b.rate).slice(0, 10);
   const rowHtml = (x, i) => {
@@ -1139,6 +1145,15 @@ function renderTerminalBerthRanking() {
   el.innerHTML =
     '<div><div class="rank-col-title">Best Berth Rate (high → low)</div>' + (bestRows || '<div class="no-data">No data</div>') + '</div>' +
     '<div><div class="rank-col-title">Worst Berth Rate (low → high)</div>' + (worstRows || '<div class="no-data">No data</div>') + '</div>';
+}
+function applyBerthRankMin() {
+  const v = parseInt(document.getElementById('minVoyages').value, 10);
+  if (isNaN(v) || v < 1) {
+    alert('Min voyages must be a positive integer');
+    return;
+  }
+  BERTH_RANK_MIN = v;
+  renderTerminalBerthRanking();
 }
 function applyStayBands() {
   const b1 = parseFloat(document.getElementById('bandS1').value);
