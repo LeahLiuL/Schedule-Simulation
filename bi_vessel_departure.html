@@ -35,6 +35,7 @@ section.view[hidden] { display: none; }
 .rank-val { font-weight: 700; color: #1a73e8; font-variant-numeric: tabular-nums; }
 .rank-val.green { color: #137333; }
 .rank-val.red { color: #d93025; }
+.rank-cnt { font-size: 10px; color: #9aa0a6; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .filter-bar { background: white; border-radius: 8px; padding: 8px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .filter-bar label { font-size: 12px; color: #666; font-weight: 500; }
 .filter-bar input[type="date"] { padding: 5px 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #fff; width: 120px; }
@@ -299,6 +300,10 @@ section.view[hidden] { display: none; }
 </div>
 <div class="band-legend" id="bandLegend"></div>
 <div id="terminalWaitBreakdown" class="gauge-grid"></div></div>
+<div class="panel">
+<div class="panel-title">Berth Rate Ranking <span style="font-weight:400;font-size:11px;color:#5f6368;">Best vs worst · terminals with &lt;3 voyages excluded</span></div>
+<div class="rank-grid" id="terminalBerthRank"></div>
+</div>
 </section>
 <section class="view" id="sec-stay" hidden>
 <div class="panel">
@@ -1101,6 +1106,39 @@ function renderTerminalWaitBreakdown() {
       '<div class="gc-mini">' + c.mini + '</div>' +
       '</div>';
   }).join('');
+  renderTerminalBerthRanking();
+}
+function renderTerminalBerthRanking() {
+  const el = document.getElementById('terminalBerthRank');
+  if (!el) return;
+  if (!filtered.length) { el.innerHTML = '<div class="no-data">No data</div>'; return; }
+  const [b1] = WAIT_BANDS;
+  const tmap = {};
+  filtered.forEach(r => {
+    if (!r.terminal) return;
+    const g = tmap[r.terminal] || (tmap[r.terminal] = { total: 0, onTime: 0 });
+    g.total++;
+    const w = r.wait_time;
+    if (w != null && w <= b1) g.onTime++;
+  });
+  // Require a minimum sample so a 1-voyage terminal at 100% does not top the list.
+  const arr = Object.keys(tmap).map(t => {
+    const g = tmap[t];
+    return { t: t, n: g.total, rate: g.total ? g.onTime / g.total : 0 };
+  }).filter(x => x.n >= 3);
+  if (!arr.length) { el.innerHTML = '<div class="no-data">No data (need ≥3 voyages)</div>'; return; }
+  const best = arr.slice().sort((a, b) => b.rate - a.rate).slice(0, 10);
+  const worst = arr.slice().sort((a, b) => a.rate - b.rate).slice(0, 10);
+  const rowHtml = (x, i) => {
+    const pct = (x.rate * 100).toFixed(0);
+    const col = x.rate >= 0.66 ? 'green' : x.rate >= 0.33 ? '' : 'red';
+    return '<div class="rank-row' + (i < 3 ? ' top' : '') + '"><div class="rank-no">' + (i + 1) + '</div><div class="rank-term">' + x.t + '</div><div class="rank-cnt">' + x.n + ' v</div><div class="rank-val ' + col + '">' + pct + '%</div></div>';
+  };
+  const bestRows = best.map(rowHtml).join('');
+  const worstRows = worst.map(rowHtml).join('');
+  el.innerHTML =
+    '<div><div class="rank-col-title">Best Berth Rate (high → low)</div>' + (bestRows || '<div class="no-data">No data</div>') + '</div>' +
+    '<div><div class="rank-col-title">Worst Berth Rate (low → high)</div>' + (worstRows || '<div class="no-data">No data</div>') + '</div>';
 }
 function applyStayBands() {
   const b1 = parseFloat(document.getElementById('bandS1').value);
