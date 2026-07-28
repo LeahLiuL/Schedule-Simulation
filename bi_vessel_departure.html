@@ -366,6 +366,8 @@ const CSV_URLS = [
   'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv'
 ];
 let CSV_URL = CSV_URLS[0];
+let DATA_UPDATED = null; // last-modified time of the CSV data source (from response header)
+const CACHE_UPDATED_KEY = 'bi_vessel_csv_cache_updated_v1';
 let DATA = [];
 let filtered = [];
 let colVisibility = {};
@@ -642,6 +644,8 @@ function loadCSVWithRetry(retry) {
       try {
         DATA = dedupeVesselRows(cached);
         buildOptions(DATA);
+        const cu = localStorage.getItem(CACHE_UPDATED_KEY);
+        DATA_UPDATED = cu ? new Date(cu) : null;
         applyDefaults();
         // Continue fetching in background to refresh cache
         fetchCSV(true);
@@ -671,6 +675,9 @@ function fetchCSV(isBackground, retry, urlIdx) {
           .then(() => undefined); // signal to skip main success path
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
+      // Capture the data source's real last-modified time (jsDelivr / GitHub raw both send it).
+      const lm = res.headers.get('last-modified');
+      if (lm) DATA_UPDATED = new Date(lm);
       return res.text();
     })
     .then(text => {
@@ -678,6 +685,7 @@ function fetchCSV(isBackground, retry, urlIdx) {
       try {
         localStorage.setItem(CACHE_KEY, text);
         localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+        localStorage.setItem(CACHE_UPDATED_KEY, DATA_UPDATED ? DATA_UPDATED.toISOString() : '');
       } catch (e) {
         console.warn('Failed to save cache:', e);
       }
@@ -685,11 +693,9 @@ function fetchCSV(isBackground, retry, urlIdx) {
         DATA = dedupeVesselRows(text);
         buildOptions(DATA);
         applyDefaults();
-        // Update timestamp
-        const now = new Date();
-        const updateEl = document.getElementById('update-time');
-        if (updateEl) updateEl.textContent = 'Updated: ' + now.toLocaleString('zh-CN', { hour12: false });
       }
+      // Always reflect the data refresh time, even on background refresh.
+      setUpdateTime();
     })
     .catch(err => {
       // Try next URL source before giving up
@@ -705,6 +711,8 @@ function fetchCSV(isBackground, retry, urlIdx) {
         try {
           DATA = dedupeVesselRows(cached);
           buildOptions(DATA);
+          const cu = localStorage.getItem(CACHE_UPDATED_KEY);
+          DATA_UPDATED = cu ? new Date(cu) : null;
           applyDefaults();
           const banner = '<div class="loading" style="color:#b58900;background:#fff3cd;padding:6px 10px;border-radius:4px;margin-bottom:8px;display:inline-block;">⚠️ All sources rate-limited. Showing cached data from ' +
             new Date(Number(localStorage.getItem(CACHE_TIME_KEY))).toLocaleTimeString() + '. Will auto-refresh when available.</div>';
@@ -728,8 +736,15 @@ function applyDefaults() {
   setDefaultDateRange();
   sortKeys = [{ key: 'vessel_voyage', dir: 'asc' }, { key: 'arrived_anchorage', dir: 'asc' }];
   applyFilter();
-  const updateEl = document.getElementById('update-time');
-  if (updateEl) updateEl.textContent = 'Updated: ' + new Date().toLocaleString('en-GB', { hour12: false });
+  setUpdateTime();
+}
+
+// Show the data source's last-updated time (falls back to page-load time if the header is missing).
+function setUpdateTime() {
+  const el = document.getElementById('update-time');
+  if (!el) return;
+  const d = DATA_UPDATED || new Date();
+  el.textContent = 'Data updated: ' + d.toLocaleString('en-GB', { hour12: false });
 }
 
 function applyFilter() {
