@@ -223,7 +223,6 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
   <div class="nav-item" data-target="sec-berth" onclick="showSection('sec-berth')">Berth Rate</div>
   <div class="nav-item" data-target="sec-prod" onclick="showSection('sec-prod')">Productivity</div>
   <div class="nav-item" data-target="sec-stay" onclick="showSection('sec-stay')">Port Stay</div>
-  <div class="nav-item" data-target="sec-rank" onclick="showSection('sec-rank')">Ranking</div>
   <div class="nav-item" data-target="sec-cargo" onclick="showSection('sec-cargo')">Cargo</div>
 </nav>
 <main class="main">
@@ -337,20 +336,6 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 <div class="panel">
 <div class="panel-title">Productivity Ranking <span style="font-weight:400;font-size:11px;color:#5f6368;">Best vs worst · min voyages filter shared with Berth Rate (live)</span></div>
 <div class="rank-grid" id="terminalProdRank"></div>
-</div>
-</section>
-<section class="view" id="sec-rank" hidden>
-<div class="panel">
-<div class="panel-title">Terminal Moves Top10</div>
-<div class="terminal-list" id="terminalChart"></div>
-</div>
-<div class="panel">
-<div class="panel-title">TEU Top10</div>
-<div class="terminal-list" id="teuChart"></div>
-</div>
-<div class="panel">
-  <div class="panel-title">Terminal Ranking <span style="font-weight:400;font-size:11px;color:#5f6368;">Berth rate &amp; productivity Top10</span></div>
-  <div id="terminalRank" class="rank-grid"></div>
 </div>
 </section>
 <section class="view" id="sec-cargo" hidden>
@@ -975,8 +960,6 @@ function renderAnalysis() {
     '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay&gt;72h</div></div>' +
     '<div class="summary-card orange"><div class="val">' + avgMph + '</div><div class="lbl">Avg MPH</div><div class="sub">' + mphs.length + '/' + n + ' voyages</div></div>' +
     '<div class="summary-card"><div class="val">' + mphCount + '</div><div class="lbl">MPH Voyages</div><div class="sub">voyages w/ valid MPH</div></div>';
-  renderTerminalChart();
-  renderTeuChart();
   renderCargoDisSummary();
   renderCargoLoadSummary();
   renderCargoSummary();
@@ -984,7 +967,6 @@ function renderAnalysis() {
   renderTerminalWaitBreakdown();
   renderTerminalStayBreakdown();
   renderTerminalProductivityBreakdown();
-  renderTerminalRanking();
   renderTotalStayBreakdown();
 }
 
@@ -1013,40 +995,6 @@ function setupScrollSpy() {
   }, { passive: true });
 }
 
-function renderTerminalRanking() {
-  const el = document.getElementById('terminalRank');
-  if (!el) return;
-  if (!filtered.length) { el.innerHTML = '<div class="no-data">No data</div>'; return; }
-  const [b1] = WAIT_BANDS;
-  const tmap = {};
-  filtered.forEach(r => {
-    if (!r.terminal) return;
-    const g = tmap[r.terminal] || (tmap[r.terminal] = { total: 0, onTime: 0, sumMph: 0, nMph: 0 });
-    g.total++;
-    const w = r.wait_time;
-    if (w != null && w <= b1) g.onTime++;
-    const m = mphOf(r);
-    if (m != null) { g.sumMph += m; g.nMph++; }
-  });
-  const arr = Object.keys(tmap).map(t => {
-    const g = tmap[t];
-    return { t: t, n: g.total, rate: g.total ? g.onTime / g.total : 0, mph: g.nMph ? g.sumMph / g.nMph : null };
-  }).filter(x => x.n >= BERTH_RANK_MIN); // require a minimal sample for ranking credibility (user-adjustable)
-  const byRate = arr.slice().sort((a, b) => b.rate - a.rate).slice(0, 10);
-  const byMph = arr.slice().filter(x => x.mph != null).sort((a, b) => b.mph - a.mph).slice(0, 10);
-  const rateRows = byRate.map((x, i) => {
-    const pct = (x.rate * 100).toFixed(0);
-    const col = x.rate >= 0.66 ? 'green' : x.rate >= 0.33 ? '' : 'red';
-    return '<div class="rank-row' + (i < 3 ? ' top' : '') + '"><div class="rank-no">' + (i + 1) + '</div><div class="rank-term">' + x.t + '</div><div class="rank-val ' + col + '">' + pct + '%</div></div>';
-  }).join('');
-  const mphRows = byMph.map((x, i) => {
-    return '<div class="rank-row' + (i < 3 ? ' top' : '') + '"><div class="rank-no">' + (i + 1) + '</div><div class="rank-term">' + x.t + '</div><div class="rank-val">' + x.mph.toFixed(1) + '</div></div>';
-  }).join('');
-  el.innerHTML =
-    '<div><div class="rank-col-title">Berth Rate Top10 (≤' + b1 + 'h · min ' + BERTH_RANK_MIN + ' voyages)</div>' + (rateRows || '<div class="no-data">No data</div>') + '</div>' +
-    '<div><div class="rank-col-title">Productivity Top10 (MPH)</div>' + (mphRows || '<div class="no-data">No data</div>') + '</div>';
-}
-
 function renderTotalStayBreakdown() {
   const byTerm = document.getElementById('stayByTerminal');
   const byMonth = document.getElementById('stayByMonth');
@@ -1073,32 +1021,6 @@ function renderTotalStayBreakdown() {
   byMonth.innerHTML = topM.length
     ? topM.map(a => '<div class="terminal-item"><span class="terminal-name">' + a[0] + '</span><span class="terminal-val">' + fmtH(a[1]) + '</span></div>').join('')
     : '<div class="no-data">No data</div>';
-}
-
-function renderTerminalChart() {
-  const map = {};
-  filtered.forEach(r => {
-    if (r.terminal && r.total_moves != null) map[r.terminal] = (map[r.terminal] || 0) + r.total_moves;
-  });
-  const arr = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const container = document.getElementById('terminalChart');
-  if (!arr.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
-  container.innerHTML = arr.map(a =>
-    '<div class="terminal-item"><span class="terminal-name">' + a[0] + '</span><span class="terminal-val">' + Math.round(a[1]) + '</span></div>'
-  ).join('');
-}
-
-function renderTeuChart() {
-  const map = {};
-  filtered.forEach(r => {
-    if (r.terminal && r.total_teu != null) map[r.terminal] = (map[r.terminal] || 0) + r.total_teu;
-  });
-  const arr = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const container = document.getElementById('teuChart');
-  if (!arr.length) { container.innerHTML = '<div class="no-data" style="padding:20px">No data</div>'; return; }
-  container.innerHTML = arr.map(a =>
-    '<div class="terminal-item"><span class="terminal-name">' + a[0] + '</span><span class="terminal-val">' + Math.round(a[1]) + ' TEU</span></div>'
-  ).join('');
 }
 
 // ---- Terminal wait-time breakdown (per-terminal share across adjustable bands) ----
@@ -1218,7 +1140,6 @@ function applyBerthRankMin() {
   // Live refresh both the dedicated Berth Rate Ranking panel and the combined Ranking section.
   renderTerminalBerthRanking();
   renderTerminalProductivityRanking();
-  renderTerminalRanking();
 }
 function applyStayBands() {
   const b1 = parseFloat(document.getElementById('bandS1').value);
