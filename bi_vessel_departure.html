@@ -334,6 +334,10 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 <div class="panel featured">
 <div class="panel-title">Terminal Productivity <span style="font-weight:400;font-size:11px;color:#5f6368;">MPH handling efficiency per terminal · ring = relative efficiency</span></div>
 <div id="terminalProdBreakdown" class="gauge-grid"></div></div>
+<div class="panel">
+<div class="panel-title">Productivity Ranking <span style="font-weight:400;font-size:11px;color:#5f6368;">Best vs worst · min voyages filter shared with Berth Rate (live)</span></div>
+<div class="rank-grid" id="terminalProdRank"></div>
+</div>
 </section>
 <section class="view" id="sec-rank" hidden>
 <div class="panel">
@@ -1213,6 +1217,7 @@ function applyBerthRankMin() {
   BERTH_RANK_MIN = v;
   // Live refresh both the dedicated Berth Rate Ranking panel and the combined Ranking section.
   renderTerminalBerthRanking();
+  renderTerminalProductivityRanking();
   renderTerminalRanking();
 }
 function applyStayBands() {
@@ -1299,6 +1304,41 @@ function renderTerminalProductivityBreakdown() {
       '<div class="gc-cap">' + x.n + ' voyages · ' + (ratio >= 0.66 ? 'High' : ratio >= 0.33 ? 'Med' : 'Low') + ' efficiency</div>' +
       '</div>';
   }).join('');
+  renderTerminalProductivityRanking();
+}
+
+function renderTerminalProductivityRanking() {
+  const el = document.getElementById('terminalProdRank');
+  if (!el) return;
+  if (!filtered.length) { el.innerHTML = '<div class="no-data">No data</div>'; return; }
+  const tmap = {};
+  filtered.forEach(r => {
+    if (!r.terminal) return;
+    const m = mphOf(r);
+    if (m == null) return;
+    const g = tmap[r.terminal] || (tmap[r.terminal] = { sum: 0, n: 0 });
+    g.sum += m;
+    g.n++;
+  });
+  // Use the same user-adjustable sample threshold as the Berth Rate Ranking.
+  const arr = Object.keys(tmap).map(t => {
+    const g = tmap[t];
+    return { t: t, n: g.n, avg: g.sum / g.n };
+  }).filter(x => x.n >= BERTH_RANK_MIN);
+  if (!arr.length) { el.innerHTML = '<div class="no-data">No data (need ≥' + BERTH_RANK_MIN + ' voyages)</div>'; return; }
+  // Colour by the median MPH: above median = efficient (green), below = lagging (red).
+  const med = percentile(arr.map(x => x.avg), 0.5);
+  const best = arr.slice().sort((a, b) => b.avg - a.avg).slice(0, 10);
+  const worst = arr.slice().sort((a, b) => a.avg - b.avg).slice(0, 10);
+  const rowHtml = (x, i) => {
+    const col = x.avg >= med ? 'green' : 'red';
+    return '<div class="rank-row' + (i < 3 ? ' top' : '') + '"><div class="rank-no">' + (i + 1) + '</div><div class="rank-term">' + x.t + '</div><div class="rank-cnt">' + x.n + ' v</div><div class="rank-val ' + col + '">' + x.avg.toFixed(1) + '</div></div>';
+  };
+  const bestRows = best.map(rowHtml).join('');
+  const worstRows = worst.map(rowHtml).join('');
+  el.innerHTML =
+    '<div><div class="rank-col-title">Best Productivity (high → low · MPH)</div>' + (bestRows || '<div class="no-data">No data</div>') + '</div>' +
+    '<div><div class="rank-col-title">Worst Productivity (low → high · MPH)</div>' + (worstRows || '<div class="no-data">No data</div>') + '</div>';
 }
 
 function renderCargoDisSummary() {
