@@ -19,8 +19,9 @@ header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: w
 .nav-item:hover { background: #f0f4fa; }
 .nav-item.active { background: #e8f0fe; color: #1a73e8; border-left-color: #1a73e8; }
 .main { flex: 1; min-width: 0; }
-section.view { display: block; }
+section.view { display: block; scroll-margin-top: 8px; }
 section.view[hidden] { display: none; }
+section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px; padding-top: 14px; }
 .sec-schedule { display: flex; flex-direction: column; height: calc(100vh - 84px); }
 .sec-schedule .filter-bar { flex-shrink: 0; }
 .sec-schedule .table-wrap { flex: 1; }
@@ -287,6 +288,12 @@ section.view[hidden] { display: none; }
 <section class="view" id="sec-summary" hidden>
 <div class="panel">
 <div class="panel-title">Summary</div><div class="summary-grid" id="summaryGrid"></div></div>
+<div class="panel">
+<div class="panel-title">Total Stay Breakdown <span style="font-weight:400;font-size:11px;color:#5f6368;">Total port-stay hours split by terminal &amp; month</span></div>
+<div class="rank-grid">
+  <div><div class="rank-col-title">By Terminal (top)</div><div class="terminal-list" id="stayByTerminal"></div></div>
+  <div><div class="rank-col-title">By Month</div><div class="terminal-list" id="stayByMonth"></div></div>
+</div></div>
 </section>
 <section class="view" id="sec-berth" hidden>
 <div class="panel featured">
@@ -304,8 +311,8 @@ section.view[hidden] { display: none; }
 <div class="panel-title">Berth Rate Ranking <span style="font-weight:400;font-size:11px;color:#5f6368;">Best vs worst · min voyages filter</span></div>
 <div class="band-controls">
   <span>Min voyages ≥</span>
-  <input type="number" id="minVoyages" value="3" min="1" step="1" />
-  <button class="btn btn-primary" onclick="applyBerthRankMin()">Apply</button>
+  <input type="number" id="minVoyages" value="3" min="1" step="1" oninput="applyBerthRankMin()" />
+  <span style="font-size:10.5px;color:#9aa0a6;">(live)</span>
 </div>
 <div class="rank-grid" id="terminalBerthRank"></div>
 </div>
@@ -624,6 +631,9 @@ function setDefaultDateRange() {
 function init() {
   loadColVisibility();
   document.addEventListener('click', closeAllPanels);
+  // Reveal all sections (continuous-scroll layout); scroll-spy highlights the active one.
+  document.querySelectorAll('section.view').forEach(s => s.removeAttribute('hidden'));
+  setupScrollSpy();
   loadCSVWithRetry(0);
 }
 
@@ -941,6 +951,9 @@ function renderAnalysis() {
   const totalWaitFmt = totalWait ? totalWait.toLocaleString('en-US') : '-';
   const totalWaitDays = totalWait ? Math.round(totalWait / 24).toLocaleString('en-US') : '-';
   const avgStay = stays.length ? (stays.reduce((a, b) => a + b, 0) / stays.length).toFixed(1) : '-';
+  const totalStay = stays.length ? stays.reduce((a, b) => a + b, 0) : 0;
+  const totalStayFmt = totalStay ? totalStay.toLocaleString('en-US') : '-';
+  const totalStayDays = totalStay ? Math.round(totalStay / 24).toLocaleString('en-US') : '-';
   const avgMoves = moves.length ? (moves.reduce((a, b) => a + b, 0) / moves.length).toFixed(0) : '-';
   const wait24 = waits.filter(v => v > 24).length;
   const stay72 = stays.filter(v => v > 72).length;
@@ -952,6 +965,7 @@ function renderAnalysis() {
     '<div class="summary-card"><div class="val">' + avgWait + '</div><div class="lbl">Avg Wait(h)</div></div>' +
     '<div class="summary-card"><div class="val">' + totalWaitFmt + '</div><div class="lbl">Total Wait(h)</div><div class="sub">≈ ' + totalWaitDays + ' days</div></div>' +
     '<div class="summary-card"><div class="val">' + avgStay + '</div><div class="lbl">Avg Stay(h)</div></div>' +
+    '<div class="summary-card"><div class="val">' + totalStayFmt + '</div><div class="lbl">Total Stay(h)</div><div class="sub">≈ ' + totalStayDays + ' days</div></div>' +
     '<div class="summary-card"><div class="val">' + avgMoves + '</div><div class="lbl">Avg Moves</div><div class="sub">' + moves.length + '/' + n + ' voyages</div></div>' +
     '<div class="summary-card red"><div class="val">' + wait24 + '</div><div class="lbl">Wait&gt;24h</div></div>' +
     '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay&gt;72h</div></div>' +
@@ -967,14 +981,32 @@ function renderAnalysis() {
   renderTerminalStayBreakdown();
   renderTerminalProductivityBreakdown();
   renderTerminalRanking();
+  renderTotalStayBreakdown();
 }
 
 function showSection(id) {
-  const secs = document.querySelectorAll('section.view');
-  for (let i = 0; i < secs.length; i++) secs[i].hidden = (secs[i].id !== id);
   const navs = document.querySelectorAll('.nav-item');
   for (let j = 0; j < navs.length; j++) navs[j].classList.toggle('active', navs[j].getAttribute('data-target') === id);
-  window.scrollTo(0, 0);
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Scroll-spy: highlight the sidebar nav item for the section currently in view.
+function setupScrollSpy() {
+  const navs = Array.from(document.querySelectorAll('.nav-item'));
+  const setActive = id => navs.forEach(n => n.classList.toggle('active', n.getAttribute('data-target') === id));
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
+  }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+  document.querySelectorAll('section.view').forEach(s => spy.observe(s));
+  // Fallback: when scrolled to the very bottom, force-highlight the last section
+  // (otherwise a short last section may never reach the middle observation band).
+  window.addEventListener('scroll', () => {
+    if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 2) {
+      const last = navs[navs.length - 1];
+      if (last) setActive(last.getAttribute('data-target'));
+    }
+  }, { passive: true });
 }
 
 function renderTerminalRanking() {
@@ -995,7 +1027,7 @@ function renderTerminalRanking() {
   const arr = Object.keys(tmap).map(t => {
     const g = tmap[t];
     return { t: t, n: g.total, rate: g.total ? g.onTime / g.total : 0, mph: g.nMph ? g.sumMph / g.nMph : null };
-  }).filter(x => x.n >= 3); // require a minimal sample for ranking credibility
+  }).filter(x => x.n >= BERTH_RANK_MIN); // require a minimal sample for ranking credibility (user-adjustable)
   const byRate = arr.slice().sort((a, b) => b.rate - a.rate).slice(0, 10);
   const byMph = arr.slice().filter(x => x.mph != null).sort((a, b) => b.mph - a.mph).slice(0, 10);
   const rateRows = byRate.map((x, i) => {
@@ -1007,8 +1039,36 @@ function renderTerminalRanking() {
     return '<div class="rank-row' + (i < 3 ? ' top' : '') + '"><div class="rank-no">' + (i + 1) + '</div><div class="rank-term">' + x.t + '</div><div class="rank-val">' + x.mph.toFixed(1) + '</div></div>';
   }).join('');
   el.innerHTML =
-    '<div><div class="rank-col-title">Berth Rate Top10 (≤' + b1 + 'h)</div>' + (rateRows || '<div class="no-data">No data</div>') + '</div>' +
+    '<div><div class="rank-col-title">Berth Rate Top10 (≤' + b1 + 'h · min ' + BERTH_RANK_MIN + ' voyages)</div>' + (rateRows || '<div class="no-data">No data</div>') + '</div>' +
     '<div><div class="rank-col-title">Productivity Top10 (MPH)</div>' + (mphRows || '<div class="no-data">No data</div>') + '</div>';
+}
+
+function renderTotalStayBreakdown() {
+  const byTerm = document.getElementById('stayByTerminal');
+  const byMonth = document.getElementById('stayByMonth');
+  if (!byTerm || !byMonth) return;
+  if (!filtered.length) {
+    byTerm.innerHTML = '<div class="no-data">No data</div>';
+    byMonth.innerHTML = '<div class="no-data">No data</div>';
+    return;
+  }
+  const tMap = {}, mMap = {};
+  filtered.forEach(r => {
+    const s = r.port_stay;
+    if (s == null) return;
+    if (r.terminal) tMap[r.terminal] = (tMap[r.terminal] || 0) + s;
+    const mon = (r.departure || '').slice(0, 7);
+    if (mon) mMap[mon] = (mMap[mon] || 0) + s;
+  });
+  const fmtH = v => Math.round(v).toLocaleString('en-US') + ' h';
+  const topT = Object.entries(tMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const topM = Object.entries(mMap).sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0); // chronological
+  byTerm.innerHTML = topT.length
+    ? topT.map(a => '<div class="terminal-item"><span class="terminal-name">' + a[0] + '</span><span class="terminal-val">' + fmtH(a[1]) + '</span></div>').join('')
+    : '<div class="no-data">No data</div>';
+  byMonth.innerHTML = topM.length
+    ? topM.map(a => '<div class="terminal-item"><span class="terminal-name">' + a[0] + '</span><span class="terminal-val">' + fmtH(a[1]) + '</span></div>').join('')
+    : '<div class="no-data">No data</div>';
 }
 
 function renderTerminalChart() {
@@ -1147,13 +1207,13 @@ function renderTerminalBerthRanking() {
     '<div><div class="rank-col-title">Worst Berth Rate (low → high)</div>' + (worstRows || '<div class="no-data">No data</div>') + '</div>';
 }
 function applyBerthRankMin() {
-  const v = parseInt(document.getElementById('minVoyages').value, 10);
-  if (isNaN(v) || v < 1) {
-    alert('Min voyages must be a positive integer');
-    return;
-  }
+  const el = document.getElementById('minVoyages');
+  const v = parseInt(el.value, 10);
+  if (isNaN(v) || v < 1) return; // ignore empty/invalid mid-typing; live-refresh only on a valid value
   BERTH_RANK_MIN = v;
+  // Live refresh both the dedicated Berth Rate Ranking panel and the combined Ranking section.
   renderTerminalBerthRanking();
+  renderTerminalRanking();
 }
 function applyStayBands() {
   const b1 = parseFloat(document.getElementById('bandS1').value);
