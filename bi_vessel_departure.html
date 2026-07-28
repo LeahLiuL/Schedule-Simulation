@@ -927,6 +927,9 @@ function renderAnalysis() {
   const mphs = filtered.map(r => mphOf(r)).filter(v => v != null);
   const moves = filtered.map(r => r.total_moves).filter(v => v != null);
   const avgWait = waits.length ? (waits.reduce((a, b) => a + b, 0) / waits.length).toFixed(1) : '-';
+  const totalWait = waits.length ? waits.reduce((a, b) => a + b, 0) : 0;
+  const totalWaitFmt = totalWait ? totalWait.toLocaleString('en-US') : '-';
+  const totalWaitDays = totalWait ? Math.round(totalWait / 24).toLocaleString('en-US') : '-';
   const avgStay = stays.length ? (stays.reduce((a, b) => a + b, 0) / stays.length).toFixed(1) : '-';
   const avgMoves = moves.length ? (moves.reduce((a, b) => a + b, 0) / moves.length).toFixed(0) : '-';
   const wait24 = waits.filter(v => v > 24).length;
@@ -937,12 +940,13 @@ function renderAnalysis() {
   grid.innerHTML =
     '<div class="summary-card"><div class="val">' + n + '</div><div class="lbl">Vessels</div></div>' +
     '<div class="summary-card"><div class="val">' + avgWait + '</div><div class="lbl">Avg Wait(h)</div></div>' +
+    '<div class="summary-card"><div class="val">' + totalWaitFmt + '</div><div class="lbl">Total Wait(h)</div><div class="sub">≈ ' + totalWaitDays + ' days</div></div>' +
     '<div class="summary-card"><div class="val">' + avgStay + '</div><div class="lbl">Avg Stay(h)</div></div>' +
     '<div class="summary-card"><div class="val">' + avgMoves + '</div><div class="lbl">Avg Moves</div><div class="sub">' + moves.length + '/' + n + ' voyages</div></div>' +
     '<div class="summary-card red"><div class="val">' + wait24 + '</div><div class="lbl">Wait&gt;24h</div></div>' +
     '<div class="summary-card red"><div class="val">' + stay72 + '</div><div class="lbl">Stay&gt;72h</div></div>' +
     '<div class="summary-card orange"><div class="val">' + avgMph + '</div><div class="lbl">Avg MPH</div><div class="sub">' + mphs.length + '/' + n + ' voyages</div></div>' +
-    '<div class="summary-card"><div class="val">' + mphCount + '</div><div class="lbl">MPH Data</div></div>';
+    '<div class="summary-card"><div class="val">' + mphCount + '</div><div class="lbl">MPH Voyages</div><div class="sub">voyages w/ valid MPH</div></div>';
   renderTerminalChart();
   renderTeuChart();
   renderCargoDisSummary();
