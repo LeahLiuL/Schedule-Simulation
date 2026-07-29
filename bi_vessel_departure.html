@@ -366,7 +366,7 @@ const CSV_URLS = [
   'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv'
 ];
 let CSV_URL = CSV_URLS[0];
-let DATA_UPDATED = null; // last-modified time of the CSV data source (from response header)
+let DATA_UPDATED = null; // last commit time of the CSV data source (from GitHub commits API)
 const CACHE_UPDATED_KEY = 'bi_vessel_csv_cache_updated_v1';
 let DATA = [];
 let filtered = [];
@@ -626,6 +626,7 @@ function init() {
   document.querySelectorAll('section.view').forEach(s => s.removeAttribute('hidden'));
   setupScrollSpy();
   loadCSVWithRetry(0);
+  fetchDataUpdatedTime();
 }
 
 function loadCSVWithRetry(retry) {
@@ -675,9 +676,6 @@ function fetchCSV(isBackground, retry, urlIdx) {
           .then(() => undefined); // signal to skip main success path
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      // Capture the data source's real last-modified time (jsDelivr / GitHub raw both send it).
-      const lm = res.headers.get('last-modified');
-      if (lm) DATA_UPDATED = new Date(lm);
       return res.text();
     })
     .then(text => {
@@ -685,7 +683,7 @@ function fetchCSV(isBackground, retry, urlIdx) {
       try {
         localStorage.setItem(CACHE_KEY, text);
         localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
-        localStorage.setItem(CACHE_UPDATED_KEY, DATA_UPDATED ? DATA_UPDATED.toISOString() : '');
+        localStorage.setItem(CACHE_UPDATED_KEY, DATA_UPDATED ? DATA_UPDATED.toISOString() : (localStorage.getItem(CACHE_UPDATED_KEY) || ''));
       } catch (e) {
         console.warn('Failed to save cache:', e);
       }
@@ -739,12 +737,55 @@ function applyDefaults() {
   setUpdateTime();
 }
 
-// Show the data source's last-updated time (falls back to page-load time if the header is missing).
+// Show the data source's last-updated time (falls back to page-load time if the API is unavailable).
 function setUpdateTime() {
   const el = document.getElementById('update-time');
   if (!el) return;
   const d = DATA_UPDATED || new Date();
   el.textContent = 'Data updated: ' + d.toLocaleString('en-GB', { hour12: false });
+}
+
+// Resolve the data source's last-updated time via the GitHub commits API (authoritative; jsDelivr/GitHub raw
+// do NOT expose last-modified). Uses a 30-min local TTL + localStorage cache to stay clear of the 60/hr
+// unauthenticated API limit. Falls back to the cached value (if recent) or page-load time.
+let dataUpdatedFetched = false;
+function fetchDataUpdatedTime() {
+  if (dataUpdatedFetched) return;
+  dataUpdatedFetched = true;
+  const src = parseCsvSource(CSV_URL);
+  if (!src) { setUpdateTime(); return; }
+  if (DATA_UPDATED && (Date.now() - DATA_UPDATED.getTime()) < 30 * 60 * 1000) {
+    setUpdateTime();
+    return;
+  }
+  const ghApi = 'https://api.github.com/repos/' + src.owner + '/' + src.repo +
+    '/commits?path=' + encodeURIComponent(src.path) + '&per_page=1';
+  fetch(ghApi)
+    .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+    .then(arr => {
+      const date = arr && arr[0] && arr[0].commit && arr[0].commit.author && arr[0].commit.author.date;
+      if (date) {
+        DATA_UPDATED = new Date(date);
+        persistDataUpdated();
+        setUpdateTime();
+      }
+    })
+    .catch(err => {
+      console.warn('Data-updated time fetch failed:', err);
+      setUpdateTime();
+    });
+}
+
+function parseCsvSource(url) {
+  let m = url.match(/jsdelivr\.net\/gh\/([^/]+)\/([^@/]+)@([^/]+)\/(.+)$/);
+  if (m) return { owner: m[1], repo: m[2], ref: m[3], path: m[4] };
+  m = url.match(/githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
+  if (m) return { owner: m[1], repo: m[2], ref: m[3], path: m[4] };
+  return null;
+}
+
+function persistDataUpdated() {
+  try { localStorage.setItem(CACHE_UPDATED_KEY, DATA_UPDATED ? DATA_UPDATED.toISOString() : ''); } catch (e) {}
 }
 
 function applyFilter() {
