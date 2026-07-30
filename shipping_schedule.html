@@ -11,7 +11,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
-<script src="searoute-browser.js"></script>
 <style>
   :root {
     --primary: #1a3a5c;
@@ -2126,9 +2125,8 @@ BDX	South China Haiphone Service
     <div>
       <h4 style="margin:0 0 4px;font-size:.85rem;color:var(--primary);">📏 Distance Calculation</h4>
       <p class="token-hint">
-        Built-in 244 port coordinates, using <b>searoute</b> maritime network algorithm (Dijkstra pathfinding) to calculate actual sailing distance.
+        Built-in port coordinates, using <b>haversine</b> great-circle formula (×1.08 detour approximation) to compute sailing distance.
         Unknown ports are auto-geocoded via Nominatim (OpenStreetMap), no registration required.
-        First query loads maritime network data (~600KB), cached thereafter.
       </p>
     </div>
   </div>
@@ -3039,19 +3037,19 @@ function buildDistMap(){
   DIST_RAW.forEach(([a,b,d])=>{DIST_MAP[distKey(a,b)]=d;});
 }
 function distKey(a,b){return a<b?a+'|'+b:b+'|'+a;}
-// Sync: only checks DIST_MAP (no searoute fetch — for Simulator fuel estimate)
+// Sync: only checks DIST_MAP (no async fetch — for Simulator fuel estimate)
 function getDistance(a,b){
   if(a===b) return 0;
   const k=distKey(a,b);
   return DIST_MAP[k] || 0;
 }
 
-// Async: checks DIST_MAP first, then auto-fetches from searoute if missing (for Daily)
+// Async: checks DIST_MAP first, then auto-computes via haversine if missing (for Daily)
 async function getDistanceAsync(a,b){
   if(a===b) return 0;
   const k=distKey(a,b);
   if(DIST_MAP[k]) return DIST_MAP[k];
-  const res = await fetchSearouteDistance(a, b);
+  const res = await fetchHaversineDistance(a, b);
   if(res && res.distance > 0){
     DIST_MAP[k] = res.distance;
     return res.distance;
@@ -3254,7 +3252,7 @@ async function executeLanePortSelector(){
       if(needFetch.length > 0){
         showToast(`Querying ${needFetch.length} distances...`, 'info', 6000);
         for(const [f, t] of needFetch){
-          const res = await fetchSearouteDistance(f, t);
+          const res = await fetchHaversineDistance(f, t);
           if(res && res.distance > 0){
             DIST_MAP[distKey(f, t)] = res.distance;
             const p1 = voy.ports.find(p => p.code === f);
@@ -6511,7 +6509,7 @@ async function executeLaneQuickAdd(){
   closeLaneQuickAdd();
 }
 
-// Fetch searoute distances for consecutive new-port pairs in voyages, then cascade
+// Fetch haversine distances for consecutive new-port pairs in voyages, then cascade
 async function fetchDistancesForNewPorts(newPortCodes){
   if(!newPortCodes || newPortCodes.length === 0) return;
   const newSet = new Set(newPortCodes);
@@ -6544,7 +6542,7 @@ async function fetchDistancesForNewPorts(newPortCodes){
   let failed = 0;
   const failedPairs = [];
   for(const pair of pairsToFetch){
-    const result = await fetchSearouteDistance(pair.from, pair.to);
+    const result = await fetchHaversineDistance(pair.from, pair.to);
     if(result && result.distance > 0){
       DIST_MAP[distKey(pair.from, pair.to)] = result.distance;
       fetched++;
@@ -6673,7 +6671,7 @@ function renderDmDists(filter=''){
     const hasFromTo = from && to;
     // Source badge
     let srcBadge = '';
-    if(src === 'auto') srcBadge = '<span class="dm-src-badge dm-src-auto" title="Auto (searoute)">🔍 Auto</span>';
+    if(src === 'auto') srcBadge = '<span class="dm-src-badge dm-src-auto" title="Auto (haversine)">🔍 Auto</span>';
     else if(src === 'manual') srcBadge = '<span class="dm-src-badge dm-src-manual" title="Manual input">✏️ Manual</span>';
     else srcBadge = '<span style="color:var(--muted);font-size:.7rem;">—</span>';
 
@@ -6684,7 +6682,7 @@ function renderDmDists(filter=''){
       <td><input type="number" value="${dist}" min="0" step="1" onchange="editDmDist(${i},2,this.value)" style="width:85px"/></td>
       <td style="text-align:center">${srcBadge}</td>
       <td class="dm-actions-cell">
-        <button class="dm-btn dm-btn-sm" id="lookupBtn_${i}" onclick="lookupDistance(${i})" title="Auto-query sailing distance (searoute)" ${!hasFromTo?'disabled':''}>🔍</button>
+        <button class="dm-btn dm-btn-sm" id="lookupBtn_${i}" onclick="lookupDistance(${i})" title="Auto-compute sailing distance (haversine)" ${!hasFromTo?'disabled':''}>🔍</button>
         <a class="dm-btn dm-btn-sm dm-btn-external" href="javascript:void(0)" onclick="openDiaodubao(${i})" title="Check actual sailing distance in Diaodubao" ${!hasFromTo?'style="opacity:.4;pointer-events:none"':''}>🚢</a>
         <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmDist(${i})">✕</button>
       </td>
@@ -6893,7 +6891,7 @@ function openDiaodubao(rowIdx){
   showToast('Search in Diaodubao: ' + fromCode + ' → ' + toCode + ', then enter distance');
 }
 
-// Auto-fill missing distances via searoute service before generating schedule
+// Auto-fill missing distances via haversine before generating schedule
 // Returns: {filled: number, failed: [{from, to, error}]}
 async function autoFillMissingDistances(ports){
   const missing = [];
@@ -6905,10 +6903,10 @@ async function autoFillMissingDistances(ports){
   }
   if(missing.length === 0) return {filled: 0, failed: []};
 
-  // Query all missing distances in parallel via searoute
+  // Query all missing distances in parallel via haversine
   const results = await Promise.all(
     missing.map(async m => {
-      const r = await fetchSearouteDistance(m.from, m.to);
+      const r = await fetchHaversineDistance(m.from, m.to);
       return {from: m.from, to: m.to, result: r};
     })
   );
@@ -7048,9 +7046,9 @@ async function lookupPortCoords(portCode){
   return null;
 }
 
-// Core function: calculate sailing distance between two ports (browser-side, actual sea route)
+// Core function: calculate sailing distance between two ports (browser-side, haversine great-circle)
 // Returns {distance: number} or {error: string}
-async function fetchSearouteDistance(fromCode, toCode){
+async function fetchHaversineDistance(fromCode, toCode){
   try {
     if(fromCode === toCode) return {distance: 0};
 
@@ -7060,30 +7058,23 @@ async function fetchSearouteDistance(fromCode, toCode){
     if(!c1) return {error: 'Not found:  port coordinates: : ' + fromCode};
     if(!c2) return {error: 'Not found:  port coordinates: : ' + toCode};
 
-    // Try actual sea route calculation (Dijkstra on marnet network)
-    const routeResult = await calcSearoute(c1.lng, c1.lat, c2.lng, c2.lat);
-    // Sanity check: reject unrealistic distances (> 15000 NM = likely wrong path)
-    if(routeResult && routeResult.distance_nm > 0 && routeResult.distance_nm < 15000){
-      return {distance: routeResult.distance_nm};
-    }
-
-    // Searoute failed or returned unrealistic distance — fall back to haversine x 1.08
+    // Great-circle (haversine) distance, x1.08 approx for coast/land detour
     const h = haversineNM(c1.lat, c1.lng, c2.lat, c2.lng);
-    if(h > 0){
-      const fallback = Math.round(h * 1.08);
-      console.warn('searoute failed for ' + fromCode + '->' + toCode + ', using haversine fallback: ' + fallback + ' NM');
-      return {distance: fallback};
+    // Sanity check: reject unrealistic distances (too short = bad coords, > 15000 NM = likely wrong)
+    if(h > 1 && h * 1.08 < 15000){
+      const d = Math.round(h * 1.08);
+      return {distance: d};
     }
 
-    // Searoute failed — do NOT estimate, require manual input
-    return {error: 'searoute cannot calculate this route. Enter in Data Manager manually.'};
+    // Haversine failed (bad/zero coordinates) — require manual input
+    return {error: 'Cannot compute distance for ' + fromCode + '->' + toCode + ' (check port coordinates). Enter in Data Manager manually.'};
   } catch(err){
     console.warn('Distance lookup failed:', err);
     return {error: 'Distance query failed (' + err.message + '）, enter manually Dist  column'};
   }
 }
 
-// Look up sailing distance for a row in DIST_RAW via local searoute service
+// Look up sailing distance for a row in DIST_RAW via haversine
 async function lookupDistance(rowIdx){
   const row = DIST_RAW[rowIdx];
   if(!row || !row[0] || !row[1]){
@@ -7095,7 +7086,7 @@ async function lookupDistance(rowIdx){
   const btn = document.getElementById('lookupBtn_' + rowIdx);
   if(btn){ btn.disabled = true; btn.textContent = '🔍 ...'; }
 
-  const result = await fetchSearouteDistance(fromCode, toCode);
+  const result = await fetchHaversineDistance(fromCode, toCode);
   if(result.distance !== undefined){
     DIST_RAW[rowIdx][2] = result.distance;
     DIST_RAW[rowIdx][3] = 'auto';  // Mark as auto-queried
@@ -9600,11 +9591,11 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
 
   showToast('Port added: ' + portCode + (dist > 0 ? '(distance from cache)' : ''), 'success');
 
-  // If no distance in local cache, async query searoute
+  // If no distance in local cache, async query haversine
   if(prevPort && (!dist || dist === 0)){
     showToast('Querying ' + prevPort.code + ' -> ' + portCode + ' distance...', 'info', 3000);
     try {
-      const result = await fetchSearouteDistance(prevPort.code, portCode);
+      const result = await fetchHaversineDistance(prevPort.code, portCode);
       if(result && result.distance > 0){
         // Back-fill to previous port dist
         const vessel2 = FLEET_DATA.vessels.find(v => v.code === vesselCode);
@@ -9629,7 +9620,7 @@ async function dailyAddPortConfirm(vesselCode, voyIdx){
         showToast('Could not auto-query distance, enter Dist column manually', 'warning');
       }
     } catch(e){
-      console.warn('Searoute query failed:', e);
+      console.warn('Haversine query failed:', e);
       showToast('Distance query failed, enter Dist column manually', 'warning');
     }
   }
