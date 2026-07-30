@@ -1,4 +1,5 @@
 from_port,to_port,distance_nm,source
+SAJED,EGSGA,452,manual
 CNSHA,CNXMN,555,manual
 CNXMN,PHMNL,664,manual
 CNTAO,CNXMN,893,auto
