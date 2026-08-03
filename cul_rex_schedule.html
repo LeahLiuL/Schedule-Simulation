@@ -71,11 +71,13 @@
   .btn { background: #1f3a5f; color: #fff; border: none; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; }
   .btn:hover { background: #2f5d8a; }
   .btn.secondary { background: #6b7d92; }
+  .btn.danger { background: #c0392b; }
+  .btn.danger:hover { background: #a93226; }
   .saved-flash { animation: flash 1s ease; }
   @keyframes flash { 0% { background: #9fdf6f; } 100% { background: transparent; } }
-  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; overflow: auto; padding: 16px; }
   .modal-bg.show { display: flex; }
-  .modal { background: #fff; border-radius: 6px; padding: 20px; min-width: 420px; max-width: 560px; }
+  .modal { background: #fff; border-radius: 6px; padding: 20px; min-width: 420px; max-width: 560px; max-height: 90vh; overflow-y: auto; }
   .modal h3 { margin: 0 0 12px 0; color: #1f3a5f; }
   .modal label { display: block; margin: 8px 0 4px; font-weight: 600; }
   .modal input, .modal select { width: 100%; padding: 6px 8px; border: 1px solid #c0c8d4; border-radius: 3px; box-sizing: border-box; }
@@ -134,6 +136,7 @@
     <label>Computed ETA at <span id="acToLabel"></span>:</label>
     <input type="date" id="acArrDate">
     <div class="row">
+      <button class="btn danger" id="acDelete" style="display:none">Delete this add call</button>
       <button class="btn" id="acSave">Save (add as call)</button>
       <button class="btn secondary" id="acCancel">Cancel</button>
     </div>
@@ -500,6 +503,13 @@ function remarkSave(g, val) { localStorage.setItem(remarkKey(g), val); }
 function addCallKey(g, port) { return 'addcall_' + g.svc + '_' + g.vessel_voyage + '_' + port; }
 function addCallLoad(g, port) { try { return JSON.parse(localStorage.getItem(addCallKey(g, port)) || 'null'); } catch (e) { return null; } }
 function addCallSave(g, port, val) { localStorage.setItem(addCallKey(g, port), JSON.stringify(val)); }
+function removeAddCall(g, port) { localStorage.removeItem(addCallKey(g, port)); }
+// 行内 [x] 直接删除该模拟加靠（带确认）
+function deleteAddCall(svc, vv, port) {
+  if (!confirm('Delete this simulated add call? This cannot be undone.')) return;
+  removeAddCall({ svc, vessel_voyage: vv }, port);
+  render();
+}
 
 function getBestModelTEU(g) {
   // try vessel name (e.g. CUL HAIPHONG) by code
@@ -670,8 +680,11 @@ function render() {
         content = `<span class="date-cell addcall" title="Add Call (simulated) · ETA:${added.arr || ''} · ETB:${added.berth || ''} · ETD:${added.dep || ''}">${txt} ⓢ</span>`;
         title = 'Add Call (simulated) · ETA:' + (added.arr||'') + ' · ETB:' + (added.berth||'') + ' · ETD:' + (added.dep||'');
       }
-      const addBtn = call ? '' :
+      let addBtn = call ? '' :
         `<a href="javascript:void(0)" onclick="openAddCall('${g.svc}','${g.vessel_voyage}','${p}')" style="margin-left:4px;font-size:10px;color:#7a2fb0;text-decoration:none" title="Add Call simulation">[+]</a>`;
+      if (added) {
+        addBtn += ` <a href="javascript:void(0)" onclick="deleteAddCall('${g.svc}','${g.vessel_voyage}','${p}')" style="font-size:10px;color:#c0392b;text-decoration:none" title="Delete this add call">[x]</a>`;
+      }
       tr.innerHTML += `<td class="${call?'cell-has':added?'addcall':'empty'}" title="${title}">${content}${addBtn}</td>`;
     }
 
@@ -696,6 +709,9 @@ let AC_CTX = null;
 function openAddCall(svc, vv, targetPort) {
   AC_CTX = { svc, vv, targetPort };
   document.getElementById('addCallModal').classList.add('show');
+  // 仅当该港口已有模拟加靠时，才显示 Delete 按钮
+  const exists = !!addCallLoad({ svc, vessel_voyage: vv }, targetPort);
+  document.getElementById('acDelete').style.display = exists ? 'block' : 'none';
   document.getElementById('acVessel').textContent = `Service: ${svc}  Vessel/Voy: ${vv}  Adding call to: ${targetPort}`;
   // find last known port (across both W and E legs of this vessel voyage)
   const rows = RAW.filter(r => parseVV(r.vessel_voyage).base === vv && r.svc === svc).sort((a, b) => (a.arrived_anchorage || '').localeCompare(b.arrived_anchorage || ''));
@@ -755,6 +771,13 @@ function recomputeETA() {
   document.getElementById(id).addEventListener('input',  () => { if (id === 'acFrom') recomputeDepart(); recomputeETA(); });
 });
 document.getElementById('acCancel').onclick = () => document.getElementById('addCallModal').classList.remove('show');
+document.getElementById('acDelete').onclick = () => {
+  if (!AC_CTX) return;
+  if (!confirm('Delete this simulated add call? This cannot be undone.')) return;
+  removeAddCall({ svc: AC_CTX.svc, vessel_voyage: AC_CTX.vv }, AC_CTX.targetPort);
+  document.getElementById('addCallModal').classList.remove('show');
+  render();
+};
 document.getElementById('acSave').onclick = () => {
   if (!AC_CTX) return;
   const targetPort = AC_CTX.targetPort;
