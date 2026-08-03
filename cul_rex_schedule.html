@@ -690,13 +690,18 @@ function openAddCall(svc, vv, targetPort) {
   const exists = !!addCallLoad({ svc, vessel_voyage: vv }, targetPort);
   document.getElementById('acDelete').style.display = exists ? 'block' : 'none';
   document.getElementById('acVessel').textContent = `Service: ${svc}  Vessel/Voy: ${vv}  Adding call to: ${targetPort}`;
-  // From port 默认 = 当前港口列顺序(CURRENT_PORTLIST)里 targetPort 的前一个港，即“这个位置”的前一港
-  let fromDefault = 'CNNGB';
+  // From port 默认 = 当前港口列顺序里，targetPort 之前最近的“有时间的港”
+  // 从 targetPort 前一港往前找，取第一个真实挂靠或模拟加靠带时间的港；都没有则回退整个航次最后已知挂靠港
+  const g0 = { svc, vessel_voyage: vv };
+  let fromDefault = null;
   const pidx = CURRENT_PORTLIST.indexOf(targetPort);
   if (pidx > 0) {
-    fromDefault = CURRENT_PORTLIST[pidx - 1];
-  } else {
-    // targetPort 不在当前列顺序里（异常/自定义港），回退到整个航次最后已知挂靠港
+    for (let i = pidx - 1; i >= 0; i--) {
+      if (getETADate(g0, CURRENT_PORTLIST[i])) { fromDefault = CURRENT_PORTLIST[i]; break; }
+    }
+  }
+  if (!fromDefault) {
+    // 回退：整个航次里最近一次真实挂靠港（无论位置）
     const rows = RAW.filter(r => parseVV(r.vessel_voyage).base === vv && r.svc === svc)
       .sort((a, b) => (a.arrived_anchorage || '').localeCompare(b.arrived_anchorage || ''));
     const last = rows[rows.length - 1];
@@ -728,6 +733,11 @@ function recomputeDepart() {
   if (lastFrom) {
     const t = lastFrom.berth || lastFrom.departure;   // 优先靠泊时间，否则离港时间
     if (t) { const d = new Date(fmtDateFull(t)); d.setDate(d.getDate() + 1); dep = ymd(d); }
+  }
+  // From port 时间来自模拟加靠（真实数据无 berth）时，用其到港时间 +1 天作为出发基准
+  if (!dep) {
+    const sim = getETADate({ svc: AC_CTX.svc, vessel_voyage: AC_CTX.vv }, fromPort);
+    if (sim) { const d = new Date(fmtDateFull(sim)); if (!isNaN(d)) { d.setDate(d.getDate() + 1); dep = ymd(d); } }
   }
   document.getElementById('acDepDate').value = dep;
 }
