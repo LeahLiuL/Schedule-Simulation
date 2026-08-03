@@ -143,44 +143,19 @@
   </div>
 </div>
 
-<!-- Local data snapshot: lets the page work when opened via file:// (browsers block
-     fetch() of https CDNs from a file:// origin). Online (http/https) still prefers CDN. -->
-<script src="cul_rex_data.js"></script>
-
 <script>
 /* ================= config ================= */
 const TARGET_SVCS = ['REX', 'RES', 'AEM', 'CGX', 'SGX'];
 
 // CSV sources (jsDelivr CDN with GitHub raw fallback)
-const CSV_URLS = [
-  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/bi_vessel_departure.csv',
-  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv',
-];
-
-const PORTS_URLS = [
-  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/ports.csv',
-  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/ports.csv',
-];
-
-const LANES_URLS = [
-  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/lanes.json',
-  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/lanes.json',
-];
-
-const BESTMODEL_URLS = [
-  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/cul_vessel_bestmodel.csv',
-  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/cul_vessel_bestmodel.csv',
-];
-
-const DISTANCES_URLS = [
-  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/distances.csv',
-  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/distances.csv',
-];
-
-const VESSELS_URLS = [
-  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/vessels.csv',
-  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/vessels.csv',
-];
+// Data served from the same GitHub Pages origin — avoids cross-region CDNs
+// (jsDelivr / raw.githubusercontent) that are blocked or unreliable behind the GFW.
+const CSV_URLS = ['shipping_data/bi_vessel_departure.csv'];
+const PORTS_URLS = ['shipping_data/ports.csv'];
+const LANES_URLS = ['shipping_data/lanes.json'];
+const BESTMODEL_URLS = ['shipping_data/cul_vessel_bestmodel.csv'];
+const DISTANCES_URLS = ['shipping_data/distances.csv'];
+const VESSELS_URLS = ['shipping_data/vessels.csv'];
 
 /* ================= state ================= */
 let RAW = [];             // bi_vessel_departure rows
