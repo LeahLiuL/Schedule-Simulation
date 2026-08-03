@@ -163,7 +163,8 @@ let PORTS = {};           // 5-letter code -> name
 let LANES = {};           // svc code -> [ports]
 let BESTMODEL = {};       // vessel_code -> suggested BSA
 let DISTANCES = {};       // "FROM,TO" -> distance_nm
-let VESSELS = {};         // vessel_code -> {speed_knots, name}
+let VESSELS = {};
+let CURRENT_PORTLIST = []; // 当前渲染的港口列顺序(供 openAddCall 取目标港前一港)
 
 /* ================= utils ================= */
 async function fetchWithFallback(urls) {
@@ -575,6 +576,7 @@ function render() {
   const svcs = getSelectedServices();
   // Fixed port order (no West/East grouping), then any extra data ports appended.
   const portList = getFixedPortList(rows);
+  CURRENT_PORTLIST = portList; // 暴露给 openAddCall 用于取目标港前一港
 
   const groups = groupByVoyage(rows);
   // default sort by terminal ETA (MYPKG / Port Klang), toggle via header click
@@ -688,10 +690,19 @@ function openAddCall(svc, vv, targetPort) {
   const exists = !!addCallLoad({ svc, vessel_voyage: vv }, targetPort);
   document.getElementById('acDelete').style.display = exists ? 'block' : 'none';
   document.getElementById('acVessel').textContent = `Service: ${svc}  Vessel/Voy: ${vv}  Adding call to: ${targetPort}`;
-  // find last known port (across both W and E legs of this vessel voyage)
-  const rows = RAW.filter(r => parseVV(r.vessel_voyage).base === vv && r.svc === svc).sort((a, b) => (a.arrived_anchorage || '').localeCompare(b.arrived_anchorage || ''));
-  const last = rows[rows.length - 1];
-  document.getElementById('acFrom').value = last ? portKey(last.terminal) : 'CNNGB';
+  // From port 默认 = 当前港口列顺序(CURRENT_PORTLIST)里 targetPort 的前一个港，即“这个位置”的前一港
+  let fromDefault = 'CNNGB';
+  const pidx = CURRENT_PORTLIST.indexOf(targetPort);
+  if (pidx > 0) {
+    fromDefault = CURRENT_PORTLIST[pidx - 1];
+  } else {
+    // targetPort 不在当前列顺序里（异常/自定义港），回退到整个航次最后已知挂靠港
+    const rows = RAW.filter(r => parseVV(r.vessel_voyage).base === vv && r.svc === svc)
+      .sort((a, b) => (a.arrived_anchorage || '').localeCompare(b.arrived_anchorage || ''));
+    const last = rows[rows.length - 1];
+    fromDefault = last ? portKey(last.terminal) : 'CNNGB';
+  }
+  document.getElementById('acFrom').value = fromDefault;
   document.getElementById('acTo').value = targetPort;
   document.getElementById('acFromLabel').textContent = document.getElementById('acFrom').value;
   document.getElementById('acToLabel').textContent = targetPort;
