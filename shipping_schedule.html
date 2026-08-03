@@ -10740,7 +10740,7 @@ function buildPdfNative(exportItems){
 
         const isAlt = (globalPortNum % 2 === 0);
         if(isAlt){
-          applyBgColor(...C.altRow);
+          applyBgColor(...C.white);
           pdf.rect(marginL, y, usableW, rowH, 'F');
         }
 
