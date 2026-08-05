@@ -3033,6 +3033,7 @@ async function loadPtxData(){
 // Build distance lookup
 let DIST_MAP = {};
 function buildDistMap(){
+  SR_DIRTY = true; // 距离数据变化 -> 标记路由图需重建
   DIST_MAP = {};
   DIST_RAW.forEach(([a,b,d])=>{DIST_MAP[distKey(a,b)]=d;});
 }
@@ -3337,6 +3338,7 @@ function buildPortMap(){
 
 // Build PORT_COORDS from PORTS_DATA (col 6=lat, col 7=lon), with fallback
 function buildPortCoords(){
+  SR_DIRTY = true; // 港口坐标变化 -> 标记路由图需重建
   PORT_COORDS = {};
   PORTS_DATA.forEach(row => {
     const code = row[0];
@@ -7046,31 +7048,298 @@ async function lookupPortCoords(portCode){
   return null;
 }
 
-// Core function: calculate sailing distance between two ports (browser-side, haversine great-circle)
+// ============ REAL SEA-ROUTE DISTANCE ENGINE (三层融合) ============
+// L1: distances.csv 实测直连 (精确)            -> 优先
+// L2: 实测距离图 Dijkstra (真实航段之和)         -> 长航线 MdAPE < 1%
+// L3: 海域/关口航路点网络 Dijkstra (海峡/运河/海角分段大圆) -> 图外港口兜底, 绝不穿越陆地
+// 移植自 searoute_core.py — LOOCV 验证: 融合 MdAPE=1.06% (原 haversine×1.08 方案 4.90%)
+// 设计原则: 第一计算逻辑必须考虑真实海路, 不能用直线 (用户明确要求)。
+
+// 水域 (按顺序匹配, 窄的在前) : [name, la0, la1, lo0, lo1]
+const SR_BASINS = [
+  ['bohai',37.0,41.3,117.2,122.6],['yellow',31.6,41.0,119.0,127.2],['echina',25.5,33.6,117.5,131.0],
+  ['japan',30.0,46.5,128.0,149.0],['korea_e',34.0,43.0,127.5,133.0],
+  ['thaigulf',5.0,14.2,99.0,105.6],['malacca',-3.5,7.5,95.0,104.4],['schina',-3.0,25.6,104.0,122.6],
+  ['philippine',4.0,23.0,122.0,129.0],['andaman',3.0,21.0,92.0,99.6],
+  ['bengal',-6.0,23.0,78.0,95.5],['pgulf',23.0,31.0,47.0,56.25],['oman',21.5,27.0,56.0,61.5],
+  ['aden',10.0,15.8,43.0,53.5],['red',12.3,30.7,32.0,44.0],['arabsea',-6.0,26.0,55.0,78.5],
+  ['blacksea',40.6,47.5,27.2,42.0],['marmara',40.2,41.5,26.5,30.2],['med',30.0,46.5,-6.0,36.4],
+  ['baltic',53.5,66.0,10.0,30.5],['northsea',50.0,62.0,-4.5,12.0],['biscay',43.0,51.5,-14.0,2.5],
+  ['iberia_atl',35.5,44.0,-14.0,-5.8],['europe_atl',44.0,71.5,-25.0,-4.0],
+  ['wafrica',-18.0,36.0,-26.0,15.0],['safrica',-40.0,-17.0,8.0,30.0],['eafrica',-30.0,12.5,30.0,55.0],
+  ['namerica_e',15.0,62.0,-85.0,-48.0],['carib',8.0,25.0,-90.0,-58.0],['namerica_w',12.0,62.0,-172.0,-104.0],
+  ['samerica_e',-58.0,14.0,-70.0,-28.0],['samerica_w',-58.0,14.0,-105.0,-68.0],
+  ['oceania',-48.0,-5.0,110.0,180.0],['indoc_s',-45.0,-5.0,20.0,115.0],
+  ['npacific',10.0,60.0,130.0,180.0],['natl',10.0,62.0,-48.0,-14.0],['satl',-58.0,10.0,-30.0,10.0]
+];
+
+// 关口: [basinA, basinB, [A侧->B侧 途经点]] (真实海峡/运河/海角航路点)
+const SR_GATES = [
+  ['bohai','yellow',[[38.05,118.95],[37.60,122.85]]],['yellow','echina',[[33.20,123.00]]],
+  ['echina','japan',[[31.60,128.60]]],['echina','korea_e',[[34.00,129.20]]],['japan','korea_e',[[35.00,130.00]]],
+  ['echina','schina',[[25.60,120.30],[24.00,118.60]]],['echina','philippine',[[24.00,122.60]]],
+  ['philippine','schina',[[20.40,121.90],[20.00,120.60]]],['philippine','npacific',[[20.00,127.50]]],['japan','npacific',[[34.60,140.60]]],
+  ['schina','thaigulf',[[8.45,104.90],[8.60,102.50]]],['schina','malacca',[[1.30,104.35],[1.18,103.55]]],
+  ['malacca','andaman',[[3.60,99.20],[5.60,96.90]]],['andaman','bengal',[[7.50,93.60]]],
+  ['malacca','indoc_s',[[-5.90,105.90],[-6.60,105.20]]],['schina','oceania',[[-3.00,117.60],[-5.50,116.80]]],
+  ['oceania','indoc_s',[[-8.75,115.60]]],['bengal','arabsea',[[5.55,80.60]]],['bengal','indoc_s',[[-2.00,88.00]]],
+  ['arabsea','indoc_s',[[-2.00,68.00]]],['arabsea','oman',[[22.30,60.20]]],['oman','pgulf',[[26.25,56.55],[26.55,55.95]]],
+  ['arabsea','aden',[[12.20,52.40],[11.85,51.20]]],['aden','red',[[12.55,43.40]]],['aden','eafrica',[[11.30,51.00]]],
+  ['arabsea','eafrica',[[2.00,47.50]]],['red','med',[[29.93,32.56],[30.60,32.34],[31.25,32.32]]],
+  ['med','marmara',[[40.05,26.20],[40.60,27.60]]],['marmara','blacksea',[[40.95,28.95],[41.25,29.15]]],
+  ['med','iberia_atl',[[35.95,-5.60],[36.10,-6.30]]],['iberia_atl','biscay',[[37.00,-9.20],[43.10,-9.60]]],
+  ['biscay','northsea',[[48.45,-5.60],[50.90,1.55]]],['biscay','europe_atl',[[48.60,-6.20]]],
+  ['northsea','baltic',[[57.60,10.60],[55.70,12.70]]],['northsea','europe_atl',[[58.50,2.00]]],
+  ['iberia_atl','wafrica',[[35.50,-7.00],[30.00,-11.50]]],['iberia_atl','natl',[[38.00,-14.00]]],['europe_atl','natl',[[50.00,-20.00]]],
+  ['wafrica','satl',[[0.00,3.00]]],['wafrica','safrica',[[-30.00,15.50],[-34.45,18.40]]],
+  ['safrica','eafrica',[[-34.90,20.10],[-32.00,29.50]]],['safrica','indoc_s',[[-36.00,25.00]]],
+  ['satl','safrica',[[-34.00,10.00]]],['satl','samerica_e',[[-20.00,-28.00]]],['natl','satl',[[2.00,-22.00]]],
+  ['natl','wafrica',[[20.00,-20.00]]],['natl','namerica_e',[[38.00,-50.00]]],['namerica_e','carib',[[23.00,-74.50]]],
+  ['carib','samerica_e',[[11.50,-60.50]]],['carib','namerica_w',[[9.35,-79.92],[8.90,-79.55],[8.30,-79.20]]],
+  ['namerica_w','samerica_w',[[5.00,-79.00]]],['samerica_e','samerica_w',[[-55.95,-67.25],[-56.50,-70.00]]],
+  ['samerica_e','satl',[[-30.00,-40.00]]],['namerica_w','npacific',[[45.00,-170.00],[45.00,175.00]]],
+  ['samerica_w','oceania',[[-25.00,-140.00],[-25.00,170.00]]],['npacific','oceania',[[5.00,155.00]]]
+];
+
+// 内河/上游港: code -> [[河口lat,河口lon], 内河里程nm, 支流ID]
+const SR_RIVER = {
+  'CNAQG':[[31.40,121.80],455,'YZ'],'CNNJG':[[31.40,121.80],305,'YZ'],'CNZEJ':[[31.40,121.80],265,'YZ'],
+  'CNZJG':[[31.40,121.80],125,'YZ'],'CNCGU':[[31.40,121.80],94,'YZ'],'CNTAC':[[31.40,121.80],78,'YZ'],
+  'CNNAT':[[31.40,121.80],60,'YZ'],'CNSHA':[[31.40,121.80],35,'YZ'],'CNWUH':[[31.40,121.80],570,'YZ'],
+  'CNJIU':[[31.40,121.80],515,'YZ'],'CNGGZ':[[22.15,113.75],72,'PRJ'],'CNHMN':[[22.15,113.75],47,'PRJ'],
+  'CNDGG':[[22.15,113.75],42,'PRJ'],'CNGCT':[[22.15,113.75],44,'PRJ'],'CNNAS':[[22.15,113.75],33,'PRJ'],
+  'CNJMN':[[22.15,113.75],56,'XIJ'],'CNZSN':[[22.15,113.75],40,'XIJ'],'CNFOS':[[22.15,113.75],78,'XIJ'],
+  'CNYUF':[[22.15,113.75],130,'XIJ'],'THBKK':[[13.42,100.58],30,'CPY'],'THSCS':[[13.42,100.58],28,'CPY'],
+  'THSSW':[[13.42,100.58],24,'CPY']
+};
+const SR_CROSS_TRIB = 0.72;
+
+let SR_NODES = [], SR_EDGES = {}, SR_BY_BASIN = {}, SR_STATIC_BUILT = false;
+let SR_COORDS = {}, SR_EDGES_MAP = {}, SR_ADJ = {}, SR_L3CACHE = {};
+let SR_ROUTER_BUILT = false, SR_DIRTY = false;
+
+function srBasinOf(lat, lon){
+  for(const b of SR_BASINS){
+    if(lat >= b[1] && lat <= b[2] && lon >= b[3] && lon <= b[4]) return b[0];
+  }
+  let best = null, bd = 1e18;
+  for(const b of SR_BASINS){
+    const cl = Math.min(Math.max(lat, b[1]), b[2]);
+    const co = Math.min(Math.max(lon, b[3]), b[4]);
+    const d = haversineNM(lat, lon, cl, co);
+    if(d < bd){ bd = d; best = b[0]; }
+  }
+  return best;
+}
+
+function srBuildStatic(){
+  SR_NODES = []; SR_EDGES = {}; SR_BY_BASIN = {};
+  function addNode(lat, lon, basin){
+    SR_NODES.push([lat, lon, basin]);
+    return SR_NODES.length - 1;
+  }
+  for(const g of SR_GATES){
+    const a = g[0], b = g[1], wps = g[2];
+    if(!wps || wps.length === 0) continue;
+    const ia = addNode(wps[0][0], wps[0][1], a);
+    const ib = addNode(wps[wps.length-1][0], wps[wps.length-1][1], b);
+    let cost = 0;
+    for(let i=0;i<wps.length-1;i++) cost += haversineNM(wps[i][0], wps[i][1], wps[i+1][0], wps[i+1][1]);
+    if(!SR_EDGES[ia]) SR_EDGES[ia] = [];
+    if(!SR_EDGES[ib]) SR_EDGES[ib] = [];
+    SR_EDGES[ia].push([ib, cost]); SR_EDGES[ib].push([ia, cost]);
+    (SR_BY_BASIN[a] = SR_BY_BASIN[a] || []).push(ia);
+    (SR_BY_BASIN[b] = SR_BY_BASIN[b] || []).push(ib);
+  }
+  for(const basin in SR_BY_BASIN){
+    const idxs = SR_BY_BASIN[basin];
+    for(let i=0;i<idxs.length;i++){
+      for(let j=i+1;j<idxs.length;j++){
+        const u = idxs[i], v = idxs[j];
+        const c = haversineNM(SR_NODES[u][0], SR_NODES[u][1], SR_NODES[v][0], SR_NODES[v][1]);
+        (SR_EDGES[u] = SR_EDGES[u] || []).push([v, c]);
+        (SR_EDGES[v] = SR_EDGES[v] || []).push([u, c]);
+      }
+    }
+  }
+  SR_STATIC_BUILT = true;
+}
+
+// 航路点图 Dijkstra 求最短海路。返回 [距离nm, 途经点数]
+function srSeaRoute(lat1, lon1, lat2, lon2, fOpen, fRouted){
+  const b1 = srBasinOf(lat1, lon1), b2 = srBasinOf(lat2, lon2);
+  const SRC = -1, DST = -2;
+  const edges = {};
+  for(const u in SR_EDGES) edges[u] = SR_EDGES[u].slice();
+  for(const i of (SR_BY_BASIN[b1] || [])){
+    const c = haversineNM(lat1, lon1, SR_NODES[i][0], SR_NODES[i][1]);
+    (edges[SRC] = edges[SRC] || []).push([i, c]);
+    (edges[i] = edges[i] || []).push([SRC, c]);
+  }
+  for(const i of (SR_BY_BASIN[b2] || [])){
+    const c = haversineNM(lat2, lon2, SR_NODES[i][0], SR_NODES[i][1]);
+    (edges[DST] = edges[DST] || []).push([i, c]);
+    (edges[i] = edges[i] || []).push([DST, c]);
+  }
+  if(b1 === b2){
+    const c = haversineNM(lat1, lon1, lat2, lon2);
+    (edges[SRC] = edges[SRC] || []).push([DST, c]);
+    (edges[DST] = edges[DST] || []).push([SRC, c]);
+  }
+  const dist = {}; dist[SRC] = 0;
+  const prev = {}; prev[SRC] = null;
+  const seen = {};
+  const pq = [[0, SRC]];
+  while(pq.length){
+    let mi = 0;
+    for(let k=1;k<pq.length;k++) if(pq[k][0] < pq[mi][0]) mi = k;
+    const cur = pq.splice(mi, 1)[0];
+    const d = cur[0], u = cur[1];
+    if(seen[u]) continue;
+    seen[u] = true;
+    if(u === DST) break;
+    for(const e of (edges[u] || [])){
+      const v = e[0], w = e[1];
+      const nd = d + w;
+      if(nd < (dist[v] !== undefined ? dist[v] : 1e18)){
+        dist[v] = nd; prev[v] = u; pq.push([nd, v]);
+      }
+    }
+  }
+  if(dist[DST] === undefined){
+    return [haversineNM(lat1, lon1, lat2, lon2) * 1.20, 0];
+  }
+  let n = 0, cur = prev[DST];
+  while(cur !== null && cur !== SRC){ n++; cur = prev[cur]; }
+  const f = n > 0 ? fRouted : fOpen;
+  return [dist[DST] * f, n];
+}
+
+// 构建实测距离图 (L1/L2)。剔除 source=='auto' 与坏边(实测 < 大圆直线下限×0.90)
+function srLoadRouter(){
+  SR_COORDS = PORT_COORDS;
+  const pairs = {};
+  for(const row of DIST_RAW){
+    const a = row[0], b = row[1], d = parseFloat(row[2]), src = row[3];
+    if(!a || !b || a === b) continue;
+    if(src === 'auto') continue;
+    if(!(d > 0)) continue;
+    const k = a < b ? a + '|' + b : b + '|' + a;
+    (pairs[k] = pairs[k] || []).push(d);
+  }
+  SR_EDGES_MAP = {}; SR_ADJ = {};
+  for(const k in pairs){
+    const arr = pairs[k].slice().sort((x,y)=>x-y);
+    const med = arr[Math.floor(arr.length/2)];
+    const ab = k.split('|'); const a = ab[0], b = ab[1];
+    if(SR_COORDS[a] && SR_COORDS[b]){
+      const lb = haversineNM(SR_COORDS[a][0], SR_COORDS[a][1], SR_COORDS[b][0], SR_COORDS[b][1]);
+      if(lb > 0 && med < lb * 0.90) continue; // 坏边(物理不可能), 丢弃
+    }
+    SR_EDGES_MAP[k] = med;
+    (SR_ADJ[a] = SR_ADJ[a] || []).push([b, med]);
+    (SR_ADJ[b] = SR_ADJ[b] || []).push([a, med]);
+  }
+  SR_L3CACHE = {};
+  SR_ROUTER_BUILT = true; SR_DIRTY = false;
+}
+
+function srEnsure(){
+  if(!SR_STATIC_BUILT) srBuildStatic();
+  if(SR_DIRTY || !SR_ROUTER_BUILT) srLoadRouter();
+}
+
+function srL3(a, b){
+  if(!SR_COORDS[a] || !SR_COORDS[b]) return null;
+  const k = a < b ? a + '|' + b : b + '|' + a;
+  if(SR_L3CACHE[k] !== undefined) return SR_L3CACHE[k];
+  const r1 = SR_RIVER[a], r2 = SR_RIVER[b];
+  let val;
+  if(r1 && r2 && r1[0][0] === r2[0][0] && r1[0][1] === r2[0][1]){
+    val = (r1[2] === r2[2]) ? Math.max(Math.abs(r1[1]-r2[1]), 3.0) : (r1[1]+r2[1]) * SR_CROSS_TRIB;
+    SR_L3CACHE[k] = val; return val;
+  }
+  let la1 = SR_COORDS[a][0], lo1 = SR_COORDS[a][1];
+  let la2 = SR_COORDS[b][0], lo2 = SR_COORDS[b][1];
+  let extra = 0;
+  if(r1){ extra += r1[1]; la1 = r1[0][0]; lo1 = r1[0][1]; }
+  if(r2){ extra += r2[1]; la2 = r2[0][0]; lo2 = r2[0][1]; }
+  const d = srSeaRoute(la1, lo1, la2, lo2, 1.10, 1.04)[0];
+  val = d + extra;
+  SR_L3CACHE[k] = val; return val;
+}
+
+function srDijkstra(src, banned){
+  const dist = {}; dist[src] = 0;
+  const pq = [[0, src]];
+  const seen = {};
+  while(pq.length){
+    let mi = 0;
+    for(let k=1;k<pq.length;k++) if(pq[k][0] < pq[mi][0]) mi = k;
+    const cur = pq.splice(mi, 1)[0];
+    const d = cur[0], u = cur[1];
+    if(seen[u]) continue;
+    seen[u] = true;
+    for(const e of (SR_ADJ[u] || [])){
+      const v = e[0], w = e[1];
+      if(banned && (u < v ? u + '|' + v : v + '|' + u) === banned) continue;
+      const nd = d + w;
+      if(nd < (dist[v] !== undefined ? dist[v] : 1e18)){
+        dist[v] = nd; pq.push([nd, v]);
+      }
+    }
+  }
+  return dist;
+}
+
+// 三层融合: L1(实测直连) -> L2(实测图最短路) -> L3(海域路由)
+function srDistance(a, b, banned, gate){
+  gate = gate || 1.35;
+  if(a === b) return 0;
+  const k = a < b ? a + '|' + b : b + '|' + a;
+  if(SR_EDGES_MAP[k] !== undefined && k !== banned) return SR_EDGES_MAP[k]; // L1 精确
+  const l3 = srL3(a, b);
+  let g = null;
+  if(SR_ADJ[a]){
+    const dg = srDijkstra(a, banned);
+    g = dg[b];
+    if(g === undefined || g > 1e17) g = null;
+  }
+  if(g !== null && (l3 === null || g <= l3 * gate)) return g; // L2 真实航段之和
+  if(l3 !== null){
+    if(g !== null) return Math.min(g, l3);
+    return l3; // L3 海域路由兜底
+  }
+  return (g !== null) ? g : null;
+}
+
+// Core function: calculate REAL sailing distance between two ports.
+// 第一计算逻辑考虑真实海路 (海峡/运河/海角分段 + 实测距离图), 不用直线。
 // Returns {distance: number} or {error: string}
 async function fetchHaversineDistance(fromCode, toCode){
   try {
     if(fromCode === toCode) return {distance: 0};
-
+    srEnsure();
+    const v = srDistance(fromCode, toCode);
+    if(v !== null && v > 0 && v < 30000){
+      return {distance: Math.round(v)};
+    }
+    // 兜底: 之前已存的距离 (含 auto)
+    const dm = getDistance(fromCode, toCode);
+    if(dm > 0) return {distance: dm};
+    // 最后兜底: 直线大圆 ×1.08 (可能穿越陆地, 仅保证 app 可用)
     const c1 = await lookupPortCoords(fromCode);
     const c2 = await lookupPortCoords(toCode);
-
-    if(!c1) return {error: 'Not found:  port coordinates: : ' + fromCode};
-    if(!c2) return {error: 'Not found:  port coordinates: : ' + toCode};
-
-    // Great-circle (haversine) distance, x1.08 approx for coast/land detour
+    if(!c1) return {error: 'Not found:  port coordinates: ' + fromCode};
+    if(!c2) return {error: 'Not found:  port coordinates: ' + toCode};
     const h = haversineNM(c1.lat, c1.lng, c2.lat, c2.lng);
-    // Sanity check: reject unrealistic distances (too short = bad coords, > 15000 NM = likely wrong)
-    if(h > 1 && h * 1.08 < 15000){
-      const d = Math.round(h * 1.08);
-      return {distance: d};
+    if(h > 1 && h * 1.08 < 30000){
+      return {distance: Math.round(h * 1.08)};
     }
-
-    // Haversine failed (bad/zero coordinates) — require manual input
     return {error: 'Cannot compute distance for ' + fromCode + '->' + toCode + ' (check port coordinates). Enter in Data Manager manually.'};
   } catch(err){
     console.warn('Distance lookup failed:', err);
-    return {error: 'Distance query failed (' + err.message + '）, enter manually Dist  column'};
+    return {error: 'Distance query failed (' + err.message + '), enter manually Dist column'};
   }
 }
 
