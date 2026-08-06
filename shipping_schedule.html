@@ -5126,56 +5126,329 @@ function resetModifications(){
 }
 
 // ==================== EXPORT EXCEL ====================
+// Professional workbook via ExcelJS. The palette below mirrors the on-screen
+// table CSS (thead / zebra / tr.modified / .col-* / .status-badge) so the
+// downloaded file looks like what the user sees in the browser.
+const XL_PAL = {
+  headBg:'FF1A3A5C', headFg:'FFFFFFFF', headEdge:'FF102A44',
+  rowAlt:'FFF7FAFD', rowMod:'FFFFF9E6', grid:'FFD0D9E4',
+  titleBg:'FF14304C', bandBg:'FFEAF1F8', totalBg:'FFE3EBF4',
+  cPort:'FF1A3A5C', cDay:'FF2C5AA0', cEta:'FF1A6B3C', cEtd:'FF8B1A1A',
+  cDist:'FF555555', cFuel:'FF8B5E00', cVoy:'FF17A2B8', cMuted:'FF6C757D',
+  onTimeBg:'FFD4EDDA', onTimeFg:'FF155724',
+  delayBg:'FFF8D7DA',  delayFg:'FF721C24',
+  aheadBg:'FFCCE5FF',  aheadFg:'FF004085'
+};
+const XL_FONT = 'Calibri';
+
+function xlGrid(argb){
+  const s = {style:'thin', color:{argb: argb || XL_PAL.grid}};
+  return {top:s, left:s, bottom:s, right:s};
+}
+
+// ExcelJS serialises Date objects as UTC, which would shift every ETA/ETB/ETD
+// by the local UTC offset (e.g. -8h in GMT+8). Pre-shift so the wall-clock time
+// stored in the workbook matches exactly what the on-screen table shows.
+function xlDate(d){
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+}
+
+// Presentation rule per column, derived from the .col-* CSS classes.
+// date:true -> real Date cell; numFmt -> real Number cell; badge:true -> status pill;
+// total:true -> included in the TOTAL footer row.
+function xlColSpec(col){
+  switch(col.key){
+    case 'port':        return {w:14, align:'left',   bold:true, color:XL_PAL.cPort};
+    case 'manIn':       return {w:11, align:'center', numFmt:'0'};
+    case 'wait':        return {w:10, align:'center', numFmt:'0'};
+    case 'proformaEta': return {w:18, align:'center', color:XL_PAL.cEta, date:true};
+    case 'proformaEtd': return {w:18, align:'center', color:XL_PAL.cEtd, date:true};
+    case 'ltsEtb':      return {w:18, align:'center', color:XL_PAL.cEta, date:true};
+    case 'ltsEtd':      return {w:18, align:'center', color:XL_PAL.cEtd, date:true};
+    case 'voyNo':       return {w:11, align:'center', bold:true, color:XL_PAL.cVoy};
+    case 'date':        return {w:8,  align:'center', bold:true, color:XL_PAL.cDay};
+    case 'eta':         return {w:18, align:'center', color:XL_PAL.cEta, date:true};
+    case 'etb':         return {w:18, align:'center', color:XL_PAL.cEta, date:true};
+    case 'etd':         return {w:18, align:'center', color:XL_PAL.cEtd, date:true};
+    case 'runHrs':      return {w:10, align:'right',  numFmt:'0.00', total:true};
+    case 'stayHrs':     return {w:13, align:'right',  numFmt:'0',    total:true};
+    case 'dist':        return {w:13, align:'right',  numFmt:'#,##0.0', color:XL_PAL.cDist, total:true};
+    case 'speed':       return {w:10, align:'right',  numFmt:'0.0'};
+    case 'etaDelay':
+    case 'etdDelay':    return {w:16, align:'center', badge:true};
+    case 'fuelSea':     return {w:14, align:'right',  numFmt:'#,##0.00', color:XL_PAL.cFuel, total:true};
+    case 'remark':      return {w:22, align:'left',   color:XL_PAL.cMuted};
+    default:            return {w:Math.max(12, col.label.length + 2), align:'center'};
+  }
+}
+
 function exportExcel(){
   if(!scheduleRows.length){ showToast('No schedule to export','warning'); return; }
+  if(typeof ExcelJS === 'undefined'){ showToast('Excel library not loaded, please refresh','error'); return; }
 
-  const vesselDisplay = currentVessel.code || document.getElementById('vesselInput').value.trim();
-  const voyNo = document.getElementById('voyNoInput').value||'001W';
+  const vesselCode    = currentVessel.code || document.getElementById('vesselInput').value.trim();
+  const vesselDisplay = vesselCode + (currentVessel.name ? ' \u2013 ' + currentVessel.name : '');
+  const voyNo   = document.getElementById('voyNoInput').value || '001W';
+  const speedIn = document.getElementById('speedInput').value;
 
   const visCols = getVisibleSVCols();
-  const headers = visCols.map(c=>c.label);
-  const data = scheduleRows.map(row=>{
-    return visCols.map(col=>{
-      const v = row[col.key];
-      if(['eta','etb','etd','ltsEtb','ltsEtd','proformaEta','proformaEtd','date'].includes(col.key)){
-        return fmtDt(v);
+  const specs   = visCols.map(xlColSpec);
+  const nCol    = visCols.length;
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator  = 'CUL Schedule Simulator';
+  wb.created  = new Date();
+
+  // ---------- Sheet 1: Voyage Schedule ----------
+  const HR = 4;                       // header row index
+  const ws = wb.addWorksheet('Voyage Schedule', {
+    views: [{state:'frozen', xSplit:1, ySplit:HR}],
+    pageSetup: {
+      orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0,
+      horizontalCentered:true, printTitlesRow:'' + HR + ':' + HR,
+      margins:{left:0.3, right:0.3, top:0.5, bottom:0.5, header:0.2, footer:0.2}
+    }
+  });
+
+  // Column widths: spec baseline, widened to fit the longest rendered value.
+  specs.forEach((sp, i) => {
+    let w = sp.w;
+    if(!sp.date && !sp.badge){
+      scheduleRows.forEach(row => {
+        const raw = row[visCols[i].key];
+        const len = String(raw === undefined || raw === null ? '' : raw).length + 3;
+        if(len > w) w = len;
+      });
+    }
+    ws.getColumn(i + 1).width = Math.min(w, 42);
+  });
+  const LC = ws.getColumn(nCol).letter;
+
+  // Row 1 - title band
+  ws.mergeCells('A1:' + LC + '1');
+  const rT = ws.getRow(1); rT.height = 28;
+  rT.getCell(1).value = 'VOYAGE SCHEDULE   \u2502   ' + vesselDisplay + '   \u2502   VOY ' + voyNo;
+  rT.getCell(1).style = {
+    font:{name:XL_FONT, size:14, bold:true, color:{argb:'FFFFFFFF'}},
+    fill:{type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.titleBg}},
+    alignment:{horizontal:'center', vertical:'middle'}
+  };
+
+  // Row 2 - route band
+  ws.mergeCells('A2:' + LC + '2');
+  const rR = ws.getRow(2); rR.height = 19;
+  rR.getCell(1).value = 'Route:  ' + selectedPorts.map(p => p.code).join('  \u2192  ');
+  rR.getCell(1).style = {
+    font:{name:XL_FONT, size:10.5, bold:true, color:{argb:XL_PAL.cPort}},
+    fill:{type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.bandBg}},
+    alignment:{horizontal:'center', vertical:'middle'}
+  };
+
+  // Row 3 - parameters band
+  ws.mergeCells('A3:' + LC + '3');
+  const rM = ws.getRow(3); rM.height = 17;
+  rM.getCell(1).value = 'Speed: ' + speedIn + ' kn      Man In (default): ' + DEFAULT_MAN_IN +
+                        ' h      Port Calls: ' + scheduleRows.length +
+                        '      Generated: ' + fmtDt(new Date());
+  rM.getCell(1).style = {
+    font:{name:XL_FONT, size:9, italic:true, color:{argb:XL_PAL.cMuted}},
+    fill:{type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.bandBg}},
+    alignment:{horizontal:'center', vertical:'middle'},
+    border:{bottom:{style:'thin', color:{argb:XL_PAL.grid}}}
+  };
+
+  // Row 4 - table header (mirrors thead: navy bg, white bold text)
+  const rH = ws.getRow(HR); rH.height = 24;
+  visCols.forEach((col, i) => {
+    const c = rH.getCell(i + 1);
+    c.value = col.label;
+    c.style = {
+      font:{name:XL_FONT, size:10, bold:true, color:{argb:XL_PAL.headFg}},
+      fill:{type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.headBg}},
+      alignment:{horizontal:'center', vertical:'middle', wrapText:true},
+      border:xlGrid(XL_PAL.headEdge)
+    };
+  });
+
+  // Data rows
+  const DAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  scheduleRows.forEach((row, ri) => {
+    const r = ws.getRow(HR + 1 + ri);
+    r.height = 17;
+    const bg = row.modified ? XL_PAL.rowMod : (ri % 2 === 1 ? XL_PAL.rowAlt : null);
+
+    visCols.forEach((col, ci) => {
+      const sp = specs[ci];
+      const c  = r.getCell(ci + 1);
+      const v  = row[col.key];
+      const st = {
+        font:{name:XL_FONT, size:10},
+        alignment:{horizontal: sp.align || 'center', vertical:'middle'},
+        border:xlGrid()
+      };
+      if(bg)       st.fill = {type:'pattern', pattern:'solid', fgColor:{argb:bg}};
+      if(sp.bold)  st.font.bold  = true;
+      if(sp.color) st.font.color = {argb:sp.color};
+
+      if(sp.date){
+        const d = (v instanceof Date) ? v : (v ? new Date(v) : null);
+        if(d && !isNaN(d)){ c.value = xlDate(d); st.numFmt = 'yyyy-mm-dd hh:mm'; }
+        else c.value = '';
+      } else if(col.key === 'date'){
+        const d = (v instanceof Date) ? v : (v ? new Date(v) : null);
+        c.value = (d && !isNaN(d)) ? DAY[d.getDay()] : '';
+      } else if(sp.badge){
+        const h = +v || 0;
+        if(h === 0){
+          c.value  = 'On Time';
+          st.fill  = {type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.onTimeBg}};
+          st.font  = {name:XL_FONT, size:10, bold:true, color:{argb:XL_PAL.onTimeFg}};
+        } else if(h > 0){
+          c.value  = '\u25B2 ' + h.toFixed(0) + 'h';
+          st.fill  = {type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.delayBg}};
+          st.font  = {name:XL_FONT, size:10, bold:true, color:{argb:XL_PAL.delayFg}};
+        } else {
+          c.value  = '\u25BC ' + Math.abs(h).toFixed(0) + 'h';
+          st.fill  = {type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.aheadBg}};
+          st.font  = {name:XL_FONT, size:10, bold:true, color:{argb:XL_PAL.aheadFg}};
+        }
+      } else if(sp.numFmt){
+        const n = parseFloat(v);
+        c.value = isNaN(n) ? '' : n;
+        st.numFmt = sp.numFmt;
+      } else {
+        c.value = (v === undefined || v === null) ? '' : v;
       }
-      if(col.key==='etaDelay'||col.key==='etdDelay'){
-        const h=+v;
-        if(h===0) return 'On Time';
-        return h>0 ? `+${h.toFixed(0)}h (Delay)` : `${h.toFixed(0)}h (Ahead)`;
-      }
-      return v!==undefined&&v!==null?v:'';
+      c.style = st;
     });
   });
 
-  const wb = XLSX.utils.book_new();
-  const wsData = [headers, ...data];
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws['!cols'] = visCols.map(c=>({wch: c.fmt==='dt'?18:Math.max(c.label.length,12)}));
-  XLSX.utils.book_append_sheet(wb, ws, 'Voyage Schedule');
+  // TOTAL footer row with live SUM formulas
+  const firstR = HR + 1;
+  const lastR  = HR + scheduleRows.length;
+  const rTot   = ws.getRow(lastR + 1);
+  rTot.height  = 20;
+  visCols.forEach((col, ci) => {
+    const sp = specs[ci];
+    const c  = rTot.getCell(ci + 1);
+    const st = {
+      font:{name:XL_FONT, size:10, bold:true, color:{argb:XL_PAL.cPort}},
+      fill:{type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.totalBg}},
+      alignment:{horizontal: sp.align || 'center', vertical:'middle'},
+      border:{
+        top:   {style:'medium', color:{argb:XL_PAL.headBg}},
+        bottom:{style:'medium', color:{argb:XL_PAL.headBg}},
+        left:  {style:'thin',   color:{argb:XL_PAL.grid}},
+        right: {style:'thin',   color:{argb:XL_PAL.grid}}
+      }
+    };
+    if(ci === 0){
+      c.value = 'TOTAL';
+    } else if(sp.total){
+      const L = ws.getColumn(ci + 1).letter;
+      c.value   = {formula:'SUM(' + L + firstR + ':' + L + lastR + ')'};
+      st.numFmt = sp.numFmt;
+    }
+    c.style = st;
+  });
 
-  const speed = document.getElementById('speedInput').value;
-  const sumData = [
-    ['Vessel', vesselDisplay + (currentVessel.name ? ' – '+currentVessel.name : '')],
-    ['Voyage No', voyNo],
-    ['Speed (kn)', speed],
-    ['Man In (default)', DEFAULT_MAN_IN+'h'],
-    ['Ports', selectedPorts.map(p=>p.code).join(' \u2192 ')],
-    ['Export Time', fmtDt(new Date())],
-    [],
-    ['Total Distance (nm)', scheduleRows.reduce((s,r)=>s+r.dist,0).toFixed(1)],
-    ['Total Run Hours', scheduleRows.reduce((s,r)=>s+r.runHrs,0).toFixed(2)],
-    ['Total Port Stay (hr)', scheduleRows.reduce((s,r)=>s+r.stayHrs,0).toFixed(0)],
-    ['Est. Fuel LSFO (mt)', scheduleRows.reduce((s,r)=>s+r.fuelSea,0).toFixed(2)],
+  ws.autoFilter = {from:{row:HR, column:1}, to:{row:lastR, column:nCol}};
+
+  // ---------- Sheet 2: Summary ----------
+  const ws2 = wb.addWorksheet('Summary');
+  ws2.getColumn(1).width = 26;
+  ws2.getColumn(2).width = 48;
+
+  ws2.mergeCells('A1:B1');
+  const s1 = ws2.getRow(1); s1.height = 26;
+  s1.getCell(1).value = 'VOYAGE SUMMARY';
+  s1.getCell(1).style = {
+    font:{name:XL_FONT, size:13, bold:true, color:{argb:'FFFFFFFF'}},
+    fill:{type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.titleBg}},
+    alignment:{horizontal:'center', vertical:'middle'}
+  };
+
+  const sum = k => scheduleRows.reduce((s, r) => s + (+r[k] || 0), 0);
+  const totDist = sum('dist'), totRun = sum('runHrs'), totStay = sum('stayHrs'), totFuel = sum('fuelSea');
+  const firstEta = scheduleRows[0] && scheduleRows[0].eta;
+  const lastEtd  = scheduleRows[scheduleRows.length - 1] && scheduleRows[scheduleRows.length - 1].etd;
+  const totalDays = (firstEta && lastEtd) ? (new Date(lastEtd) - new Date(firstEta)) / 86400000 : 0;
+
+  const rows2 = [
+    ['#', 'Voyage Info'],
+    ['Vessel',                vesselDisplay],
+    ['Voyage No',             voyNo],
+    ['Route',                 selectedPorts.map(p => p.code).join(' \u2192 ')],
+    ['Port Calls',            scheduleRows.length],
+    ['#', 'Timing'],
+    ['First ETA',             firstEta ? fmtDt(firstEta) : ''],
+    ['Last ETD',              lastEtd  ? fmtDt(lastEtd)  : ''],
+    ['Total Voyage (days)',   +totalDays.toFixed(2)],
+    ['Total Sea Days',        +(totRun / 24).toFixed(2)],
+    ['Total Run Hours',       +totRun.toFixed(2)],
+    ['Total Port Stay (hr)',  +totStay.toFixed(0)],
+    ['#', 'Distance & Fuel'],
+    ['Service Speed (kn)',    parseFloat(speedIn) || 0],
+    ['Total Distance (nm)',   +totDist.toFixed(1)],
+    ['Est. Fuel LSFO (mt)',   +totFuel.toFixed(2)],
+    ['#', 'Meta'],
+    ['Man In (default)',      DEFAULT_MAN_IN + ' h'],
+    ['Generated',             fmtDt(new Date())]
   ];
-  const wsSummary = XLSX.utils.aoa_to_sheet(sumData);
-  wsSummary['!cols']=[{wch:22},{wch:40}];
-  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-  const filename = `VoyageSchedule_${vesselDisplay}_${voyNo}_${new Date().toISOString().slice(0,10)}.xlsx`;
-  XLSX.writeFile(wb, filename);
-  showToast(`Exported: ${filename}`, 'success');
+  let zi = 0;   // zebra counter that ignores section dividers
+  rows2.forEach(([label, val], i) => {
+    const r = ws2.getRow(i + 2);
+    r.height = 17;
+    if(label === '#'){
+      // section divider
+      ws2.mergeCells('A' + (i + 2) + ':B' + (i + 2));
+      const c = r.getCell(1);
+      c.value = String(val).toUpperCase();
+      c.style = {
+        font:{name:XL_FONT, size:10, bold:true, color:{argb:'FFFFFFFF'}},
+        fill:{type:'pattern', pattern:'solid', fgColor:{argb:XL_PAL.cPort}},
+        alignment:{horizontal:'left', vertical:'middle', indent:1}
+      };
+      zi = 0;
+      return;
+    }
+    const zebra = (zi++ % 2 === 1) ? XL_PAL.rowAlt : null;
+    const isNum = (typeof val === 'number');
+    const cl = r.getCell(1);
+    cl.value = label;
+    cl.style = {
+      font:{name:XL_FONT, size:10, bold:true, color:{argb:XL_PAL.cPort}},
+      alignment:{horizontal:'left', vertical:'middle', indent:1},
+      border:xlGrid(),
+      fill: zebra ? {type:'pattern', pattern:'solid', fgColor:{argb:zebra}} : undefined
+    };
+    const cv = r.getCell(2);
+    cv.value = val;
+    cv.style = {
+      font:{name:XL_FONT, size:10, bold: isNum, color:{argb: isNum ? XL_PAL.cPort : 'FF222222'}},
+      alignment:{horizontal: isNum ? 'right' : 'left', vertical:'middle', indent:1},
+      border:xlGrid(),
+      numFmt: isNum ? (Number.isInteger(val) ? '#,##0' : '#,##0.00') : undefined,
+      fill: zebra ? {type:'pattern', pattern:'solid', fgColor:{argb:zebra}} : undefined
+    };
+  });
+
+  // ---------- Download ----------
+  const safe = s => String(s || '').replace(/[\\/:*?"<>|]+/g, '_').trim();
+  const filename = 'VoyageSchedule_' + safe(vesselCode) + '_' + safe(voyNo) + '_' +
+                   new Date().toISOString().slice(0, 10) + '.xlsx';
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported: ' + filename, 'success');
+  }).catch(err => {
+    console.error('Excel export failed:', err);
+    showToast('Export failed: ' + err.message, 'error');
+  });
 }
 
 // ==================== TOAST ====================
