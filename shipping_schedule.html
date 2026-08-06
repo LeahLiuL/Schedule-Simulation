@@ -1470,6 +1470,9 @@
       <div class="toolbar-actions">
         <button class="btn-reset" onclick="resetModifications()" id="btnReset" style="display:none">↺ Reset</button>
         <span id="dataSourceBadge" onclick="toggleDataSource()" title="Click to switch data source">📦 Local</span>
+        <label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#1A3A5C;user-select:none;cursor:pointer;margin-right:4px;" title="勾选后导出带 Excel 公式：修改任一时间，后续港口 ETA/ETB/ETD 自动联动重算">
+          <input type="checkbox" id="xlFormulaChk" checked> 实时公式
+        </label>
         <button class="btn-export" onclick="exportExcel()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -5191,9 +5194,68 @@ function exportExcel(){
   const voyNo   = document.getElementById('voyNoInput').value || '001W';
   const speedIn = document.getElementById('speedInput').value;
 
-  const visCols = getVisibleSVCols();
+  const useFormulas = document.getElementById('xlFormulaChk')
+                      && document.getElementById('xlFormulaChk').checked;
+
+  // Columns to export. Always include the columns the time-chain formulas
+  // need as cell references (ETA/ETB/ETD + the per-port inputs), even if the
+  // user hid them on screen, so the downloaded workbook stays self-recalculating.
+  const CHAIN_KEYS = ['eta','etb','etd','dist','speed','manIn','wait','stayHrs','runHrs'];
+  let exportCols = getVisibleSVCols().slice();
+  CHAIN_KEYS.forEach(k => {
+    if(!exportCols.some(c => c.key === k)){
+      const def = COL_DEFS.find(c => c.key === k);
+      if(!def) return;
+      let pos = exportCols.length;
+      const defIdx = COL_DEFS.indexOf(def);
+      for(let j = 0; j < exportCols.length; j++){
+        if(COL_DEFS.indexOf(exportCols[j]) > defIdx){ pos = j; break; }
+      }
+      exportCols.splice(pos, 0, def);
+    }
+  });
+  const visCols = exportCols;
   const specs   = visCols.map(xlColSpec);
   const nCol    = visCols.length;
+
+  // Column-letter lookup for formula references
+  const keyCol = {};
+  visCols.forEach((col, i) => { keyCol[col.key] = i + 1; });
+  const xlL = n => {
+    let s = '';
+    while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+    return s;
+  };
+  const lsfoPerHr = (currentVessel && currentVessel.lsfo ? currentVessel.lsfo : 0) / 24;
+  // Build a single cascading Excel formula for the given column/row.
+  // Returns null for columns that should stay static (e.g. the seed ETA).
+  function buildFormula(key, ri){
+    const self = HR + 1 + ri, prev = HR + ri;
+    const L = k => xlL(keyCol[k]);
+    if(key === 'eta'){
+      if(ri === 0) return null;                       // first port ETA stays an editable seed
+      const P = L('etd') + prev, D = L('dist') + prev, S = L('speed') + prev;
+      return 'IFERROR(ROUNDUP((' + P + '+N(' + D + ')/N(' + S + ')/24)*24,0)/24,' + P + ')';
+    }
+    if(key === 'etb'){
+      const E = L('eta') + self, M = L('manIn') + self, W = L('wait') + self;
+      return E + '+(N(' + M + ')+N(' + W + '))/24';
+    }
+    if(key === 'etd'){
+      const B = L('etb') + self, ST = L('stayHrs') + self;
+      return B + '+N(' + ST + ')/24';
+    }
+    if(key === 'runHrs'){
+      const D = L('dist') + self, S = L('speed') + self;
+      return 'IFERROR(' + D + '/' + S + ',0)';
+    }
+    if(key === 'fuelSea'){
+      const D = L('dist') + self, S = L('speed') + self;
+      return 'IFERROR(' + D + '/' + S + ',0)*' + lsfoPerHr;
+    }
+    return null;
+  }
+  const FORMULA_KEYS = { eta:1, etb:1, etd:1, runHrs:1, fuelSea:1 };
 
   const wb = new ExcelJS.Workbook();
   wb.creator  = 'CUL Schedule Simulator';
@@ -5289,6 +5351,23 @@ function exportExcel(){
       if(bg)       st.fill = {type:'pattern', pattern:'solid', fgColor:{argb:bg}};
       if(sp.bold)  st.font.bold  = true;
       if(sp.color) st.font.color = {argb:sp.color};
+
+      // ---- Live-formula mode: emit cascading Excel formulas ----
+      if(useFormulas && FORMULA_KEYS[col.key]){
+        const f = buildFormula(col.key, ri);
+        if(f){
+          c.value = {formula: f};
+          if(col.key === 'eta' || col.key === 'etb' || col.key === 'etd') st.numFmt = 'yyyy-mm-dd hh:mm';
+          else if(sp.numFmt) st.numFmt = sp.numFmt;
+          c.style = st;
+          return;
+        }
+      }
+      if(useFormulas && col.key === 'date' && keyCol['eta']){
+        c.value = {formula: 'TEXT(' + xlL(keyCol['eta']) + (HR + 1 + ri) + ',"ddd")'};
+        c.style = st;
+        return;
+      }
 
       if(sp.date){
         const d = (v instanceof Date) ? v : (v ? new Date(v) : null);
@@ -5396,8 +5475,30 @@ function exportExcel(){
     ['Generated',             fmtDt(new Date())]
   ];
 
+  // ---- Live Summary: reference the schedule sheet so totals follow edits ----
+  if(useFormulas){
+    const sch = "'Voyage Schedule'!";
+    const etaR = xlL(keyCol['eta']) + firstR;
+    const etdR = xlL(keyCol['etd']) + lastR;
+    const sumR = k => 'SUM(' + sch + xlL(keyCol[k]) + firstR + ':' + xlL(keyCol[k]) + lastR + ')';
+    const setF = (label, formula, kind) => {
+      const rw = rows2.find(r => r[0] === label);
+      if(rw) rw.push(formula, kind);
+    };
+    setF('First ETA',           '=' + sch + etaR, 'date');
+    setF('Last ETD',            '=' + sch + etdR, 'date');
+    setF('Total Voyage (days)', '=' + sch + etdR + '-' + sch + etaR, 'num');
+    setF('Total Sea Days',      '=' + sumR('runHrs') + '/24', 'num');
+    setF('Total Run Hours',     '=' + sumR('runHrs'), 'num');
+    setF('Total Port Stay (hr)','=' + sumR('stayHrs'), 'num');
+    setF('Total Distance (nm)', '=' + sumR('dist'), 'num');
+    if(keyCol['fuelSea']) setF('Est. Fuel LSFO (mt)', '=' + sumR('fuelSea'), 'num');
+  }
+
   let zi = 0;   // zebra counter that ignores section dividers
-  rows2.forEach(([label, val], i) => {
+  rows2.forEach((rw, i) => {
+    const label = rw[0], val = rw[1];
+    const formula = rw[2], kind = rw[3];
     const r = ws2.getRow(i + 2);
     r.height = 17;
     if(label === '#'){
@@ -5424,14 +5525,28 @@ function exportExcel(){
       fill: zebra ? {type:'pattern', pattern:'solid', fgColor:{argb:zebra}} : undefined
     };
     const cv = r.getCell(2);
-    cv.value = val;
-    cv.style = {
-      font:{name:XL_FONT, size:10, bold: isNum, color:{argb: isNum ? XL_PAL.cPort : 'FF222222'}},
-      alignment:{horizontal: isNum ? 'right' : 'left', vertical:'middle', indent:1},
-      border:xlGrid(),
-      numFmt: isNum ? (Number.isInteger(val) ? '#,##0' : '#,##0.00') : undefined,
-      fill: zebra ? {type:'pattern', pattern:'solid', fgColor:{argb:zebra}} : undefined
-    };
+    if(formula){
+      cv.value = {formula: formula};
+      const numFmt = kind === 'date' ? 'yyyy-mm-dd hh:mm'
+                   : (label.indexOf('Distance') >= 0 || label.indexOf('Stay') >= 0) ? '#,##0'
+                   : '#,##0.00';
+      cv.style = {
+        font:{name:XL_FONT, size:10, bold:true, color:{argb: kind === 'date' ? XL_PAL.cEta : XL_PAL.cPort}},
+        alignment:{horizontal:'right', vertical:'middle', indent:1},
+        border:xlGrid(),
+        numFmt: numFmt,
+        fill: zebra ? {type:'pattern', pattern:'solid', fgColor:{argb:zebra}} : undefined
+      };
+    } else {
+      cv.value = val;
+      cv.style = {
+        font:{name:XL_FONT, size:10, bold: isNum, color:{argb: isNum ? XL_PAL.cPort : 'FF222222'}},
+        alignment:{horizontal: isNum ? 'right' : 'left', vertical:'middle', indent:1},
+        border:xlGrid(),
+        numFmt: isNum ? (Number.isInteger(val) ? '#,##0' : '#,##0.00') : undefined,
+        fill: zebra ? {type:'pattern', pattern:'solid', fgColor:{argb:zebra}} : undefined
+      };
+    }
   });
 
   // ---------- Download ----------
