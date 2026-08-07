@@ -13,6 +13,7 @@ import os
 import sys
 import subprocess
 import time
+import socket
 import paramiko
 import pandas as pd
 from openpyxl import load_workbook
@@ -24,9 +25,17 @@ SFTP_USER = "leah"
 SFTP_PASS = "Fine@B!"
 SFTP_REMOTE_PATH = "./Master Data - Leah/Vessel Departure Report.xlsx"
 
+GITHUB_USER = "LeahLiuL"
+GITHUB_REPO = "Schedule-Simulation"
+
 REPO_DIR = os.path.dirname(os.path.abspath(__file__))
 XLSX_FILE = os.path.join(REPO_DIR, "Vessel_Departure_Report.xlsx")
 CSV_FILE = os.path.join(REPO_DIR, "shipping_data", "bi_vessel_departure.csv")
+TOKEN_FILE = os.path.join(REPO_DIR, ".update_token")
+LOG_FILE = os.path.join(REPO_DIR, "auto_update.log")
+
+# Disable interactive git prompts (critical for non-interactive / Task Scheduler runs)
+os.environ["GIT_TERMINAL_PROMPT"] = "0"
 
 # Excel column -> CSV column mapping
 COL_MAP = {
@@ -87,6 +96,38 @@ def run_git(*args, check=True):
         if result.stderr:
             log(f"  stderr: {result.stderr.strip()}")
     return result
+
+
+def setup_git_remote():
+    """Ensure git remote URL includes the token for non-interactive auth."""
+    token = ""
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "r") as f:
+            token = f.read().strip()
+    if not token:
+        log("[Git] No .update_token file found, using existing remote config.")
+        return
+
+    remote_url = f"https://{GITHUB_USER}:{token}@github.com/{GITHUB_USER}/{GITHUB_REPO}.git"
+    result = run_git("remote", "set-url", "origin", remote_url, check=False)
+    if result.returncode == 0:
+        log("[Git] Remote URL configured with token.")
+    else:
+        log(f"[Git] Failed to set remote URL: {result.stderr.strip()}")
+
+
+def check_sftp():
+    """Check if SFTP server is reachable before attempting download."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(10)
+        s.connect((SFTP_HOST, SFTP_PORT))
+        s.close()
+        return True
+    except Exception as e:
+        log(f"[SFTP] Connection test FAILED: {e}")
+        log("[SFTP] Is VPN connected? SFTP requires internal network access.")
+        return False
 
 
 def download_sftp():
@@ -202,21 +243,32 @@ def main():
     log("=" * 60)
 
     try:
-        # Step 1: Git pull
+        # Step 0: Configure git remote with token
+        log("[Step 0] Configuring git remote...")
+        setup_git_remote()
+
+        # Step 1: Git pull latest
         log("[Step 1] Git pull latest...")
         run_git("fetch", "origin", "main")
         run_git("merge", "--no-edit", "origin/main")
 
-        # Step 2: SFTP download
-        log("[Step 2] Downloading from SFTP...")
+        # Step 2: Check SFTP connectivity
+        log("[Step 2] Checking SFTP connectivity...")
+        if not check_sftp():
+            log("[ABORT] SFTP unreachable. Ensure VPN is connected.")
+            log("=" * 60)
+            sys.exit(1)
+
+        # Step 3: SFTP download
+        log("[Step 3] Downloading from SFTP...")
         download_sftp()
 
-        # Step 3: Convert to CSV
-        log("[Step 3] Converting Excel to CSV...")
+        # Step 4: Convert to CSV
+        log("[Step 4] Converting Excel to CSV...")
         convert_to_csv()
 
-        # Step 4: Git commit & push
-        log("[Step 4] Git commit & push...")
+        # Step 5: Git commit & push
+        log("[Step 5] Git commit & push...")
         pushed = git_sync()
 
         log("=" * 60)

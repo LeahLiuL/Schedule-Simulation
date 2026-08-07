@@ -1,0 +1,10 @@
+# Sensitive files
+.update_token
+
+# Data files (large, not needed in repo)
+Vessel_Departure_Report.xlsx
+auto_update.log
+
+# Python
+__pycache__/
+*.pyc
