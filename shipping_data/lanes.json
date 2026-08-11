@@ -499,18 +499,13 @@
     "code": "SGX",
     "name": "SINGAPORE EXTRA LOAD",
     "ports": [
-      "CNXGG",
       "CNTAO",
       "CNSHA",
       "CNNGB",
       "CNNAS",
       "CNSHK",
       "MYPKG",
-      "INNSA",
-      "INMUN",
-      "PKKHI",
-      "AEKLF",
-      "CNXGG"
+      "CNTAO"
     ]
   },
   {
