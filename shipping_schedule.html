@@ -1880,6 +1880,8 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
 
     <div id="parseVesselResult" style="display:none;">
       <div style="border-top:2px solid #dee2e6;padding-top:16px;">
+        <!-- Parse warnings / fields needing manual check -->
+        <div id="parseWarnBox" style="display:none;"></div>
         <!-- Vessel Basic Info -->
         <div style="margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -1932,8 +1934,20 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
               <input type="text" id="pv_depth" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
             </div>
             <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">GRT</label>
+              <input type="text" id="pv_grt" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">NRT</label>
+              <input type="text" id="pv_nrt" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.72rem;color:#6c757d;">Scantling Draft (m)</label>
+              <input type="text" id="pv_scantling_draft" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+            </div>
+            <div>
               <label style="display:block;font-size:.72rem;color:#6c757d;">Reefer Plugs</label>
-              <input type="text" id="pv_reefer" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
+              <input type="text" id="pv_reefer_plugs" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;"/>
             </div>
             <div>
               <label style="display:block;font-size:.72rem;color:#6c757d;">HOMO</label>
@@ -1948,10 +1962,18 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
 
         <!-- Fuel Data -->
         <div style="margin-bottom:16px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <h4 style="margin:0;color:#495057;">[Fuel Data]</h4>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <h4 style="margin:0;color:#495057;">[Fuel Data]</h4>
+          <div style="display:flex;align-items:center;gap:8px;">
             <span id="parseFuelStatus" style="font-size:.75rem;padding:2px 8px;border-radius:4px;"></span>
+            <label style="font-size:.72rem;color:#6c757d;">Fuel type:
+              <select id="pv_fuel_type" onchange="onFuelTypeChange()" style="padding:3px 6px;border:1px solid #ddd;border-radius:4px;font-size:.75rem;">
+                <option value="LSFO">LSFO (IFO→LSFO)</option>
+                <option value="HSFO">HSFO (HFO)</option>
+              </select>
+            </label>
           </div>
+        </div>
           <div id="parseFuelRows">
             <!-- Dynamically generated -->
           </div>
@@ -2002,6 +2024,9 @@ Port Stay: LSFO 1 MT/day, MGO 1 MT/day"></textarea>
             </div>
           </div>
         </div>
+
+        <!-- Manual-copy fallback (shown when no GitHub token) -->
+        <div id="parsePreviewBox" style="display:none;"></div>
 
         <!-- Buttons -->
         <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:16px;border-top:1px solid #dee2e6;">
@@ -5582,10 +5607,15 @@ function openParseVesselModal(){
   document.getElementById('parseVesselInput').value = '';
   document.getElementById('parseVesselResult').style.display = 'none';
   // Clear form
-  ['vessel_name','vessel_code','imo','call_sign','flag','year_built','teu','homogeneous','dwt','loa','breadth','depth','reefer','class'].forEach(function(id){
+  ['vessel_name','vessel_code','imo','call_sign','flag','year_built','teu','homogeneous','grt','nrt','scantling_draft','dwt','loa','breadth','depth','reefer','class'].forEach(function(id){
     var el = document.getElementById('pv_' + id);
     if(el) el.value = '';
   });
+  var _ft = document.getElementById('pv_fuel_type'); if(_ft) _ft.value = 'LSFO';
+  var _pb = document.getElementById('parsePreviewBox');
+  if(_pb){ _pb.innerHTML = ''; _pb.style.display = 'none'; }
+  var _pw = document.getElementById('parseWarnBox');
+  if(_pw){ _pw.innerHTML = ''; _pw.style.display = 'none'; }
   document.getElementById('pv_lane').value = '';
   document.getElementById('pv_max_cargo').value = '';
   document.getElementById('pv_max_teu').value = '';
@@ -5667,7 +5697,7 @@ function extractPDFText(arrayBuffer, fileName){
     for(var i = 1; i <= pdf.numPages; i++){
       textPromises.push(pdf.getPage(i).then(function(page){
         return page.getTextContent().then(function(content){
-          return content.items.map(function(item){ return item.str; }).join(' ');
+          return layoutPdfText(content.items);
         });
       }));
     }
@@ -5681,6 +5711,48 @@ function extractPDFText(arrayBuffer, fileName){
   }).catch(function(err){
     showToast('PDF parse failed: ' + err.message, 'error');
   });
+}
+
+// Group pdf.js text items into lines, inserting a space ONLY where the
+// horizontal gap between consecutive glyphs exceeds ~0.3em. This recovers real
+// word/column boundaries for "letter-spaced" PDFs (every glyph emitted as a
+// separate item with uniform tiny gaps) without merging real words in normal
+// PDFs. Items are clustered into lines by matching y; each line is sorted left
+// to right before measuring gaps.
+function layoutPdfText(items){
+  var glyphs = items.filter(function(it){ return it.str && it.str.trim().length; });
+  if(!glyphs.length) return '';
+  glyphs.sort(function(a,b){
+    var ya = a.transform[5], yb = b.transform[5];
+    if(Math.abs(ya - yb) > 0.5) return yb - ya;   // top-to-bottom
+    return a.transform[4] - b.transform[4];         // left-to-right
+  });
+  var lines = [];
+  var cur = null, curY = null;
+  glyphs.forEach(function(g){
+    var h = g.height || 10;
+    if(cur === null || Math.abs(g.transform[5] - curY) > h * 0.6 + 1){
+      cur = []; lines.push(cur); curY = g.transform[5];
+    }
+    cur.push(g);
+  });
+  // build each line: space only when gap > 0.3em
+  var out = [];
+  lines.forEach(function(ln){
+    var s = '';
+    for(var i = 0; i < ln.length; i++){
+      var g = ln[i];
+      if(i > 0){
+        var prev = ln[i-1];
+        var gap = g.transform[4] - (prev.transform[4] + (prev.width || 0));
+        var em = (g.height || 10);
+        if(gap > em * 0.3) s += ' ';
+      }
+      s += g.str;
+    }
+    out.push(s);
+  });
+  return out.join('\n');
 }
 
 function parseWordContent(arrayBuffer, fileName){
@@ -5730,115 +5802,575 @@ function parseVesselText(){
 }
 
 // Client-side parse function
+// ============================================================
+// Fuel rule engine.
+//   meBySpeed : { "13": {LSFO:20, HSFO:0, MGO:0}, ... }  main-engine per speed
+//   seaAdd    : {LSFO,HSFO,MGO}  aux/boiler burning AT SEA (added to every tier)
+//   portAdd   : {LSFO,HSFO,MGO}  aux/boiler burning IN PORT (port-stay columns)
+// IFO / HFO-free grades (IFO180, compliant, VLSFO) map to LSFO by default;
+// user can flip the whole set to HSFO with the "Fuel type" selector.
+// vessels.csv only has portstay_lsfo / portstay_mgo, so port HSFO folds into
+// the heavy-fuel port column.
+// ============================================================
+function buildFuelTiers(meBySpeed, seaAdd, portAdd){
+  function r1(x){ return Math.round(x * 10) / 10; }
+  seaAdd  = seaAdd  || {};
+  portAdd = portAdd || {};
+  var pLsfo = (portAdd.LSFO || 0) + (portAdd.HSFO || 0);
+  var pMgo  = (portAdd.MGO  || 0);
+  // Auxiliary-at-sea consumption is folded into EVERY speed tier (it is roughly
+  // constant regardless of speed), so each tier's sea figure = main engine +
+  // auxiliary at sea. Per user request 2026-08-13 ("并入主机值 + 加 remark").
+  var sLsfo = (seaAdd.LSFO || 0);
+  var sHsfo = (seaAdd.HSFO || 0);
+  var sMgo  = (seaAdd.MGO  || 0);
+
+  var tiers = [];
+  Object.keys(meBySpeed).forEach(function(sp){
+    var t    = meBySpeed[sp] || {};
+    var lsfo = (t.LSFO || 0) + sLsfo;
+    var hsfo = (t.HSFO || 0) + sHsfo;
+    var mgo  = (t.MGO  || 0) + sMgo;
+    tiers.push({
+      speed: sp,
+      lsfo: lsfo ? String(r1(lsfo)) : '',
+      hsfo: hsfo ? String(r1(hsfo)) : '',
+      mgo:  mgo  ? String(r1(mgo))  : '',
+      port_lsfo: pLsfo ? String(r1(pLsfo)) : '',
+      port_mgo:  pMgo  ? String(r1(pMgo))  : ''
+    });
+  });
+  tiers.sort(function(a,b){ return parseFloat(b.speed) - parseFloat(a.speed); });
+  return tiers;
+}
+
+// ============================================================
+// TCD / Vessel-particulars parser
+// Handles the real-world quirks seen in shipowner TCD documents:
+//   - several fields glued into one line: "GT: 16925 / NT: 9478LOA: 156.3m"
+//   - amounts written as "20 mtons", "1.2 mt", "27606 metric tons"
+//   - consumption tables split across lines:
+//         Auxiliary Consumption:
+//         At Sea:
+//         About 1.2 mt IFO 180 CST
+//     -> needs a section / location state machine
+//   - placeholders such as "To be updated"
+// ============================================================
 function parseVesselTextClient(text){
   var result = {
     particular: {},
     fuel: [],
+    fuelType: 'LSFO',
     success: true,
-    warnings: []
+    warnings: [],
+    debug: null
   };
+
+  text = String(text || '').replace(/\r\n?/g, '\n')
+                           .replace(/[\u2018\u2019]/g, "'")
+                           .replace(/[\u201C\u201D]/g, '"')
+                           .replace(/\u00a0/g, ' ');
+
+  // Whole-document fuel-grade hints (used when a TCD states the grade in prose
+  // away from the actual numbers, e.g. KR CELEBES "Heavy fuel oil 380 CST").
+  var docHSFO = /heavy\s*fuel\s*oil|380\s*cst|\bhsfo\b/i.test(text);
 
   var lines = text.split('\n');
-  var fieldMap = {
-    'vessel_name': ['vessel name', 'ship name', 'name', 'Vessel Name', 'shipname'],
-    'call_sign': ['call sign', 'callsign', 'Call Sign'],
-    'imo': ['imo'],
-    'flag': ['flag', 'Flag', 'country'],
-    'year_built': ['year built', 'built year', 'Built', 'built'],
-    'teu': ['teu', 'capacity', 'TEU', 'teu capacity'],
-    'homogeneous': ['homogeneous', 'homo', 'homog'],
-    'grt': ['grt'],
-    'nrt': ['nrt'],
-    'scantling_draft': ['scantling draft', 'draft', 'Draft'],
-    'dwt': ['dwt', 'deadweight'],
-    'loa': ['loa', 'length', 'LOA'],
-    'breadth': ['breadth', 'beam', 'Breadth'],
-    'depth': ['depth', 'Depth'],
-    'reefer_plugs': ['reefer plug', 'reefer', 'Reefer']
+
+  var PLACEHOLDER = /^(?:to\s*be\s*(?:updated|advised|confirmed|provided)|tbd|tba|tbc|t\.b\.d\.?|t\.b\.c\.?|n\/a|n\.a\.?|na|no|xxx|update|unknown|none|nil|pending|-+|\.+|_+|—+|–+)$/i;
+  var GENERIC_NAME = /集装箱船|箱船|container\s*(?:ship|vessel)|bulk\s*carrier|^m\.?\/?v\.?$/i;
+
+  function isPlaceholder(v){
+    v = String(v == null ? '' : v).trim();
+    if(!v) return true;
+    if(PLACEHOLDER.test(v)) return true;
+    // also reject a value that is only a placeholder followed by a trailing period ("No.", "TBA.")
+    if(/\.$/.test(v) && PLACEHOLDER.test(v.replace(/\.+$/, ''))) return true;
+    return false;
+  }
+  function esc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*'); }
+  function toNum(v){
+    var m = String(v == null ? '' : v).match(/\d[\d,]*(?:\.\d+)?/);
+    return m ? m[0].replace(/,/g, '') : '';
+  }
+  // Bare integers that are really viscosity grades ("IFO 180", "LSFO 380"),
+  // not consumption figures. Only rejected when no MT/ton unit follows.
+  var VISCOSITY = {30:1,40:1,60:1,80:1,100:1,120:1,180:1,220:1,320:1,380:1,500:1,700:1};
+  function plausibleFuel(val, hasUnit){
+    if(isNaN(val) || val <= 0 || val >= 400) return false;
+    if(hasUnit) return true;
+    if(val !== Math.floor(val)) return true;      // "32.0" style -> a real figure
+    return !VISCOSITY[val];
+  }
+  // IFO/VLSFO/compliant -> LSFO ; HFO/HSFO -> HSFO ; MGO/MDO/gasoil -> MGO
+  function fuelCat(s){
+    if(!s) return '';
+    var u = String(s).toUpperCase().replace(/[\s.\-_]/g, '');
+    if(/LSMGO|MGO|MDO|GASOIL|DMA/.test(u))                  return 'MGO';
+    if(/HSFO|HFO|HSHFO|IFO380HS/.test(u))                   return 'HSFO';
+    if(/VLSFO|ULSFO|LSFO|LSIFO|IFO|LFO|COMPLIANT|RMG|RME|^FO$/.test(u)) return 'LSFO';
+    return '';
+  }
+
+  // ---------- label -> field aliases (order matters: first hit wins) ----------
+  var TEXT_FIELDS = {
+    'call_sign':   ['call sign', 'callsign', 'call letters', 'signal letters'],
+    'imo':         ['imo no.', 'imo no', 'imo number', 'imo'],
+    'flag':        ['flag state', 'flag', 'registry', 'port of registry'],
+    'class':       ['classification society', 'class society', 'class notation', 'class', 'classification'],
+    'vessel_name': ['vessel name', "vessel's name", 'ship name', 'name of vessel', 'shipname']
+  };
+  var NUM_FIELDS = {
+    'year_built':      ['year built', 'built year', 'year of build', 'date of build', 'delivered', 'built'],
+    'grt':             ['grt', 'gross tonnage', 'gross reg', 'gross rt', 'gt', 'gross', 'int. gross', 'int gross'],
+    'nrt':             ['nrt', 'net tonnage', 'net reg', 'net rt', 'nt', 'net', 'int. net', 'int net'],
+    'dwt':             ['summer dwt', 'deadweight', 'dead weight', 'dwt'],
+    'scantling_draft': ['scantling draft', 'scantling draught', 'summer draft', 'summer draught', 'max draft', 'max draught', 'design draft', 'designed draft', 'draft (scantling)'],
+    'loa':             ['loa', 'l.o.a.', 'l.o.a', 'length overall', 'length o.a.', 'length oa'],
+    'breadth':         ['breadth moulded', 'breadth extreme', 'breadth', 'beam moulded', 'beam'],
+    'depth':           ['depth moulded', 'moulded depth', 'depth'],
+    'teu':             ['nominal capacity', 'nominal intake', 'nominal teu', 'container capacity', 'total intake', 'teu capacity', 'container intake'],
+    'homogeneous':     ['homogeneous capacity', 'homogeneous intake', 'homogeneous', 'homo @14', 'homo capacity'],
+    'reefer_plugs':    ['reefer plugs', 'reefer plug']
   };
 
-  var numFields = ['teu', 'homogeneous', 'grt', 'nrt', 'dwt', 'loa', 'breadth', 'depth', 'reefer_plugs', 'year_built', 'scantling_draft'];
+  // "label" must start at a non-letter and not run into another letter,
+  // so "9478LOA: 156.3m" still yields LOA=156.3
+  function textRe(alias){
+    return new RegExp('(?:^|[^A-Za-z])' + esc(alias) + '(?![A-Za-z])\\s*[:：=]\\s*([^\\n]*)', 'i');
+  }
+  function numRe(alias){
+    return new RegExp('(?:^|[^A-Za-z])' + esc(alias) + '(?![A-Za-z])[^0-9\\n]{0,25}?(\\d[\\d,]*(?:\\.\\d+)?)', 'i');
+  }
+  function setField(f, v){
+    if(v === '' || v == null) return;
+    if(result.particular[f] !== undefined && result.particular[f] !== '') return; // first hit wins
+    result.particular[f] = String(v).trim().replace(/[,;]+$/, '');
+  }
+
+  // no-colon text capture: "IMO NO. 9965356", "FLAG & REGISTRY SINGAPORE",
+  // "CLASSIFICATION NK," — label then a short alphanumeric token (no ':')
+  var TEXT_FIELDS_ND = {
+    'imo':         ['imo no.', 'imo number', 'imo'],
+    'call_sign':   ['call sign', 'callsign', 'signal letters'],
+    'flag':        ['flag & registry', 'flag/registry', 'flag and registry'],
+    'class':       ['classification']
+  };
+  function textReND(alias){
+    return new RegExp('(?:^|[^A-Za-z])' + esc(alias) + '(?![A-Za-z])\\s*[=:：]?\\s*([A-Za-z0-9][A-Za-z0-9\\-\\/]{1,18})', 'i');
+  }
+
+  // slash-combined dimension / tonnage lines, e.g.
+  //   "LOA/LBP/BM/DEPTH: 215m / 211m / 37.3m / 19.5m GRT/NRT: 41977/20373"
+  //   "DWT/Scantling draft: abt 57500 mts on abt 13.00m"
+  function handleCombo(line){
+    var m = line.match(/loa\s*\/\s*lbp\s*\/\s*bm\s*\/\s*depth\s*[:：]\s*([\d.]+)\s*(?:m|mtr?s?|metres?|meters?)?\s*\/\s*[\d.]+\s*(?:m|mtr?s?|metres?|meters?)?\s*\/\s*([\d.]+)\s*(?:m|mtr?s?|metres?|meters?)?\s*\/\s*([\d.]+)/i);
+    if(m){ setField('loa', m[1]); setField('breadth', m[2]); setField('depth', m[3]); }
+    var g = line.match(/(?:grt|nrt|gt|nt|gross|net)\s*\/\s*(?:grt|nrt|gt|nt|gross|net)\s*[:：]\s*([\d,]+)\s*\/\s*([\d,]+)/i);
+    if(g){ setField('grt', g[1]); setField('nrt', g[2]); }
+    var d = line.match(/dwt\s*\/\s*scantling\s*draft\s*[:：][^\n]{0,40}?(\d[\d,]*)\s*(?:m|mtr?s?|tons?|t)\s*(?:on|@|at)\s*(?:abt\.?\s*)?(\d[\d.]*)\s*(?:m|mtr?s?)/i);
+    if(d){ setField('dwt', d[1]); setField('scantling_draft', d[2]); }
+    // "Deadweight: 31000 dwt at -draft abt. 10.1 m" (bilingual TCD)
+    var dw = line.match(/deadweight[^\n]{0,40}?(\d[\d,]*)\s*dwt[^\n]{0,40}?draft[^\n]{0,20}?(\d[\d.]*)\s*(?:m|mtr?s?)/i);
+    if(dw){ setField('dwt', dw[1]); setField('scantling_draft', dw[2]); }
+  }
+
+  // vessel-name finder: handles "M/V NAME", "MV NAME", "M . V . "NAME"",
+  // "M.V. NAME" — quoted or unquoted, stops at common TCD descriptor words.
+  function extractVesselName(line){
+    var q = line.match(/m[ .]*v[ .]*\.?\s*["“\u201C]?\s*([A-Z][A-Za-z0-9' \-\.]{2,40}?)\s*["”\u201D]/i);
+    if(q) return q[1];
+    var u = line.match(/m[ .]*v[ .]*\.?\s+([A-Z][A-Za-z0-9' \-\.]{2,40}?)(?=\s+(?:type|gearless|cellular|container|box|vessel|builder|class|flag|built|year|grt|loa|dwt|beam|depth|m\/s|mv|ms)|$)/i);
+    if(u) return u[1];
+    return null;
+  }
+
+  // ---------- fuel-section state machine ----------
+  var SEC_BOILER = /boiler[^\n]{0,24}consumption|consumption[^\n]{0,10}boiler/i;
+  var SEC_AUX    = /(?:aux(?:iliar(?:y|ies))?|a\/e|generator|d\/g|diesel\s*gen)[^\n]{0,24}consumption/i;
+  var SEC_ME     = /(?:main\s*engine|m\/e|propulsion)[^\n]{0,24}consumption|sea\s*speed\s*consumption|speed\s*(?:and|&|\/)\s*consumption|consumption\s*(?:at\s*sea|table)/i;
+  var LOC_SEA    = /^(?:at\s*sea|sea\s*going|sea\s*passage|at\s*sea\s*passage|steaming|laden|ballast)\s*[:：]?\s*$/i;
+  var LOC_PORT   = /^(?:in\s*port|at\s*port|port\s*stay|at\s*berth|in\s*harbou?r|idle|working|discharg\w*\/?load\w*)\s*[:：]?\s*$/i;
+
+  var meBySpeed = {};
+  var seaAdd    = { LSFO: 0, HSFO: 0, MGO: 0 };
+  var portAdd   = { LSFO: 0, HSFO: 0, MGO: 0 };
+  var sawHSFO   = false;
+  var curSec = null, curLoc = null;
+  var tableActive = false, tableRows = 0;   // tabular "Ship Speed / FOC" block
+
+  function bumpME(sp, cat, amt){
+    var k = String(sp);
+    if(meBySpeed[k]) return; // first speed tier wins (avoid double-count across lines)
+    meBySpeed[k] = { LSFO: 0, HSFO: 0, MGO: 0 };
+    meBySpeed[k][cat] = (meBySpeed[k][cat] || 0) + amt;
+    if(cat === 'HSFO') sawHSFO = true;
+  }
+  function bumpAdd(bucket, cat, amt){
+    // Auxiliary-at-sea: first-hits-wins per grade. Some TCDs state the same
+    // sea-auxiliary figure twice (prose summary + A/E spec table), which would
+    // otherwise be double-counted. Different grades still accumulate.
+    if(bucket === seaAdd && (bucket[cat] || 0) > 0) return;
+    bucket[cat] = (bucket[cat] || 0) + amt;
+    if(cat === 'HSFO') sawHSFO = true;
+  }
+
+  // Find every "speed + consumption" pair on a line, even when several are
+  // packed together ("abt. 19knt / 57.4 mt IFO  abt. 18knt / 46.5 mt IFO")
+  // or pdf.js glued a whole page into one line. Returns [{speed, amt, grade}].
+  function extractSpeedPairs(line){
+    var out = [];
+    var sRe = /(\d+(?:\.\d+)?)\s*(?:knots?|knt|kts?|kn)(?![A-Za-z])/ig;
+    var sp = [], mm;
+    while((mm = sRe.exec(line)) !== null) sp.push({ i: mm.index, s: parseFloat(mm[1]) });
+    if(!sp.length) return out;
+    for(var k = 0; k < sp.length; k++){
+      var end = (k + 1 < sp.length) ? sp[k + 1].i : line.length;
+      var seg = line.slice(sp[k].i, end);
+      var am = seg.match(/(\d+(?:\.\d+)?)\s*(?:mtons?|m\/?ts?|m\.t\.|mt|metric\s*tons?|tonnes?|tons?|t)(?:\s*\/?\s*(?:per\s*)?days?)?(?![A-Za-z])/i);
+      var grade = '';
+      var gm = seg.match(/\b(lsmgo|mgo|mdo|gas\s*oil|vlsfo|ulsfo|hsfo|hfo|lsfo|ifo|lfo|compliant\s*fuel)\b/i);
+      if(gm) grade = fuelCat(gm[1]);
+      if(am) out.push({ speed: sp[k].s, amt: parseFloat(am[1]), grade: grade });
+    }
+    return out;
+  }
 
   for(var i = 0; i < lines.length; i++){
     var line = lines[i].trim();
     if(!line) continue;
+    // slash-combined dimension / tonnage lines
+    handleCombo(line);
 
-    // Try extract key-value pairs
-    var parts = line.split(/[:\t]/);
-    if(parts.length < 2) continue;
+    // bilingual TCDs put the value on the NEXT line ("LOA总厂" / ": 174.55m",
+    // or "Total合计" <blank> "1765TEU"); merge it so the numeric extractors can
+    // see label + value together. Skip blank lines, look ahead up to 3 lines,
+    // and only merge when the next non-empty line is a bare value (starts with
+    // ":" or is a pure "N teu/feu" figure) to avoid over-merging.
+    var effLine = line;
+    if(!/\d/.test(line) && i + 1 < lines.length){
+      var nxt = '';
+      for(var j = i + 1; j < lines.length && j < i + 4; j++){
+        var c = lines[j].trim();
+        if(c){ nxt = c; break; }
+      }
+      if(/^[:：]/.test(nxt)) effLine = line + ' ' + nxt.replace(/^[:：]\s*/, '');
+      else if(/^\d[\d.,]*\s*(?:teu|feu)\b/i.test(nxt)) effLine = line + ' ' + nxt;
+    }
 
-    var key = parts[0].trim().toLowerCase();
-    var value = parts.slice(1).join(':').trim();
-
-    // Clean value
-    var numMatch = value.match(/^[\d,]+\.?\d*/);
-    var valueNum = numMatch ? numMatch[0].replace(/,/g, '') : '';
-
-    // Match Particular fields
-    for(var field in fieldMap){
-      var aliases = fieldMap[field];
-      for(var j = 0; j < aliases.length; j++){
-        if(key.indexOf(aliases[j]) !== -1){
-          if(numFields.indexOf(field) !== -1 && valueNum){
-            result.particular[field] = valueNum;
-          } else {
-            result.particular[field] = value;
-          }
+    // ================= 1. Particulars =================
+    var f, a;
+    for(f in TEXT_FIELDS){
+      if(result.particular[f]) continue;
+      for(a = 0; a < TEXT_FIELDS[f].length; a++){
+        var tm = line.match(textRe(TEXT_FIELDS[f][a]));
+        if(tm){
+          // stop the value at the next "Word:" pair on the same line
+          var val = tm[1].split(/\s{2,}|\s*[|;]\s*|\s+(?=[A-Za-z][A-Za-z .'\/]{1,20}\s*[:：])/)[0].trim();
+          val = val.replace(/[,;]$/, '').trim();
+          if(!isPlaceholder(val) && !(f === 'vessel_name' && GENERIC_NAME.test(val))) setField(f, val);
           break;
         }
       }
     }
-
-    // Try parse fuel rows
-    var lineLower = line.toLowerCase();
-    if(lineLower.indexOf('kn') !== -1 || lineLower.indexOf('speed') !== -1 || lineLower.indexOf('knot') !== -1){
-      var speedMatch = line.match(/(\d+)\s*(?:kn|kt|knot)/i);
-      if(speedMatch){
-        var speed = parseInt(speedMatch[1]);
-        var fuelRow = {speed: speed, lsfo: '', hsfo: '', mgo: '', port_lsfo: '', port_mgo: ''};
-
-        // Extract LSFO
-        var lsfoMatch = line.match(/lsfo[:\s]*(\d+\.?\d*)/i);
-        if(lsfoMatch) fuelRow.lsfo = lsfoMatch[1];
-
-        // Extract HSFO
-        var hsfoMatch = line.match(/hsfo[:\s]*(\d+\.?\d*)/i);
-        if(hsfoMatch) fuelRow.hsfo = hsfoMatch[1];
-
-        // Extract MGO
-        var mgoMatch = line.match(/mgo[:\s]*(\d+\.?\d*)/i);
-        if(mgoMatch) fuelRow.mgo = mgoMatch[1];
-
-        // Extract ME (as LSFO)
-        var meMatch = line.match(/me\s*(\d+\.?\d*)/i);
-        if(meMatch && !lsfoMatch) fuelRow.lsfo = meMatch[1];
-
-        // Extract AUX
-        var auxMatch = line.match(/aux[:\s]*(\d+\.?\d*)/i);
-        if(auxMatch){
-          var auxVal = parseFloat(auxMatch[1]);
-          var currentMgo = parseFloat(fuelRow.mgo) || 0;
-          fuelRow.mgo = (currentMgo + auxVal).toFixed(1);
+    // no-colon text labels ("IMO NO. 9965356", "FLAG & REGISTRY SINGAPORE")
+    for(f in TEXT_FIELDS_ND){
+      if(result.particular[f]) continue;
+      for(a = 0; a < TEXT_FIELDS_ND[f].length; a++){
+        var tnd = line.match(textReND(TEXT_FIELDS_ND[f][a]));
+        if(tnd){
+          var v2 = tnd[1].trim();
+          if(!isPlaceholder(v2) && !(f === 'vessel_name' && GENERIC_NAME.test(v2))) setField(f, v2);
+          break;
         }
+      }
+    }
+    for(f in NUM_FIELDS){
+      if(result.particular[f]) continue;
+      for(a = 0; a < NUM_FIELDS[f].length; a++){
+        var nm = effLine.match(numRe(NUM_FIELDS[f][a]));
+        if(nm){ setField(f, toNum(nm[1])); break; }
+      }
+    }
 
-        // Extract Port Stay
-        var portMatch = line.match(/port[:\s]*(\d+\.?\d*)/i);
-        if(portMatch) fuelRow.port_lsfo = portMatch[1];
+    // --- special-shape extractors (TCD prose) ---
+    // "27606 metric tons on 10.1 metres summer (scantling) draft"
+    if(!result.particular.scantling_draft){
+      var sd = effLine.match(/(\d+(?:\.\d+)?)\s*(?:m|mtr?s?|met(?:er|re)s?)\b[^\n]{0,45}?\(?scantling\)?\s*dra(?:ft|ught)/i) ||
+               effLine.match(/\(?scantling\)?\s*dra(?:ft|ught)[^0-9\n]{0,20}?(\d+(?:\.\d+)?)/i);
+      if(sd) setField('scantling_draft', sd[1]);
+    }
+    // "Total holds and deck (nominal intake): 1510TEU" / "Total 1510 TEU"
+    // "TTL: 4511 TEU" (preliminary TCD) / "Total合计 1765TEU" (bilingual)
+    if(!result.particular.teu){
+      var tt = effLine.match(/(?:nominal|total|ttl|grand\s*total|total\s*(?:holds?|intake|capacity|container))[^\n]{0,45}?(\d[\d,]*)\s*teu/i);
+      if(tt) setField('teu', toNum(tt[1]));
+    }
+    // "Around 1230 TEU of 14MT each homogeneously laden" / "INTAKE ON 14MT HOMO: 3325 TEU"
+    if(!result.particular.homogeneous){
+      var hm = effLine.match(/(\d[\d,]*)\s*teu[^\n]{0,45}?homo/i) ||
+               effLine.match(/homo\w*[^\n]{0,45}?(\d[\d,]*)\s*teu/i);
+      if(hm) setField('homogeneous', toNum(hm[1]));
+    }
+    // "Total 50 pieces of refrigerated container sockets" / "602 reefer sockets"
+    if(!result.particular.reefer_plugs){
+      var rf = effLine.match(/(\d+)\s*(?:pieces?|pcs?\.?|sets?|nos?\.?|x)?\s*(?:of\s*)?(?:refrigerated|reefer)?\s*(?:container\s*)?(?:socket|plug|point|receptacle)/i);
+      if(rf) setField('reefer_plugs', rf[1]);
+    }
+    // "M/V CUL HAIPHONG" / "M . V . "KOTA SYDNEY"" / "MV CHANG FENG GUANG XING"
+    if(!result.particular.vessel_name){
+      var vn = extractVesselName(line);
+      if(vn && !GENERIC_NAME.test(vn)) setField('vessel_name', vn.trim());
+    }
 
-        result.fuel.push(fuelRow);
+    // ================= 2. Fuel =================
+    // A "Xxx Consumption:" line switches section. It may ALSO carry the value
+    // ("Auxiliary consumption at sea: 2.5 MT HSFO"), so we never skip it.
+    var isSecHeader = false;
+    if(line.length < 90){
+      if(SEC_BOILER.test(line))      { curSec = 'BOILER'; curLoc = null; isSecHeader = true; }
+      // A combined "MAINENGINE, AUXILIARYENGINE, ..." title (KR CELEBES) is NOT
+      // an auxiliary section — it would wrongly bleed AUX state onto the main-
+      // engine NCR figure. Only treat a genuine aux-consumption line as AUX.
+      else if(SEC_AUX.test(line) && !/main\s*engine/i.test(line)) { curSec = 'AUX'; curLoc = null; isSecHeader = true; }
+      else if(SEC_ME.test(line))     { curSec = 'ME';     curLoc = null; isSecHeader = true; }
+    }
+    if(!isSecHeader){
+      if(LOC_SEA.test(line))       { curLoc = 'SEA';  continue; }
+      else if(LOC_PORT.test(line)) { curLoc = 'PORT'; continue; }
+      // any other bare "Xxxx:" heading closes the current consumption block
+      else if(/[:：]\s*$/.test(line) && !/\d/.test(line)) { curSec = null; curLoc = null; continue; }
+    }
+
+    // long prose lines are disclaimers, never data — but keep lines that
+    // still carry numeric fuel figures (pdf.js can glue a whole page to one line)
+    if(line.length > 130 && !/\d/.test(line)) continue;
+
+    // ----- tabular speed/FOC consumption -----
+    // Header like "Ship Speed [knots] FOC(MT) Rpm" (may be letter-spaced ->
+    // "SHIPSPEED[knots]FOC(MT)Rpm") followed by rows "9.8 6.6 107" (speed,
+    // foc, rpm), with stray "Rpm" lines between rows. Capture speed + foc.
+    if(/ship\s*speed[^a-z]*foc|speed\s*\[knots\][^a-z]*foc/i.test(line.replace(/\s+/g, ''))){
+      tableActive = true; tableRows = 0; continue;
+    }
+    if(tableActive){
+      // Footnote / remark lines that follow the table (e.g.
+      // "1.Fuel consumption based Heavy fuel oil 380 CST, LCV 10200 kcal/kg")
+      // look numeric after stripping letters, so screen them out by keyword
+      // and by value plausibility before trusting them as speed/foc rows.
+      if(/\b(?:fuel|lcv|kcal|kg|consumption|based|\bcst\b|reef\w*|remarks?|note)\b/i.test(line)){
+        tableActive = false; continue;
+      }
+      var tline = line.replace(/\brpm\b/gi, '').replace(/[^\d. ]/g, '').trim();
+      if(!tline){ continue; }  // standalone "Rpm" / blank spacer line keeps the table open
+      var tnums = (tline.match(/[\d.]+/g) || []).map(Number).filter(function(n){ return !isNaN(n); });
+      if(tnums.length >= 2){
+        var sp = tnums[0], foc = tnums[1];
+        // Ship service speed 3–30 kn; main-engine daily FOC 1–250 MT. These
+        // bounds reject stray figures (e.g. "1.380 10200" from an LCV remark).
+        if(sp >= 3 && sp <= 30 && foc >= 1 && foc <= 250){
+          bumpME(sp, docHSFO ? 'HSFO' : 'LSFO', foc);
+          tableRows++;
+          if(tableRows > 12) tableActive = false;
+          continue;
+        }
+      }
+      tableActive = false;  // any non-conforming line ends the table
+    }
+
+    // KR CELEBES-style auxiliary load table: "Aux. Sailing NA 1.4 2.2 3.0 4.0"
+    // and "Aux. Port NA 1.0 1.9 ..." The first numeric after the label is the
+    // base (0% reefer) load. Capture base sea/port auxiliary explicitly — the
+    // combined ME/AUX title on this TCD prevents the normal AUX state machine
+    // from firing, so we handle these rows directly.
+    var asM = line.match(/aux\.?\s*sailing[^\d\n]{0,14}(\d+(?:\.\d+)?)/i);
+    if(asM){ bumpAdd(seaAdd, docHSFO ? 'HSFO' : 'LSFO', parseFloat(asM[1])); }
+    var apM = line.match(/aux\.?\s*port[^\d\n]{0,14}(\d+(?:\.\d+)?)/i);
+    if(apM){ bumpAdd(portAdd, docHSFO ? 'HSFO' : 'LSFO', parseFloat(apM[1])); }
+
+    // speed/consumption pairs on one line: "13 knots on 20 mt",
+    // "abt. 19knt / 57.4 mt IFO", "AT 16.0 KTS ABOUT 49.0 MT/DAY"
+    var pairs = extractSpeedPairs(line);
+    if(pairs.length){
+      pairs.forEach(function(pr){
+        if(pr.amt == null) return;
+        var c = pr.grade || 'LSFO';
+        if(plausibleFuel(pr.amt, true)) bumpME(pr.speed, c, pr.amt);
+      });
+      continue;
+    }
+
+    // per-line refinement of the running state. The SECTION may only be
+    // refined while we are already inside a consumption block, otherwise
+    // spec lines like "Main engine/Auxiliary engine: LSFO 180/380 LSMGO"
+    // would be mistaken for consumption figures.
+    var lineSec = curSec, lineLoc = curLoc;
+    if(curSec){
+      if(/\bboiler\b/i.test(line)) lineSec = 'BOILER';
+      else if(/\b(?:aux(?:iliar\w*|iliaries)?|generator|gen\s*set|d\/g|a\/e)\b/i.test(line)) lineSec = 'AUX';
+    }
+    if(/\b(?:in\s*port|at\s*port|at\s*berth|port\s*stay|in\s*harbou?r|at\s*anchor|idle)\b/i.test(line)) lineLoc = 'PORT';
+    else if(/\b(?:at\s*sea|sea\s*passage|on\s*passage|steaming|sea\s*going)\b/i.test(line)) lineLoc = 'SEA';
+
+    var sm = line.match(/(\d+(?:\.\d+)?)\s*(?:knots?|knt|kts?|kn)(?![A-Za-z])/i) ||
+             line.match(/(\d+(?:\.\d+)?)\s*节/);
+    var speed = sm ? parseFloat(sm[1]) : null;
+
+    var amtM = line.match(/(\d+(?:\.\d+)?)\s*(?:mtons?|m\/?ts?|m\.t\.|mt|metric\s*tons?|tonnes?|tons?|t)(?:\s*\/?\s*(?:per\s*)?days?)?(?![A-Za-z])/i);
+    var amt  = amtM ? parseFloat(amtM[1]) : null;
+
+    var gradeM = line.match(/\b(lsmgo|mgo|mdo|gas\s*oil|vlsfo|ulsfo|hsfo|hfo|lsfo|ifo\s*\d*|lfo|compliant\s*fuel|fo)\b/i);
+    var grade  = gradeM ? fuelCat(gradeM[1]) : '';
+
+    // Explicit per-grade numbers on one line: "13.5kn LSFO 32.0 MGO 0.1".
+    // Pass A = "GRADE value", pass B = "value [unit] GRADE". Matches accepted
+    // by A are blanked out so B cannot count the same number twice.
+    var expl = [];
+    var g, cat, val;
+    var masked = line;
+    var reA = /\b(lsmgo|mgo|mdo|vlsfo|ulsfo|hsfo|hfo|lsfo|ifo|lfo|compliant\s*fuel)\b[^0-9A-Za-z\n]{0,4}(\d+(?:\.\d+)?)\s*(mtons?|m\/?ts?|tonnes?|tons?|t)?(?![A-Za-z])/ig;
+    while((g = reA.exec(line)) !== null){
+      cat = fuelCat(g[1]); val = parseFloat(g[2]);
+      if(cat && plausibleFuel(val, !!g[3])){
+        expl.push({ cat: cat, val: val });
+        masked = masked.slice(0, g.index) + new Array(g[0].length + 1).join(' ') + masked.slice(g.index + g[0].length);
+      }
+    }
+    var reB = /(\d+(?:\.\d+)?)\s*(mtons?|m\/?ts?|tonnes?|tons?|t)?\s*\b(lsmgo|mgo|mdo|vlsfo|ulsfo|hsfo|hfo|lsfo|ifo|lfo|compliant\s*fuel)\b/ig;
+    while((g = reB.exec(masked)) !== null){
+      cat = fuelCat(g[3]); val = parseFloat(g[1]);
+      if(cat && plausibleFuel(val, !!g[2])) expl.push({ cat: cat, val: val });
+    }
+
+    if(speed != null && amt == null && expl.length === 0) continue;
+
+    var target = null;
+    if(lineSec === 'BOILER')                        target = (lineLoc === 'SEA') ? seaAdd : portAdd;
+    else if(lineSec === 'AUX')                      target = (lineLoc === 'PORT') ? portAdd : seaAdd;
+    else if(speed != null)                          target = 'ME';
+    else if(lineSec === 'ME' && lineLoc === 'PORT') target = portAdd;
+
+    if(target === 'ME'){
+      if(expl.length){
+        expl.forEach(function(e){ bumpME(speed, e.cat, e.val); });
+      } else if(amt != null){
+        bumpME(speed, grade || 'LSFO', amt);
+      }
+    } else if(target){
+      // Auxiliary-at-sea: ignore "with reefer" load lines — they are a higher
+      // operating point, not the base sea auxiliary figure (e.g. KOTA
+      // "A/E 10.0" vs "A/E WITH/REEFER 15.5"). Only the base is folded in.
+      if(target === seaAdd && /\breefer\b/i.test(line)) { /* skip */ }
+      else {
+        var dflt = (target === portAdd && lineSec === 'AUX') ? 'MGO' : 'LSFO';
+        if(expl.length){
+          expl.forEach(function(e){ bumpAdd(target, e.cat, e.val); });
+        } else if(amt != null){
+          bumpAdd(target, grade || dflt, amt);
+        }
       }
     }
   }
 
-  // If no data parsed
-  if(!result.particular.vessel_name && result.fuel.length === 0){
-    result.success = false;
-    result.warnings.push('Cannot recognize vessel data, please check format');
+  // ================= 3. De-spaced second pass =================
+  // "Letter-spaced" PDFs emit every glyph with a uniform tiny gap, so labels
+  // like "VESSEL NAME" become "VESSELNAME" (no internal spaces) and the normal
+  // spaced aliases fail. Stripping all spaces from both the line and the alias
+  // recovers them. First-hits-wins means this only fills fields the spaced pass
+  // missed, so normal-PDF results are untouched.
+  var linesDS = lines.map(function(l){ return l.replace(/\s+/g, ''); });
+  function dsAlias(a){ return String(a).replace(/\s+/g, ''); }
+  function numReDS(alias){
+    // No (?![A-Za-z]) guard: in de-spaced text words are glued, so "deadweight"
+    // is immediately followed by "ANDCAPACITY". The lazy [\d]{0,40}?() still
+    // anchors the capture to the first number after the label.
+    var e = dsAlias(alias);
+    return new RegExp('(?:^|[^A-Za-z])' + esc(e) + '[^0-9\\n]{0,40}?(\\d[\\d,]*(?:\\.\\d+)?)', 'i');
+  }
+  function respaceCaps(s){
+    return s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([A-Z])([A-Z][a-z])/g, '$1 $2').trim();
+  }
+  // vessel name without M/V prefix: "VESSELNAME:KRCELEBES"
+  if(!result.particular.vessel_name){
+    for(var di = 0; di < linesDS.length; di++){
+      var vm = linesDS[di].match(/(?:vesselname|name)\s*[:：=]\s*([A-Z][A-Za-z0-9 .\-]{2,40})/i);
+      if(vm && !GENERIC_NAME.test(vm[1])){ setField('vessel_name', respaceCaps(vm[1])); break; }
+    }
+  }
+  // reefer plugs where the number precedes the word: "118TEUreeferplugs"
+  if(!result.particular.reefer_plugs){
+    for(var dri = 0; dri < linesDS.length; dri++){
+      var rm = linesDS[dri].match(/(\d+)(?:teu)?reefer(?:container)?(?:socket|plug|point|receptacle)/i);
+      if(rm){ setField('reefer_plugs', rm[1]); break; }
+    }
+  }
+  // numeric particulars
+  for(f in NUM_FIELDS){
+    if(result.particular[f]) continue;
+    for(a = 0; a < NUM_FIELDS[f].length; a++){
+      var dsm = null;
+      for(var di2 = 0; di2 < linesDS.length; di2++){
+        var dm = linesDS[di2].match(numReDS(NUM_FIELDS[f][a]));
+        if(dm){ dsm = dm; break; }
+      }
+      if(dsm){ setField(f, toNum(dsm[1])); }
+    }
   }
 
+  // Letter-spaced TCDs glue the section header to its values, e.g.
+  // "DEADWEIGHTANDCAPACITY" on one line, then "Atdesigndraught(Summer)=10700.8mt"
+  // / "Atscantlingdraught(Tropical):11065.5mt" on the next. There is no number
+  // directly after "deadweight", so the generic de-space alias misses it. The
+  // figure is deadweight (tons, unit "mt"), distinct from draft (unit "m").
+  if(!result.particular.dwt){
+    for(var ddi = 0; ddi < linesDS.length; ddi++){
+      if(/deadweight/i.test(linesDS[ddi]) || /\bdwt\b/i.test(linesDS[ddi])){
+        for(var dde = ddi; dde < Math.min(ddi + 5, linesDS.length); dde++){
+          var dv = linesDS[dde].match(/(?:at)?(?:design|scantling)?draught\(?(?:summer|tropical)?\)?\s*[=:]\s*(\d[\d.,]*)\s*mt/i);
+          if(dv){ setField('dwt', toNum(dv[1])); break; }
+        }
+        if(result.particular.dwt) break;
+      }
+    }
+  }
+
+  // year "2026.01" -> 2026
+  if(result.particular.year_built){
+    var ym = String(result.particular.year_built).match(/(?:19|20)\d{2}/);
+    result.particular.year_built = ym ? ym[0] : '';
+    if(!result.particular.year_built) delete result.particular.year_built;
+  }
+
+  result.fuel     = buildFuelTiers(meBySpeed, seaAdd, portAdd);
+  result.fuelType = sawHSFO ? 'HSFO' : 'LSFO';
+  result.debug    = { meBySpeed: meBySpeed, seaAdd: seaAdd, portAdd: portAdd };
+
+  // aux-at-sea remark (user requested fold + note, 2026-08-13)
+  function rr(x){ return Math.round(x * 10) / 10; }
+  var sTot = (seaAdd.LSFO || 0) + (seaAdd.HSFO || 0) + (seaAdd.MGO || 0);
+  if(sTot > 0){
+    var sp2 = [];
+    if(seaAdd.HSFO > 0) sp2.push(rr(seaAdd.HSFO) + ' HSFO');
+    if(seaAdd.LSFO > 0) sp2.push(rr(seaAdd.LSFO) + ' LSFO');
+    if(seaAdd.MGO  > 0) sp2.push(rr(seaAdd.MGO)  + ' MGO');
+    result.fuelRemark = 'ℹ️ 海上辅机油耗已并入各航速档(恒定 ≈' + rr(sTot) +
+      ' MT/天: ' + sp2.join(' + ') + ')。若原 TCD 每档已含辅机,请勿重复计算。';
+  } else {
+    result.fuelRemark = 'ℹ️ 未解析到独立的“海上辅机油耗”项;各档为主机-only(若 TCD 每档已含辅机,则数值已完整)。';
+  }
+
+  if(!result.particular.vessel_name) result.warnings.push('Vessel Name not found — please type it in (TCD often shows only a generic type name).');
+  if(!result.fuel.length)            result.warnings.push('No speed/consumption tier found — please add fuel rows manually.');
+  ['imo','call_sign','flag','teu','dwt','loa'].forEach(function(k){
+    if(!result.particular[k]) result.warnings.push('Missing: ' + k.replace('_',' ').toUpperCase());
+  });
+
+  if(Object.keys(result.particular).length === 0 && result.fuel.length === 0){
+    result.success = false;
+    result.warnings.unshift('Cannot recognize vessel data, please check the pasted text.');
+  }
   return result;
 }
-
 function displayParseResult(result){
   var el = document.getElementById('parseVesselResult');
   el.style.display = 'block';
@@ -5853,24 +6385,51 @@ function displayParseResult(result){
     'year_built': 'pv_year_built',
     'teu': 'pv_teu',
     'homogeneous': 'pv_homogeneous',
+    'grt': 'pv_grt',
+    'nrt': 'pv_nrt',
+    'scantling_draft': 'pv_scantling_draft',
     'dwt': 'pv_dwt',
     'loa': 'pv_loa',
     'breadth': 'pv_breadth',
     'depth': 'pv_depth',
-    'reefer_plugs': 'pv_reefer',
+    'reefer_plugs': 'pv_reefer_plugs',
     'class': 'pv_class'
   };
+  var filled = 0;
   for(var field in fieldMap){
     var input = document.getElementById(fieldMap[field]);
-    if(input && p[field] !== undefined){
+    if(!input) continue;
+    if(p[field] !== undefined && p[field] !== ''){
       input.value = p[field];
+      input.style.background = '#f0fff4';   // green = auto-filled
+      input.style.borderColor = '#28a745';
+      filled++;
+    } else {
+      input.value = '';
+      input.style.background = '#fffbea';   // amber = needs manual input
+      input.style.borderColor = '#ffc107';
     }
   }
 
-  // Auto-generate Vessel Code
+  // Auto-generate Vessel Code (initials, max 6 chars)
   var vesselName = p.vessel_name || '';
-  var vesselCode = vesselName.split(' ').map(function(w){ return w[0] || ''; }).join('').toUpperCase().substring(0,6);
+  var vesselCode = vesselName.split(/\s+/).map(function(w){ return w[0] || ''; }).join('').toUpperCase().substring(0,6);
   document.getElementById('pv_vessel_code').value = vesselCode;
+
+  // Warnings panel
+  var warnBox = document.getElementById('parseWarnBox');
+  if(warnBox){
+    if(result.warnings && result.warnings.length){
+      warnBox.innerHTML = '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.78rem;color:#856404;">' +
+        '<strong>⚠️ Please check ' + result.warnings.length + ' item(s):</strong><ul style="margin:6px 0 0 18px;padding:0;">' +
+        result.warnings.map(function(w){ return '<li>' + w + '</li>'; }).join('') + '</ul>' +
+        '<div style="margin-top:6px;color:#6c757d;">Amber fields below were not detected — fill them in manually before saving.</div></div>';
+      warnBox.style.display = 'block';
+    } else {
+      warnBox.innerHTML = '<div style="background:#d4edda;border:1px solid #28a745;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.78rem;color:#155724;">✓ All key fields detected.</div>';
+      warnBox.style.display = 'block';
+    }
+  }
 
   // Show parse status
   var statusEl = document.getElementById('parseParticularStatus');
@@ -5896,12 +6455,26 @@ function displayParseResult(result){
     result.fuel.forEach(function(f){
       addParseFuelRow(f);
     });
+
+    // aux-at-sea remark (folded into tiers, 2026-08-13)
+    var rf = document.getElementById('parseFuelRemark');
+    if(!rf && result.fuelRemark){
+      rf = document.createElement('div');
+      rf.id = 'parseFuelRemark';
+      rf.style.cssText = 'margin:6px 0 10px;padding:8px 10px;border-radius:6px;font-size:.76rem;background:#e7f1ff;border:1px solid #9ec5fe;color:#0b4a8a;';
+      if(fuelRowsEl && fuelRowsEl.parentNode) fuelRowsEl.parentNode.insertBefore(rf, fuelRowsEl);
+    }
+    if(rf && result.fuelRemark){ rf.textContent = result.fuelRemark; rf.style.display = 'block'; }
   } else {
     fuelStatusEl.textContent = 'No fuel data detected';
     fuelStatusEl.style.background = '#fff3cd';
     fuelStatusEl.style.color = '#856404';
     addParseFuelRow();
   }
+
+  // Set fuel type selector (LSFO default; HSFO if any HFO/HSFO detected)
+  var ftEl = document.getElementById('pv_fuel_type');
+  if(ftEl) ftEl.value = result.fuelType || 'LSFO';
 }
 
 function addParseFuelRow(data){
@@ -5928,12 +6501,154 @@ function addParseFuelRow(data){
   container.appendChild(row);
 }
 
-function saveParseVessel(){
+// Fuel-type toggle: move combined heavy/light fuel into the right column
+function onFuelTypeChange(){
+  var ft = document.getElementById('pv_fuel_type');
+  if(!ft) return;
+  var target = ft.value; // 'LSFO' | 'HSFO'
+  document.querySelectorAll('#parseFuelRows > div:not(:first-child)').forEach(function(row){
+    var inp = row.querySelectorAll('input');
+    if(inp.length < 6) return;
+    var lsfo = parseFloat(inp[1].value) || 0;
+    var hsfo = parseFloat(inp[2].value) || 0;
+    var combined = lsfo + hsfo;
+    if(target === 'HSFO'){ inp[2].value = combined ? combined.toFixed(1) : ''; inp[1].value = ''; }
+    else { inp[1].value = combined ? combined.toFixed(1) : ''; inp[2].value = ''; }
+  });
+  showToast('Fuel type → ' + target + ' (IFO/HFO mapped accordingly)', 'info');
+}
+
+function csvCell(v){
+  v = (v == null ? '' : String(v));
+  return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v;
+}
+
+// cul_ship_particular.csv is TRANSPOSED: row = field label, column = vessel.
+// PARTICULAR_DATA is an array of row-OBJECTS whose keys are the header cells
+// (keys[0] === 'VESSEL NAME' holds the field label; keys[1..] are vessel names).
+var PARTICULAR_LABEL_TO_KEY = {
+  'VESSEL NAME':'vessel_name', 'CALL SIGN':'call_sign', 'IMO':'imo', 'FLAG':'flag',
+  'YEAR BUILT':'year_built', 'NOMINAL CAPACITY (TEU)':'teu', 'HOMO @14 MT':'homogeneous',
+  'GRT':'grt', 'NRT':'nrt', 'SCANTLING DRAFT (M)':'scantling_draft', 'DWT (MT)':'dwt',
+  'LOA (M)':'loa', 'BREADTH (M)':'breadth', 'DEPTH (M)':'depth',
+  'REEFER PLUGS':'reefer_plugs', 'CLASS':'class'
+};
+
+function particularHeaderKeys(){
+  return (PARTICULAR_DATA.length ? Object.keys(PARTICULAR_DATA[0]) : []);
+}
+// parseCSV() de-duplicates identical headers by appending " (2)" — strip it back out
+function particularHeaderName(k){ return String(k).replace(/\s\(\d+\)$/, ''); }
+
+// Rebuild the full transposed CSV from in-memory PARTICULAR_DATA
+function particularToCSV(){
+  var keys = particularHeaderKeys();
+  if(!keys.length) return '';
+  var out = [keys.map(function(k){ return csvCell(particularHeaderName(k)); }).join(',')];
+  PARTICULAR_DATA.forEach(function(row){
+    var vals = keys.map(function(k){ return row[k] == null ? '' : String(row[k]); });
+    var any = vals.some(function(v){ return v !== ''; });
+    out.push(any ? vals.map(csvCell).join(',') : '');
+  });
+  return out.join('\n') + '\n';
+}
+
+// Append a new vessel as a COLUMN to the transposed PARTICULAR_DATA (in-memory)
+function appendParticularColumn(particular){
+  var name = (particular.vessel_name || ('VESSEL_' + Date.now())).toUpperCase();
+  var keys = particularHeaderKeys();
+  if(!keys.length) return '';
+  var labelKey = keys[0];                 // 'VESSEL NAME'
+  var colKey = name, n = 1;
+  while(keys.indexOf(colKey) !== -1){ n++; colKey = name + ' (' + n + ')'; }
+
+  PARTICULAR_DATA.forEach(function(row){
+    var label = String(row[labelKey] || '').trim().toUpperCase();
+    var fk = PARTICULAR_LABEL_TO_KEY[label];
+    row[colKey] = (fk && particular[fk] != null) ? String(particular[fk]) : '';
+  });
+  if(window._particularVessels) window._particularVessels.push(colKey);
+  return colKey;
+}
+
+// Generic GitHub Contents API PUT (replaces file, keeps latest sha)
+async function putGhFile(path, content){
+  var token = getGhToken();
+  if(!token) return false;
+  try {
+    var getResp = await fetch(GH_REPO_API + '/' + path, {
+      headers: { 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github.v3+json' }
+    });
+    var sha = null;
+    if(getResp.ok){ var d = await getResp.json(); sha = d.sha; }
+    var base64 = btoa(unescape(encodeURIComponent(content)));
+    var body = { message:'Add vessel via Paste&Parse ('+new Date().toISOString().slice(0,10)+')', content:base64, branch:'main' };
+    if(sha) body.sha = sha;
+    var r = await fetch(GH_REPO_API + '/' + path, {
+      method:'PUT',
+      headers: { 'Authorization':'Bearer '+token, 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    return r.ok;
+  } catch(e){ return false; }
+}
+
+// Append a single line to a GitHub file (used for cul_vessel_bestmodel.csv)
+async function appendLineAndPut(path, line){
+  var token = getGhToken();
+  if(!token) return false;
+  try {
+    var getResp = await fetch(GH_REPO_API + '/' + path, {
+      headers: { 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github.v3+json' }
+    });
+    var content = '', sha = null;
+    if(getResp.ok){ var d = await getResp.json(); sha = d.sha; content = decodeURIComponent(escape(atob(d.content.replace(/\s/g,'')))); }
+    content = content.replace(/\r?\n+$/,'') + '\n' + line;
+    var base64 = btoa(unescape(encodeURIComponent(content)));
+    var body = { message:'Add vessel bestmodel via Paste&Parse', content:base64, branch:'main' };
+    if(sha) body.sha = sha;
+    var r = await fetch(GH_REPO_API + '/' + path, {
+      method:'PUT',
+      headers: { 'Authorization':'Bearer '+token, 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    return r.ok;
+  } catch(e){ return false; }
+}
+
+// Fallback preview (when no GitHub token): show correct CSVs with copy buttons
+function showParsePreview(vesselsCsv, particularCsv, bestmodelCsv){
+  var html = '<div style="margin-top:16px;padding:16px;background:#f8f9fa;border-radius:8px;">' +
+    '<h4 style="margin:0 0 12px 0;">📋 Generated Data (copy to matching files)</h4>' +
+    '<div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><strong>vessels.csv</strong>' +
+      '<button onclick="copyToClipboard(document.getElementById(\'vesselsCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button></div>' +
+      '<pre id="vesselsCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + vesselsCsv + '</pre></div>' +
+    '<div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><strong>cul_ship_particular.csv (paste as NEW COLUMN)</strong>' +
+      '<button onclick="copyToClipboard(document.getElementById(\'particularCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button></div>' +
+      '<pre id="particularCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:120px;overflow:auto;white-space:pre-wrap;">' + particularCsv + '</pre>' +
+      '<p style="font-size:.72rem;color:#856404;margin:4px 0 0;">⚠️ File is transposed: paste these 16 values as a NEW COLUMN (one per field row), not a row.</p></div>' +
+    (bestmodelCsv ? '<div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><strong>cul_vessel_bestmodel.csv</strong>' +
+      '<button onclick="copyToClipboard(document.getElementById(\'bestmodelCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button></div>' +
+      '<pre id="bestmodelCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + bestmodelCsv + '</pre></div>' : '') +
+    '<p style="margin:8px 0 0 0;font-size:.75rem;color:#6c757d;">💡 Tip: set a GitHub Token (🔑 Token) to commit directly instead of copy-paste.</p>' +
+    '</div>';
+  var box = document.getElementById('parsePreviewBox');
+  box.innerHTML = html;
+  box.style.display = 'block';
+  box.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// Save / Commit parsed vessel to GitHub (vessels.csv + cul_ship_particular.csv + optional bestmodel)
+async function saveParseVessel(){
   var vesselCode = document.getElementById('pv_vessel_code').value.trim().toUpperCase();
   var vesselName = document.getElementById('pv_vessel_name').value.trim();
 
   if(!vesselCode){
     showToast('Vessel Code cannot be empty', 'error');
+    return;
+  }
+  if(!vesselName){
+    showToast('Vessel Name cannot be empty', 'error');
     return;
   }
 
@@ -5960,27 +6675,16 @@ function saveParseVessel(){
   // Collect vessel particulars
   var particular = {};
   var pMap = {
-    'vessel_name': 'vessel_name',
-    'imo': 'imo',
-    'call_sign': 'call_sign',
-    'flag': 'flag',
-    'year_built': 'year_built',
-    'teu': 'teu',
-    'homogeneous': 'homogeneous',
-    'grt': 'grt',
-    'nrt': 'nrt',
-    'scantling_draft': 'scantling_draft',
-    'dwt': 'dwt',
-    'loa': 'loa',
-    'breadth': 'breadth',
-    'depth': 'depth',
-    'reefer_plugs': 'reefer_plugs',
-    'class': 'class'
+    'vessel_name': 'vessel_name', 'imo': 'imo', 'call_sign': 'call_sign', 'flag': 'flag',
+    'year_built': 'year_built', 'teu': 'teu', 'homogeneous': 'homogeneous', 'grt': 'grt',
+    'nrt': 'nrt', 'scantling_draft': 'scantling_draft', 'dwt': 'dwt', 'loa': 'loa',
+    'breadth': 'breadth', 'depth': 'depth', 'reefer_plugs': 'reefer_plugs', 'class': 'class'
   };
   for(var k in pMap){
     var v = document.getElementById('pv_' + k).value;
-    if(v) particular[k] = v;
+    if(v) particular[pMap[k]] = v;
   }
+  particular.vessel_name = vesselName;
 
   // Collect loading capacity
   var lane = document.getElementById('pv_lane').value.trim();
@@ -5988,66 +6692,55 @@ function saveParseVessel(){
   var maxTeu = document.getElementById('pv_max_teu').value.trim();
   var bsa = document.getElementById('pv_bsa').value.trim();
 
-  // Generate vessels.csv rows
-  var vesselsCsv = '';
-  if(fuelData.length > 0){
-    // Sort by speed descending
+  // Build vessels.csv (append to in-memory, rebuild full file)
+  if(fuelData.length){
     fuelData.sort(function(a, b){ return parseFloat(b.speed) - parseFloat(a.speed); });
     fuelData.forEach(function(f){
-      vesselsCsv += vesselCode + ',' + vesselName + ',' + f.speed + ',' + f.lsfo + ',' + f.hsfo + ',' + f.mgo + ',' + f.port_lsfo + ',' + f.port_mgo + ',' + (f.hire||0) + '\n';
+      VESSELS_DATA.push({
+        code: vesselCode, name: vesselName, speed: parseFloat(f.speed)||0,
+        lsfo: parseFloat(f.lsfo)||0, hsfo: parseFloat(f.hsfo)||0, mgo: parseFloat(f.mgo)||0,
+        ps_lsfo: parseFloat(f.port_lsfo)||0, ps_mgo: parseFloat(f.port_mgo)||0, hire: 0
+      });
     });
-  } else {
-    vesselsCsv += vesselCode + ',' + vesselName + ',,,,,\n';
   }
+  var vesselsCsv = buildCSV('vessels');
 
-  // Generate particular.csv rows
-  var pHeaders = ['Vessel Name','Call Sign','IMO','Flag','Year Built','TEU','HOMOG @14 MT','GRT','NRT','Scantling Draft (m)','DWT (MT)','LOA (m)','Breadth (m)','Depth (m)','Reefer Plugs','Class'];
-  var pFields = ['vessel_name','call_sign','imo','flag','year_built','teu','homogeneous','grt','nrt','scantling_draft','dwt','loa','breadth','depth','reefer_plugs','class'];
-  var pValues = pFields.map(function(f){ return particular[f] || ''; });
-  var particularCsv = pValues.join(',') + '\n';
+  // Build cul_ship_particular.csv (append as transposed column, rebuild full file)
+  appendParticularColumn(particular);
+  var particularCsv = particularToCSV();
 
-  // Generate bestmodel.csv rows
+  // Build bestmodel row (optional)
   var bestmodelCsv = '';
   if(lane && maxCargo){
     var teuVal = maxTeu || particular.teu || '';
     var bsaVal = bsa || '';
-    bestmodelCsv = vesselName + ',' + lane + ',' + maxCargo + ',' + teuVal + ',,,,,' + bsaVal + ',,,,,,,,,,,,\n';
+    bestmodelCsv = [vesselName, lane, maxCargo, teuVal, '','','','', bsaVal, '','','','','','','','','',''].join(',') + '\n';
   }
 
-  // Show results
-  var resultDiv = document.getElementById('parseVesselResult');
-  resultDiv.innerHTML = '<div style="margin-top:16px;padding:16px;background:#f8f9fa;border-radius:8px;">' +
-    '<h4 style="margin:0 0 12px 0;">📋 Generated Data (copy to matching files)</h4>' +
+  var token = getGhToken();
+  if(!token){
+    showParsePreview(vesselsCsv, particularCsv, bestmodelCsv);
+    showToast('No GitHub Token set — showing CSV to copy manually', 'warning');
+    openTokenSetup();
+    return;
+  }
 
-    '<div style="margin-bottom:16px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-        '<strong>vessels.csv</strong>' +
-        '<button onclick="copyToClipboard(document.getElementById(\'vesselsCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button>' +
-      '</div>' +
-      '<pre id="vesselsCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + vesselsCsv + '</pre>' +
-    '</div>' +
+  setCommitStatus('Committing vessel to GitHub...');
+  var okV = await putGhFile('shipping_data/vessels.csv', vesselsCsv);
+  var okP = await putGhFile('shipping_data/cul_ship_particular.csv', particularCsv);
+  var okB = true;
+  if(bestmodelCsv) okB = await appendLineAndPut('shipping_data/cul_vessel_bestmodel.csv', bestmodelCsv.trim());
 
-    '<div style="margin-bottom:16px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-        '<strong>cul_ship_particular.csv</strong>' +
-        '<button onclick="copyToClipboard(document.getElementById(\'particularCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button>' +
-      '</div>' +
-      '<pre id="particularCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + particularCsv + '</pre>' +
-    '</div>' +
-
-    (bestmodelCsv ? '<div style="margin-bottom:16px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-        '<strong>cul_vessel_bestmodel.csv</strong>' +
-        '<button onclick="copyToClipboard(document.getElementById(\'bestmodelCsvContent\').textContent)" class="dm-btn" style="padding:4px 12px;font-size:.75rem;">📋 Copy</button>' +
-      '</div>' +
-      '<pre id="bestmodelCsvContent" style="background:#fff;padding:8px;border-radius:4px;font-size:.7rem;max-height:100px;overflow:auto;white-space:pre-wrap;">' + bestmodelCsv + '</pre>' +
-    '</div>' : '') +
-
-    '<p style="margin:16px 0 0 0;font-size:.75rem;color:#6c757d;">💡 After copying, open the matching CSV file and paste at the end.</p>' +
-    '<p style="margin:8px 0 0 0;font-size:.75rem;color:#6c757d;">⚠️ particular.csv is horizontal format; paste as last column.</p>' +
-  '</div>';
-
-  showToast('Data generated, please copy to CSV files', 'success');
+  if(okV && okP && okB){
+    showToast('✓ Vessel committed: GitHub (' + vesselCode + ')', 'success');
+    try { await reloadCommittedData('vessels'); } catch(e){}
+    if(typeof renderDmVessels === 'function'){ try { renderDmVessels(); } catch(e){} }
+    if(typeof renderVesselInfoList === 'function'){ try { renderVesselInfoList(); } catch(e){} }
+    closeParseVesselModal();
+  } else {
+    showToast('Commit failed for some files (data kept in memory, retry)', 'warning');
+    setCommitStatus('GitHub commit failed for some files');
+  }
 }
 
 function copyToClipboard(text){
