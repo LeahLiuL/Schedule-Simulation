@@ -55,6 +55,7 @@ Excel：C:\CULINES\Claw Report\CUL运营船舶装载Best Model - 2026.xlsx（she
 - parse_wait 规则（沿用 7-28，MIN）：`>Xhrs`→X；`X>Yhrs`→下界 X；`<Xhrs`/`N`/`NIL`→0；同港多码头/多行取 min。D 列 "X-Y HRS" 描述文本**不解析**（历史做法只采信 C 列明确 hrs 标记）。
 - 规则选择：7-28 用户确认用 **MIN**（INNSA 当前 6=最小值故不变；MAX 会 6→12）。
 - 矛盾处理：C 列 `<6hrs` 但 D 列描述 24-36hrs（如 THLCH/THSCS）→ 信 C 列保持 0（2026-08-07 确认）。
+- **无船(NIL)边界处理（2026-08-17 新增）**：某码头 `NIL` 且 D 列说明"本周无船"时，NIL≠等泊0。① 该港另有有船码头 → 取**有船码头 min**，忽略无船码头 NIL（如 SAJED：RSGT `>19hrs`=19 + DPW 无船 → 19，不取 min=0）。② 整港仅 NIL(无船) → 取 0（无拥堵报告=正常，如 LYBEN）。
 - 仅更新 ports.csv 已有港，不新增（除非用户明确要求）。
 - 流程：fetch+checkout 对齐 → 改第6列 wait_time（utf-8-sig+CRLF 保留）→ `audit_data_loss.py` PASS → commit → push → `git show origin/main` 验证（raw 有 CDN 缓存滞后，用 origin/main 对象验证）。
 
