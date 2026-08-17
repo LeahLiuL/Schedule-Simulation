@@ -46,7 +46,8 @@ ports.csv 坐标错误用 distances.csv 实测短边交叉验证：actual/havers
 ## Vessel Best Model 合并铁律（2026-07）
 每次从 Excel 更新 capacity 必须全量对账（曾丢 CUL BANGKOK+7船）。以当前 bestmodel.csv 为基底；
 Excel 有值才覆盖；Excel 用组合 lane(AEM/REX)→按 token 重叠回退匹配拆 lane；命名归一 SHENGTANG↔SHENG TANG。
-Excel：C:\CULINES\Claw Report\CUL运营船舶装载Best Model - 2026.xlsx（sheet 装载Best Model），用 zipfile 解析。
+Excel：`C:\CULINES\Claw Report\CUL Vessel Best Model Report - 2026.xlsx`（文件名已改；sheet `装载Best Model`，zipfile 解析）。
+- **复用脚本** `archive/export_excel/merge_bestmodel.py`：base=当前 CSV、Excel 有值才覆盖 cols 2–10（Vessel Name/Service Lane/Remark 不覆盖）、新 vessel/lane 追加；`write` 参数落盘，默认 dry-run。lane 匹配=`lane_match`（精确串相等 OR 一方 token 集⊆另一方，避免 CST(NB) 误吃 CST(SB)）；同名同 lane 多行按「每 Excel 行只更新 fresh 中首个不同 lane 的 CSV 行 + consumed 防重吃」保 laden/empties 双行。
 
 ## Port wait 更新流程（P盘 Port Condition Week N）
 - 数据源：`P:\04 上海操作中心\01 船期管理科\船期管理\VSL Daily Movement\Port Condition\Port condition Year 2026 Week N.xlsx`
