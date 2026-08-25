@@ -60,9 +60,9 @@ run('Case 1 — real TCD  M.V1500TEU (IV)', s1, {
     reefer_plugs: '50'
   },
   fuel: [
-    { speed: '13', lsfo: '20', hsfo: '', mgo: '', port_lsfo: '0.8', port_mgo: '1.2' },
-    { speed: '12', lsfo: '18', port_lsfo: '0.8', port_mgo: '1.2' },
-    { speed: '11', lsfo: '16', port_lsfo: '0.8', port_mgo: '1.2' }
+    { speed: '13', lsfo: '21.2', hsfo: '', mgo: '', port_lsfo: '0.8', port_mgo: '1.2' },
+    { speed: '12', lsfo: '19.2', port_lsfo: '0.8', port_mgo: '1.2' },
+    { speed: '11', lsfo: '17.2', port_lsfo: '0.8', port_mgo: '1.2' }
   ],
   fuelType: 'LSFO'
 });

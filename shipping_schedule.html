@@ -1211,6 +1211,7 @@
     <div class="app-tab" data-tab="daily" onclick="switchAppTab('daily')">📋 Simulator Save</div>
     <div class="app-tab" data-tab="portcharges" onclick="switchAppTab('portcharges')">💰 Port Charges</div>
     <div class="app-tab" data-tab="dailymovement" onclick="switchAppTab('dailymovement')">📋 Daily Movement</div>
+    <div class="app-tab" data-tab="oilreport" onclick="switchAppTab('oilreport')">🛢️ Oil Report</div>
   </div>
   <div class="header-right">
     <button class="btn-dm" onclick="openDataManager()">⚙ Data Manager</button>
@@ -1645,6 +1646,11 @@
   <iframe src="https://leahliul.github.io/Claw-Report/cul_daily_movement.html" style="width:100%;flex:1;border:none;" title="CUL Daily Movement"></iframe>
 </div>
 
+<!-- TAB 5: Oil Report -->
+<div class="tab-content" id="tabOilReport" style="flex-direction:column;height:calc(100vh - 60px);">
+  <iframe src="https://leahliul.github.io/Claw-Report/rob_oil_report.html" style="width:100%;flex:1;border:none;" title="Rob Oil Report"></iframe>
+</div>
+
 <!-- LINKED VOYAGES MODAL -->
 <div class="lv-overlay" id="lvOverlay" onclick="if(event.target===this)closeLinkVoyagesModal()">
   <div class="lv-modal">
@@ -1765,7 +1771,7 @@
         <button class="dm-btn" onclick="openParseVesselModal()" style="background:#28a745;color:#fff;">📋 Paste & Parse</button>
         <label class="dm-btn" style="background:#6f42c1;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
           📤 Upload File
-          <input type="file" id="fileUploadInput" accept=".pdf,.docx,.doc,.txt,.csv" style="display:none;" onchange="handleFileUpload(this)"/>
+          <input type="file" id="fileUploadInput" accept=".pdf,.docx,.doc,.txt,.csv,.xlsx,.xls" style="display:none;" onchange="handleFileUpload(this)"/>
         </label>
       </div>
       <div class="dm-table-wrap">
@@ -5653,6 +5659,9 @@ function handleFileUpload(input){
     } else if(ext === 'docx' || ext === 'doc'){
       // Word file - use mammoth.js
       parseWordContent(content, fileName);
+    } else if(ext === 'xlsx' || ext === 'xls'){
+      // Excel file - use SheetJS (already loaded on the page)
+      parseExcelContent(content, fileName);
     } else {
       showToast('Unsupported file format: ' + ext, 'error');
     }
@@ -5661,7 +5670,7 @@ function handleFileUpload(input){
     showToast('File read failed', 'error');
   };
 
-  if(ext === 'pdf' || ext === 'docx' || ext === 'doc'){
+  if(ext === 'pdf' || ext === 'docx' || ext === 'doc' || ext === 'xlsx' || ext === 'xls'){
     reader.readAsArrayBuffer(file);
   } else {
     reader.readAsText(file);
@@ -5789,6 +5798,40 @@ function extractWordText(arrayBuffer, fileName){
   });
 }
 
+// Excel TCD: SheetJS is loaded statically on the page (<script xlsx.full.min.js>),
+// so no dynamic loading is needed. Each sheet is flattened to one text line per
+// row (cells joined with a single space, thousands-separator commas stripped) so
+// the output feeds the SAME parseVesselTextClient pipeline as pasted text/PDF/Word.
+function parseExcelContent(arrayBuffer, fileName){
+  showToast('Parsing Excel...', 'info');
+  try{
+    var wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: false });
+    var lines = [];
+    wb.SheetNames.forEach(function(sn){
+      var ws = wb.Sheets[sn];
+      if(!ws || !ws['!ref']) return;
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+      rows.forEach(function(r){
+        var cells = (r || []).map(function(c){
+          // "10,700.8" -> "10700.8" (keep any other comma usage intact)
+          return String(c == null ? '' : c).trim()
+                     .replace(/^(-?\d{1,3}(,\d{3})+(\.\d+)?)$/, function(m){ return m.replace(/,/g, ''); });
+        }).filter(function(s){ return s !== ''; });
+        if(cells.length) lines.push(cells.join(' '));
+      });
+    });
+    if(!lines.length){
+      showToast('No readable content in Excel file', 'error');
+      return;
+    }
+    document.getElementById('parseVesselInput').value = lines.join('\n');
+    parseVesselText();
+    showToast('Excel parsed successfully', 'success');
+  }catch(err){
+    showToast('Excel parse failed: ' + err.message, 'error');
+  }
+}
+
 function parseVesselText(){
   var text = document.getElementById('parseVesselInput').value.trim();
   if(!text){
@@ -5869,7 +5912,8 @@ function parseVesselTextClient(text){
   text = String(text || '').replace(/\r\n?/g, '\n')
                            .replace(/[\u2018\u2019]/g, "'")
                            .replace(/[\u201C\u201D]/g, '"')
-                           .replace(/\u00a0/g, ' ');
+                           .replace(/\u00a0/g, ' ')
+                           .replace(/_/g, ' ');
 
   // Whole-document fuel-grade hints (used when a TCD states the grade in prose
   // away from the actual numbers, e.g. KR CELEBES "Heavy fuel oil 380 CST").
@@ -6023,6 +6067,14 @@ function parseVesselTextClient(text){
     var sRe = /(\d+(?:\.\d+)?)\s*(?:knots?|knt|kts?|kn)(?![A-Za-z])/ig;
     var sp = [], mm;
     while((mm = sRe.exec(line)) !== null) sp.push({ i: mm.index, s: parseFloat(mm[1]) });
+    // Narrative "speed about X" / "speed X" (unit implied, common in prose TCDs)
+    var sRe2 = /\bspeed\s*(?:about|abt\.?|approx\.?|~)?\s*(\d+(?:\.\d+)?)(?![\d.])/ig;
+    while((mm = sRe2.exec(line)) !== null){
+      var numStart = mm.index + mm[0].length - mm[1].length;
+      var dup = sp.some(function(p){ return Math.abs(p.i - numStart) <= 2; });
+      if(!dup) sp.push({ i: numStart, s: parseFloat(mm[1]) });
+    }
+    sp.sort(function(a,b){ return a.i - b.i; });
     if(!sp.length) return out;
     for(var k = 0; k < sp.length; k++){
       var end = (k + 1 < sp.length) ? sp[k + 1].i : line.length;
@@ -6244,6 +6296,17 @@ function parseVesselTextClient(text){
 
     if(speed != null && amt == null && expl.length === 0) continue;
 
+    // Port consumption with both A/E and boiler on one line:
+    // "A/E 2.3mts + boiler 1.2mts" — extract both values separately since
+    // the normal amt capture only gets the first one.
+    var portBoth = line.match(/a\/e\s*(\d+(?:\.\d+)?)\s*(?:mtons?|m\/?ts?|m\.t\.|mt|t)?[^0-9\n]{0,14}boiler\s*(\d+(?:\.\d+)?)\s*(?:mtons?|m\/?ts?|m\.t\.|mt|t)?/i);
+    if(portBoth){
+      var aeV = parseFloat(portBoth[1]), blV = parseFloat(portBoth[2]);
+      if(plausibleFuel(aeV, true)) bumpAdd(portAdd, grade || 'LSFO', aeV);
+      if(plausibleFuel(blV, true)) bumpAdd(portAdd, grade || 'LSFO', blV);
+      continue;
+    }
+
     var target = null;
     if(lineSec === 'BOILER')                        target = (lineLoc === 'SEA') ? seaAdd : portAdd;
     else if(lineSec === 'AUX')                      target = (lineLoc === 'PORT') ? portAdd : seaAdd;
@@ -6260,10 +6323,15 @@ function parseVesselTextClient(text){
       // Auxiliary-at-sea: ignore "with reefer" load lines — they are a higher
       // operating point, not the base sea auxiliary figure (e.g. KOTA
       // "A/E 10.0" vs "A/E WITH/REEFER 15.5"). Only the base is folded in.
-      if(target === seaAdd && /\breefer\b/i.test(line)) { /* skip */ }
+      // But when a single line mixes base ("without reefer") and reefer load
+      // (Excel flattening joins cells), prefer the first amount (base) over
+      // explicit per-grade values (which may capture the "with reefer" figure).
+      if(target === seaAdd && /\breefer\b/i.test(line) && !/\b(?:without|no)\s*reefer/i.test(line)) { /* skip */ }
       else {
         var dflt = (target === portAdd && lineSec === 'AUX') ? 'MGO' : 'LSFO';
-        if(expl.length){
+        if(target === seaAdd && /\b(?:without|no)\s*reefer/i.test(line) && amt != null){
+          bumpAdd(target, grade || dflt, amt);
+        } else if(expl.length){
           expl.forEach(function(e){ bumpAdd(target, e.cat, e.val); });
         } else if(amt != null){
           bumpAdd(target, grade || dflt, amt);
@@ -9099,12 +9167,12 @@ function switchAppTab(tab){
     else _tabs[_t].classList.remove('active');
   }
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active','block'));
-  var tabId = tab==='simulator'?'tabSimulator':tab==='daily'?'tabDaily':tab==='portcharges'?'tabPortCharges':tab==='dailymovement'?'tabDailyMovement':'tabSimulator';
+  var tabId = tab==='simulator'?'tabSimulator':tab==='daily'?'tabDaily':tab==='portcharges'?'tabPortCharges':tab==='dailymovement'?'tabDailyMovement':tab==='oilreport'?'tabOilReport':'tabSimulator';
   const el = document.getElementById(tabId);
-  if(tab==='portcharges'||tab==='dailymovement'){ el.classList.add('active'); }
+  if(tab==='portcharges'||tab==='dailymovement'||tab==='oilreport'){ el.classList.add('active'); }
   else { el.classList.add('active','block'); }
   // Force-refresh iframe for external tabs (bypass browser cache)
-  if(tab==='portcharges'||tab==='dailymovement'){
+  if(tab==='portcharges'||tab==='dailymovement'||tab==='oilreport'){
     var iframe = el.querySelector('iframe');
     if(iframe){
       var src = iframe.getAttribute('src');
