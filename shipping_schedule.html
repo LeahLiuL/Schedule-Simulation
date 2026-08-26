@@ -5765,6 +5765,37 @@ function layoutPdfText(items){
 }
 
 function parseWordContent(arrayBuffer, fileName){
+  // Magic-byte preflight: a real .docx is a zip (PK\x03\x04), old .doc is OLE2
+  // (D0 CF 11 E0). Anything else is likely a plain-text file with the wrong
+  // extension, or a corrupted download — show a clear error instead of the
+  // cryptic "Can't find end of central directory : is this a zip file?" from
+  // JSZip, and try a text fallback if the bytes look like text.
+  var bytes = arrayBuffer instanceof Uint8Array ? arrayBuffer : new Uint8Array(arrayBuffer);
+  var isZip   = bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04;
+  var isOle2  = bytes.length >= 8 && bytes[0] === 0xD0 && bytes[1] === 0xCF && bytes[2] === 0x11 && bytes[3] === 0xE0
+                                              && bytes[4] === 0xA1 && bytes[5] === 0xB1 && bytes[6] === 0x1A && bytes[7] === 0xE1;
+  if(!isZip){
+    if(isOle2){
+      showToast('这是旧版 .doc 文件（OLE2 格式，非 .docx zip）。请在 Word 里打开后「另存为 .docx」再上传。', 'error', 6000);
+      return;
+    }
+    // Try plain-text fallback (some users save Notepad content with .doc/.docx extension)
+    try{
+      var text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+      // Heuristic: vessel data usually has Chinese or keywords like VESSEL/TEU/DWT/CONSUMPTION
+      var looksLikeVesselText = /[\u4e00-\u9fa5]/.test(text)
+        || /\b(?:VESSEL|TEU|DWT|CONSUMPTION|FLAG|CALL\s*SIGN|IMO)\b/i.test(text);
+      if(looksLikeVesselText && text.trim().length > 0){
+        document.getElementById('parseVesselInput').value = text;
+        parseVesselText();
+        showToast('文件不是有效的 .docx，但识别为纯文本，已用文本管道解析', 'warn', 4000);
+        return;
+      }
+    } catch(ignore){}
+    showToast('Word 解析失败：文件不是有效的 .docx 格式。请直接粘贴文本，或在 Word 里另存为 .docx 再上传。', 'error', 6000);
+    return;
+  }
+
   showToast('Parsing Word...', 'info');
 
   // Dynamically load mammoth.js
