@@ -6185,9 +6185,20 @@ function parseVesselTextClient(text){
     }
     // "Total holds and deck (nominal intake): 1510TEU" / "Total 1510 TEU"
     // "TTL: 4511 TEU" (preliminary TCD) / "Total合计 1765TEU" (bilingual)
-    if(!result.particular.teu){
-      var tt = effLine.match(/(?:nominal|total|ttl|grand\s*total|total\s*(?:holds?|intake|capacity|container))[^\n]{0,45}?(\d[\d,]*)\s*teu/i);
-      if(tt) setField('teu', toNum(tt[1]));
+    // Authoritative total (TTL/Total) must WIN over the "TEU（20）" 20-ft size
+    // marker that the generic 'container capacity' alias can mis-grab as the
+    // count (e.g. HONG DA XIN 708 TCD: "Cont cap TEU（20）" then "TTL:2068 TEU").
+    {
+      var tt = effLine.match(/\b(?:ttl|total|grand\s*total|nominal)\b[^\n]{0,45}?(\d[\d,]*)\s*teu/i)
+            || effLine.match(/(?:nominal|total|ttl|grand\s*total|total\s*(?:holds?|intake|capacity|container))[^\n]{0,45}?(\d[\d,]*)\s*teu/i);
+      if(tt){
+        var tv = toNum(tt[1]);
+        // Override only when unset, or when the existing value is the 20ft/40ft
+        // size-marker misread (a lone 20 / 40), so genuine small counts are safe.
+        if(!result.particular.teu || result.particular.teu === '20' || result.particular.teu === '40'){
+          result.particular.teu = tv;
+        }
+      }
     }
     // "Around 1230 TEU of 14MT each homogeneously laden" / "INTAKE ON 14MT HOMO: 3325 TEU"
     if(!result.particular.homogeneous){
