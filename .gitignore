@@ -1,5 +1,12 @@
 # Sensitive files
 .update_token
+*.pat
+*.token
+.env
+.env.*
+
+# Agent work notes (contain internal paths / credentials - never commit, repo is public)
+.workbuddy/
 
 # Data files (large, not needed in repo)
 Vessel_Departure_Report.xlsx
@@ -8,3 +15,8 @@ auto_update.log
 # Python
 __pycache__/
 *.pyc
+
+# Personal data (PII) - captain names / phones / emails - must never be public
+captain-contacts.xlsx
+captain-contacts.html
+captain-contacts*
