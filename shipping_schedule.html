@@ -1208,7 +1208,6 @@
   </div>
   <div class="app-tabs">
     <div class="app-tab active" data-tab="simulator" onclick="switchAppTab('simulator')">🚢 Simulator</div>
-    <div class="app-tab" data-tab="daily" onclick="switchAppTab('daily')">📋 Simulator Save</div>
     <div class="app-tab" data-tab="portcharges" onclick="switchAppTab('portcharges')">💰 Port Charges</div>
     <div class="app-tab" data-tab="dailymovement" onclick="switchAppTab('dailymovement')">📋 Daily Movement</div>
     <div class="app-tab" data-tab="oilreport" onclick="switchAppTab('oilreport')">🛢️ Oil Report</div>
@@ -1567,73 +1566,6 @@
 </div>
 
 <!-- END TAB 1: Simulator -->
-</div>
-
-<!-- TAB 2: Daily Fleet Schedule -->
-<div class="tab-content" id="tabDaily">
-<div class="daily-layout">
-  <!-- Left: Fleet list -->
-  <div class="daily-left">
-    <div class="daily-quick-search">
-      <input type="text" id="dailyQuickSearch" placeholder="Search vessel/voyage/lane, e.g. CUBK2601W" oninput="onQuickSearch(this.value)"/>
-      <button onclick="clearDailyFilters()" title="Clear all filters" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--muted);padding:2px 4px;line-height:1;">✕</button>
-    </div>
-    <div class="daily-filter">
-      <div class="daily-filter-row" style="gap:6px;align-items:center;">
-        <div class="combobox-wrap" id="dailyVesselCombobox" style="flex:1;min-width:0;">
-          <input type="text" id="dailyVesselInput" placeholder="Vessel..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
-          <span class="combobox-arrow">&#9662;</span>
-          <div class="combobox-dropdown" id="dailyVesselDropdown"></div>
-        </div>
-        <input type="text" id="dailyVoyFilter" placeholder="Voyage..." style="flex:1;min-width:0;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
-        <div class="combobox-wrap" id="dailyLaneCombobox" style="flex:1;min-width:0;">
-          <input type="text" id="dailyLaneInput" placeholder="Lane..." autocomplete="off" style="width:100%;box-sizing:border-box;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:.78rem;"/>
-          <span class="combobox-arrow">&#9662;</span>
-          <div class="combobox-dropdown" id="dailyLaneDropdown"></div>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <label style="font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:3px;" title="Select all voyages for batch export">
-          <input type="checkbox" id="dailySelectAll" onchange="toggleAllDailyVessels(this.checked)"/> Select All
-        </label>
-        <span style="font-size:.7rem;color:var(--muted);" id="dailyVesselCount"></span>
-      </div>
-    </div>
-    <div class="daily-actions">
-      <button class="dm-btn" onclick="forceReloadFleet()" title="Force reload latest data from GitHub (clear local cache)" style="background:#6f42c1;color:#fff;">🔄 Refresh</button>
-      <button class="dm-btn dm-btn-commit" onclick="commitFleetSchedule()">⬆ Commit</button>
-      <button class="dm-btn dm-btn-export" id="dailyExportBtn" onclick="exportFleetPDF()">📄 Export PDF</button>
-      <button class="dm-btn dm-btn-export" onclick="exportFleetExcel()" style="background:#217346;">📊 Export Excel</button>
-      <button class="dm-btn dm-btn-primary" onclick="addNewVoyage()">+ New Voyage</button>
-      <button class="dm-btn dm-btn-import" onclick="document.getElementById('importExcelInput').click()" title="Import schedule from Excel">📤 Import</button>
-      <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;" onchange="handleImportExcel(this)"/>
-      <button class="dm-btn" onclick="showBackupMenu()" title="Data Backup & Restore" style="background:rgba(255,193,7,.25);color:#856404;">🛡 Backup</button>
-      <span class="commit-status" id="dailyCommitStatus"></span>
-    </div>
-    <!-- Time range filter bar -->
-    <div class="daily-time-filter">
-      <span class="time-filter-label">📅 Range: </span>
-      <button class="time-filter-btn" data-range="1m" onclick="setDailyTimeRange('1m')">Past 1M</button>
-      <button class="time-filter-btn" data-range="3m" onclick="setDailyTimeRange('3m')">Past 3M</button>
-      <button class="time-filter-btn" data-range="6m" onclick="setDailyTimeRange('6m')">Past 6M</button>
-      <button class="time-filter-btn" data-range="1y" onclick="setDailyTimeRange('1y')">Past 1Y</button>
-      <button class="time-filter-btn" data-range="all" onclick="setDailyTimeRange('all')">All</button>
-    </div>
-    <div class="daily-fleet-list" id="dailyFleetList">
-      <div class="daily-empty">
-        <div class="icon">📋</div>
-        <div>No fleet data.<br/>Use Simulator to simulate and sync.</div>
-      </div>
-    </div>
-  </div>
-  <!-- Right: Detail -->
-  <div class="daily-right" id="dailyRightPanel">
-    <div class="daily-empty">
-      <div class="icon">🚢</div>
-      <div>Select a vessel to view schedule</div>
-    </div>
-  </div>
-</div>
 </div>
 
 <!-- TAB 3: Port Charges Inquiry -->
@@ -4918,9 +4850,6 @@ function renderTable(){
           ).join('')}
         </div>
       </div>
-      <button class="btn-dm" onclick="syncToDaily()" style="padding:6px 16px;font-size:.85rem;background:#198754;border-color:#198754;color:#fff;">
-        💾 Add to Simulator Save
-      </button>
     </div>
   `;
   container.appendChild(banner);
@@ -9209,7 +9138,7 @@ function switchAppTab(tab){
     else _tabs[_t].classList.remove('active');
   }
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active','block'));
-  var tabId = tab==='simulator'?'tabSimulator':tab==='daily'?'tabDaily':tab==='portcharges'?'tabPortCharges':tab==='dailymovement'?'tabDailyMovement':tab==='oilreport'?'tabOilReport':'tabSimulator';
+  var tabId = tab==='simulator'?'tabSimulator':tab==='portcharges'?'tabPortCharges':tab==='dailymovement'?'tabDailyMovement':tab==='oilreport'?'tabOilReport':'tabSimulator';
   const el = document.getElementById(tabId);
   if(tab==='portcharges'||tab==='dailymovement'||tab==='oilreport'){ el.classList.add('active'); }
   else { el.classList.add('active','block'); }
@@ -9223,7 +9152,6 @@ function switchAppTab(tab){
       iframe.setAttribute('src', base + '?_t=' + Date.now());
     }
   }
-  if(tab==='daily') initDailyPage();
 }
 
 // ==================== DAILY FLEET SCHEDULE ====================
@@ -11302,7 +11230,9 @@ function deleteCurrentVoyage(vesselCode, voyIdx){
 
 // Quick save from banner input
 // ===== Unified: Add current schedule to GitHub Fleet & show in Daily =====
-// Both "💾 Add to Simulator Save" buttons (Simulator + Data Manager) call this.
+// NOTE 2026-09-15: the "Simulator Save" tab and its "Add to Simulator Save" buttons were
+// removed from the UI. This function is retained (still callable programmatically) but has
+// no UI entry point; it no longer switches tabs.
 // SAFETY: Always loads from GitHub first, merges (never overwrites), validates before saving.
 async function syncToDaily(){
   if(!scheduleRows.length){
@@ -11420,8 +11350,7 @@ async function syncToDaily(){
   showToast('Added: ' + vesselCode + ' / ' + voyNo + ' / ' + laneCode + ' (total: ' + FLEET_DATA.vessels.length + ' vessels)', 'success');
   autoSaveFleet();
 
-  // STEP 7: Switch to daily tab, auto-expand this vessel, commit to GitHub
-  switchAppTab('daily');
+  // STEP 7: Commit to GitHub ("Simulator Save" tab removed 2026-09-15 — no tab switch)
   setTimeout(async () => {
     await commitFleetSchedule();
     // Auto-expand the synced vessel
