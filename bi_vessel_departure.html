@@ -103,19 +103,23 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .data-table tr:hover td.td-load { background: #e8f5e9; }
 .data-table tr:hover td.td-fuel { background: #ede7f6; }
 
-/* ===== Frozen first 3 columns (SVC / Vessel-Voyage / Terminal) for horizontal-scroll readability ===== */
+/* ===== Frozen first 4 columns (SVC / Vessel-Voyage / Vessel-Name / Terminal) for horizontal-scroll readability ===== */
 .data-table th.col-svc  { position: sticky; left: 0;   z-index: 13; }
 .data-table th.col-vsl  { position: sticky; left: 80px;  z-index: 13; }
-.data-table th.col-term { position: sticky; left: 222px; z-index: 13; }
+.data-table th.col-vname { position: sticky; left: 222px; z-index: 13; }
+.data-table th.col-term { position: sticky; left: 412px; z-index: 13; }
 .data-table td.col-svc  { position: sticky; left: 0;   z-index: 4; background: #fff; }
 .data-table td.col-vsl  { position: sticky; left: 80px;  z-index: 4; background: #fff; }
-.data-table td.col-term { position: sticky; left: 222px; z-index: 4; background: #fff; border-right: 2px solid #dbe2ea; box-shadow: 2px 0 5px -2px rgba(15,39,71,.18); }
+.data-table td.col-vname { position: sticky; left: 222px; z-index: 4; background: #fff; }
+.data-table td.col-term { position: sticky; left: 412px; z-index: 4; background: #fff; border-right: 2px solid #dbe2ea; box-shadow: 2px 0 5px -2px rgba(15,39,71,.18); }
 .data-table th.col-term { border-right: 2px solid #0f2747; box-shadow: 2px 0 5px -2px rgba(0,0,0,.30); }
 .data-table th.col-svc,  .data-table td.col-svc  { width: 80px;  min-width: 80px; }
 .data-table th.col-vsl,  .data-table td.col-vsl  { width: 142px; min-width: 142px; }
+.data-table th.col-vname, .data-table td.col-vname { width: 190px; min-width: 190px; }
 .data-table th.col-term, .data-table td.col-term { width: 98px;  min-width: 98px; }
 .data-table tbody tr:hover td.col-svc,
 .data-table tbody tr:hover td.col-vsl,
+.data-table tbody tr:hover td.col-vname,
 .data-table tbody tr:hover td.col-term { background: #fff; }
 
 /* ===== Cell components ===== */
@@ -124,6 +128,8 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .data-table td .voy-no { margin-left: 6px; color: #16335a; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 11.5px; background: #eaf0f8; padding: 1px 6px; border-radius: 4px; border: 1px solid #d3ddec; }
 .data-table td .term-code { font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; font-weight: 600; color: #334155; letter-spacing: .3px; }
 .data-table td .op-tag { color: #64748b; font-weight: 600; font-size: 11.5px; }
+.data-table td .vname { font-weight: 600; color: #0f2747; font-size: 11.5px; white-space: nowrap; }
+.data-table td .vname-empty { color: #c2c9d2; font-size: 12px; }
 .cargo-box.discharge { border-color: #f5a9a6; background: #fef5f5; }
 .cargo-box.discharge .cargo-title { color: #c5221f; }
 .cargo-box.discharge .value { color: #c5221f; }
@@ -366,6 +372,37 @@ const CSV_URLS = [
   'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv'
 ];
 let CSV_URL = CSV_URLS[0];
+
+// Vessel name lookup (code -> full ship name). Loaded from shipping_data/vessel_names.json
+// (built from the Allegro Vessel Master export + the CUL fleet tables). When a code is not
+// in the map the Schedule table shows "—".
+const VESSEL_NAME_URLS = [
+  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/vessel_names.json',
+  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/vessel_names.json'
+];
+let VESSEL_NAMES = {};
+function vesselFullName(vv) {
+  if (!vv) return null;
+  const code = String(vv).slice(0, 4).toUpperCase();
+  return VESSEL_NAMES[code] || null;
+}
+function fetchVesselNames() {
+  let i = 0;
+  const tryNext = () => {
+    if (i >= VESSEL_NAME_URLS.length) return;
+    const url = VESSEL_NAME_URLS[i++];
+    fetch(url)
+      .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+      .then(j => {
+        VESSEL_NAMES = j || {};
+        // Data may already be rendered: re-render so names appear immediately.
+        if (typeof filtered !== 'undefined' && filtered.length) { renderTable(); renderAnalysis(); }
+      })
+      .catch(() => tryNext());
+  };
+  tryNext();
+}
+
 let DATA_UPDATED = null; // last commit time of the CSV data source (from GitHub commits API)
 const CACHE_UPDATED_KEY = 'bi_vessel_csv_cache_updated_v1';
 let DATA = [];
@@ -388,6 +425,7 @@ function svcColor(svc) {
 const COL_DEFS = [
   { key: 'svc', label: 'SVC', cls: 'col-svc', fmt: v => { const c = svcColor(v); return '<span class="svc-pill" style="background:' + c.bg + ';color:' + c.fg + '">' + (v || '') + '</span>'; } },
   { key: 'vessel_voyage', label: 'VESSEL / VOYAGE', cls: 'col-vsl', fmt: v => { const m = /^([A-Z0-9]{4})([0-9]{4}[A-Z]?)$/.exec(v || ''); return m ? '<span class="vsl-code">' + m[1] + '</span><span class="voy-no">' + m[2] + '</span>' : (v || ''); } },
+  { key: 'vessel_name', label: 'VESSEL NAME', cls: 'col-vname', fmt: (v, r) => { const n = vesselFullName(r.vessel_voyage); return n ? '<span class="vname">' + n + '</span>' : '<span class="vname-empty">&mdash;</span>'; } },
   { key: 'terminal', label: 'TERMINAL', cls: 'col-term', fmt: v => '<span class="term-code">' + (v || '') + '</span>' },
   { key: 'operator', label: 'OPERATOR', cls: 'col-op', fmt: v => '<span class="op-tag">' + (v || '') + '</span>' },
   { key: 'arrived_anchorage', label: 'Arrival', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
@@ -627,6 +665,7 @@ function init() {
   setupScrollSpy();
   loadCSVWithRetry(0);
   fetchDataUpdatedTime();
+  fetchVesselNames();
 }
 
 function loadCSVWithRetry(retry) {
@@ -802,7 +841,8 @@ function applyFilter() {
     if (from && r.departure && r.departure < from) return false;
     if (to && r.departure && r.departure > to) return false;
     if (q) {
-      const hay = (r.vessel_voyage + ' ' + r.terminal + ' ' + r.svc).toLowerCase();
+      const qn = vesselFullName(r.vessel_voyage) || '';
+      const hay = (r.vessel_voyage + ' ' + qn + ' ' + r.terminal + ' ' + r.svc).toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -869,6 +909,7 @@ function sortFiltered() {
       const isNum = colDef && colDef.num;
       let va = a[key], vb = b[key];
       if (key === 'vessel_voyage') { va = vesselName(va); vb = vesselName(vb); }
+      if (key === 'vessel_name') { va = (vesselFullName(a.vessel_voyage) || '').toLowerCase(); vb = (vesselFullName(b.vessel_voyage) || '').toLowerCase(); }
       if (key === 'mph') { va = mphOf(a); vb = mphOf(b); }
       if (va == null && vb == null) continue;
       if (va == null) return dir === 'asc' ? 1 : -1;
