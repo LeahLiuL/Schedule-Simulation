@@ -87,20 +87,20 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .data-table .col-teu { width: 62px; }
 .data-table .col-op { width: 60px; min-width: 60px; text-align: center; }
 .data-table .col-hidden { display: none; }
-.data-table th.th-discharge { background: #fce8e6; color: #c5221f; border-bottom: 2px solid #f5a9a6; }
-.data-table th.th-discharge:hover { background: #fadad8; }
-.data-table th.th-discharge.sorted-asc, .data-table th.th-discharge.sorted-desc { background: #fadad8; }
-.data-table th.th-load { background: #e6f4ea; color: #137333; border-bottom: 2px solid #a8dab5; }
-.data-table th.th-load:hover { background: #d4edda; }
-.data-table th.th-load.sorted-asc, .data-table th.th-load.sorted-desc { background: #d4edda; }
+.data-table th.th-discharge { background: #fef0e6; color: #e8710a; border-bottom: 2px solid #fdc69c; }
+.data-table th.th-discharge:hover { background: #fde2cc; }
+.data-table th.th-discharge.sorted-asc, .data-table th.th-discharge.sorted-desc { background: #fde2cc; }
+.data-table th.th-load { background: #e8f0fe; color: #1a73e8; border-bottom: 2px solid #a8c7fa; }
+.data-table th.th-load:hover { background: #d2e3fc; }
+.data-table th.th-load.sorted-asc, .data-table th.th-load.sorted-desc { background: #d2e3fc; }
 .data-table th.th-fuel { background: #e8e0ff; color: #5e35b1; border-bottom: 2px solid #b39ddb; }
 .data-table th.th-fuel:hover { background: #ddd6f3; }
 .data-table th.th-fuel.sorted-asc, .data-table th.th-fuel.sorted-desc { background: #ddd6f3; }
-.data-table td.td-discharge { color: #c5221f; background: #fef5f5; }
-.data-table td.td-load { color: #137333; background: #f2f9f5; }
+.data-table td.td-discharge { color: #e8710a; background: #fff6ef; }
+.data-table td.td-load { color: #1a73e8; background: #f5f9ff; }
 .data-table td.td-fuel { color: #5e35b1; background: #f5f3ff; }
-.data-table tr:hover td.td-discharge { background: #fde8e8; }
-.data-table tr:hover td.td-load { background: #e8f5e9; }
+.data-table tr:hover td.td-discharge { background: #fdeede; }
+.data-table tr:hover td.td-load { background: #e9f1ff; }
 .data-table tr:hover td.td-fuel { background: #ede7f6; }
 
 /* ===== Frozen first 4 columns (SVC / Vessel-Voyage / Vessel-Name / Terminal) for horizontal-scroll readability ===== */
@@ -435,6 +435,8 @@ const COL_DEFS = [
   { key: 'port_stay', label: 'Stay(h)', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true },
   { key: 'mph', label: 'MPH', cls: 'col-num', fmt: (v, r) => { const m = mphOf(r); return m != null ? m.toFixed(1) : ''; }, num: true },
   { key: 'total_moves', label: 'MOVES', cls: 'col-num', fmt: v => v != null ? Math.round(v) : '', num: true },
+  { key: 'discharge_teu', label: 'DISCHARGE', cls: 'col-teu', fmt: (v, r) => { const s = dischargeTotal(r); return s != null ? Math.round(s) : ''; }, num: true, group: 'discharge', bold: true, defaultVisible: true },
+  { key: 'load_teu', label: 'LOAD', cls: 'col-teu', fmt: (v, r) => { const s = loadTotal(r); return s != null ? Math.round(s) : ''; }, num: true, group: 'load', bold: true, defaultVisible: true },
   { key: 'discharge_full_20gp', label: 'Dis F20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
   { key: 'discharge_empty_20gp', label: 'Dis E20', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
   { key: 'discharge_full_40hc', label: 'Dis F40', cls: 'col-teu', fmt: v => v != null ? Math.round(v) : '', num: true, group: 'discharge' },
@@ -454,6 +456,15 @@ const COL_DEFS = [
   { key: 'dep_diesel_oil', label: 'Dep DO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' },
   { key: 'dep_lsdo', label: 'Dep LSDO', cls: 'col-num', fmt: v => v != null ? v.toFixed(1) : '', num: true, group: 'fuel' }
 ];
+
+// Load / Discharge summary totals: sum of the four size/type sub-columns each
+// (20GP / 40HC, full / empty). Null values are treated as 0.
+function dischargeTotal(r) {
+  return (r.discharge_full_20gp || 0) + (r.discharge_empty_20gp || 0) + (r.discharge_full_40hc || 0) + (r.discharge_empty_40hc || 0);
+}
+function loadTotal(r) {
+  return (r.load_full_20gp || 0) + (r.load_empty_20gp || 0) + (r.load_full_40hc || 0) + (r.load_empty_40hc || 0);
+}
 
 let OPTIONS = { terminals: [], svcs: [], operators: [] };
 let selected = { terminal: new Set(), svc: new Set(), operator: new Set() };
@@ -521,6 +532,26 @@ function buildOptions(data) {
   OPTIONS.operators = [...new Set(data.map(r => r.operator).filter(Boolean))].sort();
 }
 
+function reconcileColOrder() {
+  // Ensure every visible column appears in colOrder, inserted at its natural
+  // (COL_DEFS) position so newly-added / default-visible columns (e.g. the
+  // Load & Discharge summaries) land in the right place instead of piling up
+  // at the far right of the table.
+  const visibleKeys = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
+  const orderIndex = {};
+  COL_DEFS.forEach((c, i) => { orderIndex[c.key] = i; });
+  let ordered = colOrder.filter(k => visibleKeys.includes(k));
+  const missing = visibleKeys.filter(k => !ordered.includes(k));
+  missing.forEach(k => {
+    let inserted = false;
+    for (let j = 0; j < ordered.length; j++) {
+      if (orderIndex[ordered[j]] > orderIndex[k]) { ordered.splice(j, 0, k); inserted = true; break; }
+    }
+    if (!inserted) ordered.push(k);
+  });
+  colOrder = ordered;
+}
+
 function loadColVisibility() {
   try {
     const saved = localStorage.getItem('bi_col_visibility_v3');
@@ -530,39 +561,35 @@ function loadColVisibility() {
   COL_DEFS.forEach((c, i) => {
     if (!(c.key in colVisibility)) {
       // Default: show columns up to and including MOVES; hide everything after
-      // (the colored discharge/load/fuel blocks + Restows/TEU).
-      colVisibility[c.key] = (movesIdx >= 0 ? (i <= movesIdx) : true);
+      // (the colored discharge/load/fuel blocks + Restows/TEU). Columns flagged
+      // defaultVisible:true (the Load/Discharge summaries) are shown regardless.
+      colVisibility[c.key] = (c.defaultVisible === true) ? true : (movesIdx >= 0 ? (i <= movesIdx) : true);
     }
   });
   try {
     const savedOrder = localStorage.getItem('bi_col_order_v3');
-    if (savedOrder) {
-      colOrder = JSON.parse(savedOrder);
-      // validate: ensure all visible keys are in colOrder
-      const visibleKeys = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
-      const missing = visibleKeys.filter(k => !colOrder.includes(k));
-      const extra = colOrder.filter(k => !visibleKeys.includes(k));
-      colOrder = colOrder.filter(k => visibleKeys.includes(k)).concat(missing);
-    } else {
-      colOrder = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
-    }
+    if (savedOrder) colOrder = JSON.parse(savedOrder);
+    else colOrder = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
   } catch (e) {
     colOrder = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
   }
+  reconcileColOrder();
 }
 
-function saveColVisibility() {
+function applyColVisibility(closePanel) {
+  // Persist, re-sync column order, and re-render the table.
   localStorage.setItem('bi_col_visibility_v3', JSON.stringify(colVisibility));
-  // sync colOrder with visibility changes
-  const visibleKeys = COL_DEFS.filter(c => colVisibility[c.key]).map(c => c.key);
-  const newOrder = [];
-  colOrder.forEach(k => { if (visibleKeys.includes(k)) newOrder.push(k); });
-  visibleKeys.forEach(k => { if (!newOrder.includes(k)) newOrder.push(k); });
-  colOrder = newOrder;
+  reconcileColOrder();
   localStorage.setItem('bi_col_order_v3', JSON.stringify(colOrder));
-  document.getElementById('colPickerPanel').classList.remove('show');
+  if (closePanel) document.getElementById('colPickerPanel').classList.remove('show');
   renderTable();
 }
+function toggleCol(key, checked) {
+  // Live toggle: update visibility immediately so the table responds on click.
+  colVisibility[key] = checked;
+  applyColVisibility(false);
+}
+function saveColVisibility() { applyColVisibility(true); }
 
 function resetColVisibility() {
   COL_DEFS.forEach(c => colVisibility[c.key] = true);
@@ -585,7 +612,7 @@ function renderColPicker() {
   const list = document.getElementById('colPickerList');
   list.innerHTML = COL_DEFS.map(c =>
     '<label class="col-picker-item">' +
-    '<input type="checkbox" ' + (colVisibility[c.key] ? 'checked' : '') + ' onchange="colVisibility[\'' + c.key + '\'] = this.checked">' +
+    '<input type="checkbox" ' + (colVisibility[c.key] ? 'checked' : '') + ' onchange="toggleCol(\'' + c.key + '\', this.checked)">' +
     '<span>' + c.label + '</span>' +
     '</label>'
   ).join('');
