@@ -136,6 +136,7 @@ code,name_en,name_cn,man_in,portstay_time,wait_time,lat,lon
 "INHAR","ICD GARHI HARSARU","","","","","28.45","76.95"
 "INHYD","ICD HYDERABAD","","","","","17.39","78.49"
 "INICD","NEW DELHI, INDIA","","","","","28.63","77.22"
+"INIXY","KANDLA","","2","","","23.03","70.22"
 "INJAI","ICD JAIPUR","","","","","26.92","75.79"
 "INJDP","ICD  JODHPUR","","","","","26.24","73.02"
 "INKAT","KATTUPALLI PORT","","","","","13.28","80.35"
