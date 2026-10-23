@@ -20,6 +20,14 @@ XLSX = r"C:\CULINES\Claw Report\CUL Vessel Best Model Report - 2026.xlsx"
 CSV  = 'shipping_data/cul_vessel_bestmodel.csv'
 DRY  = (len(sys.argv) <= 1 or sys.argv[1] != 'write')
 
+# Known misspellings in the Excel source -> canonical vessel name.
+# Key must be norm_key(name): letters/digits only, UPPERCASED.
+# Confirmed 2026-10-23 with Leah: row "KE CELEBES" is a typo of "KR CELEBES"
+# (identical Cap/DWT/Reefer, and vessels.csv has KRCL = KR CELEBES).
+NAME_FIX = {
+    'KECELEBES': 'KR CELEBES',
+}
+
 M = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
 
 def clean_cell(v):
@@ -85,6 +93,7 @@ for r in ws.findall('.//{%s}row' % M):
     rec = [clean_cell(d.get(col, '')) for col in EXCEL_COLS]
     if rec[0] == '':
         continue
+    rec[0] = NAME_FIX.get(norm_key(rec[0]), rec[0])   # apply typo alias
     xrows.append(rec)
 
 # ---- read current CSV ----
