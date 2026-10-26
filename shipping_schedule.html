@@ -2876,6 +2876,22 @@ let PARTICULAR_DATA = [];  // vessel particular info (array of row objects from 
 let BESTMODEL_DATA = [];   // vessel capacity per lane (from cul_vessel_bestmodel.csv)
 let PTX_AVG = {};          // precomputed PTX averages: { shipCode: { portCode: { avg, n, terminals, source } } }
 
+// 非标准 / 公司内部港口代码 -> ports.csv 里的标准 UN/LOCODE
+// 例：CUL/Allegro 内部用 INKDL（+T01 码头号，如 INKDLT01）表示坎德拉，官方 UN/LOCODE 是 INIXY。
+// 这里做「别名映射」而不是在 ports.csv 新增一行，避免港口下拉框出现两个 KANDLA。
+const PORT_CODE_ALIAS = {
+  'INKDL': 'INIXY'   // KANDLA (Deendayal Port) —— 内部 terminal 代码 INKDLT01 的前 5 位
+};
+function normalizePortCode(code){
+  if(!code) return code;
+  const c = String(code).trim().toUpperCase();
+  if(PORT_CODE_ALIAS[c]) return PORT_CODE_ALIAS[c];
+  // 允许带后缀的内部代码（如 INKDLT01）：只有映射目标确实存在于港口表时才替换
+  const pref = Object.keys(PORT_CODE_ALIAS).find(k => c.startsWith(k));
+  if(pref && PORTS_DATA.some(r => r[0] === PORT_CODE_ALIAS[pref])) return PORT_CODE_ALIAS[pref];
+  return c;
+}
+
 // Load all CSV data from GitHub (including lanes.json)
 async function loadAllData(){
   const [portsRows, vesselsRows, distRows] = await Promise.all([
@@ -3301,6 +3317,12 @@ function buildPortMap(){
       wait: (wait != null && wait !== '') ? parseFloat(wait) : 0
     };
   });
+  // 内部/非标准代码指向同一条目（如 INKDL -> INIXY KANDLA）。
+  // 只影响查表，不影响 PORTS_DATA，所以港口下拉框不会出现重复项。
+  Object.keys(PORT_CODE_ALIAS).forEach(alias=>{
+    const canon = PORT_CODE_ALIAS[alias];
+    if(PORT_MAP[canon] && !PORT_MAP[alias]) PORT_MAP[alias] = PORT_MAP[canon];
+  });
 }
 
 // Build PORT_COORDS from PORTS_DATA (col 6=lat, col 7=lon), with fallback
@@ -3318,6 +3340,11 @@ function buildPortCoords(){
   // Merge fallback (ports not in CSV)
   Object.keys(PORT_COORDS_FALLBACK).forEach(code => {
     if(!PORT_COORDS[code]) PORT_COORDS[code] = PORT_COORDS_FALLBACK[code];
+  });
+  // 内部/非标准代码共用同一坐标（如 INKDL -> INIXY KANDLA），供海路距离引擎使用
+  Object.keys(PORT_CODE_ALIAS).forEach(alias=>{
+    const canon = PORT_CODE_ALIAS[alias];
+    if(PORT_COORDS[canon] && !PORT_COORDS[alias]) PORT_COORDS[alias] = PORT_COORDS[canon];
   });
 }
 
@@ -3713,19 +3740,26 @@ function addPortFromCombobox(){
 
   // Try to match from dropdown
   let code = val;
-  // Check if it starts with a known code
-  const knownCode = PORTS_DATA.find(([c])=>val.toUpperCase().startsWith(c));
-  if(knownCode){
-    code = knownCode[0];
+  // 先做内部代码归一化（如 INKDL / INKDLT01 -> INIXY KANDLA）
+  const norm = normalizePortCode(val);
+  const normRow = PORTS_DATA.find(([c])=>c === norm);
+  if(normRow && norm !== val.toUpperCase()){
+    code = normRow[0];
   } else {
-    // Try to find by full match
-    const match = PORTS_DATA.find(([c,en,cn])=>
-      val.toUpperCase()===c.toUpperCase() ||
-      val.toUpperCase()===en.toUpperCase() ||
-      (cn && val===cn)
-    );
-    if(match) code = match[0];
-    // Otherwise use the raw input as a custom code
+    // Check if it starts with a known code
+    const knownCode = PORTS_DATA.find(([c])=>val.toUpperCase().startsWith(c));
+    if(knownCode){
+      code = knownCode[0];
+    } else {
+      // Try to find by full match
+      const match = PORTS_DATA.find(([c,en,cn])=>
+        val.toUpperCase()===c.toUpperCase() ||
+        val.toUpperCase()===en.toUpperCase() ||
+        (cn && val===cn)
+      );
+      if(match) code = match[0];
+      // Otherwise use the raw input as a custom code
+    }
   }
 
   selectedPorts.push({code, stayHours: getPortStay(code), waitHours: getPortWait(code)});
@@ -8059,7 +8093,7 @@ const GEO_CACHE = {};  // portCode → {lat, lng}
 
 // Get port name from PORTS_DATA by code
 function getPortName(code){
-  const row = PORTS_DATA.find(r => r[0] === code);
+  const row = PORTS_DATA.find(r => r[0] === normalizePortCode(code));
   return row ? (row[1] || r[2] || '') : '';
 }
 
@@ -8118,21 +8152,22 @@ function getCanalAdjustment(lat1, lon1, lat2, lon2){
 
 // Look up port coordinates, fall back to Nominatim API
 async function lookupPortCoords(portCode){
-  if(GEO_CACHE[portCode]) return GEO_CACHE[portCode];
+  const code = normalizePortCode(portCode);   // 内部代码 -> 标准 UN/LOCODE
+  if(GEO_CACHE[code]) return GEO_CACHE[code];
 
   // Check built-in database first
-  if(PORT_COORDS[portCode]){
-    const c = {lat: PORT_COORDS[portCode][0], lng: PORT_COORDS[portCode][1]};
-    GEO_CACHE[portCode] = c;
+  if(PORT_COORDS[code]){
+    const c = {lat: PORT_COORDS[code][0], lng: PORT_COORDS[code][1]};
+    GEO_CACHE[code] = c;
     return c;
   }
 
   // Check PORTS_DATA for lat/lng columns (if available)
-  const row = PORTS_DATA.find(r => r[0] === portCode);
+  const row = PORTS_DATA.find(r => r[0] === code);
   if(row && row.length > 5 && row[5] && row[6]){
     const c = {lat: parseFloat(row[5]), lng: parseFloat(row[6])};
     if(!isNaN(c.lat) && !isNaN(c.lng)){
-      GEO_CACHE[portCode] = c;
+      GEO_CACHE[code] = c;
       return c;
     }
   }
@@ -8158,7 +8193,7 @@ async function lookupPortCoords(portCode){
       const data = await resp.json();
       if(data && data.length > 0){
         const c = {lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon)};
-        GEO_CACHE[portCode] = c;
+        GEO_CACHE[code] = c;
         return c;
       }
     } catch(e){ /* try next query */ }
