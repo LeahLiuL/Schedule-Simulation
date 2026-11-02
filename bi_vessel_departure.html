@@ -404,20 +404,37 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 </div>
 
 <script>
-// Use jsDelivr CDN (no rate limit) with GitHub raw as fallback
-const CSV_URLS = [
-  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/bi_vessel_departure.csv',
-  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/bi_vessel_departure.csv'
-];
+// Data source resolution.
+// The CSV/JSON live in THIS repo, so we try the SAME ORIGIN first (GitHub Pages, or a
+// local preview server). That path never depends on cdn.jsdelivr.net or
+// raw.githubusercontent.com, both of which are routinely blocked on corporate networks
+// and inside sandboxed previews ("Failed to fetch"). CDN + raw remain as fallbacks
+// (they are also the only option when the page is opened via file://).
+const GH_OWNER = 'LeahLiuL', GH_REPO = 'Schedule-Simulation', GH_REF = 'main';
+const DATA_DIR = 'shipping_data/';
+function sameOriginUrl(path) {
+  try {
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      return new URL(path, location.href).href;
+    }
+  } catch (e) { /* file:// or opaque origin */ }
+  return null;
+}
+function dataUrls(file) {
+  const list = [
+    sameOriginUrl(DATA_DIR + file),
+    'https://cdn.jsdelivr.net/gh/' + GH_OWNER + '/' + GH_REPO + '@' + GH_REF + '/' + DATA_DIR + file,
+    'https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_REF + '/' + DATA_DIR + file
+  ].filter(Boolean);
+  return list.length ? list : ['https://raw.githubusercontent.com/' + GH_OWNER + '/' + GH_REPO + '/' + GH_REF + '/' + DATA_DIR + file];
+}
+const CSV_URLS = dataUrls('bi_vessel_departure.csv');
 let CSV_URL = CSV_URLS[0];
 
 // Vessel name lookup (code -> full ship name). Loaded from shipping_data/vessel_names.json
 // (built from the Allegro Vessel Master export + the CUL fleet tables). When a code is not
 // in the map the Schedule table shows "—".
-const VESSEL_NAME_URLS = [
-  'https://cdn.jsdelivr.net/gh/LeahLiuL/Schedule-Simulation@main/shipping_data/vessel_names.json',
-  'https://raw.githubusercontent.com/LeahLiuL/Schedule-Simulation/main/shipping_data/vessel_names.json'
-];
+const VESSEL_NAME_URLS = dataUrls('vessel_names.json');
 let VESSEL_NAMES = {};
 function vesselFullName(vv) {
   if (!vv) return null;
@@ -753,7 +770,11 @@ function renderDps(){
   const fe=document.getElementById('dps_from'), te=document.getElementById('dps_to');
   if(fe&&fe.value) dpsFrom=fe.value; if(te&&te.value) dpsTo=te.value;
   const meta=document.getElementById('dpsMeta');
-  if(!DATA||!DATA.length){ wrap.innerHTML='<div class="dps-empty">No data</div>'; if(meta)meta.textContent=''; return; }
+  if(!DATA||!DATA.length){
+    wrap.innerHTML='<div class="dps-empty">No schedule data loaded — the data file could not be fetched.<br><br><button onclick="loadCSVWithRetry(0)" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;">Retry loading data</button></div>';
+    if(meta)meta.textContent='';
+    return;
+  }
   const rows=dpsSvcRows();
   if(!rows.length){ wrap.innerHTML='<div class="dps-empty">服务 '+dpsSvc+' 在当前数据源中没有记录</div>'; if(meta)meta.textContent=''; return; }
   const groups={};
@@ -861,6 +882,13 @@ function fetchCSV(isBackground, retry, urlIdx) {
     })
     .then(text => {
       if (text === undefined) return; // retry branch already loaded
+      // Guard: some static hosts answer a missing path with an HTML page (HTTP 200),
+      // which would silently parse into an empty table. Treat that as a failed source
+      // so the next URL in CSV_URLS gets a chance.
+      const head = text.slice(0, 400).toLowerCase();
+      if (head.indexOf('<!doctype') !== -1 || head.indexOf('<html') !== -1) {
+        throw new Error('not a CSV (HTML response)');
+      }
       try {
         localStorage.setItem(CACHE_KEY, text);
         localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
@@ -901,7 +929,11 @@ function fetchCSV(isBackground, retry, urlIdx) {
           console.warn('Cache fallback failed:', e);
         }
       }
-      wrap.innerHTML = '<div class="no-data">Failed to load data: ' + err.message + '<br><br><button onclick="loadCSVWithRetry(0)" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;">Retry</button> <button onclick="location.reload()" style="padding:6px 14px;background:#666;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:8px;">Refresh Page</button></div>';
+      wrap.innerHTML = '<div class="no-data">Failed to load data: ' + err.message +
+        '<br><span style="color:#80868b;font-size:12px;">Tried ' + CSV_URLS.length + ' source(s): same-origin, jsDelivr, GitHub raw. Your network may be blocking them.</span>' +
+        '<br><br><button onclick="loadCSVWithRetry(0)" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;">Retry</button> <button onclick="location.reload()" style="padding:6px 14px;background:#666;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:8px;">Refresh Page</button></div>';
+      // Keep the Proforma (DPS) section from sitting on "Loading…" forever.
+      if (typeof dpsInit === 'function') { try { dpsInit(); } catch (e) {} }
     });
 }
 
@@ -963,7 +995,9 @@ function parseCsvSource(url) {
   if (m) return { owner: m[1], repo: m[2], ref: m[3], path: m[4] };
   m = url.match(/githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
   if (m) return { owner: m[1], repo: m[2], ref: m[3], path: m[4] };
-  return null;
+  // Same-origin (GitHub Pages) URLs carry no repo info — use the known repo constants
+  // so the "Data updated" timestamp still resolves.
+  return { owner: GH_OWNER, repo: GH_REPO, ref: GH_REF, path: DATA_DIR + 'bi_vessel_departure.csv' };
 }
 
 function persistDataUpdated() {
