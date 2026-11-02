@@ -227,6 +227,8 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .dps-toolbar label { font-size:11px; color:#5f6368; font-weight:700; }
 .dps-toolbar input[type=date] { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; }
 .dps-meta { font-size:11px; color:#5f6368; margin-left:4px; }
+.dps-merge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:400; color:#3c4043; cursor:pointer; padding:2px 4px; }
+.dps-merge input { margin:0; cursor:pointer; }
 .dps-wrap { background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:auto; max-height:calc(100vh - 150px); }
 table.dps-table { border-collapse:collapse; table-layout:fixed; font-size:12px; }
 table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -324,6 +326,7 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
   <label>To</label><input type="date" id="dps_to" onchange="renderDps()" />
   <button class="btn btn-secondary" onclick="dpsResetRange()">Upcoming</button>
   <button class="btn btn-secondary" onclick="dpsAllRange()">All dates</button>
+  <label class="dps-merge" title="Merge 2633W + 2633E into one block (same vessel, same voyage number, opposite direction)"><input type="checkbox" id="dpsMergeChk" checked onchange="dpsToggleMerge(this.checked)" /> Round trip (W+E in one row)</label>
   <span class="dps-meta" id="dpsMeta"></span>
 </div>
 <div class="dps-wrap" id="dpsWrap"><div class="dps-empty">Loading…</div></div>
@@ -754,6 +757,24 @@ function dpsFmtDT(s){ return s ? String(s).slice(0,16) : ''; }
 const DPS_DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 function dpsFmtDOW(s){ if(!s) return ''; const d=new Date(String(s).replace(' ','T')); if(isNaN(d.getTime())) return ''; return DPS_DOW[d.getDay()]+' '+dpsPad(d.getDate())+'/'+dpsPad(d.getMonth()+1); }
 function dpsSvcRows(){ return (DATA||[]).filter(r=>r.svc===dpsSvc); }
+// Round-trip merging. A voyage label is 4-char vessel code + voyage number + direction
+// letter, e.g. CSJ72633W / CSJ72633E = same vessel, same voyage number, opposite legs.
+// Merging on (code + number) puts both legs of the rotation on ONE block, like the DPS sheet.
+let dpsMerge = true;
+function dpsVoyageParts(vv){
+  const s=String(vv||'').toUpperCase();
+  const m=s.match(/^(.{4})(\d+)([A-Z])$/);
+  if(m) return { code:m[1], num:m[2], dir:m[3], vv:s };
+  return { code:s.slice(0,4), num:s.slice(4), dir:'', vv:s };
+}
+function dpsVoyLabel(vv){ const p=dpsVoyageParts(vv); return p.dir ? (p.num+p.dir) : String(vv||'').slice(4); }
+function dpsGroupKey(vv){
+  const s=String(vv||'').toUpperCase();
+  if(!dpsMerge) return s;
+  const p=dpsVoyageParts(vv);
+  return p.dir ? (p.code+p.num) : s;   // drop the direction letter so W/E pair up
+}
+function dpsToggleMerge(v){ dpsMerge=!!v; renderDps(); }
 function dpsSetDefaultRange(){ const t=new Date(); dpsFrom=dpsAddDays(t,-21); dpsTo=dpsAddDays(t,150); const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
 function dpsInit(){
   const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
@@ -778,12 +799,17 @@ function renderDps(){
   const rows=dpsSvcRows();
   if(!rows.length){ wrap.innerHTML='<div class="dps-empty">服务 '+dpsSvc+' 在当前数据源中没有记录</div>'; if(meta)meta.textContent=''; return; }
   const groups={};
-  rows.forEach(r=>{ const k=r.vessel_voyage||('~'+(r.terminal||'')+'|'+(r.departure||'')); (groups[k]=groups[k]||[]).push(r); });
+  rows.forEach(r=>{
+    const k=dpsGroupKey(r.vessel_voyage)||('~'+(r.terminal||'')+'|'+(r.departure||''));
+    (groups[k]=groups[k]||[]).push(r);
+  });
   const blocks=Object.keys(groups).map(k=>{
     const calls=groups[k].slice().sort((a,b)=> (dpsCallTime(a)||'').localeCompare(dpsCallTime(b)||''));
     const times=calls.map(dpsCallTime).filter(Boolean).sort();
     const ends=calls.map(c=>c.departure||dpsCallTime(c)).filter(Boolean).sort();
-    return { vv:k, calls:calls, start:times[0]||'', end:ends[ends.length-1]||times[0]||'' };
+    const vvList=[];
+    calls.forEach(c=>{ const v=String(c.vessel_voyage||'').toUpperCase(); if(v && vvList.indexOf(v)===-1) vvList.push(v); });
+    return { vv:k, vvList:vvList, calls:calls, start:times[0]||'', end:ends[ends.length-1]||times[0]||'' };
   });
   let sel=blocks.filter(b=>{ const s=(b.start||'').slice(0,10), e=(b.end||b.start||'').slice(0,10); if(dpsFrom&&e&&e<dpsFrom) return false; if(dpsTo&&s&&s>dpsTo) return false; return true; });
   let widened=false;
@@ -798,17 +824,22 @@ function renderDps(){
   const cells=arr=>arr.map(v=>'<td class="pcell">'+v+'</td>').join('');
   let html='<table class="dps-table" style="width:'+W+'px">'+cols+'<tbody>';
   sel.forEach(b=>{
-    const vcode=(b.vv||'').slice(0,4).toUpperCase(); const voy=(b.vv||'').slice(4);
+    const p0=dpsVoyageParts(b.calls[0].vessel_voyage);
+    const vcode=(p0.code||(b.vv||'').slice(0,4)).toUpperCase();
     const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
+    const multi=b.vvList.length>1;
+    const voyLabel=multi ? b.vvList.map(dpsVoyLabel).join(' / ') : dpsVoyLabel(b.calls[0].vessel_voyage);
     const ports=pad(b.calls.map(c=>dpsPortLabel(c.terminal)));
+    // When a block holds both legs, show the direction-specific voyage under each port
+    // (2633W over the westbound calls, 2633E over the eastbound ones).
+    const voyCells=pad(b.calls.map(c=> multi ? dpsVoyLabel(c.vessel_voyage) : ''));
     const eosp=pad(b.calls.map(c=>dpsFmtDT(c.arrived_anchorage)));
     const berth=pad(b.calls.map(c=>dpsFmtDT(c.berth)));
     const dur=pad(b.calls.map(c=>{const d=dpsOpsDur(c); return d!=null?d.toFixed(1):'';}));
     const unberth=pad(b.calls.map(c=>dpsFmtDT(c.departure)));
     const base=pad(b.calls.map(c=>dpsFmtDOW(c.berth||c.arrived_anchorage)));
-    const blank=pad(b.calls.map(()=> ''));
     html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vname+'</td>'+cells(ports)+'</tr>';
-    html+='<tr class="dps-row-voyage"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol">'+voy+'</td>'+cells(blank)+'</tr>';
+    html+='<tr class="dps-row-voyage"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol">'+voyLabel+'</td>'+cells(voyCells)+'</tr>';
     html+='<tr class="dps-row-eosp"><td class="dps-lbl">EOSP</td><td class="dps-vesselcol"></td>'+cells(eosp)+'</tr>';
     html+='<tr class="dps-row-berth"><td class="dps-lbl">Berth</td><td class="dps-vesselcol"></td>'+cells(berth)+'</tr>';
     html+='<tr class="dps-row-dur"><td class="dps-lbl">Ops Duration</td><td class="dps-vesselcol"></td>'+cells(dur)+'</tr>';
@@ -817,7 +848,7 @@ function renderDps(){
   });
   html+='</tbody></table>';
   wrap.innerHTML=html;
-  if(meta) meta.textContent=dpsSvc+' · '+sel.length+' 个航次 · 最多 '+maxPorts+' 港 · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(widened?' · 所选日期无数据，已显示全部':'');
+  if(meta) meta.textContent=dpsSvc+' · '+sel.length+' 个航次'+(dpsMerge?'（往返已合并）':'')+' · 最多 '+maxPorts+' 港 · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(widened?' · 所选日期无数据，已显示全部':'');
 }
 
 function init() {
