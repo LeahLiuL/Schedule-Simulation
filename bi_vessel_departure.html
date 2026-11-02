@@ -217,6 +217,29 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .cargo-row .discharge-val { color: #c5221f; font-weight: 600; }
 .cargo-row .load-val { color: #137333; font-weight: 600; }
 .cargo-row .total-val { color: #1a73e8; font-weight: 700; }
+/* ===== DPS Proforma grid (Excel-style schedule) ===== */
+.dps-toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:#fff; border-radius:8px; padding:8px 12px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:10px; }
+.dps-svc-pills { display:flex; flex-wrap:wrap; gap:6px; }
+.dps-pill { padding:5px 13px; border-radius:16px; font-size:12px; font-weight:700; cursor:pointer; border:1px solid #d0d7de; background:#fff; color:#334155; user-select:none; }
+.dps-pill:hover { background:#f0f4fa; }
+.dps-pill.active { background:#16335a; color:#fff; border-color:#16335a; }
+.dps-pill.empty { opacity:.4; }
+.dps-toolbar label { font-size:11px; color:#5f6368; font-weight:700; }
+.dps-toolbar input[type=date] { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; }
+.dps-meta { font-size:11px; color:#5f6368; margin-left:4px; }
+.dps-wrap { background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:auto; max-height:calc(100vh - 150px); }
+table.dps-table { border-collapse:collapse; table-layout:fixed; font-size:12px; }
+table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dps-lbl { position:sticky; left:0; z-index:2; background:#eef1f6; font-weight:700; color:#334155; }
+.dps-vesselcol { position:sticky; left:134px; z-index:2; background:#fbfbf4; font-weight:700; color:#6b5200; }
+.dps-row-port .dps-vesselcol { background:#ffffaf; color:#5a4a00; }
+.dps-row-port td.pcell { background:#ccccff; color:#1a237e; font-weight:600; text-align:center; }
+.dps-row-voyage td.pcell { background:#c7e7ff; color:#0d47a1; text-align:center; }
+.dps-row-baseline td.pcell { background:#eef0ff; color:#3b3f8f; text-align:center; }
+.dps-row-eosp td.pcell, .dps-row-berth td.pcell, .dps-row-unberth td.pcell { text-align:center; color:#2b2b2b; }
+.dps-row-dur td.pcell { text-align:right; color:#444; }
+.dps-block-start td { border-top:2px solid #8fa0b8; }
+.dps-empty { padding:26px; text-align:center; color:#9aa0a6; }
 </style>
 </head>
 <body>
@@ -225,6 +248,7 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 <nav class="sidebar">
   <div class="nav-title">Navigation</div>
   <div class="nav-item active" data-target="sec-schedule" onclick="showSection('sec-schedule')">Schedule</div>
+  <div class="nav-item" data-target="sec-dps" onclick="showSection('sec-dps')">Proforma (DPS)</div>
   <div class="nav-item" data-target="sec-summary" onclick="showSection('sec-summary')">Summary</div>
   <div class="nav-item" data-target="sec-berth" onclick="showSection('sec-berth')">Berth Rate</div>
   <div class="nav-item" data-target="sec-prod" onclick="showSection('sec-prod')">Productivity</div>
@@ -289,6 +313,20 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 <div class="table-wrap" id="tableWrap">
 <div class="loading">Loading...</div>
 </div>
+</section>
+<section class="view" id="sec-dps" hidden>
+<div class="dps-toolbar">
+  <label>Service</label>
+  <div class="dps-svc-pills" id="dpsSvcPills"></div>
+</div>
+<div class="dps-toolbar">
+  <label>From</label><input type="date" id="dps_from" onchange="renderDps()" />
+  <label>To</label><input type="date" id="dps_to" onchange="renderDps()" />
+  <button class="btn btn-secondary" onclick="dpsResetRange()">Upcoming</button>
+  <button class="btn btn-secondary" onclick="dpsAllRange()">All dates</button>
+  <span class="dps-meta" id="dpsMeta"></span>
+</div>
+<div class="dps-wrap" id="dpsWrap"><div class="dps-empty">Loading…</div></div>
 </section>
 <section class="view" id="sec-summary" hidden>
 <div class="panel">
@@ -397,6 +435,7 @@ function fetchVesselNames() {
         VESSEL_NAMES = j || {};
         // Data may already be rendered: re-render so names appear immediately.
         if (typeof filtered !== 'undefined' && filtered.length) { renderTable(); renderAnalysis(); }
+        if (typeof renderDps === 'function') { try { renderDps(); } catch (e) {} }
       })
       .catch(() => tryNext());
   };
@@ -684,6 +723,82 @@ function setDefaultDateRange() {
   document.getElementById('f_to').value = fmt(to);
 }
 
+/* ===== DPS Proforma module (Excel-style schedule grid) ===== */
+const DPS_SERVICES = ['REX','AEM','AM1','RES','ST3','ST1','NP2','CST','IMR'];
+let dpsSvc = 'REX';
+let dpsFrom = '', dpsTo = '';
+function dpsPad(n){ return String(n).padStart(2,'0'); }
+function dpsDateStr(d){ return d.getFullYear()+'-'+dpsPad(d.getMonth()+1)+'-'+dpsPad(d.getDate()); }
+function dpsAddDays(base,n){ const d=new Date(base.getTime()); d.setDate(d.getDate()+n); return dpsDateStr(d); }
+function dpsPortLabel(t){ if(!t) return ''; const u=String(t).toUpperCase(); return u.length>5 ? (u.slice(0,5)+' - '+u.slice(5)) : u; }
+function dpsCallTime(r){ return r.berth || r.arrived_anchorage || r.departure || ''; }
+function dpsOpsDur(r){ if(r.port_stay==null) return null; const d=r.port_stay-(r.wait_time||0); return d>0? d : r.port_stay; }
+function dpsFmtDT(s){ return s ? String(s).slice(0,16) : ''; }
+const DPS_DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function dpsFmtDOW(s){ if(!s) return ''; const d=new Date(String(s).replace(' ','T')); if(isNaN(d.getTime())) return ''; return DPS_DOW[d.getDay()]+' '+dpsPad(d.getDate())+'/'+dpsPad(d.getMonth()+1); }
+function dpsSvcRows(){ return (DATA||[]).filter(r=>r.svc===dpsSvc); }
+function dpsSetDefaultRange(){ const t=new Date(); dpsFrom=dpsAddDays(t,-21); dpsTo=dpsAddDays(t,150); const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
+function dpsInit(){
+  const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
+  const present=new Set((DATA||[]).map(r=>r.svc));
+  pills.innerHTML=DPS_SERVICES.map(s=>'<span class="dps-pill'+(s===dpsSvc?' active':'')+(present.has(s)?'':' empty')+'" data-svc="'+s+'" onclick="dpsSelectSvc(\''+s+'\')">'+s+(present.has(s)?'':' ⊘')+'</span>').join('');
+  if(!dpsFrom||!dpsTo){ dpsSetDefaultRange(); } else { const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
+  renderDps();
+}
+function dpsSelectSvc(s){ dpsSvc=s; const ps=document.querySelectorAll('#dpsSvcPills .dps-pill'); for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===s); renderDps(); }
+function dpsResetRange(){ dpsSetDefaultRange(); renderDps(); }
+function dpsAllRange(){ const tms=dpsSvcRows().map(dpsCallTime).filter(Boolean).sort(); if(tms.length){ dpsFrom=tms[0].slice(0,10); dpsTo=tms[tms.length-1].slice(0,10); } else { dpsFrom=''; dpsTo=''; } const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; renderDps(); }
+function renderDps(){
+  const wrap=document.getElementById('dpsWrap'); if(!wrap) return;
+  const fe=document.getElementById('dps_from'), te=document.getElementById('dps_to');
+  if(fe&&fe.value) dpsFrom=fe.value; if(te&&te.value) dpsTo=te.value;
+  const meta=document.getElementById('dpsMeta');
+  if(!DATA||!DATA.length){ wrap.innerHTML='<div class="dps-empty">No data</div>'; if(meta)meta.textContent=''; return; }
+  const rows=dpsSvcRows();
+  if(!rows.length){ wrap.innerHTML='<div class="dps-empty">服务 '+dpsSvc+' 在当前数据源中没有记录</div>'; if(meta)meta.textContent=''; return; }
+  const groups={};
+  rows.forEach(r=>{ const k=r.vessel_voyage||('~'+(r.terminal||'')+'|'+(r.departure||'')); (groups[k]=groups[k]||[]).push(r); });
+  const blocks=Object.keys(groups).map(k=>{
+    const calls=groups[k].slice().sort((a,b)=> (dpsCallTime(a)||'').localeCompare(dpsCallTime(b)||''));
+    const times=calls.map(dpsCallTime).filter(Boolean).sort();
+    const ends=calls.map(c=>c.departure||dpsCallTime(c)).filter(Boolean).sort();
+    return { vv:k, calls:calls, start:times[0]||'', end:ends[ends.length-1]||times[0]||'' };
+  });
+  let sel=blocks.filter(b=>{ const s=(b.start||'').slice(0,10), e=(b.end||b.start||'').slice(0,10); if(dpsFrom&&e&&e<dpsFrom) return false; if(dpsTo&&s&&s>dpsTo) return false; return true; });
+  let widened=false;
+  if(!sel.length){ sel=blocks.slice(); widened=true; }
+  sel.sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  const maxPorts=Math.max(1, ...sel.map(b=>b.calls.length));
+  const W=302+maxPorts*130;
+  let cols='<colgroup><col style="width:134px"><col style="width:168px">';
+  for(let i=0;i<maxPorts;i++) cols+='<col style="width:130px">';
+  cols+='</colgroup>';
+  const pad=a=>{ const b=a.slice(); while(b.length<maxPorts) b.push(''); return b; };
+  const cells=arr=>arr.map(v=>'<td class="pcell">'+v+'</td>').join('');
+  let html='<table class="dps-table" style="width:'+W+'px">'+cols+'<tbody>';
+  sel.forEach(b=>{
+    const vcode=(b.vv||'').slice(0,4).toUpperCase(); const voy=(b.vv||'').slice(4);
+    const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
+    const ports=pad(b.calls.map(c=>dpsPortLabel(c.terminal)));
+    const eosp=pad(b.calls.map(c=>dpsFmtDT(c.arrived_anchorage)));
+    const berth=pad(b.calls.map(c=>dpsFmtDT(c.berth)));
+    const dur=pad(b.calls.map(c=>{const d=dpsOpsDur(c); return d!=null?d.toFixed(1):'';}));
+    const unberth=pad(b.calls.map(c=>dpsFmtDT(c.departure)));
+    const base=pad(b.calls.map(c=>dpsFmtDOW(c.berth||c.arrived_anchorage)));
+    const blank=pad(b.calls.map(()=> ''));
+    html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vname+'</td>'+cells(ports)+'</tr>';
+    html+='<tr class="dps-row-voyage"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol">'+voy+'</td>'+cells(blank)+'</tr>';
+    html+='<tr class="dps-row-eosp"><td class="dps-lbl">EOSP</td><td class="dps-vesselcol"></td>'+cells(eosp)+'</tr>';
+    html+='<tr class="dps-row-berth"><td class="dps-lbl">Berth</td><td class="dps-vesselcol"></td>'+cells(berth)+'</tr>';
+    html+='<tr class="dps-row-dur"><td class="dps-lbl">Ops Duration</td><td class="dps-vesselcol"></td>'+cells(dur)+'</tr>';
+    html+='<tr class="dps-row-unberth"><td class="dps-lbl">Unberth</td><td class="dps-vesselcol"></td>'+cells(unberth)+'</tr>';
+    html+='<tr class="dps-row-baseline"><td class="dps-lbl">Baseline / Proforma</td><td class="dps-vesselcol">'+vcode+'</td>'+cells(base)+'</tr>';
+  });
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+  if(meta) meta.textContent=dpsSvc+' · '+sel.length+' 个航次 · 最多 '+maxPorts+' 港 · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(widened?' · 所选日期无数据，已显示全部':'');
+}
+
 function init() {
   loadColVisibility();
   document.addEventListener('click', closeAllPanels);
@@ -800,6 +915,7 @@ function applyDefaults() {
   setDefaultDateRange();
   sortKeys = [{ key: 'vessel_voyage', dir: 'asc' }, { key: 'arrived_anchorage', dir: 'asc' }];
   applyFilter();
+  if (typeof dpsInit === 'function') dpsInit();
   setUpdateTime();
 }
 
