@@ -245,6 +245,8 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 .dps-row-port .dps-vesselcol .vc-name { display:block; font-size:11.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dps-row-port .dps-vesselcol .vc-code { display:block; font-size:10px; font-weight:700; color:#5f4700; letter-spacing:.6px; }
 .dps-row-port .dps-vesselcol .vc-voy { display:block; font-size:10.5px; font-weight:700; color:#0d47a1; }
+.dps-row-port .dps-vesselcol .vc-name.vc-noname { color:#8a6d00; font-style:italic; }
+.dps-row-port .dps-vesselcol .vc-code.vc-na { color:#9aa0a6; font-weight:600; letter-spacing:0; font-size:9px; }
 .dps-row-port td.pcell { background:#e9ecff; text-align:center; vertical-align:middle; padding:3px 4px; }
 .dps-row-voy td.pcell { background:#eef4ff; text-align:center; color:#0d47a1; font-weight:700; font-size:10.5px; padding:1px 4px; }
 .dps-row-voy .dps-lbl { background:#e6eefc; color:#0d47a1; }
@@ -1339,6 +1341,7 @@ function renderDps(){
   dpsLastSel=sel; dpsLastMax=maxCols; dpsLastAligned=built.aligned; dpsLastAxis=built.axis;
   dpsLastMerge=!!built.merge; dpsLastDrop=0; dpsLastSplit=built.split||0;
   const mchk=document.getElementById('dpsMergeChk'); if(mchk) mchk.checked=!!built.merge;
+  const noNameCnt=sel.filter(b=>{const c=dpsVesselCode(b.vv); return !(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[c]);}).length;
   const W=302+maxCols*126;
   let cols='<colgroup><col style="width:118px"><col style="width:184px">';
   for(let i=0;i<maxCols;i++) cols+='<col style="width:126px">';
@@ -1358,8 +1361,10 @@ function renderDps(){
     const etdCells=colArr.map(cs=>dpsTimeTd(cs,'departure')).join('');
     const pfCells=colArr.map(dpsPlanTd).join('');
     const rmCells=colArr.map(dpsRemarkTd).join('');
-    const vc='<span class="vc-name" title="'+dpsEsc(vname+' ('+vcode+')')+'">'+dpsEsc(vname)+'</span>'+
-             (vname===vcode?'':'<span class="vc-code">'+dpsEsc(vcode||'—')+'</span>')+
+    const known=!!(vcode && nmap[vcode]);
+    const vcTip=known ? (vname+' / '+vcode) : ('代码 '+vcode+' 暂未收录船名');
+    const vc='<span class="vc-name'+(known?'':' vc-noname')+'" title="'+dpsEsc(vcTip)+'">'+dpsEsc(vname||'—')+'</span>'+
+             (known?'<span class="vc-code">'+dpsEsc(vcode)+'</span>':'<span class="vc-code vc-na">船名未收录</span>')+
              '<span class="vc-voy">'+dpsEsc(voy)+'</span>';
     html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vc+'</td>'+portCells+'</tr>';
     html+='<tr class="dps-row-voy"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol"></td>'+voyCells+'</tr>';
@@ -1376,7 +1381,7 @@ function renderDps(){
     ? ('已对齐 '+maxCols+' 列')
     : '未对齐：航序不统一，按挂靠顺序铺开';
   const dropTxt = built.split ? (' · 个别船舶航次较多，已分 '+built.split+' 段续行') : '';
-  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'（W/E 同行）')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 该航线在所选日期没有记录，已显示它全部 '+(dpsOperator?dpsOperator+' ':'')+'数据':'')+dropTxt+(DPS_SVC_HIDDEN_COUNT?' · 已隐藏 '+DPS_SVC_HIDDEN_COUNT+' 条 Service Type O 航线':'');
+  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'（W/E 同行）')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 该航线在所选日期没有记录，已显示'+(dpsOperator?(' 全部 '+dpsOperator):' 全部')+' 数据':'')+dropTxt+(noNameCnt?' · '+noNameCnt+' 行船名未收录（显示 4 位船代码）':'')+(DPS_SVC_HIDDEN_COUNT?' · 已隐藏 '+DPS_SVC_HIDDEN_COUNT+' 条 Service Type O 航线':'');
   if(meta) meta.title = built.aligned
     ? '每个港口固定在某一列，方便上下对比不同船舶'
     : ('该航线在数据里挂靠顺序不统一（或港口太分散），强行对齐会更乱，因此按每条航次自己的顺序铺开');
@@ -1564,7 +1569,8 @@ function exportDpsXlsx(){
       return cs.map(function(c){ return c.remark||''; }).filter(Boolean).join(' / ');
     });
     // Vessel cell carries both the name and the 4-letter code (the code is what ops quote).
-    const vLabel=(vname===vcode) ? (vname+'\n'+voyLabel) : (vname+'\n'+vcode+'\n'+voyLabel);
+    const knownExp=!!(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode]);
+    const vLabel=(vname===vcode) ? (vname+'\n'+(knownExp?'':'船名未收录\n')+voyLabel) : (vname+'\n'+vcode+'\n'+voyLabel);
     put('Port', vLabel, portCells, 3, true);
     put('Voyage', '', one(function(c){ return dpsVoyLabel(c.vessel_voyage); }), 4, false);
     put('ETA', '', one(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
