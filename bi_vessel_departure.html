@@ -237,11 +237,17 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 .dps-lbl { position:sticky; left:0; z-index:2; background:#eef1f6; font-weight:700; color:#334155; }
 .dps-vesselcol { position:sticky; left:134px; z-index:2; background:#fbfbf4; font-weight:700; color:#6b5200; }
 .dps-row-port .dps-vesselcol { background:#ffffaf; color:#5a4a00; }
-.dps-row-port td.pcell { background:#ccccff; color:#1a237e; font-weight:600; text-align:center; }
+.dps-row-port td.pcell { background:#ccccff; color:#1a237e; font-weight:600; text-align:center; vertical-align:middle; }
 .dps-row-voyage td.pcell { background:#c7e7ff; color:#0d47a1; text-align:center; }
-.dps-row-baseline td.pcell { background:#eef0ff; color:#3b3f8f; text-align:center; }
-.dps-row-eosp td.pcell, .dps-row-berth td.pcell, .dps-row-unberth td.pcell { text-align:center; color:#2b2b2b; }
-.dps-row-dur td.pcell { text-align:right; color:#444; }
+.dps-row-eta td.pcell, .dps-row-etb td.pcell, .dps-row-etd td.pcell { text-align:center; color:#2b2b2b; }
+.dps-row-delay td.pcell { text-align:center; }
+td.pcell .st { display:block; line-height:1.45; white-space:nowrap; }
+td.pcell .pc-name { display:block; font-size:10.5px; line-height:1.25; white-space:normal; overflow:hidden; text-overflow:ellipsis; max-height:2.6em; }
+td.pcell .pc-code { display:block; font-size:10px; color:#4353a8; opacity:.85; }
+td.pcell.pc-blank { color:#d7dbe3; font-size:10px; }
+.dl-late { color:#c5221f; font-weight:700; }
+.dl-early { color:#137333; font-weight:700; }
+.dl-ok { color:#5f6368; }
 .dps-block-start td { border-top:2px solid #8fa0b8; }
 .dps-empty { padding:26px; text-align:center; color:#9aa0a6; }
 </style>
@@ -339,6 +345,7 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
       <option value="voyage">Per voyage</option>
     </select>
   </label>
+  <label class="dps-merge" title="Put every port on a fixed column (lane rotation order) so the same port lines up on every row"><input type="checkbox" id="dpsAlignChk" checked onchange="dpsSetAlign(this.checked)" /> Align ports</label>
   <span class="dps-meta" id="dpsMeta"></span>
   <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;">Export Excel</button>
 </div>
@@ -474,6 +481,42 @@ function fetchVesselNames() {
       .catch(() => tryNext());
   };
   tryNext();
+}
+
+// Port rotation (lanes.json) and terminal names (nodes.json). The Proforma grid uses the
+// rotation to put every port on a fixed column and the node list to print the real
+// terminal name next to its port code.
+const LANES_URLS = dataUrls('lanes.json');
+const NODES_URLS = dataUrls('nodes.json');
+let LANES = {}, NODES = {};
+function fetchAuxJson(urls, apply) {
+  let i = 0;
+  const tryNext = () => {
+    if (i >= urls.length) return;
+    const url = urls[i++];
+    fetch(url)
+      .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+      .then(j => {
+        apply(j || {});
+        if (typeof renderDps === 'function') { try { renderDps(); } catch (e) {} }
+      })
+      .catch(() => tryNext());
+  };
+  tryNext();
+}
+function fetchLanes() {
+  fetchAuxJson(LANES_URLS, j => {
+    LANES = {};
+    (Array.isArray(j) ? j : []).forEach(x => { if (x && x.code) LANES[x.code] = x; });
+  });
+}
+function fetchNodes() {
+  fetchAuxJson(NODES_URLS, j => { NODES = j || {}; });
+}
+// Optional planned ETB per vessel-voyage-port (enables the Delay row). Absent = no delay.
+const PROFORMA_URLS = dataUrls('proforma.json');
+function fetchProforma() {
+  fetchAuxJson(PROFORMA_URLS, j => { DPS_PROFORMA = j || {}; });
 }
 
 let DATA_UPDATED = null; // last commit time of the CSV data source (from GitHub commits API)
@@ -763,17 +806,33 @@ let dpsSvc = 'REX';
 let dpsFrom = '', dpsTo = '';
 let dpsOperator = '', dpsVessel = '';   // '' = all
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
+let dpsAlign = true;                    // put every port on a fixed column
+let dpsGroupMode = 'vessel';            // 'vessel' | 'trip' | 'voyage'
+const DPS_MAX_STACK = 4;                // max visits to one port in a block before it continues below
+// Optional proforma lookup: "VESSELVOY|PORT" -> planned ETB (ISO string). Filled from
+// shipping_data/proforma.json when that file exists; empty = no delay column is shown.
+let DPS_PROFORMA = {};
 function dpsPad(n){ return String(n).padStart(2,'0'); }
 function dpsDateStr(d){ return d.getFullYear()+'-'+dpsPad(d.getMonth()+1)+'-'+dpsPad(d.getDate()); }
 function dpsAddDays(base,n){ const d=new Date(base.getTime()); d.setDate(d.getDate()+n); return dpsDateStr(d); }
-function dpsPortLabel(t){ if(!t) return ''; const u=String(t).toUpperCase(); return u.length>5 ? (u.slice(0,5)+' - '+u.slice(5)) : u; }
+function dpsEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function dpsCallTime(r){ return r.berth || r.arrived_anchorage || r.departure || ''; }
-function dpsOpsDur(r){ if(r.port_stay==null) return null; const d=r.port_stay-(r.wait_time||0); return d>0? d : r.port_stay; }
 function dpsFmtDT(s){ return s ? String(s).slice(0,16) : ''; }
-const DPS_DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-function dpsFmtDOW(s){ if(!s) return ''; const d=new Date(String(s).replace(' ','T')); if(isNaN(d.getTime())) return ''; return DPS_DOW[d.getDay()]+' '+dpsPad(d.getDate())+'/'+dpsPad(d.getMonth()+1); }
+function dpsFmtShort(s){ return s ? String(s).slice(5,10) : ''; }   // MM-DD
 function dpsSvcRows(){ return (DATA||[]).filter(r=>r.svc===dpsSvc); }
 function dpsVesselCode(vv){ return String(vv||'').toUpperCase().slice(0,4); }
+function dpsPortOf(t){ return String(t||'').toUpperCase().slice(0,5); }
+// Terminal node -> {port code, terminal no, real terminal name} from shipping_data/nodes.json
+function dpsNodeInfo(t){
+  const u=String(t||'').toUpperCase();
+  const n=(typeof NODES!=='undefined' && NODES[u]) || null;
+  return {
+    node:u,
+    port:(n&&n.p)||u.slice(0,5),
+    term:(n&&n.t)||(u.length>5 ? ('T'+u.slice(-2)) : ''),
+    name:(n&&n.n)||''
+  };
+}
 // Rows after the Operator / Vessel filters.
 function dpsFilteredRows(){
   return dpsSvcRows().filter(r=>
@@ -807,9 +866,7 @@ function dpsFillFilters(){
 // letter, e.g. CSJ72633W / CSJ72633E = same vessel, same voyage number, opposite legs.
 //   'vessel' -> one row per vessel: every voyage of that ship in one block (default)
 //   'trip'   -> one row per rotation: 2633W + 2633E together
-//   'voyage' -> one row per voyage label (original behaviour)
-let dpsGroupMode = 'vessel';
-const DPS_MAX_PORTS = 20;   // a vessel with more calls than this in the window continues on a new block
+//   'voyage' -> one row per voyage label
 function dpsVoyageParts(vv){
   const s=String(vv||'').toUpperCase();
   const m=s.match(/^(.{4})(\d+)([A-Z])$/);
@@ -821,11 +878,11 @@ function dpsGroupKey(vv){
   const s=String(vv||'').toUpperCase();
   if(dpsGroupMode==='voyage') return s;
   const p=dpsVoyageParts(vv);
-  if(dpsGroupMode==='vessel') return p.code || s.slice(0,4);   // one row per ship
-  return p.dir ? (p.code+p.num) : s;                            // round trip: ignore direction
+  if(dpsGroupMode==='vessel') return p.code || s.slice(0,4);
+  return p.dir ? (p.code+p.num) : s;
 }
 function dpsSetGroupMode(m){ dpsGroupMode=(m==='trip'||m==='voyage')?m:'vessel'; renderDps(); }
-// Voyage label shown in the fixed column: 2633W / 2633E, or 2633W -> 2637E for a long run.
+function dpsSetAlign(v){ dpsAlign=!!v; renderDps(); }
 function dpsBlockVoyLabel(b){
   const labels=(b.vvList||[]).map(dpsVoyLabel);
   let s;
@@ -842,19 +899,56 @@ function dpsCounts(sel){
   });
   return { vessels:Object.keys(v).length, voyages:Object.keys(y).length };
 }
-// 1) one unit per voyage (its calls in time order)
-// 2) keep only voyages overlapping the date window (whole voyages, never half a rotation)
-// 3) group the units by the current mode; an over-wide vessel continues on the next block
-function dpsMakeBlock(g, units){
+// Port axis: one column per port, ordered by the lane rotation (shipping_data/lanes.json).
+// Ports seen in the data but missing from the rotation are inserted right after the port
+// they most often follow, so an irregular service still lines up as well as it can.
+function dpsBuildAxis(rows){
+  if(!dpsAlign) return null;
+  const lane=(typeof LANES!=='undefined' && LANES[dpsSvc]) || null;
+  let axis=[], seen={};
+  ((lane && lane.ports) || []).forEach(p=>{ const u=String(p||'').toUpperCase(); if(u && !seen[u]){ seen[u]=1; axis.push(u); } });
+  const stat={}, voy={};
+  rows.forEach(r=>{ const k=String(r.vessel_voyage||''); (voy[k]=voy[k]||[]).push(r); });
+  Object.keys(voy).forEach(k=>{
+    const cs=voy[k].slice().sort((a,b)=>(dpsCallTime(a)||'').localeCompare(dpsCallTime(b)||''));
+    const n=cs.length;
+    cs.forEach((r,i)=>{
+      const p=dpsPortOf(r.terminal);
+      const s=stat[p]=stat[p]||{c:0,pos:0,pred:{}};
+      s.c++; s.pos+=i/Math.max(1,n-1);
+    });
+    for(let i=1;i<cs.length;i++){
+      const a=dpsPortOf(cs[i-1].terminal), b2=dpsPortOf(cs[i].terminal);
+      if(a===b2) continue;
+      const s=stat[b2]=stat[b2]||{c:0,pos:0,pred:{}};
+      s.pred[a]=(s.pred[a]||0)+1;
+    }
+  });
+  const extras=Object.keys(stat).filter(p=>axis.indexOf(p)===-1);
+  extras.sort((a,b)=>stat[b].c-stat[a].c);
+  extras.forEach(p=>{
+    const s=stat[p]; const preds=Object.keys(s.pred).sort((a,b)=>s.pred[b]-s.pred[a]);
+    let at=-1;
+    for(let i=0;i<preds.length;i++){ const idx=axis.indexOf(preds[i]); if(idx>=0){ at=idx+1; break; } }
+    if(at<0) at=axis.length;
+    axis.splice(at,0,p);
+  });
+  return axis.length ? axis : null;
+}
+function dpsMakeBlock(g, units, axis){
   const calls=[];
   units.forEach(u=>u.calls.forEach(c=>calls.push(c)));
   calls.sort((a,b)=>(dpsCallTime(a)||'').localeCompare(dpsCallTime(b)||''));
   const vvList=[];
   units.forEach(u=>{ const v=String(u.vv||'').toUpperCase(); if(v && vvList.indexOf(v)===-1) vvList.push(v); });
-  return { key:g, vv:vvList[0]||g, vvList:vvList, calls:calls,
+  const map={};
+  calls.forEach(c=>{ const p=dpsPortOf(c.terminal); (map[p]=map[p]||[]).push(c); });
+  const cols = axis ? axis.map(p=>map[p]||[]) : calls.map(c=>[c]);
+  return { key:g, vv:vvList[0]||g, vvList:vvList, calls:calls, map:map, cols:cols,
            start:units[0].start||'', end:units[units.length-1].end||'', part:1, parts:1 };
 }
 function dpsBuildBlocks(rows){
+  const axis=dpsBuildAxis(rows);
   const umap={};
   rows.forEach(r=>{
     const k=String(r.vessel_voyage||'').toUpperCase()||('~'+(r.terminal||'')+'|'+(r.departure||''));
@@ -879,17 +973,28 @@ function dpsBuildBlocks(rows){
   const blocks=[];
   Object.keys(gmap).forEach(g=>{
     const us=gmap[g].slice().sort((a,b)=>(a.start||'').localeCompare(b.start||''));
-    const chunks=[]; let cur=[], n=0;
+    // Keep a block readable: once a port would appear more than DPS_MAX_STACK times, or the
+    // block would grow past 40 calls, continue on the next block.
+    const chunks=[]; let cur=[], per={}, total=0;
     us.forEach(u=>{
-      if(cur.length && n+u.calls.length>DPS_MAX_PORTS){ chunks.push(cur); cur=[]; n=0; }
-      cur.push(u); n+=u.calls.length;
+      const cnt={}; u.calls.forEach(c=>{ const p=dpsPortOf(c.terminal); cnt[p]=(cnt[p]||0)+1; });
+      let over=false;
+      if(cur.length){
+        Object.keys(cnt).forEach(p=>{ if((per[p]||0)+cnt[p]>DPS_MAX_STACK) over=true; });
+        if(total+u.calls.length>40) over=true;
+      }
+      if(over){ chunks.push(cur); cur=[]; per={}; total=0; }
+      cur.push(u);
+      Object.keys(cnt).forEach(p=>{ per[p]=(per[p]||0)+cnt[p]; });
+      total+=u.calls.length;
     });
     if(cur.length) chunks.push(cur);
-    chunks.forEach((ch,i)=>{ const b=dpsMakeBlock(g,ch); b.part=i+1; b.parts=chunks.length; blocks.push(b); });
+    chunks.forEach((ch,i)=>{ const b=dpsMakeBlock(g,ch,axis); b.part=i+1; b.parts=chunks.length; blocks.push(b); });
   });
   blocks.sort((a,b)=>(a.start||'').localeCompare(b.start||'')||(a.vv||'').localeCompare(b.vv||''));
-  return { blocks:blocks, widened:widened };
+  return { blocks:blocks, widened:widened, axis:axis };
 }
+function dpsToggleMerge(v){ dpsSetGroupMode(v?'trip':'voyage'); }
 function dpsSetDefaultRange(){ const t=new Date(); dpsFrom=dpsAddDays(t,-21); dpsTo=dpsAddDays(t,150); const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
 function dpsInit(){
   const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
@@ -897,12 +1002,40 @@ function dpsInit(){
   pills.innerHTML=DPS_SERVICES.map(s=>'<span class="dps-pill'+(s===dpsSvc?' active':'')+(present.has(s)?'':' empty')+'" data-svc="'+s+'" onclick="dpsSelectSvc(\''+s+'\')">'+s+(present.has(s)?'':' ⊘')+'</span>').join('');
   if(!dpsFrom||!dpsTo){ dpsSetDefaultRange(); } else { const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
   const gm=document.getElementById('dpsGroupMode'); if(gm) gm.value=dpsGroupMode;
+  const al=document.getElementById('dpsAlignChk'); if(al) al.checked=dpsAlign;
   dpsFillFilters();
   renderDps();
 }
 function dpsSelectSvc(s){ dpsSvc=s; const ps=document.querySelectorAll('#dpsSvcPills .dps-pill'); for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===s); dpsFillFilters(); renderDps(); }
 function dpsResetRange(){ dpsSetDefaultRange(); renderDps(); }
 function dpsAllRange(){ const tms=dpsFilteredRows().map(dpsCallTime).filter(Boolean).sort(); if(tms.length){ dpsFrom=tms[0].slice(0,10); dpsTo=tms[tms.length-1].slice(0,10); } else { dpsFrom=''; dpsTo=''; } const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; renderDps(); }
+// One cell of a port column: every visit to that port on its own line.
+function dpsStackTd(values, cls, title){
+  const v=(values||[]).filter(x=>x!==null && x!==undefined && x!=='');
+  const c='pcell'+(cls?(' '+cls):'');
+  if(!v.length) return '<td class="'+c+'"></td>';
+  return '<td class="'+c+'"'+(title?(' title="'+dpsEsc(title)+'"'):'')+'>'+v.map(x=>'<span class="st">'+x+'</span>').join('')+'</td>';
+}
+function dpsPortTd(calls, portCode){
+  if(!calls || !calls.length) return '<td class="pcell pc-blank">'+dpsEsc(portCode)+'</td>';
+  const info=dpsNodeInfo(calls[0].terminal);
+  const terms=[];
+  calls.forEach(c=>{ const t=dpsNodeInfo(c.terminal).term; if(t && terms.indexOf(t)===-1) terms.push(t); });
+  const name=info.name || info.port;
+  const code=info.port+(terms.length?(' · '+terms.join('/')):'');
+  const tip=name+'  ['+code+']'+(calls.length>1?('  ×'+calls.length):'');
+  return '<td class="pcell" title="'+dpsEsc(tip)+'"><span class="pc-name">'+dpsEsc(name)+'</span><span class="pc-code">'+dpsEsc(code)+'</span></td>';
+}
+// Delay (days) against the planned ETB, when a proforma row exists for that call.
+function dpsDelay(c){
+  const key=String(c.vessel_voyage||'').toUpperCase()+'|'+dpsPortOf(c.terminal);
+  const plan=DPS_PROFORMA[key];
+  if(!plan || !c.berth) return null;
+  const a=new Date(String(c.berth).replace(' ','T')).getTime();
+  const p=new Date(String(plan).replace(' ','T')).getTime();
+  if(isNaN(a)||isNaN(p)) return null;
+  return (a-p)/86400000;
+}
 function renderDps(){
   const wrap=document.getElementById('dpsWrap'); if(!wrap) return;
   const fe=document.getElementById('dps_from'), te=document.getElementById('dps_to');
@@ -922,42 +1055,53 @@ function renderDps(){
   const built=dpsBuildBlocks(rows);
   const sel=built.blocks;
   const widened=built.widened;
-  const maxPorts=Math.max(1, ...sel.map(b=>b.calls.length));
-  // Keep the rendered selection around so Export Excel can reproduce this exact view.
-  dpsLastSel=sel; dpsLastMax=maxPorts;
-  const W=302+maxPorts*130;
+  const maxCols=Math.max(1, ...sel.map(b=>b.cols.length));
+  dpsLastSel=sel; dpsLastMax=maxCols;
+  const W=302+maxCols*142;
   let cols='<colgroup><col style="width:134px"><col style="width:168px">';
-  for(let i=0;i<maxPorts;i++) cols+='<col style="width:130px">';
+  for(let i=0;i<maxCols;i++) cols+='<col style="width:142px">';
   cols+='</colgroup>';
-  const pad=a=>{ const b=a.slice(); while(b.length<maxPorts) b.push(''); return b; };
-  const cells=arr=>arr.map(v=>'<td class="pcell">'+v+'</td>').join('');
+  const padCols=arr=>{ const b=arr.slice(); while(b.length<maxCols) b.push(''); return b; };
+  const hasDelay=sel.some(b=>b.calls.some(c=>dpsDelay(c)!==null));
   let html='<table class="dps-table" style="width:'+W+'px">'+cols+'<tbody>';
   sel.forEach(b=>{
     const vcode=dpsVesselCode(b.calls[0].vessel_voyage);
     const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
     const multi=b.vvList.length>1;
     const voyLabel=dpsBlockVoyLabel(b);
-    const ports=pad(b.calls.map(c=>dpsPortLabel(c.terminal)));
-    // A block may hold several voyages of the same ship, so stamp each port with the
-    // voyage it belongs to (2633W over the westbound calls, 2642E over the eastbound ones).
-    const voyCells=pad(b.calls.map(c=> multi ? dpsVoyLabel(c.vessel_voyage) : ''));
-    const eosp=pad(b.calls.map(c=>dpsFmtDT(c.arrived_anchorage)));
-    const berth=pad(b.calls.map(c=>dpsFmtDT(c.berth)));
-    const dur=pad(b.calls.map(c=>{const d=dpsOpsDur(c); return d!=null?d.toFixed(1):'';}));
-    const unberth=pad(b.calls.map(c=>dpsFmtDT(c.departure)));
-    const base=pad(b.calls.map(c=>dpsFmtDOW(c.berth||c.arrived_anchorage)));
-    html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vname+'</td>'+cells(ports)+'</tr>';
-    html+='<tr class="dps-row-voyage"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol">'+voyLabel+'</td>'+cells(voyCells)+'</tr>';
-    html+='<tr class="dps-row-eosp"><td class="dps-lbl">EOSP</td><td class="dps-vesselcol"></td>'+cells(eosp)+'</tr>';
-    html+='<tr class="dps-row-berth"><td class="dps-lbl">Berth</td><td class="dps-vesselcol"></td>'+cells(berth)+'</tr>';
-    html+='<tr class="dps-row-dur"><td class="dps-lbl">Ops Duration</td><td class="dps-vesselcol"></td>'+cells(dur)+'</tr>';
-    html+='<tr class="dps-row-unberth"><td class="dps-lbl">Unberth</td><td class="dps-vesselcol"></td>'+cells(unberth)+'</tr>';
-    html+='<tr class="dps-row-baseline"><td class="dps-lbl">Baseline / Proforma</td><td class="dps-vesselcol">'+vcode+'</td>'+cells(base)+'</tr>';
+    // Ungrouped (no axis) blocks are shorter than the widest one: pad so every row has
+    // exactly maxCols cells and the columns keep lining up.
+    const colArr=b.cols.slice(); while(colArr.length<maxCols) colArr.push([]);
+    const axisArr=built.axis||null;
+    const portCells=colArr.map((cs,i)=>dpsPortTd(cs, axisArr?(axisArr[i]||null):null)).join('');
+    const voyCells=colArr.map(cs=>dpsStackTd(multi?cs.map(c=>dpsEsc(dpsVoyLabel(c.vessel_voyage))):[])).join('');
+    const etaCells=colArr.map(cs=>dpsStackTd(cs.map(c=>dpsFmtDT(c.arrived_anchorage)))).join('');
+    const etbCells=colArr.map(cs=>dpsStackTd(cs.map(c=>dpsFmtDT(c.berth)))).join('');
+    const etdCells=colArr.map(cs=>dpsStackTd(cs.map(c=>dpsFmtDT(c.departure)))).join('');
+    html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+dpsEsc(vname)+'</td>'+portCells+'</tr>';
+    html+='<tr class="dps-row-voyage"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol">'+dpsEsc(voyLabel)+'</td>'+voyCells+'</tr>';
+    html+='<tr class="dps-row-eta"><td class="dps-lbl">ETA</td><td class="dps-vesselcol"></td>'+etaCells+'</tr>';
+    html+='<tr class="dps-row-etb"><td class="dps-lbl">ETB</td><td class="dps-vesselcol"></td>'+etbCells+'</tr>';
+    html+='<tr class="dps-row-etd"><td class="dps-lbl">ETD</td><td class="dps-vesselcol"></td>'+etdCells+'</tr>';
+    if(hasDelay){
+      const delayCells=colArr.map(cs=>{
+        const vals=cs.map(c=>{
+          const d=dpsDelay(c);
+          if(d===null) return '';
+          const cls=d>0?'dl-late':(d<-0.05?'dl-early':'dl-ok');
+          const txt=(d>0?'+':'')+d.toFixed(1)+'d';
+          return '<span class="'+cls+'">'+txt+'</span>';
+        });
+        return dpsStackTd(vals);
+      }).join('');
+      html+='<tr class="dps-row-delay"><td class="dps-lbl">Delay</td><td class="dps-vesselcol"></td>'+delayCells+'</tr>';
+    }
   });
   html+='</tbody></table>';
   wrap.innerHTML=html;
   const cnt=dpsCounts(sel);
-  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(dpsGroupMode==='vessel'?'（一船一行）':'')+' · 最多 '+maxPorts+' 港 · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(widened?' · 所选日期无数据，已显示全部':'');
+  const alignTxt = built.axis ? ('已对齐 '+built.axis.length+' 个港') : '未对齐（按时间顺序）';
+  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行 · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(widened?' · 所选日期无数据，已显示全部':'');
 }
 
 /* ===== Excel export: minimal XLSX writer (no external library) =====
@@ -1093,7 +1237,7 @@ function exportDpsXlsx(){
   const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行'+(dpsGroupMode==='vessel'?'，一船一行':'')+')';
   rowsXml.push('<row r="1" ht="22" customHeight="1">'+xlsxStrCell('A1',metaText,1)+'</row>');
   rowNum=2;
-  // One block = 7 rows, exactly the order shown on the page.
+  // One block = 5 rows (Port / Voyage / ETA / ETB / ETD) + Delay when proforma exists.
   const put=function(label,bVal,bStyle,values,vStyle,isStart){
     const st=function(k){ return isStart?(k+8):k; };
     let x='<row r="'+rowNum+'">';
@@ -1108,18 +1252,36 @@ function exportDpsXlsx(){
     }
     rowsXml.push(x+'</row>'); rowNum++;
   };
+  const hasDelay=sel.some(function(b){ return b.calls.some(function(c){ return dpsDelay(c)!==null; }); });
   sel.forEach(function(b){
     const vcode=dpsVesselCode(b.calls[0].vessel_voyage);
     const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
     const multi=b.vvList.length>1;
     const voyLabel=dpsBlockVoyLabel(b);
-    put('Port', vname, 2, b.calls.map(function(c){ return dpsPortLabel(c.terminal); }), 3, true);
-    put('Voyage', voyLabel, 2, b.calls.map(function(c){ return multi ? dpsVoyLabel(c.vessel_voyage) : ''; }), 4, false);
-    put('EOSP', '', 8, b.calls.map(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
-    put('Berth', '', 8, b.calls.map(function(c){ return dpsFmtDT(c.berth); }), 6, false);
-    put('Ops Duration', '', 8, b.calls.map(function(c){ const d=dpsOpsDur(c); return d!=null? Number(d.toFixed(1)) : ''; }), 7, false);
-    put('Unberth', '', 8, b.calls.map(function(c){ return dpsFmtDT(c.departure); }), 6, false);
-    put('Baseline / Proforma', vcode, 5, b.calls.map(function(c){ return dpsFmtDOW(c.berth||c.arrived_anchorage); }), 5, false);
+    const cols=b.cols.slice(); while(cols.length<maxPorts) cols.push([]);
+    // Stack every visit to a port on its own line, exactly like the page.
+    const lines=function(getter){
+      return cols.map(function(cs){
+        return cs.map(getter).filter(function(x){ return x!==null && x!==undefined && x!==''; }).join('\n');
+      });
+    };
+    const portLines=cols.map(function(cs){
+      if(!cs.length) return '';
+      const info=dpsNodeInfo(cs[0].terminal);
+      const terms=[];
+      cs.forEach(function(c){ const t=dpsNodeInfo(c.terminal).term; if(t && terms.indexOf(t)===-1) terms.push(t); });
+      return (info.name||info.port)+'\n'+info.port+(terms.length?(' · '+terms.join('/')):'');
+    });
+    put('Port', vname, 2, portLines, 3, true);
+    put('Voyage', voyLabel, 2, multi ? lines(function(c){ return dpsVoyLabel(c.vessel_voyage); }) : [], 4, false);
+    put('ETA', '', 8, lines(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
+    put('ETB', '', 8, lines(function(c){ return dpsFmtDT(c.berth); }), 6, false);
+    put('ETD', '', 8, lines(function(c){ return dpsFmtDT(c.departure); }), 6, false);
+    if(hasDelay){
+      put('Delay', '', 8, cols.map(function(cs){
+        return cs.map(function(c){ const d=dpsDelay(c); return d===null?'':((d>0?'+':'')+d.toFixed(1)+'d'); }).filter(Boolean).join('\n');
+      }), 6, false);
+    }
   });
   const lastRow=rowNum-1;
   const sheetXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
@@ -1130,7 +1292,7 @@ function exportDpsXlsx(){
     '</sheetView></sheetViews>'+
     '<sheetFormatPr defaultRowHeight="15"/>'+
     '<cols><col min="1" max="1" width="20" customWidth="1"/><col min="2" max="2" width="26" customWidth="1"/>'+
-    '<col min="3" max="'+nCols+'" width="17" customWidth="1"/></cols>'+
+    '<col min="3" max="'+nCols+'" width="20" customWidth="1"/></cols>'+
     '<sheetData>'+rowsXml.join('')+'</sheetData>'+
     '<mergeCells count="1"><mergeCell ref="A1:'+xlsxCol(nCols)+'1"/></mergeCells>'+
     '</worksheet>';
@@ -1182,6 +1344,9 @@ function init() {
   loadCSVWithRetry(0);
   fetchDataUpdatedTime();
   fetchVesselNames();
+  fetchLanes();
+  fetchNodes();
+  fetchProforma();
 }
 
 function loadCSVWithRetry(retry) {
