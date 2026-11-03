@@ -244,6 +244,8 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 td.pcell .pc-code { display:block; font-size:11.5px; font-weight:800; letter-spacing:.2px; line-height:1.2; color:#1a237e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 td.pcell .pc-name { display:block; font-size:9px; line-height:1.15; color:#5b6474; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 td.pcell.pc-blank { background:#fafbfd; }
+td.pcell .t-val { display:block; line-height:1.2; }
+td.pcell .t-voy { display:block; font-size:9px; line-height:1.15; color:#8b95a7; font-weight:600; letter-spacing:.2px; }
 .dps-block-start td { border-top:2px solid #8fa0b8; }
 .dps-empty { padding:26px; text-align:center; color:#9aa0a6; }
 </style>
@@ -334,7 +336,8 @@ td.pcell.pc-blank { background:#fafbfd; }
   <select id="dps_operator" onchange="dpsSetFilter('operator', this.value)"><option value="">All operators</option></select>
   <label>Vessel</label>
   <select id="dps_vessel" onchange="dpsSetFilter('vessel', this.value)"><option value="">All vessels</option></select>
-  <label class="dps-merge" title="每一行是一条航次（如 2633W / 2633E）。勾选后同一个港口固定在某一列，方便上下对比不同船舶；航序不统一的航线会自动按挂靠顺序铺开"><input type="checkbox" id="dpsAlignChk" checked onchange="dpsSetAlign(this.checked)" /> Align ports</label>
+  <label class="dps-merge" title="不勾选：一条航次一行（2633W / 2633E 各占一块）。勾选：整条船一行，把它的多个航次按顺序接在同一行里，一格仍然只放一个时间"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
+  <label class="dps-merge" title="勾选后同一个港口固定在某一列，方便上下对比不同船舶；航序不统一的航线会自动按挂靠顺序铺开"><input type="checkbox" id="dpsAlignChk" checked onchange="dpsSetAlign(this.checked)" /> Align ports</label>
   <span class="dps-meta" id="dpsMeta"></span>
   <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;">Export Excel</button>
 </div>
@@ -794,8 +797,10 @@ let dpsFrom = '', dpsTo = '';
 let dpsOperator = '', dpsVessel = '';   // '' = all
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
 let dpsAlignOverride = null;            // null = auto per service, true/false = manual
-let dpsLastAligned = false, dpsLastAxis = null;
+let dpsMerge = false;                   // false = one row per voyage, true = one row per vessel
+let dpsLastAligned = false, dpsLastAxis = null, dpsLastMerge = false, dpsLastDrop = 0, dpsLastSplit = 0;
 const DPS_MAX_COLS = 16;                // grids wider than this are too sparse to read
+const DPS_MERGE_MAX_COLS = 40;          // a merged row spans several rotations; cap the grid
 function dpsPad(n){ return String(n).padStart(2,'0'); }
 function dpsDateStr(d){ return d.getFullYear()+'-'+dpsPad(d.getMonth()+1)+'-'+dpsPad(d.getDate()); }
 function dpsAddDays(base,n){ const d=new Date(base.getTime()); d.setDate(d.getDate()+n); return dpsDateStr(d); }
@@ -855,11 +860,20 @@ function dpsVoyageParts(vv){
 }
 function dpsVoyLabel(vv){ const p=dpsVoyageParts(vv); return p.dir ? (p.num+p.dir) : String(vv||'').slice(4); }
 function dpsSetAlign(v){ dpsAlignOverride=!!v; renderDps(); }
+function dpsSetMerge(v){ dpsMerge=!!v; renderDps(); }
+// Voyage label for a block: the single voyage, or "first -> last" when a whole vessel is merged.
+function dpsBlockVoyLabel(b){
+  const list=(b.voyages&&b.voyages.length)?b.voyages:[b.vv];
+  let t=(list.length<=1) ? dpsVoyLabel(list[0])
+        : (dpsVoyLabel(list[0])+' → '+dpsVoyLabel(list[list.length-1]));
+  if(b && b.parts>1) t+=' ('+b.part+'/'+b.parts+')';
+  return t;
+}
 function dpsCounts(sel){
   const v={}, y={};
   sel.forEach(b=>{
     const c=dpsVesselCode(b.vv); if(c) v[c]=1;
-    if(b.vv) y[b.vv]=1;
+    (b.voyages&&b.voyages.length?b.voyages:[b.vv]).forEach(vv=>{ if(vv) y[vv]=1; });
   });
   return { vessels:Object.keys(v).length, voyages:Object.keys(y).length };
 }
@@ -875,6 +889,21 @@ function dpsMapCalls(calls, loop){
     const p=dpsPortOf(c.terminal);
     let col=-1;
     for(let i=last+1;i<loop.length;i++){ if(loop[i]===p){ col=i; break; } }
+    if(col<0){ loose.push(c); return; }
+    last=col; placed.push({c:c,col:col});
+  });
+  return { placed:placed, loose:loose };
+}
+// Same idea on a rotation repeated end to end (a whole vessel = several voyages): a call may
+// only move forward, and at most one full rotation ahead, so a skipped port leaves a gap
+// instead of pushing the rest of the row a lap to the right.
+function dpsMapCallsRot(calls, rot, lapLen){
+  const placed=[], loose=[]; let last=-1;
+  (calls||[]).forEach(c=>{
+    const p=dpsPortOf(c.terminal);
+    const end=(last<0) ? rot.length-1 : Math.min(rot.length-1, last+lapLen);
+    let col=-1;
+    for(let i=last+1;i<=end;i++){ if(rot[i]===p){ col=i; break; } }
     if(col<0){ loose.push(c); return; }
     last=col; placed.push({c:c,col:col});
   });
@@ -956,9 +985,14 @@ function dpsAlignOn(svc){
 // One block per voyage (vessel code + voyage number + direction): the port order of that
 // leg left to right, exactly like the first version, but on fixed columns when the
 // service runs a regular rotation.
+// With `dpsMerge` on, the voyages of one vessel that fall inside the date window are folded
+// into a single row, walked along the rotation repeated end to end, so a cell still holds one
+// time. A vessel with more calls than one row can carry continues on a "(1/2)" row below —
+// calls are never dropped.
 function dpsBuildBlocks(rows){
   const ax=dpsAxisFor(dpsSvc);
   const aligned=dpsAlignOn(dpsSvc) && ax.loop.length>0;
+  const merge=!!dpsMerge;
   const umap={};
   rows.forEach(r=>{
     const k=String(r.vessel_voyage||'').toUpperCase()||('~'+(r.terminal||'')+'|'+(r.departure||''));
@@ -968,7 +1002,8 @@ function dpsBuildBlocks(rows){
     const calls=dpsSortCalls(umap[k]);
     const starts=calls.map(dpsCallTime).filter(Boolean).sort();
     const ends=calls.map(c=>c.departure||dpsCallTime(c)).filter(Boolean).sort();
-    return { vv:k, calls:calls, start:starts[0]||'', end:ends[ends.length-1]||starts[0]||'' };
+    return { vv:k, voyages:[k], calls:calls,
+             start:starts[0]||'', end:ends[ends.length-1]||starts[0]||'' };
   });
   let widened=false;
   const kept=units.filter(u=>{
@@ -978,15 +1013,60 @@ function dpsBuildBlocks(rows){
     return true;
   });
   if(!kept.length){ units=units.filter(u=>u.calls.length); kept.push.apply(kept, units); widened=true; }
-  const blocks=kept.map(u=>{
+  // Date window is applied per voyage first, so a merged row only carries the voyages that
+  // actually fall inside it (a vessel's own span would otherwise run for years).
+  let groups=kept;
+  if(merge){
+    const g={};
+    kept.forEach(u=>{ const c=dpsVesselCode(u.vv)||('~'+u.vv); (g[c]=g[c]||[]).push(u); });
+    groups=Object.keys(g).map(c=>{
+      const us=g[c].slice().sort((x,y)=>(x.start||'').localeCompare(y.start||'')||String(x.vv).localeCompare(String(y.vv)));
+      const calls=[]; const voy=[];
+      us.forEach(u=>{
+        u.calls.forEach(x=>calls.push(x));
+        u.voyages.forEach(v=>{ if(voy.indexOf(v)===-1) voy.push(v); });
+      });
+      return { vv:c, voyages:voy, calls:calls, start:us[0].start, end:us[us.length-1].end };
+    });
+  }
+  const voyOf=cs=>{ const o=[]; cs.forEach(c=>{ const v=String(c.vessel_voyage||'').toUpperCase(); if(v && o.indexOf(v)===-1) o.push(v); }); return o; };
+  const chunks=[];
+  groups.forEach(gp=>{
+    let part=0, parts=1;
+    if(merge && gp.calls.length>DPS_MERGE_MAX_COLS) parts=Math.ceil(gp.calls.length/DPS_MERGE_MAX_COLS);
+    for(let i=0;i<parts;i++){
+      const cs=(parts>1) ? gp.calls.slice(i*DPS_MERGE_MAX_COLS,(i+1)*DPS_MERGE_MAX_COLS) : gp.calls;
+      chunks.push({ vv:gp.vv, voyages:(parts>1?voyOf(cs):gp.voyages), calls:cs,
+                    start:(cs[0]?dpsCallTime(cs[0]):gp.start), end:gp.end,
+                    part:i+1, parts:parts, head:(i===0) });
+    }
+  });
+  const blocks=chunks.map(u=>{
     let cols, axisArr=null;
-    if(aligned){
+    if(merge && aligned){
+      const lapLen=ax.base.length;
+      const laps=Math.max(1, Math.min(12, Math.ceil(u.calls.length/lapLen)+1));
+      const rot=[];
+      for(let i=0;i<laps;i++){ for(let j=0;j<lapLen;j++) rot.push(ax.base[j]); }
+      axisArr=rot.slice();
+      const m=dpsMapCallsRot(u.calls, rot, lapLen);
+      cols=axisArr.map(()=>[]);
+      m.placed.forEach(x=>{ cols[x.col].push(x.c); });
+      // A call that cannot move forward on the rotation (repeat visit / back leg) takes the
+      // next free column, never a shared cell.
+      let at=0;
+      cols.forEach((cs,i)=>{ if(cs.length) at=i+1; });
+      m.loose.forEach(c=>{
+        while(at<cols.length && cols[at].length) at++;
+        if(at<cols.length){ cols[at].push(c); axisArr[at]=dpsPortOf(c.terminal); }
+        else { cols.push([c]); axisArr.push(dpsPortOf(c.terminal)); }
+        at++;
+      });
+    } else if(aligned){
       axisArr=ax.loop.slice();
       const m=dpsMapCalls(u.calls, ax.loop);
       cols=axisArr.map(()=>[]);
       m.placed.forEach(x=>{ cols[x.col].push(x.c); });
-      // A call that cannot move forward on the axis (a repeat visit, or a leg that goes
-      // back up the rotation) takes the next free column instead of sharing a cell.
       let at=0;
       cols.forEach((cs,i)=>{ if(cs.length) at=i+1; });
       m.loose.forEach(c=>{
@@ -998,7 +1078,8 @@ function dpsBuildBlocks(rows){
     } else {
       cols=u.calls.map(c=>[c]);
     }
-    return { vv:u.vv, calls:u.calls, cols:cols, axis:axisArr, start:u.start, end:u.end };
+    return { vv:u.vv, voyages:u.voyages, calls:u.calls, cols:cols, axis:axisArr,
+             start:u.start, end:u.end, part:u.part, parts:u.parts };
   });
   // Drop columns that stay empty on every row so the grid ends where the data ends.
   let width=1;
@@ -1008,8 +1089,22 @@ function dpsBuildBlocks(rows){
     if(last+1>width) width=last+1;
   });
   blocks.forEach(b=>{ b.cols=b.cols.slice(0,width); });
-  blocks.sort((a,b)=>(a.start||'').localeCompare(b.start||'')||String(a.vv).localeCompare(String(b.vv)));
-  return { blocks:blocks, widened:widened, axis:aligned?ax.loop.slice(0,width):null, aligned:aligned, info:ax };
+  // A rotation position no vessel used in this window leaves a hole in the middle of the
+  // grid; drop those columns (they are empty on every row, so nothing shifts out of place).
+  const usedIdx=[];
+  for(let i=0;i<width;i++){
+    let any=false;
+    for(let k=0;k<blocks.length && !any;k++){ if(blocks[k].cols[i] && blocks[k].cols[i].length) any=true; }
+    if(any) usedIdx.push(i);
+  }
+  if(usedIdx.length && usedIdx.length<width){
+    blocks.forEach(b=>{ b.cols=usedIdx.map(i=>b.cols[i]||[]); });
+    width=usedIdx.length;
+  }
+  blocks.sort((a,b)=>(a.start||'').localeCompare(b.start||'')||String(a.vv).localeCompare(String(b.vv))||(a.part-b.part));
+  const split=blocks.filter(b=>b.parts>1).length;
+  return { blocks:blocks, widened:widened, dropped:0, split:split,
+           axis:(aligned&&!merge)?ax.loop.slice(0,width):null, aligned:aligned, merge:merge, info:ax };
 }
 function dpsSetDefaultRange(){ const t=new Date(); dpsFrom=dpsAddDays(t,-21); dpsTo=dpsAddDays(t,150); const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
 function dpsInit(){
@@ -1030,11 +1125,16 @@ function dpsResetRange(){ dpsSetDefaultRange(); renderDps(); }
 function dpsAllRange(){ const tms=dpsFilteredRows().map(dpsCallTime).filter(Boolean).sort(); if(tms.length){ dpsFrom=tms[0].slice(0,10); dpsTo=tms[tms.length-1].slice(0,10); } else { dpsFrom=''; dpsTo=''; } const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; renderDps(); }
 // One cell of a time row: a single timestamp per cell (a second visit to the same port
 // gets its own column, never a stacked cell).
-function dpsTimeTd(values){
-  const v=(values||[]).filter(x=>x!==null && x!==undefined && x!=='');
+function dpsTimeTd(calls, field){
+  const row=calls||[];
+  const v=row.map(c=>(c?c[field]:'')).filter(x=>x!==null && x!==undefined && x!=='');
   if(!v.length) return '<td class="pcell pc-blank"></td>';
   const txt=v.map(dpsFmtDT).join('  ');
-  return '<td class="pcell"'+(v.length>1?(' title="'+dpsEsc(txt)+'"'):'')+'>'+dpsEsc(txt)+'</td>';
+  // Merged rows lose the per-voyage label, so each time carries its voyage in small grey type.
+  const tag=(dpsMerge && row.length===1) ? dpsVoyLabel(row[0].vessel_voyage) : '';
+  if(!tag) return '<td class="pcell"'+(v.length>1?(' title="'+dpsEsc(txt)+'"'):'')+'>'+dpsEsc(txt)+'</td>';
+  return '<td class="pcell" title="'+dpsEsc(dpsVoyLabel(row[0].vessel_voyage)+'  '+txt)+'">'+
+         '<span class="t-val">'+dpsEsc(txt)+'</span><span class="t-voy">'+dpsEsc(tag)+'</span></td>';
 }
 // Port cell: the terminal node code (e.g. TWKELT01) large, the terminal name small below.
 function dpsPortTd(calls){
@@ -1063,7 +1163,9 @@ function renderDps(){
   const sel=built.blocks;
   const maxCols=Math.max(1, ...sel.map(b=>b.cols.length));
   dpsLastSel=sel; dpsLastMax=maxCols; dpsLastAligned=built.aligned; dpsLastAxis=built.axis;
+  dpsLastMerge=!!built.merge; dpsLastDrop=0; dpsLastSplit=built.split||0;
   const chk=document.getElementById('dpsAlignChk'); if(chk) chk.checked=built.aligned;
+  const mchk=document.getElementById('dpsMergeChk'); if(mchk) mchk.checked=!!built.merge;
   const W=302+maxCols*126;
   let cols='<colgroup><col style="width:118px"><col style="width:184px">';
   for(let i=0;i<maxCols;i++) cols+='<col style="width:126px">';
@@ -1073,12 +1175,12 @@ function renderDps(){
   sel.forEach(b=>{
     const vcode=dpsVesselCode(b.vv);
     const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
-    const voy=dpsVoyLabel(b.vv);
+    const voy=dpsBlockVoyLabel(b);
     const colArr=pad(b.cols);
     const portCells=colArr.map(dpsPortTd).join('');
-    const etaCells=colArr.map(cs=>dpsTimeTd(cs.map(c=>c.arrived_anchorage))).join('');
-    const etbCells=colArr.map(cs=>dpsTimeTd(cs.map(c=>c.berth))).join('');
-    const etdCells=colArr.map(cs=>dpsTimeTd(cs.map(c=>c.departure))).join('');
+    const etaCells=colArr.map(cs=>dpsTimeTd(cs,'arrived_anchorage')).join('');
+    const etbCells=colArr.map(cs=>dpsTimeTd(cs,'berth')).join('');
+    const etdCells=colArr.map(cs=>dpsTimeTd(cs,'departure')).join('');
     const vc='<span class="vc-name">'+dpsEsc(vname)+'</span><span class="vc-voy">'+dpsEsc(voy)+'</span>';
     html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vc+'</td>'+portCells+'</tr>';
     html+='<tr class="dps-row-eta"><td class="dps-lbl">ETA</td><td class="dps-vesselcol"></td>'+etaCells+'</tr>';
@@ -1091,8 +1193,11 @@ function renderDps(){
   const alignTxt = built.aligned
     ? ('已对齐 '+maxCols+' 列'+(dpsAlignOverride===null?'（自动）':'（手动）'))
     : ('未对齐：航序不统一，按挂靠顺序铺开'+(dpsAlignOverride===false?'（手动关闭）':''));
-  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行 · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 所选日期无数据，已显示全部':'');
-  if(meta) meta.title = built.aligned ? '每个港口固定在某一列，方便上下对比不同船舶' : ('该航线在数据里挂靠顺序不统一（或港口太分散），强行对齐会更乱，因此按每条航次自己的顺序铺开');
+  const dropTxt = built.split ? (' · 个别船舶航次较多，已分 '+built.split+' 段续行') : '';
+  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 所选日期无数据，已显示全部':'')+dropTxt;
+  if(meta) meta.title = built.aligned
+    ? '每个港口固定在某一列，方便上下对比不同船舶'
+    : ('该航线在数据里挂靠顺序不统一（或港口太分散），强行对齐会更乱，因此按每条航次自己的顺序铺开');
 }
 
 /* ===== Excel export: minimal XLSX writer (no external library) =====
@@ -1226,7 +1331,9 @@ function exportDpsXlsx(){
   let rowNum=1;
   const cntE=dpsCounts(sel);
   const alignTxt=dpsLastAligned?'已对齐 '+maxPorts+' 列':'按挂靠顺序铺开';
-  const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+alignTxt+')';
+  const groupTxt=dpsLastMerge?'每船一行':'一航次一行';
+  const dropTxt=(dpsLastMerge&&dpsLastSplit)?(' / 其中 '+dpsLastSplit+' 块为续行'):'';
+  const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+groupTxt+' / '+alignTxt+dropTxt+')';
   rowsXml.push('<row r="1" ht="22" customHeight="1">'+xlsxStrCell('A1',metaText,1)+'</row>');
   rowNum=2;
   // One block = one voyage = 4 rows (Port / ETA / ETB / ETD). A port cell holds the
@@ -1247,7 +1354,7 @@ function exportDpsXlsx(){
   sel.forEach(function(b){
     const vcode=dpsVesselCode(b.vv);
     const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
-    const voyLabel=dpsVoyLabel(b.vv);
+    const voyLabel=dpsBlockVoyLabel(b);
     const cols=b.cols.slice(); while(cols.length<maxPorts) cols.push([]);
     const one=function(getter){
       return cols.map(function(cs){
