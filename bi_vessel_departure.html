@@ -240,12 +240,17 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 .dps-row-port .dps-vesselcol .vc-name { display:block; font-size:12px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dps-row-port .dps-vesselcol .vc-voy { display:block; font-size:10.5px; font-weight:700; color:#0d47a1; }
 .dps-row-port td.pcell { background:#e9ecff; text-align:center; vertical-align:middle; padding:3px 4px; }
+.dps-row-voy td.pcell { background:#eef4ff; text-align:center; color:#0d47a1; font-weight:700; font-size:10.5px; padding:1px 4px; }
+.dps-row-voy .dps-lbl { background:#e6eefc; color:#0d47a1; }
 .dps-row-eta td.pcell, .dps-row-etb td.pcell, .dps-row-etd td.pcell { text-align:center; color:#2b2b2b; font-size:11px; padding:2px 4px; }
+.dps-row-pf td.pcell, .dps-row-rm td.pcell { text-align:center; font-size:11px; padding:2px 4px; }
+.dps-row-pf td.pcell.pc-blank { background:#f5f7fb; }
+.dps-row-rm td.pcell.pc-blank { background:#fbfbfc; }
+.dps-row-pf .dps-lbl { background:#eef1f6; color:#5f6368; }
+.dps-row-rm .dps-lbl { background:#f1f3f6; color:#5f6368; font-weight:600; }
 td.pcell .pc-code { display:block; font-size:11.5px; font-weight:800; letter-spacing:.2px; line-height:1.2; color:#1a237e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 td.pcell .pc-name { display:block; font-size:9px; line-height:1.15; color:#5b6474; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 td.pcell.pc-blank { background:#fafbfd; }
-td.pcell .t-val { display:block; line-height:1.2; }
-td.pcell .t-voy { display:block; font-size:9px; line-height:1.15; color:#8b95a7; font-weight:600; letter-spacing:.2px; }
 .dps-block-start td { border-top:2px solid #8fa0b8; }
 .dps-empty { padding:26px; text-align:center; color:#9aa0a6; }
 </style>
@@ -337,7 +342,6 @@ td.pcell .t-voy { display:block; font-size:9px; line-height:1.15; color:#8b95a7;
   <label>Vessel</label>
   <select id="dps_vessel" onchange="dpsSetFilter('vessel', this.value)"><option value="">All vessels</option></select>
   <label class="dps-merge" title="不勾选：一条航次一行（2633W / 2633E 各占一块）。勾选：整条船一行，把它的多个航次按顺序接在同一行里，一格仍然只放一个时间"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
-  <label class="dps-merge" title="勾选后同一个港口固定在某一列，方便上下对比不同船舶；航序不统一的航线会自动按挂靠顺序铺开"><input type="checkbox" id="dpsAlignChk" checked onchange="dpsSetAlign(this.checked)" /> Align ports</label>
   <span class="dps-meta" id="dpsMeta"></span>
   <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;">Export Excel</button>
 </div>
@@ -796,7 +800,6 @@ let dpsSvc = 'REX';
 let dpsFrom = '', dpsTo = '';
 let dpsOperator = '', dpsVessel = '';   // '' = all
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
-let dpsAlignOverride = null;            // null = auto per service, true/false = manual
 let dpsMerge = false;                   // false = one row per voyage, true = one row per vessel
 let dpsLastAligned = false, dpsLastAxis = null, dpsLastMerge = false, dpsLastDrop = 0, dpsLastSplit = 0;
 const DPS_MAX_COLS = 16;                // grids wider than this are too sparse to read
@@ -859,7 +862,6 @@ function dpsVoyageParts(vv){
   return { code:s.slice(0,4), num:s.slice(4), dir:'', vv:s };
 }
 function dpsVoyLabel(vv){ const p=dpsVoyageParts(vv); return p.dir ? (p.num+p.dir) : String(vv||'').slice(4); }
-function dpsSetAlign(v){ dpsAlignOverride=!!v; renderDps(); }
 function dpsSetMerge(v){ dpsMerge=!!v; renderDps(); }
 // Voyage label for a block: the single voyage, or "first -> last" when a whole vessel is merged.
 function dpsBlockVoyLabel(b){
@@ -977,8 +979,9 @@ function dpsAxisFor(svc){
   DPS_AXIS_CACHE[key]=info;
   return info;
 }
+// Alignment is decided from the data only: services whose rotation is regular line up,
+// services that are called in different orders every voyage are laid out in call order.
 function dpsAlignOn(svc){
-  if(dpsAlignOverride!==null) return !!dpsAlignOverride;
   const ax=dpsAxisFor(svc);
   return !!(ax && ax.ok);
 }
@@ -1116,7 +1119,7 @@ function dpsInit(){
   renderDps();
 }
 function dpsSelectSvc(s){
-  dpsSvc=s; dpsAlignOverride=null;
+  dpsSvc=s;
   const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
   for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===s);
   dpsFillFilters(); renderDps();
@@ -1126,15 +1129,41 @@ function dpsAllRange(){ const tms=dpsFilteredRows().map(dpsCallTime).filter(Bool
 // One cell of a time row: a single timestamp per cell (a second visit to the same port
 // gets its own column, never a stacked cell).
 function dpsTimeTd(calls, field){
-  const row=calls||[];
-  const v=row.map(c=>(c?c[field]:'')).filter(x=>x!==null && x!==undefined && x!=='');
+  const v=(calls||[]).map(c=>(c?c[field]:'')).filter(x=>x!==null && x!==undefined && x!=='');
   if(!v.length) return '<td class="pcell pc-blank"></td>';
   const txt=v.map(dpsFmtDT).join('  ');
-  // Merged rows lose the per-voyage label, so each time carries its voyage in small grey type.
-  const tag=(dpsMerge && row.length===1) ? dpsVoyLabel(row[0].vessel_voyage) : '';
-  if(!tag) return '<td class="pcell"'+(v.length>1?(' title="'+dpsEsc(txt)+'"'):'')+'>'+dpsEsc(txt)+'</td>';
-  return '<td class="pcell" title="'+dpsEsc(dpsVoyLabel(row[0].vessel_voyage)+'  '+txt)+'">'+
-         '<span class="t-val">'+dpsEsc(txt)+'</span><span class="t-voy">'+dpsEsc(tag)+'</span></td>';
+  return '<td class="pcell"'+(v.length>1?(' title="'+dpsEsc(txt)+'"'):'')+'>'+dpsEsc(txt)+'</td>';
+}
+// Voyage row (sits directly above ETA): which voyage this call belongs to, so a merged
+// vessel row stays traceable without cramming the voyage into the time cell.
+function dpsVoyTd(calls){
+  const v=[];
+  (calls||[]).forEach(c=>{
+    const t=dpsVoyLabel(c.vessel_voyage);
+    if(t && v.indexOf(t)===-1) v.push(t);
+  });
+  if(!v.length) return '<td class="pcell pc-blank"></td>';
+  const txt=v.join(' / ');
+  return '<td class="pcell" title="'+dpsEsc(txt)+'">'+dpsEsc(txt)+'</td>';
+}
+// Proforma row: planned times, one cell per port. The row is always there so the layout does
+// not shift once the schedule feed is published; with no feed every cell stays blank.
+let DPS_PROFORMA = {};
+function dpsPlanTd(calls){
+  const v=[];
+  (calls||[]).forEach(c=>{
+    const k=String(c.vessel_voyage||'').toUpperCase()+'|'+dpsPortOf(c.terminal);
+    const t=DPS_PROFORMA[k];
+    if(t) v.push(dpsFmtDT(t));
+  });
+  if(!v.length) return '<td class="pcell pc-blank"></td>';
+  return '<td class="pcell">'+dpsEsc(v.join('  '))+'</td>';
+}
+// Remark row: free text per call (empty for now).
+function dpsRemarkTd(calls){
+  const v=(calls||[]).map(c=>c&&c.remark).filter(Boolean);
+  if(!v.length) return '<td class="pcell pc-blank"></td>';
+  return '<td class="pcell">'+dpsEsc(v.join(' / '))+'</td>';
 }
 // Port cell: the terminal node code (e.g. TWKELT01) large, the terminal name small below.
 function dpsPortTd(calls){
@@ -1164,7 +1193,6 @@ function renderDps(){
   const maxCols=Math.max(1, ...sel.map(b=>b.cols.length));
   dpsLastSel=sel; dpsLastMax=maxCols; dpsLastAligned=built.aligned; dpsLastAxis=built.axis;
   dpsLastMerge=!!built.merge; dpsLastDrop=0; dpsLastSplit=built.split||0;
-  const chk=document.getElementById('dpsAlignChk'); if(chk) chk.checked=built.aligned;
   const mchk=document.getElementById('dpsMergeChk'); if(mchk) mchk.checked=!!built.merge;
   const W=302+maxCols*126;
   let cols='<colgroup><col style="width:118px"><col style="width:184px">';
@@ -1178,21 +1206,27 @@ function renderDps(){
     const voy=dpsBlockVoyLabel(b);
     const colArr=pad(b.cols);
     const portCells=colArr.map(dpsPortTd).join('');
+    const voyCells=colArr.map(dpsVoyTd).join('');
     const etaCells=colArr.map(cs=>dpsTimeTd(cs,'arrived_anchorage')).join('');
     const etbCells=colArr.map(cs=>dpsTimeTd(cs,'berth')).join('');
     const etdCells=colArr.map(cs=>dpsTimeTd(cs,'departure')).join('');
+    const pfCells=colArr.map(dpsPlanTd).join('');
+    const rmCells=colArr.map(dpsRemarkTd).join('');
     const vc='<span class="vc-name">'+dpsEsc(vname)+'</span><span class="vc-voy">'+dpsEsc(voy)+'</span>';
     html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vc+'</td>'+portCells+'</tr>';
+    html+='<tr class="dps-row-voy"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol"></td>'+voyCells+'</tr>';
     html+='<tr class="dps-row-eta"><td class="dps-lbl">ETA</td><td class="dps-vesselcol"></td>'+etaCells+'</tr>';
     html+='<tr class="dps-row-etb"><td class="dps-lbl">ETB</td><td class="dps-vesselcol"></td>'+etbCells+'</tr>';
     html+='<tr class="dps-row-etd"><td class="dps-lbl">ETD</td><td class="dps-vesselcol"></td>'+etdCells+'</tr>';
+    html+='<tr class="dps-row-pf"><td class="dps-lbl">Proforma</td><td class="dps-vesselcol"></td>'+pfCells+'</tr>';
+    html+='<tr class="dps-row-rm"><td class="dps-lbl">Remark</td><td class="dps-vesselcol"></td>'+rmCells+'</tr>';
   });
   html+='</tbody></table>';
   wrap.innerHTML=html;
   const cnt=dpsCounts(sel);
   const alignTxt = built.aligned
-    ? ('已对齐 '+maxCols+' 列'+(dpsAlignOverride===null?'（自动）':'（手动）'))
-    : ('未对齐：航序不统一，按挂靠顺序铺开'+(dpsAlignOverride===false?'（手动关闭）':''));
+    ? ('已对齐 '+maxCols+' 列')
+    : '未对齐：航序不统一，按挂靠顺序铺开';
   const dropTxt = built.split ? (' · 个别船舶航次较多，已分 '+built.split+' 段续行') : '';
   if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 所选日期无数据，已显示全部':'')+dropTxt;
   if(meta) meta.title = built.aligned
@@ -1203,7 +1237,7 @@ function renderDps(){
 /* ===== Excel export: minimal XLSX writer (no external library) =====
    Writes a real .xlsx (zip + OOXML) so Excel opens it without the
    "file format and extension don't match" warning, and so the on-screen look
-   (7-row blocks, blue port row, light-blue voyage row, lavender baseline row)
+   (7-row blocks: Port / Voyage / ETA / ETB / ETD / Proforma / Remark)
    survives into the workbook. No CDN dependency — nothing to get blocked. */
 function xlsxEsc(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1275,7 +1309,8 @@ const XLSX_FILLS=[
   '<fill><patternFill patternType="solid"><fgColor rgb="FFC7E7FF"/><bgColor indexed="64"/></patternFill></fill>',
   '<fill><patternFill patternType="solid"><fgColor rgb="FFEEF0FF"/><bgColor indexed="64"/></patternFill></fill>',
   '<fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/><bgColor indexed="64"/></patternFill></fill>',
-  '<fill><patternFill patternType="solid"><fgColor rgb="FFFBFBF4"/><bgColor indexed="64"/></patternFill></fill>'
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFFBFBF4"/><bgColor indexed="64"/></patternFill></fill>',
+  '<fill><patternFill patternType="solid"><fgColor rgb="FFF5F7FB"/><bgColor indexed="64"/></patternFill></fill>'
 ];
 const XLSX_BORDERS=[
   '<border><left/><right/><top/><bottom/><diagonal/></border>',
@@ -1292,7 +1327,8 @@ const XLSX_XF=[
   {f:5,fl:6,al:'center'},             // 5 baseline
   {f:0,fl:7,al:'center'},             // 6 plain centre
   {f:0,fl:7,al:'right',num:164},      // 7 ops duration
-  {f:0,fl:8,al:'center'}              // 8 vessel plain (#FBFBF4)
+  {f:0,fl:8,al:'center'},             // 8 vessel plain (#FBFBF4)
+  {f:0,fl:9,al:'center'}              // 9 planned row (#F5F7FB)
 ];
 function xlsxStylesXml(){
   const xfs=[];
@@ -1336,8 +1372,8 @@ function exportDpsXlsx(){
   const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+groupTxt+' / '+alignTxt+dropTxt+')';
   rowsXml.push('<row r="1" ht="22" customHeight="1">'+xlsxStrCell('A1',metaText,1)+'</row>');
   rowNum=2;
-  // One block = one voyage = 4 rows (Port / ETA / ETB / ETD). A port cell holds the
-  // terminal node code on the first line and the terminal name on the second.
+  // One block = one voyage = 7 rows (Port / Voyage / ETA / ETB / ETD / Proforma / Remark).
+  // A port cell holds the terminal node code on the first line and the terminal name second.
   const put=function(label,bVal,values,vStyle,isStart){
     const st=function(k){ return isStart?(k+8):k; };
     let x='<row r="'+rowNum+'">';
@@ -1367,10 +1403,24 @@ function exportDpsXlsx(){
       const info=dpsNodeInfo(cs[0].terminal);
       return info.node+(info.name?('\n'+info.name):'');
     });
+    const planCells=cols.map(function(cs){
+      const v=[];
+      cs.forEach(function(c){
+        const t=DPS_PROFORMA[String(c.vessel_voyage||'').toUpperCase()+'|'+dpsPortOf(c.terminal)];
+        if(t) v.push(dpsFmtDT(t));
+      });
+      return v.join('  ');
+    });
+    const remarkCells=cols.map(function(cs){
+      return cs.map(function(c){ return c.remark||''; }).filter(Boolean).join(' / ');
+    });
     put('Port', vname+'\n'+voyLabel, portCells, 3, true);
+    put('Voyage', '', one(function(c){ return dpsVoyLabel(c.vessel_voyage); }), 4, false);
     put('ETA', '', one(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
     put('ETB', '', one(function(c){ return dpsFmtDT(c.berth); }), 6, false);
     put('ETD', '', one(function(c){ return dpsFmtDT(c.departure); }), 6, false);
+    put('Proforma', '', planCells, 9, false);
+    put('Remark', '', remarkCells, 9, false);
   });
   const lastRow=rowNum-1;
   const sheetXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
