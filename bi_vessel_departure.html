@@ -349,7 +349,7 @@ td.pcell.pc-blank { background:#fafbfd; }
   <select id="dps_operator" onchange="dpsSetFilter('operator', this.value)"><option value="">All operators</option></select>
   <label>Vessel</label>
   <select id="dps_vessel" onchange="dpsSetFilter('vessel', this.value)"><option value="">All vessels</option></select>
-  <label class="dps-merge" title="不勾选：一条航次一行（2633W / 2633E 各占一块）。勾选：整条船一行，把它的多个航次按顺序接在同一行里，一格仍然只放一个时间"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
+  <label class="dps-merge" title="不勾选（默认）：一个航次号一行，去程/回程 2639W + 2639E 在同一行。勾选：整条船一行，同一条船的 2640W/E 也接到这一行后面，一格仍然只放一个时间"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
   <span class="dps-meta" id="dpsMeta"></span>
   <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;">Export Excel</button>
 </div>
@@ -958,11 +958,19 @@ function dpsVoyageParts(vv){
 }
 function dpsVoyLabel(vv){ const p=dpsVoyageParts(vv); return p.dir ? (p.num+p.dir) : String(vv||'').slice(4); }
 function dpsSetMerge(v){ dpsMerge=!!v; renderDps(); }
-// Voyage label for a block: the single voyage, or "first -> last" when a whole vessel is merged.
+// Voyage label for a block: a single voyage, "E/W" for the two legs of one voyage number,
+// or "first -> last" when a whole vessel is merged.
 function dpsBlockVoyLabel(b){
   const list=(b.voyages&&b.voyages.length)?b.voyages:[b.vv];
-  let t=(list.length<=1) ? dpsVoyLabel(list[0])
-        : (dpsVoyLabel(list[0])+' → '+dpsVoyLabel(list[list.length-1]));
+  let t;
+  if(list.length<=1){ t=dpsVoyLabel(list[0]); }
+  else{
+    const parts=list.map(dpsVoyageParts);
+    const sameNum=parts.every(p=>p.num===parts[0].num);
+    // 2538E + 2538W -> "2538E/W" (both legs of the same voyage number)
+    t = sameNum ? (parts[0].num + parts.map(p=>p.dir).join('/'))
+                : (dpsVoyLabel(list[0])+' → '+dpsVoyLabel(list[list.length-1]));
+  }
   if(b && b.parts>1) t+=' ('+b.part+'/'+b.parts+')';
   return t;
 }
@@ -976,6 +984,23 @@ function dpsCounts(sel){
 }
 function dpsSortCalls(a){
   return a.slice().sort((x,y)=>(dpsCallTime(x)||'').localeCompare(dpsCallTime(y)||''));
+}
+// The turnaround port is recorded twice: the last call of the W leg and the first call of the
+// E leg are the same visit with identical stamps. Now that both legs share a row, keep one
+// copy so a merged cell never stacks the same call twice.
+function dpsDropTurnDuplicates(calls){
+  const out=[];
+  (calls||[]).forEach(c=>{
+    const t=String(c.terminal||'').toUpperCase();
+    const eta=String(c.arrived_anchorage||'');
+    const dup = out.some(o =>
+      String(o.terminal||'').toUpperCase()===t &&
+      eta && eta===String(o.arrived_anchorage||'') &&
+      String(o.berth||'')===String(c.berth||'') &&
+      String(o.departure||'')===String(c.departure||''));
+    if(!dup) out.push(c);
+  });
+  return out;
 }
 // Place every call of one voyage on the rotation axis: each call takes the next free
 // column with its port. Returns the calls that cannot advance (repeat visits) so they
@@ -1080,27 +1105,29 @@ function dpsAlignOn(svc){
   const ax=dpsAxisFor(svc);
   return !!(ax && ax.ok);
 }
-// One block per voyage (vessel code + voyage number + direction): the port order of that
-// leg left to right, exactly like the first version, but on fixed columns when the
-// service runs a regular rotation.
-// With `dpsMerge` on, the voyages of one vessel that fall inside the date window are folded
-// into a single row, walked along the rotation repeated end to end, so a cell still holds one
-// time. A vessel with more calls than one row can carry continues on a "(1/2)" row below —
-// calls are never dropped.
+// One block per voyage number (vessel code + digits), so the two legs of one voyage —
+// 2639W and 2639E — sit on the same row. With `dpsMerge` on, every voyage of that vessel
+// inside the date window joins the same row as well.
 function dpsBuildBlocks(rows){
   const ax=dpsAxisFor(dpsSvc);
   const aligned=dpsAlignOn(dpsSvc) && ax.loop.length>0;
   const merge=!!dpsMerge;
   const umap={};
   rows.forEach(r=>{
-    const k=String(r.vessel_voyage||'').toUpperCase()||('~'+(r.terminal||'')+'|'+(r.departure||''));
+    const vv=String(r.vessel_voyage||'').toUpperCase();
+    const p=vv?dpsVoyageParts(vv):null;
+    // Direction letter is dropped from the key: E and W are the same voyage number.
+    const k=(p && p.num) ? (p.code+p.num) : (vv||('~'+(r.terminal||'')+'|'+(r.departure||'')));
     (umap[k]=umap[k]||[]).push(r);
   });
   let units=Object.keys(umap).map(k=>{
-    const calls=dpsSortCalls(umap[k]);
+    const raw=dpsSortCalls(umap[k]);
+    const calls=dpsDropTurnDuplicates(raw);
+    const voyages=[];
+    raw.forEach(r=>{ const v=String(r.vessel_voyage||'').toUpperCase(); if(v && voyages.indexOf(v)===-1) voyages.push(v); });
     const starts=calls.map(dpsEtaOf).filter(Boolean).sort();
     const ends=starts;   // the window is ETA based on both ends
-    return { vv:k, voyages:[k], calls:calls,
+    return { vv:voyages[0]||k, key:k, voyages:voyages.length?voyages:[k], calls:calls,
              start:starts[0]||'', end:ends[ends.length-1]||starts[0]||'' };
   });
   let widened=false;
@@ -1161,18 +1188,18 @@ function dpsBuildBlocks(rows){
         at++;
       });
     } else if(aligned){
-      axisArr=ax.loop.slice();
       const m=dpsMapCalls(u.calls, ax.loop);
-      cols=axisArr.map(()=>[]);
-      m.placed.forEach(x=>{ cols[x.col].push(x.c); });
-      let at=0;
-      cols.forEach((cs,i)=>{ if(cs.length) at=i+1; });
-      m.loose.forEach(c=>{
-        while(at<cols.length && cols[at].length) at++;
-        if(at<cols.length){ cols[at].push(c); axisArr[at]=dpsPortOf(c.terminal); }
-        else { cols.push([c]); axisArr.push(dpsPortOf(c.terminal)); }
-        at++;
-      });
+      const idx=m.placed.map(x=>x.col);
+      const gaps=(idx.length>1) ? ((idx[idx.length-1]-idx[0]+1)-idx.length) : 0;
+      if(m.loose.length || gaps>=2){
+        // This row does not follow the rotation (legs interleaved, several ports skipped):
+        // lay it out in call order rather than leaving holes in the middle of the grid.
+        cols=u.calls.map(c=>[c]);
+      } else {
+        axisArr=ax.loop.slice();
+        cols=axisArr.map(()=>[]);
+        m.placed.forEach(x=>{ cols[x.col].push(x.c); });
+      }
     } else {
       cols=u.calls.map(c=>[c]);
     }
@@ -1349,7 +1376,7 @@ function renderDps(){
     ? ('已对齐 '+maxCols+' 列')
     : '未对齐：航序不统一，按挂靠顺序铺开';
   const dropTxt = built.split ? (' · 个别船舶航次较多，已分 '+built.split+' 段续行') : '';
-  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 该航线在所选日期没有记录，已显示它全部 '+(dpsOperator?dpsOperator+' ':'')+'数据':'')+dropTxt+(DPS_SVC_HIDDEN_COUNT?' · 已隐藏 '+DPS_SVC_HIDDEN_COUNT+' 条 Service Type O 航线':'');
+  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'（W/E 同行）')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 该航线在所选日期没有记录，已显示它全部 '+(dpsOperator?dpsOperator+' ':'')+'数据':'')+dropTxt+(DPS_SVC_HIDDEN_COUNT?' · 已隐藏 '+DPS_SVC_HIDDEN_COUNT+' 条 Service Type O 航线':'');
   if(meta) meta.title = built.aligned
     ? '每个港口固定在某一列，方便上下对比不同船舶'
     : ('该航线在数据里挂靠顺序不统一（或港口太分散），强行对齐会更乱，因此按每条航次自己的顺序铺开');
@@ -1488,7 +1515,7 @@ function exportDpsXlsx(){
   let rowNum=1;
   const cntE=dpsCounts(sel);
   const alignTxt=dpsLastAligned?'已对齐 '+maxPorts+' 列':'按挂靠顺序铺开';
-  const groupTxt=dpsLastMerge?'每船一行':'一航次一行';
+  const groupTxt=dpsLastMerge?'每船一行':'一航次号一行（W/E 同行）';
   const dropTxt=(dpsLastMerge&&dpsLastSplit)?(' / 其中 '+dpsLastSplit+' 块为续行'):'';
   const fltTxt=(dpsOperator?(' / Operator: '+dpsOperator):'')+(dpsVessel?(' / Vessel: '+dpsVessel):'')+(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'');
   const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+groupTxt+' / '+alignTxt+dropTxt+fltTxt+')';
