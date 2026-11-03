@@ -219,14 +219,17 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .cargo-row .total-val { color: #1a73e8; font-weight: 700; }
 /* ===== DPS Proforma grid (Excel-style schedule) ===== */
 .dps-toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:#fff; border-radius:8px; padding:8px 12px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:10px; }
-.dps-svc-pills { display:flex; flex-wrap:wrap; gap:6px; }
-.dps-pill { padding:5px 13px; border-radius:16px; font-size:12px; font-weight:700; cursor:pointer; border:1px solid #d0d7de; background:#fff; color:#334155; user-select:none; }
+.dps-svc-pills { display:flex; flex-wrap:nowrap; gap:5px; overflow-x:auto; overflow-y:hidden; flex:1 1 420px; padding-bottom:2px; }
+.dps-svc-pills::-webkit-scrollbar { height:6px; }
+.dps-svc-pills::-webkit-scrollbar-thumb { background:#c8d0da; border-radius:3px; }
+.dps-pill { padding:4px 11px; border-radius:15px; font-size:11.5px; font-weight:700; cursor:pointer; border:1px solid #d0d7de; background:#fff; color:#334155; user-select:none; white-space:nowrap; flex:0 0 auto; }
 .dps-pill:hover { background:#f0f4fa; }
 .dps-pill.active { background:#16335a; color:#fff; border-color:#16335a; }
 .dps-pill.empty { opacity:.4; }
 .dps-toolbar label { font-size:11px; color:#5f6368; font-weight:700; }
 .dps-toolbar input[type=date] { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; }
 .dps-toolbar select { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; max-width:230px; background:#fff; }
+.dps-search { font-size:12px; padding:4px 8px; border:1px solid #d0d7de; border-radius:6px; min-width:260px; flex:0 0 auto; }
 .dps-toolbar .btn { font-size:11px; padding:5px 12px; }
 .dps-meta { font-size:11px; color:#5f6368; margin-left:4px; }
 .dps-merge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:400; color:#3c4043; cursor:pointer; padding:2px 4px; }
@@ -237,7 +240,8 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 .dps-lbl { position:sticky; left:0; z-index:2; background:#eef1f6; font-weight:700; color:#334155; }
 .dps-vesselcol { position:sticky; left:118px; z-index:2; background:#fbfbf4; font-weight:700; color:#6b5200; line-height:1.25; }
 .dps-row-port .dps-vesselcol { background:#ffffaf; color:#5a4a00; }
-.dps-row-port .dps-vesselcol .vc-name { display:block; font-size:12px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dps-row-port .dps-vesselcol .vc-name { display:block; font-size:11.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dps-row-port .dps-vesselcol .vc-code { display:block; font-size:10px; font-weight:700; color:#5f4700; letter-spacing:.6px; }
 .dps-row-port .dps-vesselcol .vc-voy { display:block; font-size:10.5px; font-weight:700; color:#0d47a1; }
 .dps-row-port td.pcell { background:#e9ecff; text-align:center; vertical-align:middle; padding:3px 4px; }
 .dps-row-voy td.pcell { background:#eef4ff; text-align:center; color:#0d47a1; font-weight:700; font-size:10.5px; padding:1px 4px; }
@@ -331,6 +335,7 @@ td.pcell.pc-blank { background:#fafbfd; }
 <div class="dps-toolbar">
   <label>Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
+  <input type="search" id="dpsSearch" class="dps-search" placeholder="筛选船名 / 船代码 / 航次（回车跳航线）" oninput="dpsSetQuery(this.value)" onchange="dpsJumpService(this.value)" />
 </div>
 <div class="dps-toolbar">
   <label>From</label><input type="date" id="dps_from" onchange="renderDps()" />
@@ -795,10 +800,14 @@ function setDefaultDateRange() {
 }
 
 /* ===== DPS Proforma module (Excel-style schedule grid) ===== */
-const DPS_SERVICES = ['REX','AEM','AM1','RES','ST3','ST1','NP2','CST','IMR'];
+let DPS_SERVICES = [];                  // every service present in the data, filled at init
+let DPS_SVC_COUNT = {};                 // service -> number of rows (used to sort the pills)
+const DPS_DEFAULT_OPERATOR = 'CUL';     // preselected operator
 let dpsSvc = 'REX';
 let dpsFrom = '', dpsTo = '';
-let dpsOperator = '', dpsVessel = '';   // '' = all
+let dpsOperator = DPS_DEFAULT_OPERATOR, dpsOperatorTouched = false;
+let dpsVessel = '';                     // '' = all
+let dpsQuery = '';                      // free text: vessel name / code / voyage
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
 let dpsMerge = false;                   // false = one row per voyage, true = one row per vessel
 let dpsLastAligned = false, dpsLastAxis = null, dpsLastMerge = false, dpsLastDrop = 0, dpsLastSplit = 0;
@@ -809,6 +818,9 @@ function dpsDateStr(d){ return d.getFullYear()+'-'+dpsPad(d.getMonth()+1)+'-'+dp
 function dpsAddDays(base,n){ const d=new Date(base.getTime()); d.setDate(d.getDate()+n); return dpsDateStr(d); }
 function dpsEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function dpsCallTime(r){ return r.berth || r.arrived_anchorage || r.departure || ''; }
+// The date window works on ETA (= arrived at anchorage), which is what the ops team plans by;
+// the other stamps are only a fallback for calls that have no ETA recorded yet.
+function dpsEtaOf(r){ return r.arrived_anchorage || r.berth || r.departure || ''; }
 function dpsFmtDT(s){ return s ? String(s).slice(0,16) : ''; }
 function dpsSvcRows(){ return (DATA||[]).filter(r=>r.svc===dpsSvc); }
 function dpsVesselCode(vv){ return String(vv||'').toUpperCase().slice(0,4); }
@@ -825,15 +837,36 @@ function dpsNodeInfo(t){
   };
 }
 // Rows after the Operator / Vessel filters.
+function dpsMatchQuery(r){
+  const q=String(dpsQuery||'').trim().toUpperCase();
+  if(!q) return true;
+  const vv=String(r.vessel_voyage||'').toUpperCase();
+  const code=dpsVesselCode(vv);
+  const nm=((typeof VESSEL_NAMES!=='undefined' && VESSEL_NAMES[code])||'').toUpperCase();
+  return vv.indexOf(q)>=0 || nm.indexOf(q)>=0;
+}
 function dpsFilteredRows(){
   return dpsSvcRows().filter(r=>
     (!dpsOperator || r.operator===dpsOperator) &&
-    (!dpsVessel   || dpsVesselCode(r.vessel_voyage)===dpsVessel)
+    (!dpsVessel   || dpsVesselCode(r.vessel_voyage)===dpsVessel) &&
+    dpsMatchQuery(r)
   );
 }
 function dpsSetFilter(kind, val){
-  if(kind==='operator') dpsOperator=val; else dpsVessel=val;
+  if(kind==='operator'){ dpsOperator=val; dpsOperatorTouched=true; } else dpsVessel=val;
   renderDps();
+}
+// Typing filters the rows live (vessel name, code or voyage number).
+function dpsSetQuery(v){ dpsQuery=v; renderDps(); }
+// Pressing Enter / leaving the box on a service code jumps to that service (航线筛选).
+function dpsJumpService(v){
+  const q=String(v||'').trim().toUpperCase();
+  if(!q || DPS_SERVICES.indexOf(q)<0) return;
+  dpsSvc=q; dpsQuery='';
+  const se=document.getElementById('dpsSearch'); if(se) se.value='';
+  const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
+  for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===q);
+  dpsFillFilters(); renderDps();
 }
 // Rebuild the Operator / Vessel dropdowns from the current service's data.
 function dpsFillFilters(){
@@ -841,6 +874,9 @@ function dpsFillFilters(){
   if(!opSel||!vSel) return;
   const rows=dpsSvcRows();
   const ops=[]; rows.forEach(r=>{ if(r.operator && ops.indexOf(r.operator)===-1) ops.push(r.operator); }); ops.sort();
+  // CUL is the preselect until the user picks something else; a service without CUL rows
+  // falls back to "All operators" instead of showing an empty grid.
+  if(!dpsOperatorTouched && ops.indexOf(DPS_DEFAULT_OPERATOR)>=0) dpsOperator=DPS_DEFAULT_OPERATOR;
   if(dpsOperator && ops.indexOf(dpsOperator)===-1) dpsOperator='';
   opSel.innerHTML='<option value="">All operators</option>'+ops.map(o=>
     '<option value="'+o+'"'+(o===dpsOperator?' selected':'')+'>'+o+'</option>').join('');
@@ -1003,8 +1039,8 @@ function dpsBuildBlocks(rows){
   });
   let units=Object.keys(umap).map(k=>{
     const calls=dpsSortCalls(umap[k]);
-    const starts=calls.map(dpsCallTime).filter(Boolean).sort();
-    const ends=calls.map(c=>c.departure||dpsCallTime(c)).filter(Boolean).sort();
+    const starts=calls.map(dpsEtaOf).filter(Boolean).sort();
+    const ends=starts;   // the window is ETA based on both ends
     return { vv:k, voyages:[k], calls:calls,
              start:starts[0]||'', end:ends[ends.length-1]||starts[0]||'' };
   });
@@ -1109,11 +1145,24 @@ function dpsBuildBlocks(rows){
   return { blocks:blocks, widened:widened, dropped:0, split:split,
            axis:(aligned&&!merge)?ax.loop.slice(0,width):null, aligned:aligned, merge:merge, info:ax };
 }
-function dpsSetDefaultRange(){ const t=new Date(); dpsFrom=dpsAddDays(t,-21); dpsTo=dpsAddDays(t,150); const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
+// Default window: the past week (already sailed) through the next two months (planned).
+function dpsSetDefaultRange(){
+  const t=new Date();
+  dpsFrom=dpsAddDays(t,-7);
+  const to=new Date(t.getTime()); to.setMonth(to.getMonth()+2);
+  dpsTo=dpsDateStr(to);
+  const f=document.getElementById('dps_from'), g=document.getElementById('dps_to');
+  if(f)f.value=dpsFrom; if(g)g.value=dpsTo;
+}
 function dpsInit(){
   const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
-  const present=new Set((DATA||[]).map(r=>r.svc));
-  pills.innerHTML=DPS_SERVICES.map(s=>'<span class="dps-pill'+(s===dpsSvc?' active':'')+(present.has(s)?'':' empty')+'" data-svc="'+s+'" onclick="dpsSelectSvc(\''+s+'\')">'+s+(present.has(s)?'':' ⊘')+'</span>').join('');
+  // Every service in the feed, most active first — no hard-coded list any more.
+  const cnt={};
+  (DATA||[]).forEach(r=>{ const k=String(r.svc||'').toUpperCase(); if(k) cnt[k]=(cnt[k]||0)+1; });
+  DPS_SVC_COUNT=cnt;
+  DPS_SERVICES=Object.keys(cnt).sort((a,b)=>(cnt[b]-cnt[a])||a.localeCompare(b));
+  if(DPS_SERVICES.indexOf(dpsSvc)<0) dpsSvc=DPS_SERVICES[0]||'REX';
+  pills.innerHTML=DPS_SERVICES.map(s=>'<span class="dps-pill'+(s===dpsSvc?' active':'')+'" data-svc="'+s+'" title="'+s+' · '+cnt[s]+' 条记录" onclick="dpsSelectSvc(\''+s+'\')">'+s+'</span>').join('');
   if(!dpsFrom||!dpsTo){ dpsSetDefaultRange(); } else { const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
   dpsFillFilters();
   renderDps();
@@ -1125,7 +1174,7 @@ function dpsSelectSvc(s){
   dpsFillFilters(); renderDps();
 }
 function dpsResetRange(){ dpsSetDefaultRange(); renderDps(); }
-function dpsAllRange(){ const tms=dpsFilteredRows().map(dpsCallTime).filter(Boolean).sort(); if(tms.length){ dpsFrom=tms[0].slice(0,10); dpsTo=tms[tms.length-1].slice(0,10); } else { dpsFrom=''; dpsTo=''; } const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; renderDps(); }
+function dpsAllRange(){ const tms=dpsFilteredRows().map(dpsEtaOf).filter(Boolean).sort(); if(tms.length){ dpsFrom=tms[0].slice(0,10); dpsTo=tms[tms.length-1].slice(0,10); } else { dpsFrom=''; dpsTo=''; } const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; renderDps(); }
 // One cell of a time row: a single timestamp per cell (a second visit to the same port
 // gets its own column, never a stacked cell).
 function dpsTimeTd(calls, field){
@@ -1184,8 +1233,10 @@ function renderDps(){
   }
   const rows=dpsFilteredRows();
   if(!rows.length){
-    const why = (dpsOperator||dpsVessel) ? ('没有符合筛选条件的航次（Operator: '+(dpsOperator||'All')+' / Vessel: '+(dpsVessel||'All')+'）')
-                                         : ('服务 '+dpsSvc+' 在当前数据源中没有记录');
+    const why = (dpsOperator||dpsVessel||String(dpsQuery||'').trim())
+      ? ('没有符合筛选条件的航次（Operator: '+(dpsOperator||'All')+' / Vessel: '+(dpsVessel||'All')
+         +(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'')+'）')
+      : ('服务 '+dpsSvc+' 在当前数据源中没有记录');
     wrap.innerHTML='<div class="dps-empty">'+why+'</div>'; if(meta)meta.textContent=''; dpsLastSel=[]; dpsLastMax=1; return;
   }
   const built=dpsBuildBlocks(rows);
@@ -1202,7 +1253,8 @@ function renderDps(){
   let html='<table class="dps-table" style="width:'+W+'px">'+cols+'<tbody>';
   sel.forEach(b=>{
     const vcode=dpsVesselCode(b.vv);
-    const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
+    const nmap=(typeof VESSEL_NAMES!=='undefined')?VESSEL_NAMES:{}; 
+    const vname=nmap[vcode]||vcode;
     const voy=dpsBlockVoyLabel(b);
     const colArr=pad(b.cols);
     const portCells=colArr.map(dpsPortTd).join('');
@@ -1212,7 +1264,9 @@ function renderDps(){
     const etdCells=colArr.map(cs=>dpsTimeTd(cs,'departure')).join('');
     const pfCells=colArr.map(dpsPlanTd).join('');
     const rmCells=colArr.map(dpsRemarkTd).join('');
-    const vc='<span class="vc-name">'+dpsEsc(vname)+'</span><span class="vc-voy">'+dpsEsc(voy)+'</span>';
+    const vc='<span class="vc-name" title="'+dpsEsc(vname+' ('+vcode+')')+'">'+dpsEsc(vname)+'</span>'+
+             (vname===vcode?'':'<span class="vc-code">'+dpsEsc(vcode||'—')+'</span>')+
+             '<span class="vc-voy">'+dpsEsc(voy)+'</span>';
     html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vc+'</td>'+portCells+'</tr>';
     html+='<tr class="dps-row-voy"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol"></td>'+voyCells+'</tr>';
     html+='<tr class="dps-row-eta"><td class="dps-lbl">ETA</td><td class="dps-vesselcol"></td>'+etaCells+'</tr>';
@@ -1228,7 +1282,7 @@ function renderDps(){
     ? ('已对齐 '+maxCols+' 列')
     : '未对齐：航序不统一，按挂靠顺序铺开';
   const dropTxt = built.split ? (' · 个别船舶航次较多，已分 '+built.split+' 段续行') : '';
-  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 所选日期无数据，已显示全部':'')+dropTxt;
+  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 该航线在所选日期没有记录，已显示它全部 '+(dpsOperator?dpsOperator+' ':'')+'数据':'')+dropTxt;
   if(meta) meta.title = built.aligned
     ? '每个港口固定在某一列，方便上下对比不同船舶'
     : ('该航线在数据里挂靠顺序不统一（或港口太分散），强行对齐会更乱，因此按每条航次自己的顺序铺开');
@@ -1369,7 +1423,8 @@ function exportDpsXlsx(){
   const alignTxt=dpsLastAligned?'已对齐 '+maxPorts+' 列':'按挂靠顺序铺开';
   const groupTxt=dpsLastMerge?'每船一行':'一航次一行';
   const dropTxt=(dpsLastMerge&&dpsLastSplit)?(' / 其中 '+dpsLastSplit+' 块为续行'):'';
-  const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+groupTxt+' / '+alignTxt+dropTxt+')';
+  const fltTxt=(dpsOperator?(' / Operator: '+dpsOperator):'')+(dpsVessel?(' / Vessel: '+dpsVessel):'')+(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'');
+  const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+groupTxt+' / '+alignTxt+dropTxt+fltTxt+')';
   rowsXml.push('<row r="1" ht="22" customHeight="1">'+xlsxStrCell('A1',metaText,1)+'</row>');
   rowNum=2;
   // One block = one voyage = 7 rows (Port / Voyage / ETA / ETB / ETD / Proforma / Remark).
@@ -1414,7 +1469,9 @@ function exportDpsXlsx(){
     const remarkCells=cols.map(function(cs){
       return cs.map(function(c){ return c.remark||''; }).filter(Boolean).join(' / ');
     });
-    put('Port', vname+'\n'+voyLabel, portCells, 3, true);
+    // Vessel cell carries both the name and the 4-letter code (the code is what ops quote).
+    const vLabel=(vname===vcode) ? (vname+'\n'+voyLabel) : (vname+'\n'+vcode+'\n'+voyLabel);
+    put('Port', vLabel, portCells, 3, true);
     put('Voyage', '', one(function(c){ return dpsVoyLabel(c.vessel_voyage); }), 4, false);
     put('ETA', '', one(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
     put('ETB', '', one(function(c){ return dpsFmtDT(c.berth); }), 6, false);
