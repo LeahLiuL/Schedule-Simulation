@@ -9,6 +9,7 @@
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f6f7; color: #333; }
 header { background: linear-gradient(135deg, #16335a 0%, #244a73 100%); color: white; padding: 14px 22px; font-size: 18px; font-weight: 600; box-shadow: 0 2px 6px rgba(15,39,71,0.25); display: flex; justify-content: space-between; align-items: center; letter-spacing: .3px; }
 #update-time { font-size: 12px; font-weight: 400; opacity: 0.85; }
+#lane-hidden-note { font-size: 11.5px; font-weight: 400; color: #cfe0f5; margin-right: 16px; }
 .container { max-width: 1800px; margin: 0 auto; padding: 12px; display: flex; gap: 12px; min-height: calc(100vh - 60px); }
 .left { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .right { width: 340px; flex-shrink: 0; }
@@ -261,7 +262,7 @@ td.pcell.pc-blank { background:#fafbfd; }
 </style>
 </head>
 <body>
-<header><span>BI Vessel Departure Analysis</span><span id="update-time">Loading...</span></header>
+<header><span>BI Vessel Departure Analysis</span><span id="lane-hidden-note"></span><span id="update-time">Loading...</span></header>
 <div class="container">
 <nav class="sidebar">
   <div class="nav-title">Navigation</div>
@@ -506,6 +507,24 @@ function dpsLaneType(code){
 }
 function dpsLaneHidden(code){ return LANE_HIDDEN_TYPES.indexOf(dpsLaneType(code)) >= 0; }
 function dpsLaneName(code){ const l = LANES[String(code || '').toUpperCase()]; return (l && l.name) ? l.name : ''; }
+// Service Type "O" lanes are dropped from the dataset itself, so the Schedule table, the
+// SVC picker, the summary panels and Export CSV all work on the same bookable universe.
+function laneVisibleRows(rows){ return (rows || []).filter(r => !dpsLaneHidden(r && r.svc)); }
+function refreshLaneGate(){
+  const cnt = {};
+  (DATA_RAW || []).forEach(r => {
+    const k = String((r && r.svc) || '').toUpperCase();
+    if (k && dpsLaneHidden(k)) cnt[k] = (cnt[k] || 0) + 1;
+  });
+  const codes = Object.keys(cnt).sort();
+  const total = codes.reduce((a, k) => a + cnt[k], 0);
+  const el = document.getElementById('lane-hidden-note');
+  if (el) {
+    el.textContent = codes.length ? ('已隐藏 ' + codes.length + ' 条 Service Type O 航线 · ' + total.toLocaleString() + ' 行') : '';
+    el.title = codes.length ? ('不展示的航线：' + codes.join(' / ')) : '';
+  }
+  return codes.length;
+}
 function dpsNote(msg){
   const n = document.getElementById('dpsNote'); if (!n) return;
   n.textContent = msg || '';
@@ -535,6 +554,12 @@ function fetchLanes() {
     (Array.isArray(j) ? j : []).forEach(x => { if (x && x.code) LANES[x.code] = x; });
     // Lane names / Service Types just arrived: rebuild the pills so Type-O lanes disappear
     // and every pill can show its full lane name.
+    if ((DATA_RAW || []).length) {
+      const next = laneVisibleRows(DATA_RAW);
+      // Only when the master reveals an O lane the built-in fallback did not know about.
+      if (next.length !== (DATA || []).length) { DATA = next; buildOptions(DATA); applyDefaults(); }
+      refreshLaneGate();
+    }
     if (typeof dpsInit === 'function' && (DATA || []).length) { try { dpsInit(); } catch (e) {} }
   });
 }
@@ -547,7 +572,8 @@ function fetchNodes() {
 
 let DATA_UPDATED = null; // last commit time of the CSV data source (from GitHub commits API)
 const CACHE_UPDATED_KEY = 'bi_vessel_csv_cache_updated_v1';
-let DATA = [];
+let DATA = [];       // rows the whole page works on (Service Type O lanes already removed)
+let DATA_RAW = [];   // every row as parsed, kept so the lane gate can be re-applied
 let filtered = [];
 let colVisibility = {};
 let colOrder = [];
@@ -1599,8 +1625,10 @@ function loadCSVWithRetry(retry) {
     if (cached && (Date.now() - cacheTime) < CACHE_TTL_MS) {
       console.log('Using cached CSV (' + cached.length + ' bytes)');
       try {
-        DATA = dedupeVesselRows(cached);
+        DATA_RAW = dedupeVesselRows(cached);
+        DATA = laneVisibleRows(DATA_RAW);
         buildOptions(DATA);
+        refreshLaneGate();
         const cu = localStorage.getItem(CACHE_UPDATED_KEY);
         DATA_UPDATED = cu ? new Date(cu) : null;
         applyDefaults();
@@ -1651,8 +1679,10 @@ function fetchCSV(isBackground, retry, urlIdx) {
         console.warn('Failed to save cache:', e);
       }
       if (!isBackground) {
-        DATA = dedupeVesselRows(text);
+        DATA_RAW = dedupeVesselRows(text);
+        DATA = laneVisibleRows(DATA_RAW);
         buildOptions(DATA);
+        refreshLaneGate();
         applyDefaults();
       }
       // Always reflect the data refresh time, even on background refresh.
@@ -1670,8 +1700,10 @@ function fetchCSV(isBackground, retry, urlIdx) {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
-          DATA = dedupeVesselRows(cached);
+          DATA_RAW = dedupeVesselRows(cached);
+          DATA = laneVisibleRows(DATA_RAW);
           buildOptions(DATA);
+          refreshLaneGate();
           const cu = localStorage.getItem(CACHE_UPDATED_KEY);
           DATA_UPDATED = cu ? new Date(cu) : null;
           applyDefaults();
