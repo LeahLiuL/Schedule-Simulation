@@ -235,19 +235,15 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 table.dps-table { border-collapse:collapse; table-layout:fixed; font-size:12px; }
 table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dps-lbl { position:sticky; left:0; z-index:2; background:#eef1f6; font-weight:700; color:#334155; }
-.dps-vesselcol { position:sticky; left:134px; z-index:2; background:#fbfbf4; font-weight:700; color:#6b5200; }
+.dps-vesselcol { position:sticky; left:118px; z-index:2; background:#fbfbf4; font-weight:700; color:#6b5200; line-height:1.25; }
 .dps-row-port .dps-vesselcol { background:#ffffaf; color:#5a4a00; }
-.dps-row-port td.pcell { background:#ccccff; color:#1a237e; font-weight:600; text-align:center; vertical-align:middle; }
-.dps-row-voyage td.pcell { background:#c7e7ff; color:#0d47a1; text-align:center; }
-.dps-row-eta td.pcell, .dps-row-etb td.pcell, .dps-row-etd td.pcell { text-align:center; color:#2b2b2b; }
-.dps-row-delay td.pcell { text-align:center; }
-td.pcell .st { display:block; line-height:1.45; white-space:nowrap; }
-td.pcell .pc-name { display:block; font-size:10.5px; line-height:1.25; white-space:normal; overflow:hidden; text-overflow:ellipsis; max-height:2.6em; }
-td.pcell .pc-code { display:block; font-size:10px; color:#4353a8; opacity:.85; }
-td.pcell.pc-blank { color:#d7dbe3; font-size:10px; }
-.dl-late { color:#c5221f; font-weight:700; }
-.dl-early { color:#137333; font-weight:700; }
-.dl-ok { color:#5f6368; }
+.dps-row-port .dps-vesselcol .vc-name { display:block; font-size:12px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dps-row-port .dps-vesselcol .vc-voy { display:block; font-size:10.5px; font-weight:700; color:#0d47a1; }
+.dps-row-port td.pcell { background:#e9ecff; text-align:center; vertical-align:middle; padding:3px 4px; }
+.dps-row-eta td.pcell, .dps-row-etb td.pcell, .dps-row-etd td.pcell { text-align:center; color:#2b2b2b; font-size:11px; padding:2px 4px; }
+td.pcell .pc-code { display:block; font-size:11.5px; font-weight:800; letter-spacing:.2px; line-height:1.2; color:#1a237e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+td.pcell .pc-name { display:block; font-size:9px; line-height:1.15; color:#5b6474; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+td.pcell.pc-blank { background:#fafbfd; }
 .dps-block-start td { border-top:2px solid #8fa0b8; }
 .dps-empty { padding:26px; text-align:center; color:#9aa0a6; }
 </style>
@@ -338,14 +334,7 @@ td.pcell.pc-blank { color:#d7dbe3; font-size:10px; }
   <select id="dps_operator" onchange="dpsSetFilter('operator', this.value)"><option value="">All operators</option></select>
   <label>Vessel</label>
   <select id="dps_vessel" onchange="dpsSetFilter('vessel', this.value)"><option value="">All vessels</option></select>
-  <label class="dps-merge" title="How vessel blocks are grouped: one row per vessel (all its voyages), one row per round trip (2633W+2633E), or one row per voyage">Group
-    <select id="dpsGroupMode" onchange="dpsSetGroupMode(this.value)">
-      <option value="vessel">One row per vessel</option>
-      <option value="trip">Round trip (W+E)</option>
-      <option value="voyage">Per voyage</option>
-    </select>
-  </label>
-  <label class="dps-merge" title="Put every port on a fixed column (lane rotation order) so the same port lines up on every row"><input type="checkbox" id="dpsAlignChk" checked onchange="dpsSetAlign(this.checked)" /> Align ports</label>
+  <label class="dps-merge" title="每一行是一条航次（如 2633W / 2633E）。勾选后同一个港口固定在某一列，方便上下对比不同船舶；航序不统一的航线会自动按挂靠顺序铺开"><input type="checkbox" id="dpsAlignChk" checked onchange="dpsSetAlign(this.checked)" /> Align ports</label>
   <span class="dps-meta" id="dpsMeta"></span>
   <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;">Export Excel</button>
 </div>
@@ -514,10 +503,8 @@ function fetchNodes() {
   fetchAuxJson(NODES_URLS, j => { NODES = j || {}; });
 }
 // Optional planned ETB per vessel-voyage-port (enables the Delay row). Absent = no delay.
-const PROFORMA_URLS = dataUrls('proforma.json');
-function fetchProforma() {
-  fetchAuxJson(PROFORMA_URLS, j => { DPS_PROFORMA = j || {}; });
-}
+
+
 
 let DATA_UPDATED = null; // last commit time of the CSV data source (from GitHub commits API)
 const CACHE_UPDATED_KEY = 'bi_vessel_csv_cache_updated_v1';
@@ -806,23 +793,19 @@ let dpsSvc = 'REX';
 let dpsFrom = '', dpsTo = '';
 let dpsOperator = '', dpsVessel = '';   // '' = all
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
-let dpsAlign = true;                    // put every port on a fixed column
-let dpsGroupMode = 'vessel';            // 'vessel' | 'trip' | 'voyage'
-const DPS_MAX_STACK = 4;                // max visits to one port in a block before it continues below
-// Optional proforma lookup: "VESSELVOY|PORT" -> planned ETB (ISO string). Filled from
-// shipping_data/proforma.json when that file exists; empty = no delay column is shown.
-let DPS_PROFORMA = {};
+let dpsAlignOverride = null;            // null = auto per service, true/false = manual
+let dpsLastAligned = false, dpsLastAxis = null;
+const DPS_MAX_COLS = 16;                // grids wider than this are too sparse to read
 function dpsPad(n){ return String(n).padStart(2,'0'); }
 function dpsDateStr(d){ return d.getFullYear()+'-'+dpsPad(d.getMonth()+1)+'-'+dpsPad(d.getDate()); }
 function dpsAddDays(base,n){ const d=new Date(base.getTime()); d.setDate(d.getDate()+n); return dpsDateStr(d); }
 function dpsEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function dpsCallTime(r){ return r.berth || r.arrived_anchorage || r.departure || ''; }
 function dpsFmtDT(s){ return s ? String(s).slice(0,16) : ''; }
-function dpsFmtShort(s){ return s ? String(s).slice(5,10) : ''; }   // MM-DD
 function dpsSvcRows(){ return (DATA||[]).filter(r=>r.svc===dpsSvc); }
 function dpsVesselCode(vv){ return String(vv||'').toUpperCase().slice(0,4); }
 function dpsPortOf(t){ return String(t||'').toUpperCase().slice(0,5); }
-// Terminal node -> {port code, terminal no, real terminal name} from shipping_data/nodes.json
+// Terminal node (e.g. TWKELT01) -> full node code / port code / terminal no / terminal name.
 function dpsNodeInfo(t){
   const u=String(t||'').toUpperCase();
   const n=(typeof NODES!=='undefined' && NODES[u]) || null;
@@ -862,11 +845,8 @@ function dpsFillFilters(){
     return '<option value="'+c+'" title="'+label+'"'+(c===dpsVessel?' selected':'')+'>'+label+'</option>';
   }).join('');
 }
-// Block grouping. A voyage label is 4-char vessel code + voyage number + direction
-// letter, e.g. CSJ72633W / CSJ72633E = same vessel, same voyage number, opposite legs.
-//   'vessel' -> one row per vessel: every voyage of that ship in one block (default)
-//   'trip'   -> one row per rotation: 2633W + 2633E together
-//   'voyage' -> one row per voyage label
+// A voyage label is 4-char vessel code + voyage number + direction letter,
+// e.g. CSJ72633W / CSJ72633E = same vessel, same voyage number, opposite legs.
 function dpsVoyageParts(vv){
   const s=String(vv||'').toUpperCase();
   const m=s.match(/^(.{4})(\d+)([A-Z])$/);
@@ -874,167 +854,194 @@ function dpsVoyageParts(vv){
   return { code:s.slice(0,4), num:s.slice(4), dir:'', vv:s };
 }
 function dpsVoyLabel(vv){ const p=dpsVoyageParts(vv); return p.dir ? (p.num+p.dir) : String(vv||'').slice(4); }
-function dpsGroupKey(vv){
-  const s=String(vv||'').toUpperCase();
-  if(dpsGroupMode==='voyage') return s;
-  const p=dpsVoyageParts(vv);
-  if(dpsGroupMode==='vessel') return p.code || s.slice(0,4);
-  return p.dir ? (p.code+p.num) : s;
-}
-function dpsSetGroupMode(m){ dpsGroupMode=(m==='trip'||m==='voyage')?m:'vessel'; renderDps(); }
-function dpsSetAlign(v){ dpsAlign=!!v; renderDps(); }
-function dpsBlockVoyLabel(b){
-  const labels=(b.vvList||[]).map(dpsVoyLabel);
-  let s;
-  if(labels.length>1) s = (labels.length<=2) ? labels.join(' / ') : (labels[0]+' → '+labels[labels.length-1]);
-  else s = dpsVoyLabel(((b.calls||[])[0]||{}).vessel_voyage);
-  if(b.parts>1) s += ' ('+b.part+'/'+b.parts+')';
-  return s;
-}
+function dpsSetAlign(v){ dpsAlignOverride=!!v; renderDps(); }
 function dpsCounts(sel){
   const v={}, y={};
   sel.forEach(b=>{
-    const c=dpsVesselCode(((b.calls||[])[0]||{}).vessel_voyage); if(c) v[c]=1;
-    (b.vvList||[]).forEach(x=>{ if(x) y[x]=1; });
+    const c=dpsVesselCode(b.vv); if(c) v[c]=1;
+    if(b.vv) y[b.vv]=1;
   });
   return { vessels:Object.keys(v).length, voyages:Object.keys(y).length };
 }
-// Port axis: one column per port, ordered by the lane rotation (shipping_data/lanes.json).
-// Ports seen in the data but missing from the rotation are inserted right after the port
-// they most often follow, so an irregular service still lines up as well as it can.
-function dpsBuildAxis(rows){
-  if(!dpsAlign) return null;
-  const lane=(typeof LANES!=='undefined' && LANES[dpsSvc]) || null;
-  let axis=[], seen={};
-  ((lane && lane.ports) || []).forEach(p=>{ const u=String(p||'').toUpperCase(); if(u && !seen[u]){ seen[u]=1; axis.push(u); } });
-  const stat={}, voy={};
-  rows.forEach(r=>{ const k=String(r.vessel_voyage||''); (voy[k]=voy[k]||[]).push(r); });
-  Object.keys(voy).forEach(k=>{
-    const cs=voy[k].slice().sort((a,b)=>(dpsCallTime(a)||'').localeCompare(dpsCallTime(b)||''));
-    const n=cs.length;
-    cs.forEach((r,i)=>{
-      const p=dpsPortOf(r.terminal);
-      const s=stat[p]=stat[p]||{c:0,pos:0,pred:{}};
-      s.c++; s.pos+=i/Math.max(1,n-1);
-    });
-    for(let i=1;i<cs.length;i++){
-      const a=dpsPortOf(cs[i-1].terminal), b2=dpsPortOf(cs[i].terminal);
-      if(a===b2) continue;
-      const s=stat[b2]=stat[b2]||{c:0,pos:0,pred:{}};
-      s.pred[a]=(s.pred[a]||0)+1;
+function dpsSortCalls(a){
+  return a.slice().sort((x,y)=>(dpsCallTime(x)||'').localeCompare(dpsCallTime(y)||''));
+}
+// Place every call of one voyage on the rotation axis: each call takes the next free
+// column with its port. Returns the calls that cannot advance (repeat visits) so they
+// get their own trailing column instead of being stacked into a shared cell.
+function dpsMapCalls(calls, loop){
+  const placed=[], loose=[]; let last=-1;
+  (calls||[]).forEach(c=>{
+    const p=dpsPortOf(c.terminal);
+    let col=-1;
+    for(let i=last+1;i<loop.length;i++){ if(loop[i]===p){ col=i; break; } }
+    if(col<0){ loose.push(c); return; }
+    last=col; placed.push({c:c,col:col});
+  });
+  return { placed:placed, loose:loose };
+}
+// Rotation axis, derived from the data (lanes.json is incomplete for most services):
+//   1. the round trip that visits the most distinct ports seeds the rotation,
+//   2. ports missing from it are inserted after their most common predecessor,
+//   3. the front half is repeated at the end so a return leg lands on the right-hand
+//      side of the grid instead of jumping back to column 0.
+// `ok` says whether the rotation is regular enough in this data to be worth aligning.
+const DPS_AXIS_CACHE = {};
+function dpsAxisFor(svc){
+  const key=svc+'|'+((DATA&&DATA.length)||0);
+  if(DPS_AXIS_CACHE[key]) return DPS_AXIS_CACHE[key];
+  const blank={ base:[], loop:[], score:0, ok:false, blocks:0 };
+  const rows=(DATA||[]).filter(r=>r.svc===svc);
+  if(!rows.length){ DPS_AXIS_CACHE[key]=blank; return blank; }
+  const trips={}, byVoy={};
+  rows.forEach(r=>{
+    const vv=String(r.vessel_voyage||'').toUpperCase();
+    (byVoy[vv]=byVoy[vv]||[]).push(r);
+    const p=dpsVoyageParts(vv);
+    const t=p.code+p.num;
+    (trips[t]=trips[t]||[]).push(r);
+  });
+  let seed=[];
+  Object.keys(trips).forEach(k=>{
+    const seq=[];
+    dpsSortCalls(trips[k]).forEach(r=>{ const p=dpsPortOf(r.terminal); if(p && seq.indexOf(p)===-1) seq.push(p); });
+    if(seq.length>seed.length) seed=seq;
+  });
+  if(!seed.length){ DPS_AXIS_CACHE[key]=blank; return blank; }
+  const pred={}, freq={};
+  Object.keys(trips).forEach(k=>{
+    const cs=dpsSortCalls(trips[k]);
+    for(let i=0;i<cs.length;i++){
+      const p=dpsPortOf(cs[i].terminal); freq[p]=(freq[p]||0)+1;
+      if(i){
+        const a=dpsPortOf(cs[i-1].terminal);
+        if(a!==p){ const m=(pred[p]=pred[p]||{}); m[a]=(m[a]||0)+1; }
+      }
     }
   });
-  const extras=Object.keys(stat).filter(p=>axis.indexOf(p)===-1);
-  extras.sort((a,b)=>stat[b].c-stat[a].c);
-  extras.forEach(p=>{
-    const s=stat[p]; const preds=Object.keys(s.pred).sort((a,b)=>s.pred[b]-s.pred[a]);
-    let at=-1;
-    for(let i=0;i<preds.length;i++){ const idx=axis.indexOf(preds[i]); if(idx>=0){ at=idx+1; break; } }
-    if(at<0) at=axis.length;
+  const axis=seed.slice();
+  Object.keys(freq).sort((a,b)=>freq[b]-freq[a]).forEach(p=>{
+    if(axis.indexOf(p)>-1) return;
+    let at=axis.length;
+    const m=pred[p]||{}, pr=Object.keys(m).sort((a,b)=>m[b]-m[a]);
+    for(let i=0;i<pr.length;i++){ const j=axis.indexOf(pr[i]); if(j>-1){ at=j+1; break; } }
     axis.splice(at,0,p);
   });
-  return axis.length ? axis : null;
+  const loop = axis.length>1 ? axis.concat(axis.slice(0,Math.ceil(axis.length/2))) : axis.slice();
+  // Quality: a good rotation keeps each voyage on one contiguous run of columns.
+  // `score` = share of voyages that need no extra column, `holes` = empty cells inside
+  // the run (a service whose legs skip ports leaves the grid too sparse to be useful).
+  const keys=Object.keys(byVoy); let bad=0, calls=0, holes=0;
+  keys.forEach(k=>{
+    const m=dpsMapCalls(dpsSortCalls(byVoy[k]), loop);
+    if(m.loose.length) bad++;
+    const idx=m.placed.map(p=>p.col);
+    calls += idx.length + m.loose.length;
+    // an off-axis call also shows up as a gap in that row
+    if(idx.length>1) holes += (idx[idx.length-1]-idx[0]+1) - idx.length;
+    holes += m.loose.length;
+  });
+  const score = keys.length ? (1-bad/keys.length) : 0;
+  const sparse = calls ? holes/calls : 1;
+  const info={ base:axis, loop:loop, score:score, sparse:sparse, blocks:keys.length,
+               ok:(axis.length<=DPS_MAX_COLS && score>=0.75 && sparse<=0.25 && keys.length>=5) };
+  DPS_AXIS_CACHE[key]=info;
+  return info;
 }
-function dpsMakeBlock(g, units, axis){
-  const calls=[];
-  units.forEach(u=>u.calls.forEach(c=>calls.push(c)));
-  calls.sort((a,b)=>(dpsCallTime(a)||'').localeCompare(dpsCallTime(b)||''));
-  const vvList=[];
-  units.forEach(u=>{ const v=String(u.vv||'').toUpperCase(); if(v && vvList.indexOf(v)===-1) vvList.push(v); });
-  const map={};
-  calls.forEach(c=>{ const p=dpsPortOf(c.terminal); (map[p]=map[p]||[]).push(c); });
-  const cols = axis ? axis.map(p=>map[p]||[]) : calls.map(c=>[c]);
-  return { key:g, vv:vvList[0]||g, vvList:vvList, calls:calls, map:map, cols:cols,
-           start:units[0].start||'', end:units[units.length-1].end||'', part:1, parts:1 };
+function dpsAlignOn(svc){
+  if(dpsAlignOverride!==null) return !!dpsAlignOverride;
+  const ax=dpsAxisFor(svc);
+  return !!(ax && ax.ok);
 }
+// One block per voyage (vessel code + voyage number + direction): the port order of that
+// leg left to right, exactly like the first version, but on fixed columns when the
+// service runs a regular rotation.
 function dpsBuildBlocks(rows){
-  const axis=dpsBuildAxis(rows);
+  const ax=dpsAxisFor(dpsSvc);
+  const aligned=dpsAlignOn(dpsSvc) && ax.loop.length>0;
   const umap={};
   rows.forEach(r=>{
     const k=String(r.vessel_voyage||'').toUpperCase()||('~'+(r.terminal||'')+'|'+(r.departure||''));
     (umap[k]=umap[k]||[]).push(r);
   });
-  const units=Object.keys(umap).map(k=>{
-    const calls=umap[k].slice().sort((a,b)=>(dpsCallTime(a)||'').localeCompare(dpsCallTime(b)||''));
+  let units=Object.keys(umap).map(k=>{
+    const calls=dpsSortCalls(umap[k]);
     const starts=calls.map(dpsCallTime).filter(Boolean).sort();
     const ends=calls.map(c=>c.departure||dpsCallTime(c)).filter(Boolean).sort();
     return { vv:k, calls:calls, start:starts[0]||'', end:ends[ends.length-1]||starts[0]||'' };
   });
-  let kept=units.filter(u=>{
+  let widened=false;
+  const kept=units.filter(u=>{
     const s=(u.start||'').slice(0,10), e=(u.end||u.start||'').slice(0,10);
     if(dpsFrom && e && e<dpsFrom) return false;
     if(dpsTo && s && s>dpsTo) return false;
     return true;
   });
-  let widened=false;
-  if(!kept.length){ kept=units.slice(); widened=true; }
-  const gmap={};
-  kept.forEach(u=>{ const g=dpsGroupKey(u.vv); (gmap[g]=gmap[g]||[]).push(u); });
-  const blocks=[];
-  Object.keys(gmap).forEach(g=>{
-    const us=gmap[g].slice().sort((a,b)=>(a.start||'').localeCompare(b.start||''));
-    // Keep a block readable: once a port would appear more than DPS_MAX_STACK times, or the
-    // block would grow past 40 calls, continue on the next block.
-    const chunks=[]; let cur=[], per={}, total=0;
-    us.forEach(u=>{
-      const cnt={}; u.calls.forEach(c=>{ const p=dpsPortOf(c.terminal); cnt[p]=(cnt[p]||0)+1; });
-      let over=false;
-      if(cur.length){
-        Object.keys(cnt).forEach(p=>{ if((per[p]||0)+cnt[p]>DPS_MAX_STACK) over=true; });
-        if(total+u.calls.length>40) over=true;
-      }
-      if(over){ chunks.push(cur); cur=[]; per={}; total=0; }
-      cur.push(u);
-      Object.keys(cnt).forEach(p=>{ per[p]=(per[p]||0)+cnt[p]; });
-      total+=u.calls.length;
-    });
-    if(cur.length) chunks.push(cur);
-    chunks.forEach((ch,i)=>{ const b=dpsMakeBlock(g,ch,axis); b.part=i+1; b.parts=chunks.length; blocks.push(b); });
+  if(!kept.length){ units=units.filter(u=>u.calls.length); kept.push.apply(kept, units); widened=true; }
+  const blocks=kept.map(u=>{
+    let cols, axisArr=null;
+    if(aligned){
+      axisArr=ax.loop.slice();
+      const m=dpsMapCalls(u.calls, ax.loop);
+      cols=axisArr.map(()=>[]);
+      m.placed.forEach(x=>{ cols[x.col].push(x.c); });
+      // A call that cannot move forward on the axis (a repeat visit, or a leg that goes
+      // back up the rotation) takes the next free column instead of sharing a cell.
+      let at=0;
+      cols.forEach((cs,i)=>{ if(cs.length) at=i+1; });
+      m.loose.forEach(c=>{
+        while(at<cols.length && cols[at].length) at++;
+        if(at<cols.length){ cols[at].push(c); axisArr[at]=dpsPortOf(c.terminal); }
+        else { cols.push([c]); axisArr.push(dpsPortOf(c.terminal)); }
+        at++;
+      });
+    } else {
+      cols=u.calls.map(c=>[c]);
+    }
+    return { vv:u.vv, calls:u.calls, cols:cols, axis:axisArr, start:u.start, end:u.end };
   });
-  blocks.sort((a,b)=>(a.start||'').localeCompare(b.start||'')||(a.vv||'').localeCompare(b.vv||''));
-  return { blocks:blocks, widened:widened, axis:axis };
+  // Drop columns that stay empty on every row so the grid ends where the data ends.
+  let width=1;
+  blocks.forEach(b=>{
+    let last=-1;
+    b.cols.forEach((cs,i)=>{ if(cs.length) last=i; });
+    if(last+1>width) width=last+1;
+  });
+  blocks.forEach(b=>{ b.cols=b.cols.slice(0,width); });
+  blocks.sort((a,b)=>(a.start||'').localeCompare(b.start||'')||String(a.vv).localeCompare(String(b.vv)));
+  return { blocks:blocks, widened:widened, axis:aligned?ax.loop.slice(0,width):null, aligned:aligned, info:ax };
 }
-function dpsToggleMerge(v){ dpsSetGroupMode(v?'trip':'voyage'); }
 function dpsSetDefaultRange(){ const t=new Date(); dpsFrom=dpsAddDays(t,-21); dpsTo=dpsAddDays(t,150); const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
 function dpsInit(){
   const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
   const present=new Set((DATA||[]).map(r=>r.svc));
   pills.innerHTML=DPS_SERVICES.map(s=>'<span class="dps-pill'+(s===dpsSvc?' active':'')+(present.has(s)?'':' empty')+'" data-svc="'+s+'" onclick="dpsSelectSvc(\''+s+'\')">'+s+(present.has(s)?'':' ⊘')+'</span>').join('');
   if(!dpsFrom||!dpsTo){ dpsSetDefaultRange(); } else { const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
-  const gm=document.getElementById('dpsGroupMode'); if(gm) gm.value=dpsGroupMode;
-  const al=document.getElementById('dpsAlignChk'); if(al) al.checked=dpsAlign;
   dpsFillFilters();
   renderDps();
 }
-function dpsSelectSvc(s){ dpsSvc=s; const ps=document.querySelectorAll('#dpsSvcPills .dps-pill'); for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===s); dpsFillFilters(); renderDps(); }
+function dpsSelectSvc(s){
+  dpsSvc=s; dpsAlignOverride=null;
+  const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
+  for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===s);
+  dpsFillFilters(); renderDps();
+}
 function dpsResetRange(){ dpsSetDefaultRange(); renderDps(); }
 function dpsAllRange(){ const tms=dpsFilteredRows().map(dpsCallTime).filter(Boolean).sort(); if(tms.length){ dpsFrom=tms[0].slice(0,10); dpsTo=tms[tms.length-1].slice(0,10); } else { dpsFrom=''; dpsTo=''; } const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; renderDps(); }
-// One cell of a port column: every visit to that port on its own line.
-function dpsStackTd(values, cls, title){
+// One cell of a time row: a single timestamp per cell (a second visit to the same port
+// gets its own column, never a stacked cell).
+function dpsTimeTd(values){
   const v=(values||[]).filter(x=>x!==null && x!==undefined && x!=='');
-  const c='pcell'+(cls?(' '+cls):'');
-  if(!v.length) return '<td class="'+c+'"></td>';
-  return '<td class="'+c+'"'+(title?(' title="'+dpsEsc(title)+'"'):'')+'>'+v.map(x=>'<span class="st">'+x+'</span>').join('')+'</td>';
+  if(!v.length) return '<td class="pcell pc-blank"></td>';
+  const txt=v.map(dpsFmtDT).join('  ');
+  return '<td class="pcell"'+(v.length>1?(' title="'+dpsEsc(txt)+'"'):'')+'>'+dpsEsc(txt)+'</td>';
 }
-function dpsPortTd(calls, portCode){
-  if(!calls || !calls.length) return '<td class="pcell pc-blank">'+dpsEsc(portCode)+'</td>';
+// Port cell: the terminal node code (e.g. TWKELT01) large, the terminal name small below.
+function dpsPortTd(calls){
+  if(!calls || !calls.length) return '<td class="pcell pc-blank"></td>';
   const info=dpsNodeInfo(calls[0].terminal);
-  const terms=[];
-  calls.forEach(c=>{ const t=dpsNodeInfo(c.terminal).term; if(t && terms.indexOf(t)===-1) terms.push(t); });
-  const name=info.name || info.port;
-  const code=info.port+(terms.length?(' · '+terms.join('/')):'');
-  const tip=name+'  ['+code+']'+(calls.length>1?('  ×'+calls.length):'');
-  return '<td class="pcell" title="'+dpsEsc(tip)+'"><span class="pc-name">'+dpsEsc(name)+'</span><span class="pc-code">'+dpsEsc(code)+'</span></td>';
-}
-// Delay (days) against the planned ETB, when a proforma row exists for that call.
-function dpsDelay(c){
-  const key=String(c.vessel_voyage||'').toUpperCase()+'|'+dpsPortOf(c.terminal);
-  const plan=DPS_PROFORMA[key];
-  if(!plan || !c.berth) return null;
-  const a=new Date(String(c.berth).replace(' ','T')).getTime();
-  const p=new Date(String(plan).replace(' ','T')).getTime();
-  if(isNaN(a)||isNaN(p)) return null;
-  return (a-p)/86400000;
+  const name=info.name||info.port;
+  return '<td class="pcell" title="'+dpsEsc(info.node+'  '+name)+'"><span class="pc-code">'+dpsEsc(info.node)+'</span><span class="pc-name">'+dpsEsc(name)+'</span></td>';
 }
 function renderDps(){
   const wrap=document.getElementById('dpsWrap'); if(!wrap) return;
@@ -1054,54 +1061,38 @@ function renderDps(){
   }
   const built=dpsBuildBlocks(rows);
   const sel=built.blocks;
-  const widened=built.widened;
   const maxCols=Math.max(1, ...sel.map(b=>b.cols.length));
-  dpsLastSel=sel; dpsLastMax=maxCols;
-  const W=302+maxCols*142;
-  let cols='<colgroup><col style="width:134px"><col style="width:168px">';
-  for(let i=0;i<maxCols;i++) cols+='<col style="width:142px">';
+  dpsLastSel=sel; dpsLastMax=maxCols; dpsLastAligned=built.aligned; dpsLastAxis=built.axis;
+  const chk=document.getElementById('dpsAlignChk'); if(chk) chk.checked=built.aligned;
+  const W=302+maxCols*126;
+  let cols='<colgroup><col style="width:118px"><col style="width:184px">';
+  for(let i=0;i<maxCols;i++) cols+='<col style="width:126px">';
   cols+='</colgroup>';
-  const padCols=arr=>{ const b=arr.slice(); while(b.length<maxCols) b.push(''); return b; };
-  const hasDelay=sel.some(b=>b.calls.some(c=>dpsDelay(c)!==null));
+  const pad=arr=>{ const b=arr.slice(); while(b.length<maxCols) b.push([]); return b; };
   let html='<table class="dps-table" style="width:'+W+'px">'+cols+'<tbody>';
   sel.forEach(b=>{
-    const vcode=dpsVesselCode(b.calls[0].vessel_voyage);
+    const vcode=dpsVesselCode(b.vv);
     const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
-    const multi=b.vvList.length>1;
-    const voyLabel=dpsBlockVoyLabel(b);
-    // Ungrouped (no axis) blocks are shorter than the widest one: pad so every row has
-    // exactly maxCols cells and the columns keep lining up.
-    const colArr=b.cols.slice(); while(colArr.length<maxCols) colArr.push([]);
-    const axisArr=built.axis||null;
-    const portCells=colArr.map((cs,i)=>dpsPortTd(cs, axisArr?(axisArr[i]||null):null)).join('');
-    const voyCells=colArr.map(cs=>dpsStackTd(multi?cs.map(c=>dpsEsc(dpsVoyLabel(c.vessel_voyage))):[])).join('');
-    const etaCells=colArr.map(cs=>dpsStackTd(cs.map(c=>dpsFmtDT(c.arrived_anchorage)))).join('');
-    const etbCells=colArr.map(cs=>dpsStackTd(cs.map(c=>dpsFmtDT(c.berth)))).join('');
-    const etdCells=colArr.map(cs=>dpsStackTd(cs.map(c=>dpsFmtDT(c.departure)))).join('');
-    html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+dpsEsc(vname)+'</td>'+portCells+'</tr>';
-    html+='<tr class="dps-row-voyage"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol">'+dpsEsc(voyLabel)+'</td>'+voyCells+'</tr>';
+    const voy=dpsVoyLabel(b.vv);
+    const colArr=pad(b.cols);
+    const portCells=colArr.map(dpsPortTd).join('');
+    const etaCells=colArr.map(cs=>dpsTimeTd(cs.map(c=>c.arrived_anchorage))).join('');
+    const etbCells=colArr.map(cs=>dpsTimeTd(cs.map(c=>c.berth))).join('');
+    const etdCells=colArr.map(cs=>dpsTimeTd(cs.map(c=>c.departure))).join('');
+    const vc='<span class="vc-name">'+dpsEsc(vname)+'</span><span class="vc-voy">'+dpsEsc(voy)+'</span>';
+    html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vc+'</td>'+portCells+'</tr>';
     html+='<tr class="dps-row-eta"><td class="dps-lbl">ETA</td><td class="dps-vesselcol"></td>'+etaCells+'</tr>';
     html+='<tr class="dps-row-etb"><td class="dps-lbl">ETB</td><td class="dps-vesselcol"></td>'+etbCells+'</tr>';
     html+='<tr class="dps-row-etd"><td class="dps-lbl">ETD</td><td class="dps-vesselcol"></td>'+etdCells+'</tr>';
-    if(hasDelay){
-      const delayCells=colArr.map(cs=>{
-        const vals=cs.map(c=>{
-          const d=dpsDelay(c);
-          if(d===null) return '';
-          const cls=d>0?'dl-late':(d<-0.05?'dl-early':'dl-ok');
-          const txt=(d>0?'+':'')+d.toFixed(1)+'d';
-          return '<span class="'+cls+'">'+txt+'</span>';
-        });
-        return dpsStackTd(vals);
-      }).join('');
-      html+='<tr class="dps-row-delay"><td class="dps-lbl">Delay</td><td class="dps-vesselcol"></td>'+delayCells+'</tr>';
-    }
   });
   html+='</tbody></table>';
   wrap.innerHTML=html;
   const cnt=dpsCounts(sel);
-  const alignTxt = built.axis ? ('已对齐 '+built.axis.length+' 个港') : '未对齐（按时间顺序）';
-  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行 · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(widened?' · 所选日期无数据，已显示全部':'');
+  const alignTxt = built.aligned
+    ? ('已对齐 '+maxCols+' 列'+(dpsAlignOverride===null?'（自动）':'（手动）'))
+    : ('未对齐：航序不统一，按挂靠顺序铺开'+(dpsAlignOverride===false?'（手动关闭）':''));
+  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行 · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 所选日期无数据，已显示全部':'');
+  if(meta) meta.title = built.aligned ? '每个港口固定在某一列，方便上下对比不同船舶' : ('该航线在数据里挂靠顺序不统一（或港口太分散），强行对齐会更乱，因此按每条航次自己的顺序铺开');
 }
 
 /* ===== Excel export: minimal XLSX writer (no external library) =====
@@ -1234,54 +1225,45 @@ function exportDpsXlsx(){
   const rowsXml=[];
   let rowNum=1;
   const cntE=dpsCounts(sel);
-  const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行'+(dpsGroupMode==='vessel'?'，一船一行':'')+')';
+  const alignTxt=dpsLastAligned?'已对齐 '+maxPorts+' 列':'按挂靠顺序铺开';
+  const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+alignTxt+')';
   rowsXml.push('<row r="1" ht="22" customHeight="1">'+xlsxStrCell('A1',metaText,1)+'</row>');
   rowNum=2;
-  // One block = 5 rows (Port / Voyage / ETA / ETB / ETD) + Delay when proforma exists.
-  const put=function(label,bVal,bStyle,values,vStyle,isStart){
+  // One block = one voyage = 4 rows (Port / ETA / ETB / ETD). A port cell holds the
+  // terminal node code on the first line and the terminal name on the second.
+  const put=function(label,bVal,values,vStyle,isStart){
     const st=function(k){ return isStart?(k+8):k; };
     let x='<row r="'+rowNum+'">';
     x+=xlsxStrCell('A'+rowNum,label,st(1));
-    x+=xlsxStrCell('B'+rowNum,bVal,st(bStyle));
+    x+=xlsxStrCell('B'+rowNum,bVal,st(2));
     for(let i=0;i<maxPorts;i++){
       const ref=xlsxCol(3+i)+rowNum;
       const v=values[i];
       if(v===undefined||v===null||v==='') x+='<c r="'+ref+'" s="'+st(vStyle)+'"/>';
-      else if(typeof v==='number') x+=xlsxNumCell(ref,v,st(vStyle));
       else x+=xlsxStrCell(ref,v,st(vStyle));
     }
     rowsXml.push(x+'</row>'); rowNum++;
   };
-  const hasDelay=sel.some(function(b){ return b.calls.some(function(c){ return dpsDelay(c)!==null; }); });
   sel.forEach(function(b){
-    const vcode=dpsVesselCode(b.calls[0].vessel_voyage);
+    const vcode=dpsVesselCode(b.vv);
     const vname=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode])||vcode;
-    const multi=b.vvList.length>1;
-    const voyLabel=dpsBlockVoyLabel(b);
+    const voyLabel=dpsVoyLabel(b.vv);
     const cols=b.cols.slice(); while(cols.length<maxPorts) cols.push([]);
-    // Stack every visit to a port on its own line, exactly like the page.
-    const lines=function(getter){
+    const one=function(getter){
       return cols.map(function(cs){
-        return cs.map(getter).filter(function(x){ return x!==null && x!==undefined && x!==''; }).join('\n');
+        const v=cs.map(getter).filter(function(x){ return x!==null && x!==undefined && x!==''; });
+        return v.length ? v.join('  ') : '';
       });
     };
-    const portLines=cols.map(function(cs){
+    const portCells=cols.map(function(cs){
       if(!cs.length) return '';
       const info=dpsNodeInfo(cs[0].terminal);
-      const terms=[];
-      cs.forEach(function(c){ const t=dpsNodeInfo(c.terminal).term; if(t && terms.indexOf(t)===-1) terms.push(t); });
-      return (info.name||info.port)+'\n'+info.port+(terms.length?(' · '+terms.join('/')):'');
+      return info.node+(info.name?('\n'+info.name):'');
     });
-    put('Port', vname, 2, portLines, 3, true);
-    put('Voyage', voyLabel, 2, multi ? lines(function(c){ return dpsVoyLabel(c.vessel_voyage); }) : [], 4, false);
-    put('ETA', '', 8, lines(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
-    put('ETB', '', 8, lines(function(c){ return dpsFmtDT(c.berth); }), 6, false);
-    put('ETD', '', 8, lines(function(c){ return dpsFmtDT(c.departure); }), 6, false);
-    if(hasDelay){
-      put('Delay', '', 8, cols.map(function(cs){
-        return cs.map(function(c){ const d=dpsDelay(c); return d===null?'':((d>0?'+':'')+d.toFixed(1)+'d'); }).filter(Boolean).join('\n');
-      }), 6, false);
-    }
+    put('Port', vname+'\n'+voyLabel, portCells, 3, true);
+    put('ETA', '', one(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
+    put('ETB', '', one(function(c){ return dpsFmtDT(c.berth); }), 6, false);
+    put('ETD', '', one(function(c){ return dpsFmtDT(c.departure); }), 6, false);
   });
   const lastRow=rowNum-1;
   const sheetXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
@@ -1291,8 +1273,8 @@ function exportDpsXlsx(){
     '<pane xSplit="2" topLeftCell="C1" activePane="topRight" state="frozen"/>'+
     '</sheetView></sheetViews>'+
     '<sheetFormatPr defaultRowHeight="15"/>'+
-    '<cols><col min="1" max="1" width="20" customWidth="1"/><col min="2" max="2" width="26" customWidth="1"/>'+
-    '<col min="3" max="'+nCols+'" width="20" customWidth="1"/></cols>'+
+    '<cols><col min="1" max="1" width="12" customWidth="1"/><col min="2" max="2" width="26" customWidth="1"/>'+
+    '<col min="3" max="'+nCols+'" width="22" customWidth="1"/></cols>'+
     '<sheetData>'+rowsXml.join('')+'</sheetData>'+
     '<mergeCells count="1"><mergeCell ref="A1:'+xlsxCol(nCols)+'1"/></mergeCells>'+
     '</worksheet>';
@@ -1346,7 +1328,6 @@ function init() {
   fetchVesselNames();
   fetchLanes();
   fetchNodes();
-  fetchProforma();
 }
 
 function loadCSVWithRetry(retry) {
