@@ -232,6 +232,7 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .dps-search { font-size:12px; padding:4px 8px; border:1px solid #d0d7de; border-radius:6px; min-width:260px; flex:0 0 auto; }
 .dps-toolbar .btn { font-size:11px; padding:5px 12px; }
 .dps-meta { font-size:11px; color:#5f6368; margin-left:4px; }
+.dps-note { display:none; font-size:11px; font-weight:600; color:#a33; background:#fdecea; border:1px solid #f6c7c2; border-radius:6px; padding:3px 9px; white-space:nowrap; }
 .dps-merge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:400; color:#3c4043; cursor:pointer; padding:2px 4px; }
 .dps-merge input { margin:0; cursor:pointer; }
 .dps-wrap { background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:auto; max-height:calc(100vh - 150px); }
@@ -336,6 +337,7 @@ td.pcell.pc-blank { background:#fafbfd; }
   <label>Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
   <input type="search" id="dpsSearch" class="dps-search" placeholder="筛选船名 / 船代码 / 航次（回车跳航线）" oninput="dpsSetQuery(this.value)" onchange="dpsJumpService(this.value)" />
+  <span class="dps-note" id="dpsNote"></span>
 </div>
 <div class="dps-toolbar">
   <label>From</label><input type="date" id="dps_from" onchange="renderDps()" />
@@ -490,6 +492,28 @@ function fetchVesselNames() {
 const LANES_URLS = dataUrls('lanes.json');
 const NODES_URLS = dataUrls('nodes.json');
 let LANES = {}, NODES = {};
+// Lane master (shipping_data/lanes.json, rebuilt from LaneList.xlsx: code / name / Service Type).
+// Service Type "O" = internal, relay and CN-to-CN feeder lanes. They are not part of the
+// bookable long-term schedule, so the Proforma grid hides them completely (pills, jumps, grids).
+const LANE_HIDDEN_TYPES = ['O'];
+// Safety net until lanes.json has loaded (or when it cannot be fetched): the 26 Type-O codes.
+const LANE_TYPE_O_FALLBACK = 'AE1,CNN,CNT,CTT,CV6,EUF,EXS,FDR,ISS,LHT,MCT,ME2,MED,NCT,PRD,PRF,RE1,SEA,SHT,TCX,TWS,TWT,WAT,XRF,YRD,YRF'.split(',');
+function dpsLaneType(code){
+  const k = String(code || '').toUpperCase();
+  const l = LANES[k];
+  if (l && l.type) return String(l.type).toUpperCase();
+  return LANE_TYPE_O_FALLBACK.indexOf(k) >= 0 ? 'O' : '';
+}
+function dpsLaneHidden(code){ return LANE_HIDDEN_TYPES.indexOf(dpsLaneType(code)) >= 0; }
+function dpsLaneName(code){ const l = LANES[String(code || '').toUpperCase()]; return (l && l.name) ? l.name : ''; }
+function dpsNote(msg){
+  const n = document.getElementById('dpsNote'); if (!n) return;
+  n.textContent = msg || '';
+  n.style.display = msg ? 'inline-block' : 'none';
+  if (dpsNoteTimer) clearTimeout(dpsNoteTimer);
+  if (msg) dpsNoteTimer = setTimeout(() => { n.textContent = ''; n.style.display = 'none'; }, 4500);
+}
+let dpsNoteTimer = null;
 function fetchAuxJson(urls, apply) {
   let i = 0;
   const tryNext = () => {
@@ -509,6 +533,9 @@ function fetchLanes() {
   fetchAuxJson(LANES_URLS, j => {
     LANES = {};
     (Array.isArray(j) ? j : []).forEach(x => { if (x && x.code) LANES[x.code] = x; });
+    // Lane names / Service Types just arrived: rebuild the pills so Type-O lanes disappear
+    // and every pill can show its full lane name.
+    if (typeof dpsInit === 'function' && (DATA || []).length) { try { dpsInit(); } catch (e) {} }
   });
 }
 function fetchNodes() {
@@ -802,6 +829,7 @@ function setDefaultDateRange() {
 /* ===== DPS Proforma module (Excel-style schedule grid) ===== */
 let DPS_SERVICES = [];                  // every service present in the data, filled at init
 let DPS_SVC_COUNT = {};                 // service -> number of rows (used to sort the pills)
+let DPS_SVC_HIDDEN_COUNT = 0;           // lanes skipped because their Service Type is "O"
 const DPS_DEFAULT_OPERATOR = 'CUL';     // preselected operator
 let dpsSvc = 'REX';
 let dpsFrom = '', dpsTo = '';
@@ -861,8 +889,13 @@ function dpsSetQuery(v){ dpsQuery=v; renderDps(); }
 // Pressing Enter / leaving the box on a service code jumps to that service (航线筛选).
 function dpsJumpService(v){
   const q=String(v||'').trim().toUpperCase();
-  if(!q || DPS_SERVICES.indexOf(q)<0) return;
-  dpsSvc=q; dpsQuery='';
+  if(!q) return;
+  if(DPS_SERVICES.indexOf(q)<0){
+    // A real lane that is intentionally not on screen: say why instead of doing nothing.
+    if(dpsLaneHidden(q)) dpsNote(q+' 是 Service Type O 航线，按规则不展示');
+    return;
+  }
+  dpsSvc=q; dpsQuery=''; dpsNote('');
   const se=document.getElementById('dpsSearch'); if(se) se.value='';
   const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
   for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===q);
@@ -1157,12 +1190,20 @@ function dpsSetDefaultRange(){
 function dpsInit(){
   const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
   // Every service in the feed, most active first — no hard-coded list any more.
-  const cnt={};
-  (DATA||[]).forEach(r=>{ const k=String(r.svc||'').toUpperCase(); if(k) cnt[k]=(cnt[k]||0)+1; });
+  // Service Type "O" lanes (internal / relay / CN-to-CN feeder) are hidden by the lane master.
+  const cnt={}, hid={};
+  (DATA||[]).forEach(r=>{ const k=String(r.svc||'').toUpperCase(); if(!k) return;
+    if(dpsLaneHidden(k)){ hid[k]=(hid[k]||0)+1; return; }
+    cnt[k]=(cnt[k]||0)+1; });
   DPS_SVC_COUNT=cnt;
+  DPS_SVC_HIDDEN_COUNT=Object.keys(hid).length;
   DPS_SERVICES=Object.keys(cnt).sort((a,b)=>(cnt[b]-cnt[a])||a.localeCompare(b));
   if(DPS_SERVICES.indexOf(dpsSvc)<0) dpsSvc=DPS_SERVICES[0]||'REX';
-  pills.innerHTML=DPS_SERVICES.map(s=>'<span class="dps-pill'+(s===dpsSvc?' active':'')+'" data-svc="'+s+'" title="'+s+' · '+cnt[s]+' 条记录" onclick="dpsSelectSvc(\''+s+'\')">'+s+'</span>').join('');
+  pills.innerHTML=DPS_SERVICES.map(s=>{
+    const nm=dpsLaneName(s), tp=dpsLaneType(s);
+    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+cnt[s]+' 条记录';
+    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+'" data-svc="'+s+'" title="'+dpsEsc(tip)+'" onclick="dpsSelectSvc(\''+s+'\')">'+s+'</span>';
+  }).join('');
   if(!dpsFrom||!dpsTo){ dpsSetDefaultRange(); } else { const f=document.getElementById('dps_from'), g=document.getElementById('dps_to'); if(f)f.value=dpsFrom; if(g)g.value=dpsTo; }
   dpsFillFilters();
   renderDps();
@@ -1282,7 +1323,7 @@ function renderDps(){
     ? ('已对齐 '+maxCols+' 列')
     : '未对齐：航序不统一，按挂靠顺序铺开';
   const dropTxt = built.split ? (' · 个别船舶航次较多，已分 '+built.split+' 段续行') : '';
-  if(meta) meta.textContent=dpsSvc+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 该航线在所选日期没有记录，已显示它全部 '+(dpsOperator?dpsOperator+' ':'')+'数据':'')+dropTxt;
+  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 该航线在所选日期没有记录，已显示它全部 '+(dpsOperator?dpsOperator+' ':'')+'数据':'')+dropTxt+(DPS_SVC_HIDDEN_COUNT?' · 已隐藏 '+DPS_SVC_HIDDEN_COUNT+' 条 Service Type O 航线':'');
   if(meta) meta.title = built.aligned
     ? '每个港口固定在某一列，方便上下对比不同船舶'
     : ('该航线在数据里挂靠顺序不统一（或港口太分散），强行对齐会更乱，因此按每条航次自己的顺序铺开');
