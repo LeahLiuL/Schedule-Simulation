@@ -353,7 +353,7 @@ td.pcell.pc-blank { background:#fafbfd; }
   <select id="dps_vessel" onchange="dpsSetFilter('vessel', this.value)"><option value="">All vessels</option></select>
   <label class="dps-merge" title="不勾选（默认）：一个航次号一行，去程/回程 2639W + 2639E 在同一行。勾选：整条船一行，同一条船的 2640W/E 也接到这一行后面，一格仍然只放一个时间"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
   <span class="dps-meta" id="dpsMeta"></span>
-  <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;">Export Excel</button>
+  <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;" title="导出全部航线，每条航线一个 sheet：SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS，其余航线接在后面">Export Excel</button>
 </div>
 <div class="dps-wrap" id="dpsWrap"><div class="dps-empty">Loading…</div></div>
 </section>
@@ -1511,23 +1511,74 @@ function xlsxNumCell(ref,val,style){
   return '<c r="'+ref+'" s="'+style+'"><v>'+val+'</v></c>';
 }
 
-function exportDpsXlsx(){
-  const sel=dpsLastSel||[];
-  if(!sel.length){ alert('当前没有可导出的航次，请先调整筛选条件。'); return; }
-  const maxPorts=dpsLastMax||1;
+/* ===== Workbook export: one worksheet per lane =====
+   Tabs follow the order ops reads the schedule in; the tab name is the internal lane
+   name (SCT3 / NSCT1 / AEM) while the data comes from the svc code the feed uses
+   (ST3 / ST1 / AM1).  Every lane that is not on that list follows in feed order. */
+const DPS_SHEET_ORDER=[
+  ['SCT3','ST3'],['NSCT1','ST1'],['HDT','HDT'],['NSX','NSX'],['CST','CST'],['CCT','CCT'],
+  ['NP2','NP2'],['REX','REX'],['RTS','RTS'],['SGX','SGX'],['RES','RES'],['CGX','CGX'],
+  ['HLX','HLX'],['CGS','CGS'],['AEM','AM1'],['IMR','IMR'],['NAF','NAF'],['MES','MES'],['JPS','JPS']
+];
+function dpsWorkbookSheets(){
+  const all=(typeof DPS_SERVICES!=='undefined'?DPS_SERVICES:[]).slice();
+  const out=[], used={};
+  DPS_SHEET_ORDER.forEach(function(p){
+    if(all.indexOf(p[1])<0 || used[p[1]]) return;   // that lane carries no rows in this feed
+    used[p[1]]=1; out.push({name:p[0], svc:p[1]});
+  });
+  all.forEach(function(s){ if(!used[s]){ used[s]=1; out.push({name:s, svc:s}); } });
+  // Excel tab rules: unique, <=31 chars, no []:*?/\
+  const seen={};
+  out.forEach(function(o){
+    let n=String(o.name).replace(/[\\\/\?\*\[\]:]/g,'').slice(0,31)||'Sheet';
+    const base=n; let i=2;
+    while(seen[n.toUpperCase()]){ n=(base.slice(0,28)+'_'+i).slice(0,31); i++; }
+    seen[n.toUpperCase()]=1; o.name=n;
+  });
+  return out;
+}
+// One worksheet part: the same 7-row blocks as the screen (Port / Voyage / ETA / ETB /
+// ETD / Proforma / Remark), built with the filters currently set on the page.
+function dpsSheetPart(svc, tabName){
+  const prevSvc=dpsSvc;
+  let rows=[], built={blocks:[],aligned:false,merge:!!dpsMerge,widened:false,split:0};
+  dpsSvc=svc;
+  try{ rows=dpsFilteredRows(); built=dpsBuildBlocks(rows); }
+  finally{ dpsSvc=prevSvc; }
+  const sel=built.blocks||[];
+  let maxPorts=1; sel.forEach(function(b){ if(b.cols.length>maxPorts) maxPorts=b.cols.length; });
   const nCols=2+maxPorts;
-  const rowsXml=[];
-  let rowNum=1;
+  const rowsXml=[]; let rowNum=1;
   const cntE=dpsCounts(sel);
-  const alignTxt=dpsLastAligned?'已对齐 '+maxPorts+' 列':'按挂靠顺序铺开';
-  const groupTxt=dpsLastMerge?'每船一行':'一航次号一行（W/E 同行）';
-  const dropTxt=(dpsLastMerge&&dpsLastSplit)?(' / 其中 '+dpsLastSplit+' 块为续行'):'';
-  const fltTxt=(dpsOperator?(' / Operator: '+dpsOperator):'')+(dpsVessel?(' / Vessel: '+dpsVessel):'')+(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'');
-  const metaText=dpsSvc+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+'   ('+cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+groupTxt+' / '+alignTxt+dropTxt+fltTxt+')';
+  const alignTxt=built.aligned?('已对齐 '+maxPorts+' 列'):'按挂靠顺序铺开';
+  const groupTxt=built.merge?'每船一行':'一航次号一行（W/E 同行）';
+  const dropTxt=(built.merge&&built.split)?(' / 其中 '+built.split+' 块为续行'):'';
+  const fltTxt='Operator: '+(dpsOperator||'All')
+    +(dpsVessel?(' / Vessel: '+dpsVessel):'')
+    +(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'');
+  const aliasTxt=(tabName!==svc)?('   数据代码 '+svc):'';
+  // Actual span of the calls kept here: a voyage that straddles the window keeps all of its
+  // calls, so a sheet may start before From or end after To — state it instead of looking wrong.
+  let dataMin='', dataMax='';
+  sel.forEach(function(b){ b.calls.forEach(function(c){
+    const t=dpsEtaOf(c); if(!t) return;
+    if(!dataMin||t<dataMin) dataMin=t;
+    if(!dataMax||t>dataMax) dataMax=t;
+  }); });
+  const rangeTxt=sel.length?('   数据 '+dataMin.slice(0,10)+' ~ '+dataMax.slice(0,10)):'';
+  let metaText;
+  if(!sel.length){
+    metaText=tabName+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')
+      +'   当前筛选下没有记录   '+fltTxt+aliasTxt;
+  } else {
+    metaText=tabName+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+rangeTxt+'   ('
+      +cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+groupTxt+' / '+alignTxt
+      +dropTxt+')   '+fltTxt+aliasTxt
+      +(built.widened?'   该航线在所选日期没有记录，已显示全部数据':'');
+  }
   rowsXml.push('<row r="1" ht="22" customHeight="1">'+xlsxStrCell('A1',metaText,1)+'</row>');
   rowNum=2;
-  // One block = one voyage = 7 rows (Port / Voyage / ETA / ETB / ETD / Proforma / Remark).
-  // A port cell holds the terminal node code on the first line and the terminal name second.
   const put=function(label,bVal,values,vStyle,isStart){
     const st=function(k){ return isStart?(k+8):k; };
     let x='<row r="'+rowNum+'">';
@@ -1579,11 +1630,15 @@ function exportDpsXlsx(){
     put('Proforma', '', planCells, 9, false);
     put('Remark', '', remarkCells, 9, false);
   });
+  if(!sel.length){
+    rowsXml.push('<row r="2">'+xlsxStrCell('A2','Port',1)+xlsxStrCell('B2','Vessel / Code / Voyage',2)+'</row>');
+    rowNum=3;
+  }
   const lastRow=rowNum-1;
   const sheetXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
     '<dimension ref="A1:'+xlsxCol(nCols)+lastRow+'"/>'+
-    '<sheetViews><sheetView workbookViewId="0" tabSelected="1">'+
+    '<sheetViews><sheetView workbookViewId="0"'+(tabName&&dpsSheetPartFirst===tabName?' tabSelected="1"':'')+'>'+
     '<pane xSplit="2" topLeftCell="C1" activePane="topRight" state="frozen"/>'+
     '</sheetView></sheetViews>'+
     '<sheetFormatPr defaultRowHeight="15"/>'+
@@ -1592,43 +1647,81 @@ function exportDpsXlsx(){
     '<sheetData>'+rowsXml.join('')+'</sheetData>'+
     '<mergeCells count="1"><mergeCell ref="A1:'+xlsxCol(nCols)+'1"/></mergeCells>'+
     '</worksheet>';
-  const sheetName=String(dpsSvc||'Proforma').replace(/[\\\/\?\*\[\]:]/g,'').slice(0,31)||'Proforma';
-  const workbookXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
-    '<sheets><sheet name="'+xlsxEsc(sheetName)+'" sheetId="1" r:id="rId1"/></sheets></workbook>';
-  const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
-    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'+
-    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+
-    '</Relationships>';
-  const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
-    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
-    '<Default Extension="xml" ContentType="application/xml"/>'+
-    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
-    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'+
-    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
-    '</Types>';
-  const rootRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
-    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
-    '</Relationships>';
-  const enc=new TextEncoder();
-  const zip=xlsxZip([
-    {name:'[Content_Types].xml', data:enc.encode(contentTypes)},
-    {name:'_rels/.rels', data:enc.encode(rootRels)},
-    {name:'xl/workbook.xml', data:enc.encode(workbookXml)},
-    {name:'xl/_rels/workbook.xml.rels', data:enc.encode(wbRels)},
-    {name:'xl/styles.xml', data:enc.encode(xlsxStylesXml())},
-    {name:'xl/worksheets/sheet1.xml', data:enc.encode(sheetXml)}
-  ]);
-  const blob=new Blob([zip],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='Proforma_'+sheetName+'_'+dpsDateStr(new Date()).replace(/-/g,'')+'.xlsx';
-  if(document.body) document.body.appendChild(a);
-  a.click();
-  setTimeout(function(){ try{ URL.revokeObjectURL(a.href); }catch(e){} if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
+  return { name:tabName, svc:svc, xml:sheetXml, blocks:sel.length, empty:!sel.length, maxPorts:maxPorts };
+}
+let dpsSheetPartFirst=null;
+function exportDpsXlsx(){
+  if(!DATA || !DATA.length){ alert('数据还没加载完成，请稍后再试。'); return; }
+  const sheets=dpsWorkbookSheets();
+  if(!sheets.length){ alert('当前没有可导出的航线。'); return; }
+  const btn=document.querySelector('button[onclick="exportDpsXlsx()"]');
+  const oldTxt=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='导出中…'; }
+  // Let the button repaint before the synchronous build loop takes over the thread.
+  setTimeout(function(){
+    try{
+      const parts=[]; let emptyCount=0;
+      dpsSheetPartFirst=sheets[0].name;
+      sheets.forEach(function(s){
+        const p=dpsSheetPart(s.svc, s.name);
+        if(p.empty) emptyCount++;
+        parts.push(p);
+      });
+      dpsSheetPartFirst=null;
+      const sheetTags=parts.map(function(p,i){
+        return '<sheet name="'+xlsxEsc(p.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>';
+      }).join('');
+      const workbookXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+        '<sheets>'+sheetTags+'</sheets></workbook>';
+      let relItems='';
+      parts.forEach(function(p,i){
+        relItems+='<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>';
+      });
+      relItems+='<Relationship Id="rId'+(parts.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+      const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+relItems+'</Relationships>';
+      const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+        '<Default Extension="xml" ContentType="application/xml"/>'+
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+        parts.map(function(p,i){
+          return '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+        }).join('')+
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
+        '</Types>';
+      const rootRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
+        '</Relationships>';
+      const enc=new TextEncoder();
+      const files=[
+        {name:'[Content_Types].xml', data:enc.encode(contentTypes)},
+        {name:'_rels/.rels', data:enc.encode(rootRels)},
+        {name:'xl/workbook.xml', data:enc.encode(workbookXml)},
+        {name:'xl/_rels/workbook.xml.rels', data:enc.encode(wbRels)},
+        {name:'xl/styles.xml', data:enc.encode(xlsxStylesXml())}
+      ];
+      parts.forEach(function(p,i){
+        files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml', data:enc.encode(p.xml)});
+      });
+      const blob=new Blob([xlsxZip(files)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='Proforma_AllLanes_'+dpsDateStr(new Date()).replace(/-/g,'')+'.xlsx';
+      if(document.body) document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ try{ URL.revokeObjectURL(a.href); }catch(e){} if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
+      if(emptyCount){
+        alert('已导出 '+parts.length+' 条航线（每条一个 sheet）。\n其中 '+emptyCount+' 条在当前筛选下没有记录，页内已标注。\n\n需要全量请把 Operator 切到 All operators 再导出。');
+      }
+    }catch(e){
+      alert('导出失败：'+(e&&e.message?e.message:e));
+    }finally{
+      if(btn){ btn.disabled=false; btn.textContent=oldTxt||'Export Excel'; }
+    }
+  }, 30);
 }
 
 function init() {
