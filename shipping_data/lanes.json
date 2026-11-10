@@ -1,1 +1,1019 @@
-[{"code":"AE1","name":"North Europe I service","type":"O"},{"code":"AEM","name":"Asia-East Mediterranean Sea Service","type":"I","ports":["CNTAO","CNSHA","CNNGB","CNNAS","SAJED","EGSUZ","EGALY","TRALI","TRIST","TRMER","EGSUZ","SAJED","SAJED","MYPKG","CNTAO"]},{"code":"AEX","name":"ASIA EUROPE EXPRESS SERVICE","type":"I"},{"code":"AG1","name":"Far East-Middle East I Service","type":"J"},{"code":"AG2","name":"Asia Gulf Express II","type":"I"},{"code":"AG3","name":"Asia Gulf Express III","type":"I"},{"code":"AGX","name":"ASIA GULF EXPRESS","type":"J"},{"code":"AIS","name":"ASIA INDIA SUB-CONTINENT SERVICE","type":"S"},{"code":"AM1","name":"Asia Med I service","type":"J"},{"code":"BC1","name":"China Thailand Service","type":"J"},{"code":"BC2","name":"RCL BANGKOK CHINA SERVICE","type":"S"},{"code":"BDX","name":"South China Haiphone Service","type":"S","ports":["CNSHK","CNNAS","VNHPH","CNSHK"]},{"code":"CBS","name":"CHINA BRAZIL SERVICE","type":"S"},{"code":"CCT","name":"CUL CentralChina Thailand service","type":"J","ports":["THBKK","THBKS","THLCH","VNSGN","CNNGB","CNSHA","THLCH","THBKK"]},{"code":"CES","name":"CHINA EUROPE EXPRESS SERVICE","type":"I"},{"code":"CGS","name":"China Gulf Service","type":"J"},{"code":"CGX","name":"China Gulf  Express","type":"I","ports":["CNTAO","CNSHA","CNNGB","CNSHK","CNNAS","MYPKG","INMUN","PKKHI","OMSOH","AEKLF","CNTAO"]},{"code":"CH1","name":"China Haiphong I Service","type":"S"},{"code":"CH2","name":"China Hochiminh II Service","type":"S"},{"code":"CH6","name":"China Hochiminh VI Service","type":"S"},{"code":"CHT","name":"CUL SouthChina Hochiminh Thailand service","type":"J"},{"code":"CI1","name":"CHINA INDIA SERVICE","type":"S"},{"code":"CI2","name":"CHINA INDIA SERVICE 2","type":"S"},{"code":"CI3","name":"China India III Service","type":"S"},{"code":"CI5","name":"China-India-Pakistan V service","type":"S"},{"code":"CI6","name":"Far East/India East coast VI Express","type":"S"},{"code":"CI7","name":"Far East India Express VII Service","type":"S"},{"code":"CI8","name":"North East China India Service","type":"S"},{"code":"CIS","name":"CUL INDIA SERVICE","type":"J"},{"code":"CIX","name":"CHINA INDIA EXPRESS SERVICE","type":"S"},{"code":"CJX","name":"China-Middle East","type":"S"},{"code":"CL1","name":"China Thailand I service","type":"J"},{"code":"CL2","name":"China Thailand II service","type":"J"},{"code":"CL3","name":"China Thailand III service","type":"S"},{"code":"CL5","name":"CHINA THAILAND V SERVICE","type":"S"},{"code":"CMX","name":"CHINA-MALAYSIA EXPRESS","type":"I"},{"code":"CN1","name":"China Indonesia 1 Service","type":"S"},{"code":"CNN","name":"COMMON LANE SG","type":"O"},{"code":"CNT","name":"COMMON LANE","type":"O"},{"code":"CNX","name":"Short Hual Adhoc Service","type":"I"},{"code":"CP1","name":"China-Philippine I service","type":"J"},{"code":"CP2","name":"MANILA SHANGHAI SERVICE (SITC)","type":"S"},{"code":"CP3","name":"China-Philippine III service","type":"S"},{"code":"CP8","name":"China Philippines 8 Service","type":"S"},{"code":"CPX","name":"CHINA PHILIPPINE EXPRESS","type":"I"},{"code":"CST","name":"CUL SouthChina Thailand service","type":"I","ports":["CNNAS","CNSHK","THLCH","THBKK","THSCS","THLCH","CNNAS"]},{"code":"CSX","name":"CHINA SUB-CONTINENT EXPRESS","type":"S"},{"code":"CT1","name":"CHINA TAIWAN SERVICE","type":"S"},{"code":"CT2","name":"CHINA THAILAND SERVICE II","type":"S"},{"code":"CT3","name":"CHINA THAILAND SERVICE III","type":"S"},{"code":"CTE","name":"CHINA TAIWAN EXPRESS SERVICE","type":"S"},{"code":"CTT","name":"CONTAINER RENTAL CHARGE SERVICE","type":"O"},{"code":"CV2","name":"CHINA VIETNAM EXPRESS II","type":"J"},{"code":"CV3","name":"CHINA VIETNAM 3","type":"S"},{"code":"CV5","name":"CHINA VIETNAM EXPRESS III","type":"I"},{"code":"CV6","name":"CHINA VIETNAM 6 SERVICE","type":"O"},{"code":"CVC","name":"CHINA VIETNAM SERVICE 2-C","type":"S"},{"code":"CVK","name":"CHINA VIETNAM KAMPUCHEA SERVICE","type":"S"},{"code":"CVN","name":"CHINA VIETNAM SERVICE 2-N","type":"S"},{"code":"CVT","name":"China Vietnam Thailand service","type":"J"},{"code":"CVX","name":"CHINA VIETNAM EXPRESS SERVICE","type":"J"},{"code":"CWS","name":"CHINA WEST COAST INDIA","type":"S"},{"code":"CX1","name":"Xiamen Manila Service","type":"S"},{"code":"EUF","name":"Europe Feeder","type":"O"},{"code":"EXS","name":"SOUTH EAST ASIA SERVICE","type":"O"},{"code":"FCS","name":"FAR EAST CHENNAI SERVICE","type":"S"},{"code":"FDR","name":"FEEDER SERVICE","type":"O"},{"code":"FIV","name":"FAR EAST INDIA VIETNAM SERVICE","type":"S"},{"code":"FME","name":"Far East Madras Express","type":"S"},{"code":"GLX","name":"East Asia - Middle East Service II","type":"S"},{"code":"GTS","name":"Gulf Shuttle Service","type":"I"},{"code":"HDT","name":"HUA DONG TAIWAN SERVICE","type":"I","ports":["CNNGB","CNSHA","TWTPE","TWKHH","TWTXG","CNNGB"]},{"code":"HHX","name":"East China Haiphong Service","type":"S"},{"code":"HLS","name":"THAILAND INDIA SERVICE","type":"S"},{"code":"HLX","name":"HERCULES SERVICE","type":"J"},{"code":"HPX","name":"HAIPHONG PUSAN EXPRESS","type":"S"},{"code":"ICI","name":"North East China India Service","type":"S"},{"code":"IMR","name":"India Middle-east Redsea svc","type":"J","ports":["INNSA","INMUN","SAJED","SAJED","DJJIB","INNSA"]},{"code":"IMS","name":"INDIA MEDITERRANEAN SERVICE","type":"S"},{"code":"IP1","name":"Indonesia Port Klang service","type":"S"},{"code":"IQH","name":"Incheon Qingdao Haiphong Service","type":"S"},{"code":"ISS","name":"INDIA SUBCONTINENT SERVICE","type":"O"},{"code":"JCT","name":"Japan China Thailand Service","type":"S"},{"code":"JFX","name":"JEBEL ALI - FAR EAST X-PRESS","type":"S"},{"code":"JPS","name":"Jeddah Port Sudan","type":"I","ports":["SAJED","SDPZU","SAJED"]},{"code":"JPX","name":"JAPAN SINGAPORE PORTKLANG SERVICE","type":"S"},{"code":"JSM","name":"JAPAN STRAITS MALAYSIA","type":"S"},{"code":"JTV","name":"JAPAN TAIWAN VIETNAM EXPRESS SERVICE","type":"S"},{"code":"JTX","name":"JAPAN-TAIWAN SERVICE (CNC)","type":"S"},{"code":"KCI","name":"Korea China India Service","type":"J"},{"code":"KGS","name":"Karichi Gulf Service","type":"S"},{"code":"KHX","name":"Korea Haiphong Express","type":"S"},{"code":"LHT","name":"CN/FE/SEA to RS/IN/TK/ME vice versa","type":"O"},{"code":"MCT","name":"MIDDLE CHINA TAIWAN SERVICE","type":"O"},{"code":"ME1","name":"MEDITERRANEAN EXPRESS SERVICE","type":"S"},{"code":"ME2","name":"TURKEY BENGHAZI SERVICE","type":"O"},{"code":"ME3","name":"Turkey Red Sea Service","type":"I"},{"code":"MED","name":"MEDITERRANEAN FEEDER SERVICE","type":"O"},{"code":"MES","name":"MEDITERRANEAN EXPRESS SERVICE","type":"S","ports":["TRIST","TRIZT","TRALI","LYMRA","TRIST"]},{"code":"MFX","name":"MOMBASA FAR EAST X-PRESS","type":"S"},{"code":"MGA","name":"MIDDLE EAST GULF ASIA SERVICE","type":"S"},{"code":"MI1","name":"Malaysia Indonesia service","type":"S"},{"code":"MV1","name":"Malaysia Vietnam service","type":"S"},{"code":"NAF","name":"NORTH AFRICA SERVICE","type":"I","ports":["TRIST","TRIZT","TRALI","DZALG","TRIST"]},{"code":"NAX","name":"NORTH AFRICA SERVICE","type":"I"},{"code":"NCM","name":"North China Malaysia service","type":"S"},{"code":"NCT","name":"NORTH CHINA THAILAND SERVICE","type":"O"},{"code":"NP2","name":"China Philippines Express Service","type":"J","ports":["CNTAO","CNSHA","CNXMN","PHMNL","CNTAO"]},{"code":"NSX","name":"New SCT Express service","type":"J","ports":["CNNAS","CNSHK","THLCH","THBKK","THSCS","THLCH","CNNAS"]},{"code":"PKX","name":"Port Kelang-Kolkata Express","type":"S"},{"code":"PRD","name":"CN to CN (PRD)","type":"O"},{"code":"PRF","name":"PEARL RIVER FEEDER","type":"O"},{"code":"RBC","name":"RCL Bangkok - China Service (BTL/RBC)","type":"S"},{"code":"RCS","name":"RED SEA CHINA SERVICE","type":"J"},{"code":"RE1","name":"Red sea Service I","type":"O"},{"code":"RES","name":"RED SEA SERVICE","type":"J","ports":["CNSHA","CNNGB","CNNAS","SAJED","JOAQJ","EGSOK","CNSHA"]},{"code":"REX","name":"Red Sea Express Service","type":"I","ports":["CNNGB","CNSHK","CNNAS","DJJIB","EGSOK","SAJED","CNNGB"]},{"code":"RTS","name":"Rea Sea Shuttle Service","type":"I"},{"code":"SBS","name":"Straits Bengal Straits service","type":"S"},{"code":"SC2","name":"South China - Thailand Service II","type":"J"},{"code":"SCT","name":"SOUTH CHINA THAILAND SERVICE","type":"I"},{"code":"SEA","name":"SEA to SEA","type":"O"},{"code":"SEG","name":"South China / Manila Service","type":"I"},{"code":"SGS","name":"S.E.A GULF SERVICE","type":"S"},{"code":"SGX","name":"SINGAPORE EXTRA LOAD","type":"I","ports":["CNTAO","CNSHA","CNNGB","CNNAS","CNSHK","MYPKG","CNTAO"]},{"code":"SH1","name":"SHANGHAI 1","type":"S"},{"code":"SH2","name":"South China Hochiminh II Express","type":"I"},{"code":"SH3","name":"South China Haiphong III service","type":"I"},{"code":"SHE","name":"SHANGHAI-HAIPHONG EXPRESS SERVICE","type":"S"},{"code":"SHT","name":"FE/SEA to CN vice versa","type":"O"},{"code":"SHX","name":"SHANGHAI HAIPHONG EXPESS","type":"J"},{"code":"SJA","name":"Sokhna Jeddah Aden","type":"I","ports":["EGSOK","SAJED","YEADE","SAJED","EGSOK"]},{"code":"SK2","name":"HUADONG TAIWAN SERVICE","type":"S"},{"code":"SKX","name":"Straits Kolkata Express","type":"S"},{"code":"SL1","name":"South China Thailand I service","type":"I"},{"code":"SMX","name":"SOUTH CHINA MIDDLE EAST","type":"S"},{"code":"SP1","name":"South China Philippines Service","type":"S"},{"code":"ST1","name":"NEW SOUTH CHINA TAIWAN EXPRESS SERVICE","type":"I","ports":["TWKEL","TWTXG","TWKHH","CNHMN","CNHUA","CNNAS","CNSHK","TWKEL"]},{"code":"ST2","name":"SOUTH CHINA TAIWAN EXPRESS II","type":"S"},{"code":"ST3","name":"SOUTH CHINA TAIWAN SERVICE 3","type":"I","ports":["TWKEL","TWTXG","TWKHH","CNSWA","CNNAS","CNSHK","TWKEL"]},{"code":"STD","name":"SOUTH CHINA TAIWAN DIRECT SERVICE","type":"I"},{"code":"STX","name":"SOUTH CHINA THAILAND EXPRESS II","type":"I"},{"code":"SV1","name":"South China Vietnam Service","type":"S"},{"code":"SV2","name":"SOUTH CHINA HAIPHONG SERVICE II","type":"I"},{"code":"SVG","name":"SOUTH CHINA VIETNAM SERVICE","type":"S"},{"code":"SVP","name":"South China-Philippines Service","type":"S"},{"code":"TBS","name":"TURKEY BENGHAZI SERVICE","type":"S"},{"code":"TCX","name":"TAIWAN CHINA EXPRESS SERVICE","type":"O"},{"code":"TH3","name":"TAIWAN HONGKONG SERVICE 3","type":"S"},{"code":"THA","name":"TAIWAN HOCHIMINH EXPRESS A","type":"S"},{"code":"THB","name":"TAIWAN HOCHIMINH EXPRESS B","type":"S"},{"code":"TP1","name":"Trans Pacific West coast I Service","type":"I"},{"code":"TPC","name":"Transpacific Loop 1","type":"I"},{"code":"TPN","name":"TRANSPACIFIC EXPRESS III","type":"I"},{"code":"TPX","name":"TRANS PACIFIC EXPRESS","type":"I"},{"code":"TST","name":"TEST","type":"I"},{"code":"TV1","name":"Taiwan Vietnam I Service","type":"S"},{"code":"TV2","name":"Taiwan Vietnam II Service","type":"S"},{"code":"TVT","name":"TAIWAN VIETNAM THAILAND","type":"S"},{"code":"TWS","name":"TAIWAN SERVICE","type":"O"},{"code":"TWT","name":"CN/FE/SEA to TWN vice versa","type":"O"},{"code":"VG1","name":"Southeast Asia-Western India-Middle East I Servcie","type":"J"},{"code":"VG2","name":"Southeast Asia-Western India-Middle East II Servci","type":"J"},{"code":"VG3","name":"Southeast Asia-Western India-Middle East III Servc","type":"J"},{"code":"VGX","name":"Vietnam/Tailand - Middle East/India","type":"J"},{"code":"WAT","name":"RS/ME/IN to RS/ME/IN vice versa","type":"O"},{"code":"XRF","name":"INTERNATIONAL FEEDER SERVICE","type":"O"},{"code":"YRD","name":"CN to CN(YRD)","type":"O"},{"code":"YRF","name":"YANGZE RIVER FEEDER","type":"O"}]
+[
+  {
+    "code": "AE1",
+    "name": "North Europe I service",
+    "type": "O"
+  },
+  {
+    "code": "AEM",
+    "name": "Asia-East Mediterranean Sea Service",
+    "type": "I",
+    "ports": [
+      "CNTAO",
+      "CNSHA",
+      "CNNGB",
+      "CNNAS",
+      "SAJED",
+      "EGSUZ",
+      "EGALY",
+      "TRALI",
+      "TRIST",
+      "TRMER",
+      "EGSUZ",
+      "SAJED",
+      "SAJED",
+      "MYPKG",
+      "CNTAO"
+    ]
+  },
+  {
+    "code": "AEX",
+    "name": "ASIA EUROPE EXPRESS SERVICE",
+    "type": "I"
+  },
+  {
+    "code": "AG1",
+    "name": "Far East-Middle East I Service",
+    "type": "J"
+  },
+  {
+    "code": "AG2",
+    "name": "Asia Gulf Express II",
+    "type": "I"
+  },
+  {
+    "code": "AG3",
+    "name": "Asia Gulf Express III",
+    "type": "I"
+  },
+  {
+    "code": "AGX",
+    "name": "ASIA GULF EXPRESS",
+    "type": "J"
+  },
+  {
+    "code": "AIS",
+    "name": "ASIA INDIA SUB-CONTINENT SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "AM1",
+    "name": "Asia Med I service",
+    "type": "J"
+  },
+  {
+    "code": "BC1",
+    "name": "China Thailand Service",
+    "type": "J"
+  },
+  {
+    "code": "BC2",
+    "name": "RCL BANGKOK CHINA SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "BDX",
+    "name": "South China Haiphone Service",
+    "type": "S",
+    "ports": [
+      "CNSHK",
+      "CNNAS",
+      "VNHPH",
+      "CNSHK"
+    ]
+  },
+  {
+    "code": "CBS",
+    "name": "CHINA BRAZIL SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "CCT",
+    "name": "CUL CentralChina Thailand service",
+    "type": "J",
+    "ports": [
+      "THBKK",
+      "THBKS",
+      "THLCH",
+      "VNSGN",
+      "CNNGB",
+      "CNSHA",
+      "THLCH",
+      "THBKK"
+    ]
+  },
+  {
+    "code": "CES",
+    "name": "CHINA EUROPE EXPRESS SERVICE",
+    "type": "I"
+  },
+  {
+    "code": "CGS",
+    "name": "China Gulf Service",
+    "type": "J"
+  },
+  {
+    "code": "CGX",
+    "name": "China Gulf  Express",
+    "type": "I",
+    "ports": [
+      "CNTAO",
+      "CNSHA",
+      "CNNGB",
+      "CNSHK",
+      "CNNAS",
+      "MYPKG",
+      "INMUN",
+      "PKKHI",
+      "OMSOH",
+      "AEKLF",
+      "CNTAO"
+    ]
+  },
+  {
+    "code": "CH1",
+    "name": "China Haiphong I Service",
+    "type": "S"
+  },
+  {
+    "code": "CH2",
+    "name": "China Hochiminh II Service",
+    "type": "S"
+  },
+  {
+    "code": "CH6",
+    "name": "China Hochiminh VI Service",
+    "type": "S"
+  },
+  {
+    "code": "CHT",
+    "name": "CUL SouthChina Hochiminh Thailand service",
+    "type": "J"
+  },
+  {
+    "code": "CI1",
+    "name": "CHINA INDIA SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "CI2",
+    "name": "CHINA INDIA SERVICE 2",
+    "type": "S"
+  },
+  {
+    "code": "CI3",
+    "name": "China India III Service",
+    "type": "S"
+  },
+  {
+    "code": "CI5",
+    "name": "China-India-Pakistan V service",
+    "type": "S"
+  },
+  {
+    "code": "CI6",
+    "name": "Far East/India East coast VI Express",
+    "type": "S"
+  },
+  {
+    "code": "CI7",
+    "name": "Far East India Express VII Service",
+    "type": "S"
+  },
+  {
+    "code": "CI8",
+    "name": "North East China India Service",
+    "type": "S"
+  },
+  {
+    "code": "CIS",
+    "name": "CUL INDIA SERVICE",
+    "type": "J"
+  },
+  {
+    "code": "CIX",
+    "name": "CHINA INDIA EXPRESS SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "CJX",
+    "name": "China-Middle East",
+    "type": "S"
+  },
+  {
+    "code": "CL1",
+    "name": "China Thailand I service",
+    "type": "J"
+  },
+  {
+    "code": "CL2",
+    "name": "China Thailand II service",
+    "type": "J"
+  },
+  {
+    "code": "CL3",
+    "name": "China Thailand III service",
+    "type": "S"
+  },
+  {
+    "code": "CL5",
+    "name": "CHINA THAILAND V SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "CMX",
+    "name": "CHINA-MALAYSIA EXPRESS",
+    "type": "I"
+  },
+  {
+    "code": "CN1",
+    "name": "China Indonesia 1 Service",
+    "type": "S"
+  },
+  {
+    "code": "CNN",
+    "name": "COMMON LANE SG",
+    "type": "O"
+  },
+  {
+    "code": "CNT",
+    "name": "COMMON LANE",
+    "type": "O"
+  },
+  {
+    "code": "CNX",
+    "name": "Short Hual Adhoc Service",
+    "type": "I"
+  },
+  {
+    "code": "CP1",
+    "name": "China-Philippine I service",
+    "type": "J"
+  },
+  {
+    "code": "CP2",
+    "name": "MANILA SHANGHAI SERVICE (SITC)",
+    "type": "S"
+  },
+  {
+    "code": "CP3",
+    "name": "China-Philippine III service",
+    "type": "S"
+  },
+  {
+    "code": "CP8",
+    "name": "China Philippines 8 Service",
+    "type": "S"
+  },
+  {
+    "code": "CPX",
+    "name": "CHINA PHILIPPINE EXPRESS",
+    "type": "I"
+  },
+  {
+    "code": "CST",
+    "name": "CUL SouthChina Thailand service",
+    "type": "I",
+    "ports": [
+      "CNNAS",
+      "CNSHK",
+      "THLCH",
+      "THBKK",
+      "THSCS",
+      "THLCH",
+      "CNNAS"
+    ]
+  },
+  {
+    "code": "CSX",
+    "name": "CHINA SUB-CONTINENT EXPRESS",
+    "type": "S"
+  },
+  {
+    "code": "CT1",
+    "name": "CHINA TAIWAN SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "CT2",
+    "name": "CHINA THAILAND SERVICE II",
+    "type": "S"
+  },
+  {
+    "code": "CT3",
+    "name": "CHINA THAILAND SERVICE III",
+    "type": "S"
+  },
+  {
+    "code": "CTE",
+    "name": "CHINA TAIWAN EXPRESS SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "CTT",
+    "name": "CONTAINER RENTAL CHARGE SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "CV2",
+    "name": "CHINA VIETNAM EXPRESS II",
+    "type": "J"
+  },
+  {
+    "code": "CV3",
+    "name": "CHINA VIETNAM 3",
+    "type": "S"
+  },
+  {
+    "code": "CV5",
+    "name": "CHINA VIETNAM EXPRESS III",
+    "type": "I"
+  },
+  {
+    "code": "CV6",
+    "name": "CHINA VIETNAM 6 SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "CVC",
+    "name": "CHINA VIETNAM SERVICE 2-C",
+    "type": "S"
+  },
+  {
+    "code": "CVK",
+    "name": "CHINA VIETNAM KAMPUCHEA SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "CVN",
+    "name": "CHINA VIETNAM SERVICE 2-N",
+    "type": "S"
+  },
+  {
+    "code": "CVT",
+    "name": "China Vietnam Thailand service",
+    "type": "J"
+  },
+  {
+    "code": "CVX",
+    "name": "CHINA VIETNAM EXPRESS SERVICE",
+    "type": "J"
+  },
+  {
+    "code": "CWS",
+    "name": "CHINA WEST COAST INDIA",
+    "type": "S"
+  },
+  {
+    "code": "CX1",
+    "name": "Xiamen Manila Service",
+    "type": "S"
+  },
+  {
+    "code": "EUF",
+    "name": "Europe Feeder",
+    "type": "O"
+  },
+  {
+    "code": "EXS",
+    "name": "SOUTH EAST ASIA SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "FCS",
+    "name": "FAR EAST CHENNAI SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "FDR",
+    "name": "FEEDER SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "FIV",
+    "name": "FAR EAST INDIA VIETNAM SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "FME",
+    "name": "Far East Madras Express",
+    "type": "S"
+  },
+  {
+    "code": "GLX",
+    "name": "East Asia - Middle East Service II",
+    "type": "S"
+  },
+  {
+    "code": "GTS",
+    "name": "Gulf Shuttle Service",
+    "type": "I"
+  },
+  {
+    "code": "HDT",
+    "name": "HUA DONG TAIWAN SERVICE",
+    "type": "I",
+    "ports": [
+      "CNNGB",
+      "CNSHA",
+      "TWTPE",
+      "TWKHH",
+      "TWTXG",
+      "CNNGB"
+    ]
+  },
+  {
+    "code": "HHX",
+    "name": "East China Haiphong Service",
+    "type": "S"
+  },
+  {
+    "code": "HLS",
+    "name": "THAILAND INDIA SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "HLX",
+    "name": "HERCULES SERVICE",
+    "type": "J"
+  },
+  {
+    "code": "HPX",
+    "name": "HAIPHONG PUSAN EXPRESS",
+    "type": "S"
+  },
+  {
+    "code": "ICI",
+    "name": "North East China India Service",
+    "type": "S"
+  },
+  {
+    "code": "IMR",
+    "name": "India Middle-east Redsea svc",
+    "type": "J",
+    "ports": [
+      "INNSA",
+      "INMUN",
+      "SAJED",
+      "SAJED",
+      "DJJIB",
+      "INNSA"
+    ]
+  },
+  {
+    "code": "IMS",
+    "name": "INDIA MEDITERRANEAN SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "IP1",
+    "name": "Indonesia Port Klang service",
+    "type": "S"
+  },
+  {
+    "code": "IQH",
+    "name": "Incheon Qingdao Haiphong Service",
+    "type": "S"
+  },
+  {
+    "code": "ISS",
+    "name": "INDIA SUBCONTINENT SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "JCT",
+    "name": "Japan China Thailand Service",
+    "type": "S"
+  },
+  {
+    "code": "JFX",
+    "name": "JEBEL ALI - FAR EAST X-PRESS",
+    "type": "S"
+  },
+  {
+    "code": "JPS",
+    "name": "Jeddah Port Sudan",
+    "type": "I",
+    "ports": [
+      "SAJED",
+      "SDPZU",
+      "SAJED"
+    ]
+  },
+  {
+    "code": "JPX",
+    "name": "JAPAN SINGAPORE PORTKLANG SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "JSM",
+    "name": "JAPAN STRAITS MALAYSIA",
+    "type": "S"
+  },
+  {
+    "code": "JTV",
+    "name": "JAPAN TAIWAN VIETNAM EXPRESS SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "JTX",
+    "name": "JAPAN-TAIWAN SERVICE (CNC)",
+    "type": "S"
+  },
+  {
+    "code": "KCI",
+    "name": "Korea China India Service",
+    "type": "J",
+    "ports": [
+      "KRPUS",
+      "KRKAN",
+      "CNSHA",
+      "CNNGB",
+      "CNSHK",
+      "MYPKG",
+      "INNSA",
+      "INMUN",
+      "PKKHI",
+      "MYPKG",
+      "KRPUS"
+    ]
+  },
+  {
+    "code": "KGS",
+    "name": "Karichi Gulf Service",
+    "type": "S"
+  },
+  {
+    "code": "KHX",
+    "name": "Korea Haiphong Express",
+    "type": "S"
+  },
+  {
+    "code": "LHT",
+    "name": "CN/FE/SEA to RS/IN/TK/ME vice versa",
+    "type": "O"
+  },
+  {
+    "code": "MCT",
+    "name": "MIDDLE CHINA TAIWAN SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "ME1",
+    "name": "MEDITERRANEAN EXPRESS SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "ME2",
+    "name": "TURKEY BENGHAZI SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "ME3",
+    "name": "Turkey Red Sea Service",
+    "type": "I"
+  },
+  {
+    "code": "MED",
+    "name": "MEDITERRANEAN FEEDER SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "MES",
+    "name": "MEDITERRANEAN EXPRESS SERVICE",
+    "type": "S",
+    "ports": [
+      "TRIST",
+      "TRIZT",
+      "TRALI",
+      "LYMRA",
+      "TRIST"
+    ]
+  },
+  {
+    "code": "MFX",
+    "name": "MOMBASA FAR EAST X-PRESS",
+    "type": "S"
+  },
+  {
+    "code": "MGA",
+    "name": "MIDDLE EAST GULF ASIA SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "MI1",
+    "name": "Malaysia Indonesia service",
+    "type": "S"
+  },
+  {
+    "code": "MV1",
+    "name": "Malaysia Vietnam service",
+    "type": "S"
+  },
+  {
+    "code": "NAF",
+    "name": "NORTH AFRICA SERVICE",
+    "type": "I",
+    "ports": [
+      "TRIST",
+      "TRIZT",
+      "TRALI",
+      "DZALG",
+      "TRIST"
+    ]
+  },
+  {
+    "code": "NAX",
+    "name": "NORTH AFRICA SERVICE",
+    "type": "I"
+  },
+  {
+    "code": "NCM",
+    "name": "North China Malaysia service",
+    "type": "S"
+  },
+  {
+    "code": "NCT",
+    "name": "NORTH CHINA THAILAND SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "NP2",
+    "name": "China Philippines Express Service",
+    "type": "J",
+    "ports": [
+      "CNTAO",
+      "CNSHA",
+      "CNXMN",
+      "PHMNL",
+      "CNTAO"
+    ]
+  },
+  {
+    "code": "NSX",
+    "name": "New SCT Express service",
+    "type": "J",
+    "ports": [
+      "CNNAS",
+      "CNSHK",
+      "THLCH",
+      "THBKK",
+      "THSCS",
+      "THLCH",
+      "CNNAS"
+    ]
+  },
+  {
+    "code": "PKX",
+    "name": "Port Kelang-Kolkata Express",
+    "type": "S"
+  },
+  {
+    "code": "PRD",
+    "name": "CN to CN (PRD)",
+    "type": "O"
+  },
+  {
+    "code": "PRF",
+    "name": "PEARL RIVER FEEDER",
+    "type": "O"
+  },
+  {
+    "code": "RBC",
+    "name": "RCL Bangkok - China Service (BTL/RBC)",
+    "type": "S"
+  },
+  {
+    "code": "RCS",
+    "name": "RED SEA CHINA SERVICE",
+    "type": "J"
+  },
+  {
+    "code": "RE1",
+    "name": "Red sea Service I",
+    "type": "O"
+  },
+  {
+    "code": "RES",
+    "name": "RED SEA SERVICE",
+    "type": "J",
+    "ports": [
+      "CNSHA",
+      "CNNGB",
+      "CNNAS",
+      "SAJED",
+      "JOAQJ",
+      "EGSOK",
+      "CNSHA"
+    ]
+  },
+  {
+    "code": "REX",
+    "name": "Red Sea Express Service",
+    "type": "I",
+    "ports": [
+      "CNNGB",
+      "CNSHK",
+      "CNNAS",
+      "DJJIB",
+      "EGSOK",
+      "SAJED",
+      "CNNGB"
+    ]
+  },
+  {
+    "code": "RTS",
+    "name": "Rea Sea Shuttle Service",
+    "type": "I"
+  },
+  {
+    "code": "SBS",
+    "name": "Straits Bengal Straits service",
+    "type": "S"
+  },
+  {
+    "code": "SC2",
+    "name": "South China - Thailand Service II",
+    "type": "J"
+  },
+  {
+    "code": "SCT",
+    "name": "SOUTH CHINA THAILAND SERVICE",
+    "type": "I"
+  },
+  {
+    "code": "SEA",
+    "name": "SEA to SEA",
+    "type": "O"
+  },
+  {
+    "code": "SEG",
+    "name": "South China / Manila Service",
+    "type": "I"
+  },
+  {
+    "code": "SGS",
+    "name": "S.E.A GULF SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "SGX",
+    "name": "SINGAPORE EXTRA LOAD",
+    "type": "I",
+    "ports": [
+      "CNTAO",
+      "CNSHA",
+      "CNNGB",
+      "CNNAS",
+      "CNSHK",
+      "MYPKG",
+      "CNTAO"
+    ]
+  },
+  {
+    "code": "SH1",
+    "name": "SHANGHAI 1",
+    "type": "S"
+  },
+  {
+    "code": "SH2",
+    "name": "South China Hochiminh II Express",
+    "type": "I"
+  },
+  {
+    "code": "SH3",
+    "name": "South China Haiphong III service",
+    "type": "I"
+  },
+  {
+    "code": "SHE",
+    "name": "SHANGHAI-HAIPHONG EXPRESS SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "SHT",
+    "name": "FE/SEA to CN vice versa",
+    "type": "O"
+  },
+  {
+    "code": "SHX",
+    "name": "SHANGHAI HAIPHONG EXPESS",
+    "type": "J"
+  },
+  {
+    "code": "SJA",
+    "name": "Sokhna Jeddah Aden",
+    "type": "I",
+    "ports": [
+      "EGSOK",
+      "SAJED",
+      "YEADE",
+      "SAJED",
+      "EGSOK"
+    ]
+  },
+  {
+    "code": "SK2",
+    "name": "HUADONG TAIWAN SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "SKX",
+    "name": "Straits Kolkata Express",
+    "type": "S"
+  },
+  {
+    "code": "SL1",
+    "name": "South China Thailand I service",
+    "type": "I"
+  },
+  {
+    "code": "SMX",
+    "name": "SOUTH CHINA MIDDLE EAST",
+    "type": "S"
+  },
+  {
+    "code": "SP1",
+    "name": "South China Philippines Service",
+    "type": "S"
+  },
+  {
+    "code": "ST1",
+    "name": "NEW SOUTH CHINA TAIWAN EXPRESS SERVICE",
+    "type": "I",
+    "ports": [
+      "TWKEL",
+      "TWTXG",
+      "TWKHH",
+      "CNHMN",
+      "CNHUA",
+      "CNNAS",
+      "CNSHK",
+      "TWKEL"
+    ]
+  },
+  {
+    "code": "ST2",
+    "name": "SOUTH CHINA TAIWAN EXPRESS II",
+    "type": "S"
+  },
+  {
+    "code": "ST3",
+    "name": "SOUTH CHINA TAIWAN SERVICE 3",
+    "type": "I",
+    "ports": [
+      "TWKEL",
+      "TWTXG",
+      "TWKHH",
+      "CNSWA",
+      "CNNAS",
+      "CNSHK",
+      "TWKEL"
+    ]
+  },
+  {
+    "code": "STD",
+    "name": "SOUTH CHINA TAIWAN DIRECT SERVICE",
+    "type": "I"
+  },
+  {
+    "code": "STX",
+    "name": "SOUTH CHINA THAILAND EXPRESS II",
+    "type": "I"
+  },
+  {
+    "code": "SV1",
+    "name": "South China Vietnam Service",
+    "type": "S"
+  },
+  {
+    "code": "SV2",
+    "name": "SOUTH CHINA HAIPHONG SERVICE II",
+    "type": "I"
+  },
+  {
+    "code": "SVG",
+    "name": "SOUTH CHINA VIETNAM SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "SVP",
+    "name": "South China-Philippines Service",
+    "type": "S"
+  },
+  {
+    "code": "TBS",
+    "name": "TURKEY BENGHAZI SERVICE",
+    "type": "S"
+  },
+  {
+    "code": "TCX",
+    "name": "TAIWAN CHINA EXPRESS SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "TH3",
+    "name": "TAIWAN HONGKONG SERVICE 3",
+    "type": "S"
+  },
+  {
+    "code": "THA",
+    "name": "TAIWAN HOCHIMINH EXPRESS A",
+    "type": "S"
+  },
+  {
+    "code": "THB",
+    "name": "TAIWAN HOCHIMINH EXPRESS B",
+    "type": "S"
+  },
+  {
+    "code": "TP1",
+    "name": "Trans Pacific West coast I Service",
+    "type": "I"
+  },
+  {
+    "code": "TPC",
+    "name": "Transpacific Loop 1",
+    "type": "I"
+  },
+  {
+    "code": "TPN",
+    "name": "TRANSPACIFIC EXPRESS III",
+    "type": "I"
+  },
+  {
+    "code": "TPX",
+    "name": "TRANS PACIFIC EXPRESS",
+    "type": "I"
+  },
+  {
+    "code": "TST",
+    "name": "TEST",
+    "type": "I"
+  },
+  {
+    "code": "TV1",
+    "name": "Taiwan Vietnam I Service",
+    "type": "S"
+  },
+  {
+    "code": "TV2",
+    "name": "Taiwan Vietnam II Service",
+    "type": "S"
+  },
+  {
+    "code": "TVT",
+    "name": "TAIWAN VIETNAM THAILAND",
+    "type": "S"
+  },
+  {
+    "code": "TWS",
+    "name": "TAIWAN SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "TWT",
+    "name": "CN/FE/SEA to TWN vice versa",
+    "type": "O"
+  },
+  {
+    "code": "VG1",
+    "name": "Southeast Asia-Western India-Middle East I Servcie",
+    "type": "J"
+  },
+  {
+    "code": "VG2",
+    "name": "Southeast Asia-Western India-Middle East II Servci",
+    "type": "J"
+  },
+  {
+    "code": "VG3",
+    "name": "Southeast Asia-Western India-Middle East III Servc",
+    "type": "J"
+  },
+  {
+    "code": "VGX",
+    "name": "Vietnam/Tailand - Middle East/India",
+    "type": "J"
+  },
+  {
+    "code": "WAT",
+    "name": "RS/ME/IN to RS/ME/IN vice versa",
+    "type": "O"
+  },
+  {
+    "code": "XRF",
+    "name": "INTERNATIONAL FEEDER SERVICE",
+    "type": "O"
+  },
+  {
+    "code": "YRD",
+    "name": "CN to CN(YRD)",
+    "type": "O"
+  },
+  {
+    "code": "YRF",
+    "name": "YANGZE RIVER FEEDER",
+    "type": "O"
+  }
+]
