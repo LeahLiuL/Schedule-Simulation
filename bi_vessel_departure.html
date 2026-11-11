@@ -338,6 +338,8 @@ section.view.nv-view[hidden] { display:none; }
 .nv-table .nv-lane { font-weight:700; color:#16335a; }
 .nv-table .nv-port { font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace; font-weight:600; color:#1F4E79; }
 .nv-table .nv-pname { font-size:10.5px; color:#8a9bb0; font-weight:400; }
+/* Optional "Lane Name" column: full service name from lanes.json, kept intact. */
+.nv-table .nv-lanename { color:#334155; white-space:nowrap; }
 .nv-table .nv-ship { font-weight:600; color:#22304a; }
 .nv-table .nv-code { font-size:10px; color:#9aa7b5; font-family:ui-monospace,Consolas,monospace; }
 .nv-table .nv-voy { font-family:ui-monospace,Consolas,monospace; color:#5a6e82; }
@@ -1048,7 +1050,7 @@ function nvPlain(c,v,r){
 function nvSheetXml(s){
   const cols=s.cols||[], rows=s.rows||[], n=cols.length, last=xlsxCol(n), lastRow=rows.length+3;
   const widths=cols.map(c=>{
-    let w=String(c.label||'').length+3;
+    let w=c.w||String(c.label||'').length+3;
     if(/Name|Vessel|Voyage|Terminal/i.test(c.label||'')) w=Math.max(w,20);
     return Math.max(9,Math.min(40,w));
   });
@@ -1293,11 +1295,14 @@ function nvFilter(pfx,basisId){
 }
 
 /* ======================= 1. Full Schedule ======================= */
-/* Every column of bi_vessel_departure.csv is available.  The 20'/40' empty /
-   laden container detail, restows, vessel MPGH and the 8 bunker columns are
-   hidden by default (def:0) and switched on from the Columns dropdown. */
+/* Every column of bi_vessel_departure.csv is available, plus derived columns.
+   Lane Name (the full service name from lanes.json), the 20'/40' empty / laden
+   container detail, restows, vessel MPGH and the 8 bunker columns are hidden
+   by default (def:0) and switched on from the Columns dropdown. */
 const NV_FULL_COLS=[
   {k:'svc',label:'Lane',def:1,g:'基础信息',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span> <span class="nv-pname">'+nvEsc(nvLaneName(v))+'</span>'},
+  {k:'lanename',label:'Lane Name',def:0,g:'基础信息',w:36,txt:v=>v||'—',
+   fmt:v=>v?'<span class="nv-lanename" title="'+nvEsc(v)+'">'+nvEsc(v)+'</span>':'<span class="nv-na">—</span>'},
   {k:'vv',label:'Vessel / Voyage',def:1,g:'基础信息',fmt:v=>'<span class="nv-voy">'+nvEsc(v)+'</span>'},
   {k:'ship',label:'Ship Name',def:1,g:'基础信息',txt:v=>v||'船名未收录',fmt:(v,r)=>nvShipCell(r.vv)},
   {k:'term',label:'Terminal',def:1,g:'基础信息',fmt:v=>'<span class="nv-port" title="'+nvEsc(v)+'">'+nvEsc(v)+'</span>'},
@@ -1335,6 +1340,7 @@ function nvFullCols(){ return NV_FULL_COLS; }
 function nvFullRows(rows){
   return rows.map(r=>Object.assign({},r,{
     vv:r.vessel_voyage, ship:nvShip(r.vessel_voyage)||'',
+    lanename:nvLaneName(r.svc),
     term:nvTerm(r.terminal), termname:nvTermName(r.terminal),
     eta:r.arrived_anchorage, etb:r.berth, etd:r.departure,
     wait:r.wait_time, stay:r.port_stay, mph:nvMph(r), moves:r.total_moves,
@@ -1351,7 +1357,7 @@ function nvRenderFull(){
   const note=document.getElementById('nvf_note');
   if(note) note.innerHTML='共 <b>'+rows.length.toLocaleString('en-US')+'</b> 条挂靠（数据源全量 '+((DATA||[]).length).toLocaleString('en-US')
     +' 条，Service Type O 航线已隐藏）· <b>默认只显示 CUL</b>，切到 All operators 可看全部 · <b>默认按 ETA 展示今天往前 15 天 ~ 未来 1 个月</b>，可用日期框 / 默认窗口 / ±3M / All dates 调整 · '
-    +'Terminal / Terminal Name 取自 nodes.json · 点 ⚙ Columns 勾选 20/40 尺空重箱与燃油列（默认隐藏，导出 Excel 同步）。';
+    +'Terminal / Terminal Name 取自 nodes.json · 点 ⚙ Columns 勾选 Lane Name（航线全称）、20/40 尺空重箱与燃油列（默认隐藏，导出 Excel 同步）。';
 }
 function nvExportFull(){
   nvExportSheets([{id:'nvf_table',name:'Full Schedule',title:'Full Schedule',pfx:'nvf'}],'Full_Schedule');
