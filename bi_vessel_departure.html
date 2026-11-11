@@ -332,12 +332,9 @@ section.view.nv-view[hidden] { display:none; }
 .nv-vg-code, .nv-vg-lane, .nv-vg-count { margin-left:10px; font-weight:500; color:#5a6e82; }
 .nv-vg-count { color:#2E75B6; }
 
-/* ---- coloured metric cells (Moves / Wait / Stay / MPH) ---- */
-.nv-mnum { display:inline-flex; align-items:center; justify-content:flex-end; gap:6px; width:100%; }
-.nv-mbar { display:inline-block; width:38px; height:6px; border-radius:3px;
-           background:#eaf0f7; overflow:hidden; flex-shrink:0; }
-.nv-mbar > i { display:block; height:100%; border-radius:3px; }
-.nv-mnum b { font-variant-numeric:tabular-nums; min-width:36px; text-align:right; }
+/* ---- colour-only metric values (Moves / Wait / Stay / MPH); no progress bars ---- */
+.nv-mnum { display:inline-block; width:100%; text-align:right; }
+.nv-mnum b { font-variant-numeric:tabular-nums; font-weight:700; }
 .nv-note { font-size:11px; color:#8a9bb0; line-height:1.65; margin:0 2px 11px; }
 .nv-note b { color:#5a6e82; }
 .nv-panel { background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08);
@@ -953,14 +950,14 @@ function nvFullSort(rows){
     ||String(a.vv||'').localeCompare(String(b.vv||'')));
   return rows;
 }
-/* Small in-cell bar + colour for the numeric KPI columns. */
+/* Colour-only value for the numeric KPI columns (no bars). cap is kept in the
+   option object for backwards compatibility with existing column definitions. */
 function nvMetric(v,opt){
   if(v==null||isNaN(v)) return '<span class="nv-na">—</span>';
-  const n=Number(v), pct=Math.max(0,Math.min(100,n/opt.cap*100));
+  const n=Number(v);
   const tone=typeof opt.tone==='function'?opt.tone(n):opt.tone;
   const txt=opt.d===0?nvI(n):nvF(n,opt.d===undefined?1:opt.d);
-  return '<span class="nv-mnum"><span class="nv-mbar"><i style="width:'+pct.toFixed(1)
-    +'%;background:'+tone+'"></i></span><b style="color:'+tone+'">'+txt+'</b></span>';
+  return '<span class="nv-mnum"><b style="color:'+tone+'">'+txt+'</b></span>';
 }
 function nvDateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function nvAddDays(base,n){ const d=new Date(base.getTime()); d.setDate(d.getDate()+n); return nvDateStr(d); }
