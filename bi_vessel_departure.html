@@ -1486,9 +1486,11 @@ function nvFilter(pfx,basisId){
 /* Every column of bi_vessel_departure.csv is available, plus derived columns.
    Lane Name (the full service name from lanes.json), the 20'/40' empty / laden
    container detail, restows, vessel MPGH and the 8 bunker columns are hidden
-   by default (def:0) and switched on from the Columns dropdown. */
+   by default (def:0) and switched on from the Columns dropdown.
+   The Lane column itself shows the service code only; the full name lives in
+   the optional Lane Name column. */
 const NV_FULL_COLS=[
-  {k:'svc',label:'Lane',def:1,g:'Basics',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span> <span class="nv-pname">'+nvEsc(nvLaneName(v))+'</span>'},
+  {k:'svc',label:'Lane',def:1,g:'Basics',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span>'},
   {k:'lanename',label:'Lane Name',def:0,g:'Basics',w:36,txt:v=>v||'—',
    fmt:v=>v?'<span class="nv-lanename" title="'+nvEsc(v)+'">'+nvEsc(v)+'</span>':'<span class="nv-na">—</span>'},
   {k:'vv',label:'Vessel / Voyage',def:1,g:'Basics',fmt:v=>'<span class="nv-voy">'+nvEsc(v)+'</span>'},
@@ -1627,7 +1629,7 @@ function nvRenderWait(){
   byRegion.sort((a,b)=>b.calls-a.calls);
   nvTable('nvw_region',simple('Region',r=>nvEsc(r.k)),byRegion);
   byLane.sort((a,b)=>b.calls-a.calls);
-  nvTable('nvw_bylane',simple('Lane',r=>'<span class="nv-lane">'+nvEsc(r.k)+'</span> <span class="nv-pname">'+nvEsc(nvLaneName(r.k))+'</span>'),byLane);
+  nvTable('nvw_bylane',simple('Lane',r=>'<span class="nv-lane">'+nvEsc(r.k)+'</span>'),byLane);
   byOp.sort((a,b)=>b.calls-a.calls);
   nvTable('nvw_byop',simple('Operator',r=>nvEsc(r.k)),byOp);
   const months={};
@@ -1746,7 +1748,7 @@ function nvRenderCalls(){
     {k:'avgMph',label:'Avg MPH',num:true,fmt:v=>nvF(v,1)}
   ];
   const laneCols=[
-    {k:'k',label:'Lane',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span> <span class="nv-pname">'+nvEsc(nvLaneName(v))+'</span>'},
+    {k:'k',label:'Lane',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span>'},
     {k:'calls',label:'Calls',num:true,d:0},
     {k:'vessels',label:'Vessels',num:true,d:0},
     {k:'terms',label:'Terminals',num:true,d:0},
@@ -1868,7 +1870,7 @@ function nvRenderProd(){
     {k:'avgStay',label:'Avg Stay(h)',num:true,fmt:v=>nvF(v,1)}
   ];
   const laneCols=[
-    {k:'k',label:'Lane',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span> <span class="nv-pname">'+nvEsc(nvLaneName(v))+'</span>'},
+    {k:'k',label:'Lane',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span>'},
     {k:'calls',label:'Calls',num:true,d:0},{k:'vessels',label:'Vessels',num:true,d:0},
     {k:'mph',label:'MPH',num:true,fmt:v=>nvF(v,1)},
     {k:'moves',label:'Moves',num:true,d:0},{k:'berth',label:'Berth(h)',num:true,d:0},
