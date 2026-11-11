@@ -297,6 +297,47 @@ section.view.nv-view[hidden] { display:none; }
 .nv-preset { font-size:11.5px; padding:6px 10px; border:1px solid #c9d5e2; border-radius:5px;
              cursor:pointer; background:#fff; color:#1F4E79; font-weight:600; }
 .nv-preset.sel { background:#16335a; color:#fff; border-color:#16335a; }
+
+/* ---- multi-select filter boxes ---- */
+.nv-ms { position:relative; display:inline-flex; }
+.nv-msbtn { font-size:11.5px; padding:6px 10px; border:1px solid #c9d5e2; border-radius:5px;
+            background:#fff; color:#1a2332; cursor:pointer; height:32px; min-width:112px;
+            max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; }
+.nv-msbtn.filtered { border-color:#2E75B6; background:#eaf2fb; color:#16335a; font-weight:700; }
+.dps-toolbar .nv-msbtn { height:28px; font-size:11.5px; }
+.nv-msdd { display:none; position:absolute; top:36px; left:0; z-index:130; width:272px;
+           background:#fff; border:1px solid #cfdceb; border-radius:7px;
+           box-shadow:0 8px 22px rgba(16,42,71,.16); padding:8px; }
+.nv-msdd.open { display:block; }
+.nv-msbtns { display:flex; gap:5px; margin-bottom:7px; }
+.nv-msbtns button { font-size:11px; padding:4px 9px; border:1px solid #d6e0ea; border-radius:4px;
+                    background:#f7fafd; color:#1F4E79; cursor:pointer; }
+.nv-mssearch { width:100%; box-sizing:border-box; font-size:11.5px; padding:5px 8px;
+               border:1px solid #d6e0ea; border-radius:4px; margin-bottom:6px; }
+.nv-mslist { max-height:242px; overflow:auto; }
+.nv-msitem { display:flex; align-items:center; gap:7px; font-size:11.5px; color:#334155;
+             padding:4px 5px; border-radius:4px; cursor:pointer; }
+.nv-msitem:hover { background:#f2f7fd; }
+.nv-msitem span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ---- Full Schedule: one vessel = one block (CUL Daily Movement style) ---- */
+.nv-table tbody tr.nv-vg-even > td { background:#f5f9fe; }
+.nv-table tbody tr.nv-vg-odd > td { background:#fff; }
+.nv-table tbody tr.nv-vg-even:hover > td, .nv-table tbody tr.nv-vg-odd:hover > td { background:#e8f2fd; }
+.nv-table tbody tr.nv-vg-start > td { border-top:2px solid #2E75B6; }
+.nv-table tbody tr.nv-vg-end > td { border-bottom:2px solid #c3d9f0; }
+.nv-table tbody tr.nv-vg-head > td { background:#eaf2fb !important; padding:5px 10px;
+  border-top:3px solid #2E75B6; font-size:11px; color:#16335a; font-weight:700; }
+.nv-vg-ship { font-weight:700; }
+.nv-vg-code, .nv-vg-lane, .nv-vg-count { margin-left:10px; font-weight:500; color:#5a6e82; }
+.nv-vg-count { color:#2E75B6; }
+
+/* ---- coloured metric cells (Moves / Wait / Stay / MPH) ---- */
+.nv-mnum { display:inline-flex; align-items:center; justify-content:flex-end; gap:6px; width:100%; }
+.nv-mbar { display:inline-block; width:38px; height:6px; border-radius:3px;
+           background:#eaf0f7; overflow:hidden; flex-shrink:0; }
+.nv-mbar > i { display:block; height:100%; border-radius:3px; }
+.nv-mnum b { font-variant-numeric:tabular-nums; min-width:36px; text-align:right; }
 .nv-note { font-size:11px; color:#8a9bb0; line-height:1.65; margin:0 2px 11px; }
 .nv-note b { color:#5a6e82; }
 .nv-panel { background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08);
@@ -492,21 +533,21 @@ section.view.nv-view[hidden] { display:none; }
 <div class="dps-toolbar">
   <label>Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
-  <input type="search" id="dpsSearch" class="dps-search" placeholder="筛选船名 / 船代码 / 航次（回车跳航线）" oninput="dpsSetQuery(this.value)" onchange="dpsJumpService(this.value)" />
+  <input type="search" id="dpsSearch" class="dps-search" placeholder="Filter vessel / code / voyage (Enter jumps to a lane)" oninput="dpsSetQuery(this.value)" onchange="dpsJumpService(this.value)" />
   <span class="dps-note" id="dpsNote"></span>
 </div>
 <div class="dps-toolbar">
   <label>From</label><input type="date" id="dps_from" onchange="renderDps()" />
   <label>To</label><input type="date" id="dps_to" onchange="renderDps()" />
-  <button class="btn btn-secondary" onclick="dpsResetRange()" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
+  <button class="btn btn-secondary" onclick="dpsResetRange()" title="ETA window: 15 days back to 1 month ahead">Default window</button>
   <button class="btn btn-secondary" onclick="dpsAllRange()">All dates</button>
   <label>Operator</label>
-  <select id="dps_operator" onchange="dpsSetFilter('operator', this.value)"><option value="">All operators</option></select>
+  <div class="nv-ms" id="nvms_dps_operator"><button class="nv-msbtn" onclick="nvToggleMs(event,'dps_operator')">All</button><div class="nv-msdd" id="nvmsdd_dps_operator"></div></div>
   <label>Vessel</label>
-  <select id="dps_vessel" onchange="dpsSetFilter('vessel', this.value)"><option value="">All vessels</option></select>
-  <label class="dps-merge" title="不勾选（默认）：一个航次号一行，去程/回程 2639W + 2639E 在同一行。勾选：整条船一行，同一条船的 2640W/E 也接到这一行后面，一格仍然只放一个时间"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
+  <div class="nv-ms" id="nvms_dps_vessel"><button class="nv-msbtn" onclick="nvToggleMs(event,'dps_vessel')">All</button><div class="nv-msdd" id="nvmsdd_dps_vessel"></div></div>
+  <label class="dps-merge" title="Unchecked (default): one row per voyage number; outbound/inbound 2639W + 2639E share a row. Checked: one row per vessel, 2640W/E continues on the same row; each cell still holds one timestamp"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
   <span class="dps-meta" id="dpsMeta"></span>
-  <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;" title="导出全部航线（不受页面 Operator / 船名 / 搜索筛选影响，含每条航线的全部 operator，只沿用当前 Proforma 日期窗），每条航线一个 sheet：SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS，其余航线接在后面">Export Excel</button>
+  <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;" title="Export every lane (ignores the page Operator / vessel / search filters, includes all operators per lane, keeps the current Proforma date window), one sheet per lane: SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS, remaining lanes appended">Export Excel</button>
 </div>
 <div class="dps-wrap" id="dpsWrap"><div class="dps-empty">Loading…</div></div>
 </section>
@@ -588,12 +629,12 @@ section.view.nv-view[hidden] { display:none; }
     <select id="nvf_basis" onchange="nvRenderActive()"><option value="arrived_anchorage">ETA</option><option value="berth">ETB</option><option value="departure">ETD</option></select>
     <label>From</label><input type="date" id="nvf_from" onchange="nvRenderActive()" />
     <span class="nv-sep">–</span><input type="date" id="nvf_to" onchange="nvRenderActive()" />
-    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvf')" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
-    <button class="nv-preset" onclick="nvFullWindow()">± 3M</button>
+    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvf')" title="ETA window: 15 days back to 1 month ahead">Default window</button>
+    <button class="nv-preset" onclick="nvDefaultOrder('nvf_table')" title="Restore lane / vessel / ETA grouping">Default order</button>
     <button class="nv-preset" onclick="nvFullAllDates()">All dates</button>
-    <label>Lane</label><select id="nvf_svc" onchange="nvRenderActive()"></select>
-    <label>Operator</label><select id="nvf_op" onchange="nvRenderActive()"></select>
-    <label>Vessel</label><select id="nvf_vessel" onchange="nvRenderActive()"></select>
+    <label>Lane</label><div class="nv-ms" id="nvms_nvf_svc"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvf_svc')">All</button><div class="nv-msdd" id="nvmsdd_nvf_svc"></div></div>
+    <label>Operator</label><div class="nv-ms" id="nvms_nvf_op"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvf_op')">All</button><div class="nv-msdd" id="nvmsdd_nvf_op"></div></div>
+    <label>Vessel</label><div class="nv-ms" id="nvms_nvf_vessel"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvf_vessel')">All</button><div class="nv-msdd" id="nvmsdd_nvf_vessel"></div></div>
     <input type="search" id="nvf_q" placeholder="Search vessel / voyage / terminal / lane..." oninput="nvRenderActive()" />
     <div class="nv-colwrap">
       <button class="nv-colbtn" onclick="nvToggleColPanel(event,'nvf_table')">&#9881; Columns</button>
@@ -603,7 +644,7 @@ section.view.nv-view[hidden] { display:none; }
   </div>
   <div class="nv-noteline"><div class="nv-note" id="nvf_note"></div><span class="nv-chip" id="nvf_chip">— vessels · — rows</span></div>
   <div class="nv-panel">
-    <div class="nv-panel-h"><span>&#128203; Full Schedule</span><small>每条挂靠一行 · 默认 CUL · 默认按 ETA 展示过去 15 天 ~ 未来 1 个月 · 点表头排序 · 数据源 bi_vessel_departure.csv（Service Type O 航线已隐藏）</small></div>
+    <div class="nv-panel-h"><span>&#128203; Full Schedule</span><small>One row per port call · CUL by default · ETA window 15 days back to 1 month ahead · click a header to sort · source bi_vessel_departure.csv (Service Type O lanes hidden)</small></div>
     <div class="nv-scroll" id="nvf_scroll"><table class="nv-table" id="nvf_table"></table></div>
   </div>
 </section>
@@ -614,10 +655,10 @@ section.view.nv-view[hidden] { display:none; }
     <select id="nvw_basis" onchange="nvRenderActive()"><option value="arrived_anchorage">ETA</option><option value="berth">ETB</option><option value="departure">ETD</option></select>
     <label>From</label><input type="date" id="nvw_from" onchange="nvRenderActive()" />
     <span class="nv-sep">–</span><input type="date" id="nvw_to" onchange="nvRenderActive()" />
-    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvw')" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
-    <label>Terminal</label><select id="nvw_term" onchange="nvRenderActive()"></select>
-    <label>Lane</label><select id="nvw_svc" onchange="nvRenderActive()"></select>
-    <label>Operator</label><select id="nvw_op" onchange="nvRenderActive()"></select>
+    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvw')" title="ETA window: 15 days back to 1 month ahead">Default window</button>
+    <label>Terminal</label><div class="nv-ms" id="nvms_nvw_term"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvw_term')">All</button><div class="nv-msdd" id="nvmsdd_nvw_term"></div></div>
+    <label>Lane</label><div class="nv-ms" id="nvms_nvw_svc"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvw_svc')">All</button><div class="nv-msdd" id="nvmsdd_nvw_svc"></div></div>
+    <label>Operator</label><div class="nv-ms" id="nvms_nvw_op"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvw_op')">All</button><div class="nv-msdd" id="nvmsdd_nvw_op"></div></div>
     <input type="search" id="nvw_q" placeholder="Search terminals / vessels..." oninput="nvRenderActive()" />
     <span class="nv-range-opts" id="nvw_ranges">
       <span class="nv-range-opt sel" data-h="0" onclick="nvWaitRange(this)">All over</span>
@@ -630,17 +671,17 @@ section.view.nv-view[hidden] { display:none; }
   <div class="nv-noteline"><div class="nv-note" id="nvw_note"></div><span class="nv-chip" id="nvw_chip">— calls</span></div>
   <div class="nv-kpis" id="nvw_kpis"></div>
   <div class="nv-panel">
-    <div class="nv-panel-h"><span>&#9201; Port Wait Time Analysis</span><small>按 Terminal（8 位码头代码）归并 · 点表头排序</small></div>
+    <div class="nv-panel-h"><span>&#9201; Port Wait Time Analysis</span><small>Grouped by Terminal (8-char code) · click a header to sort</small></div>
     <div class="nv-scroll short"><table class="nv-table" id="nvw_table"></table></div>
     <div class="nv-tbl-note" id="nvw_tnote"></div>
   </div>
   <div class="nv-grid2">
     <div class="nv-panel">
-      <div class="nv-panel-h"><span>&#128205; Wait by Region</span><small>按 Terminal 所属地区汇总</small></div>
+      <div class="nv-panel-h"><span>&#128205; Wait by Region</span><small>Grouped by Terminal region</small></div>
       <div class="nv-scroll short"><table class="nv-table" id="nvw_region"></table></div>
     </div>
     <div class="nv-panel">
-      <div class="nv-panel-h"><span>&#128200; Monthly Port Wait Trend</span><small>按 ETA 月份</small></div>
+      <div class="nv-panel-h"><span>&#128200; Monthly Port Wait Trend</span><small>By ETA month</small></div>
       <div class="nv-trend" id="nvw_trend"></div>
     </div>
   </div>
@@ -650,7 +691,7 @@ section.view.nv-view[hidden] { display:none; }
       <div class="nv-scroll short"><table class="nv-table" id="nvw_bylane"></table></div>
     </div>
     <div class="nv-panel">
-      <div class="nv-panel-h"><span>&#128202; Wait by Operator</span><small>本页数据源无 Remark 分类，改用 Operator 维度</small></div>
+      <div class="nv-panel-h"><span>&#128202; Wait by Operator</span><small>No Remark field in this feed; Operator grouping used instead</small></div>
       <div class="nv-scroll short"><table class="nv-table" id="nvw_byop"></table></div>
     </div>
   </div>
@@ -663,15 +704,15 @@ section.view.nv-view[hidden] { display:none; }
     <label>From</label>
     <input type="date" id="nvc_from" onchange="nvRenderActive()" />
     <span class="nv-sep">&rarr;</span><input type="date" id="nvc_to" onchange="nvRenderActive()" />
-    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvc')" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
+    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvc')" title="ETA window: 15 days back to 1 month ahead">Default window</button>
     <span id="nvc_presets" style="display:inline-flex;gap:4px;">
       <button class="nv-preset" data-r="ytd" onclick="nvCallsPreset(this)">YTD</button>
       <button class="nv-preset" data-r="6m" onclick="nvCallsPreset(this)">6M</button>
       <button class="nv-preset" data-r="3m" onclick="nvCallsPreset(this)">3M</button>
       <button class="nv-preset" data-r="all" onclick="nvCallsPreset(this)">All</button>
     </span>
-    <label>Lane</label><select id="nvc_svc" onchange="nvRenderActive()"></select>
-    <label>Operator</label><select id="nvc_op" onchange="nvRenderActive()"></select>
+    <label>Lane</label><div class="nv-ms" id="nvms_nvc_svc"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvc_svc')">All</button><div class="nv-msdd" id="nvmsdd_nvc_svc"></div></div>
+    <label>Operator</label><div class="nv-ms" id="nvms_nvc_op"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvc_op')">All</button><div class="nv-msdd" id="nvmsdd_nvc_op"></div></div>
     <input type="search" id="nvc_q" placeholder="Search vessel / code / lane / terminal..." oninput="nvRenderActive()" />
     <div class="nv-colwrap">
       <button class="nv-colbtn" onclick="nvToggleColPanel(event,'nvc_detail')">&#9881; Columns</button>
@@ -683,11 +724,11 @@ section.view.nv-view[hidden] { display:none; }
   <div class="nv-kpis" id="nvc_kpis"></div>
   <div class="nv-grid2">
     <div class="nv-panel">
-      <div class="nv-panel-h"><span>&#128674; Terminal Calls by Vessel</span><small>点表头排序</small></div>
+      <div class="nv-panel-h"><span>&#128674; Terminal Calls by Vessel</span><small>Click a header to sort</small></div>
       <div class="nv-scroll short"><table class="nv-table" id="nvc_byvessel"></table></div>
     </div>
     <div class="nv-panel">
-      <div class="nv-panel-h"><span>&#128205; Calls by Terminal</span><small>点表头排序</small></div>
+      <div class="nv-panel-h"><span>&#128205; Calls by Terminal</span><small>Click a header to sort</small></div>
       <div class="nv-scroll short"><table class="nv-table" id="nvc_byport"></table></div>
     </div>
   </div>
@@ -713,9 +754,9 @@ section.view.nv-view[hidden] { display:none; }
     <select id="nvp_basis" onchange="nvRenderActive()"><option value="arrived_anchorage">ETA</option><option value="berth">ETB</option><option value="departure">ETD</option></select>
     <label>From</label><input type="date" id="nvp_from" onchange="nvRenderActive()" />
     <span class="nv-sep">–</span><input type="date" id="nvp_to" onchange="nvRenderActive()" />
-    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvp')" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
-    <label>Lane</label><select id="nvp_svc" onchange="nvRenderActive()"></select>
-    <label>Operator</label><select id="nvp_op" onchange="nvRenderActive()"></select>
+    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvp')" title="ETA window: 15 days back to 1 month ahead">Default window</button>
+    <label>Lane</label><div class="nv-ms" id="nvms_nvp_svc"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvp_svc')">All</button><div class="nv-msdd" id="nvmsdd_nvp_svc"></div></div>
+    <label>Operator</label><div class="nv-ms" id="nvms_nvp_op"><button class="nv-msbtn" onclick="nvToggleMs(event,'nvp_op')">All</button><div class="nv-msdd" id="nvmsdd_nvp_op"></div></div>
     <label>Min calls ≥</label><input type="number" id="nvp_min" value="2" min="1" step="1" onchange="nvRenderActive()" />
     <input type="search" id="nvp_q" placeholder="Search terminal / vessel..." oninput="nvRenderActive()" />
     <button class="btn btn-success" onclick="nvExportProd()">Export Excel</button>
@@ -724,11 +765,11 @@ section.view.nv-view[hidden] { display:none; }
   <div class="nv-kpis" id="nvp_kpis"></div>
   <div class="nv-grid2">
     <div class="nv-panel">
-      <div class="nv-panel-h"><span>&#128205; Productivity by Terminal</span><small>MPH = Moves ÷ (Stay − Wait) · 点表头排序</small></div>
+      <div class="nv-panel-h"><span>&#128205; Productivity by Terminal</span><small>MPH = Moves ÷ (Stay − Wait) · click a header to sort</small></div>
       <div class="nv-scroll short"><table class="nv-table" id="nvp_byport"></table></div>
     </div>
     <div class="nv-panel">
-      <div class="nv-panel-h"><span>&#128674; Productivity by Vessel</span><small>按船汇总 · 点表头排序</small></div>
+      <div class="nv-panel-h"><span>&#128674; Productivity by Vessel</span><small>Grouped by vessel · click a header to sort</small></div>
       <div class="nv-scroll short"><table class="nv-table" id="nvp_byvessel"></table></div>
     </div>
   </div>
@@ -771,20 +812,156 @@ const NV_TABS = [
 /* Port country prefix -> trade region.  Taiwan / Hong Kong / Macao are regions
    of China, never separate countries. */
 const NV_REGION = {
-  CN:'中国', TW:'中国台湾', HK:'中国香港', MO:'中国澳门',
-  SG:'东南亚', MY:'东南亚', TH:'东南亚', VN:'东南亚', PH:'东南亚', ID:'东南亚', KH:'东南亚', MM:'东南亚', BN:'东南亚',
-  IN:'南亚', PK:'南亚', LK:'南亚', BD:'南亚',
-  KR:'东北亚', JP:'东北亚',
-  SA:'中东·红海', AE:'中东·红海', EG:'中东·红海', JO:'中东·红海', YE:'中东·红海', OM:'中东·红海',
-  QA:'中东·红海', KW:'中东·红海', BH:'中东·红海', IQ:'中东·红海', SD:'中东·红海', DJ:'中东·红海',
-  TR:'地中海', IL:'地中海', GR:'地中海', IT:'地中海', ES:'地中海', MT:'地中海', CY:'地中海',
-  DE:'欧洲', NL:'欧洲', BE:'欧洲', GB:'欧洲', FR:'欧洲', PT:'欧洲', PL:'欧洲', SE:'欧洲', DK:'欧洲', FI:'欧洲',
-  US:'美洲', CA:'美洲', MX:'美洲', BR:'美洲', CL:'美洲', PE:'美洲', AR:'美洲', PA:'美洲',
-  AU:'大洋洲', NZ:'大洋洲', PG:'大洋洲',
-  ZA:'非洲', KE:'非洲', TZ:'非洲', NG:'非洲', GH:'非洲', CI:'非洲', SN:'非洲', MZ:'非洲', MG:'非洲'
+  CN:'China', TW:'Taiwan, China', HK:'Hong Kong, China', MO:'Macao, China',
+  SG:'Southeast Asia', MY:'Southeast Asia', TH:'Southeast Asia', VN:'Southeast Asia', PH:'Southeast Asia', ID:'Southeast Asia', KH:'Southeast Asia', MM:'Southeast Asia', BN:'Southeast Asia',
+  IN:'South Asia', PK:'South Asia', LK:'South Asia', BD:'South Asia',
+  KR:'Northeast Asia', JP:'Northeast Asia',
+  SA:'Middle East & Red Sea', AE:'Middle East & Red Sea', EG:'Middle East & Red Sea', JO:'Middle East & Red Sea', YE:'Middle East & Red Sea', OM:'Middle East & Red Sea',
+  QA:'Middle East & Red Sea', KW:'Middle East & Red Sea', BH:'Middle East & Red Sea', IQ:'Middle East & Red Sea', SD:'Middle East & Red Sea', DJ:'Middle East & Red Sea',
+  TR:'Mediterranean', IL:'Mediterranean', GR:'Mediterranean', IT:'Mediterranean', ES:'Mediterranean', MT:'Mediterranean', CY:'Mediterranean',
+  DE:'Europe', NL:'Europe', BE:'Europe', GB:'Europe', FR:'Europe', PT:'Europe', PL:'Europe', SE:'Europe', DK:'Europe', FI:'Europe',
+  US:'Americas', CA:'Americas', MX:'Americas', BR:'Americas', CL:'Americas', PE:'Americas', AR:'Americas', PA:'Americas',
+  AU:'Oceania', NZ:'Oceania', PG:'Oceania',
+  ZA:'Africa', KE:'Africa', TZ:'Africa', NG:'Africa', GH:'Africa', CI:'Africa', SN:'Africa', MZ:'Africa', MG:'Africa'
 };
 function nvEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function nvVal(id){ const e=document.getElementById(id); return e?e.value:''; }
+
+/* ---------- multi-select filter boxes (shared by all five tabs) ----------
+   sel === null means "All" (no filter).  A Set holds the checked values.   */
+const NV_MS={};
+function nvMsSelected(id){ const m=NV_MS[id]; return (!m||m.sel===null)?null:[...m.sel]; }
+function nvMsHas(id,v){
+  const m=NV_MS[id];
+  return (!m||m.sel===null)?true:m.sel.has(String(v==null?'':v));
+}
+function nvMsDesc(id,allLabel){
+  const m=NV_MS[id];
+  if(!m||m.sel===null) return allLabel;
+  if(m.sel.size===0) return 'None';
+  if(m.sel.size===1) return [...m.sel][0];
+  return m.sel.size+' selected';
+}
+function nvMsPaint(id){
+  const m=NV_MS[id]; if(!m) return;
+  const b=document.querySelector('#nvms_'+id+' .nv-msbtn'); if(!b) return;
+  b.textContent = m.sel===null ? m.all : (m.sel.size===1 ? [...m.sel][0] : (m.sel.size+' '+m.label));
+  b.title = m.sel===null ? m.all : [...m.sel].join(', ');
+  b.classList.toggle('filtered',m.sel!==null);
+}
+function nvMsFill(id,label,opts,def,allLabel,onchange){
+  let sel=null;
+  const prev=NV_MS[id];
+  if(prev && prev.opts.length===0 && opts.length && def && def.length){
+    // First pass ran before the feed arrived: apply the intended default now.
+    const valid=def.filter(v=>opts.some(o=>o.v===v));
+    sel=valid.length?new Set(valid):null;
+  }else if(prev){
+    if(prev.sel!==null){
+      const keep=[...prev.sel].filter(v=>opts.some(o=>o.v===v));
+      sel=keep.length?new Set(keep):null;
+    }
+  }else if(def&&def.length){
+    const valid=def.filter(v=>opts.some(o=>o.v===v));
+    sel=valid.length?new Set(valid):null;
+  }
+  NV_MS[id]={label:label,opts:opts,sel:sel,all:allLabel,onchange:onchange};
+  nvMsPaint(id);
+}
+function nvMsBuild(id){
+  const m=NV_MS[id]; if(!m) return;
+  const dd=document.getElementById('nvmsdd_'+id); if(!dd) return;
+  let h='<div class="nv-msbtns"><button type="button" data-act="all">All</button>'
+    +'<button type="button" data-act="none">None</button>'
+    +'<button type="button" data-act="close">Close</button></div>';
+  if(m.opts.length>12) h+='<input class="nv-mssearch" placeholder="Search..." />';
+  h+='<div class="nv-mslist">'+m.opts.map(o=>{
+    const on=m.sel===null||m.sel.has(o.v);
+    return '<label class="nv-msitem" data-k="'+nvEsc(o.v)+'" data-t="'+nvEsc(String(o.t).toLowerCase())+'">'
+      +'<input type="checkbox" '+(on?'checked':'')+'><span>'+nvEsc(o.t)+'</span></label>';
+  }).join('')+'</div>';
+  dd.innerHTML=h;
+  dd.onclick=function(e){
+    e.stopPropagation();
+    const a=e.target.closest&&e.target.closest('button[data-act]'); if(!a) return;
+    const cur=NV_MS[id]; if(!cur) return;
+    const act=a.getAttribute('data-act');
+    if(act==='close'){ dd.classList.remove('open'); return; }
+    cur.sel=act==='all'?null:new Set();
+    nvMsBuild(id); nvMsPaint(id); nvMsChanged(id);
+  };
+  dd.onchange=function(e){
+    e.stopPropagation();
+    if(!e.target || e.target.tagName!=='INPUT') return;
+    const item=e.target.closest('.nv-msitem'); if(!item) return;
+    // Look up the CURRENT state: a re-filter may have replaced NV_MS[id] meanwhile.
+    const cur=NV_MS[id]; if(!cur) return;
+    const v=item.getAttribute('data-k');
+    if(cur.sel===null) cur.sel=new Set(cur.opts.map(o=>o.v));
+    if(e.target.checked) cur.sel.add(v); else cur.sel.delete(v);
+    if(cur.sel.size===cur.opts.length) cur.sel=null;
+    nvMsPaint(id); nvMsChanged(id);
+  };
+  const s=dd.querySelector('.nv-mssearch');
+  if(s) s.oninput=function(){
+    const q=this.value.trim().toLowerCase();
+    dd.querySelectorAll('.nv-msitem').forEach(it=>{
+      it.style.display=(!q||it.getAttribute('data-t').indexOf(q)>=0)?'':'none';
+    });
+  };
+}
+function nvMsChanged(id){ const m=NV_MS[id]; if(m&&m.onchange) m.onchange(); }
+function nvToggleMs(e,id){
+  e.stopPropagation();
+  const dd=document.getElementById('nvmsdd_'+id); if(!dd) return;
+  const open=dd.classList.contains('open');
+  document.querySelectorAll('.nv-msdd.open,.nv-coldd.open').forEach(d=>d.classList.remove('open'));
+  if(!open){ nvMsBuild(id); dd.classList.add('open'); }
+}
+
+/* ---------- Daily Movement lane order (live ROUTE_ORDER) ----------
+   the feed uses ST1 / AM1 / SHT where Daily Movement uses NSCT1 / AEM / SHTG. */
+const NV_ROUTE_ORDER=['ST3','SCT3','NSCT1','HDT','NSX','CST','CCT','NP2','REX','CGS','AEM',
+  'EVHA','SGX','SJA','JPS','SHTG','RTS','WAT','KCI','GTS','SL1','CGX','HLX','IMR','NAX','RES'];
+const NV_LANE_ALIAS={ST1:'NSCT1',AM1:'AEM',SHT:'SHTG'};
+function nvRouteKey(code){
+  const c=String(code||'').toUpperCase();
+  let i=NV_ROUTE_ORDER.indexOf(c);
+  if(i<0) i=NV_ROUTE_ORDER.indexOf(NV_LANE_ALIAS[c]||'');
+  return i<0?9999:i;
+}
+/* Default Full Schedule order: anchored lane (next voyage) -> vessel cluster -> ETA -> terminal. */
+function nvFullSort(rows){
+  const today=nvDateStr(new Date()), upcoming={}, fallback={};
+  rows.forEach(r=>{
+    const v=nvCode(r.vv); if(!v) return;
+    const k=nvRouteKey(r.svc);
+    if(!(v in fallback)||k<fallback[v]) fallback[v]=k;
+    const eta=String(r.eta||'').slice(0,10);
+    if(eta&&eta>=today){
+      if(!upcoming[v]||eta<upcoming[v].eta||(eta===upcoming[v].eta&&k<upcoming[v].k))
+        upcoming[v]={k:k,eta:eta};
+    }
+  });
+  const rank={};
+  Object.keys(fallback).forEach(v=>{ rank[v]=upcoming[v]?upcoming[v].k:fallback[v]; });
+  rows.forEach(r=>{ r._laneRank=(nvCode(r.vv) in rank)?rank[nvCode(r.vv)]:nvRouteKey(r.svc); });
+  rows.sort((a,b)=>(a._laneRank-b._laneRank)
+    ||String(nvCode(a.vv)||'').localeCompare(String(nvCode(b.vv)||''))
+    ||String(a.eta||'').localeCompare(String(b.eta||''))
+    ||String(a.term||'').localeCompare(String(b.term||''))
+    ||String(a.vv||'').localeCompare(String(b.vv||'')));
+  return rows;
+}
+/* Small in-cell bar + colour for the numeric KPI columns. */
+function nvMetric(v,opt){
+  if(v==null||isNaN(v)) return '<span class="nv-na">—</span>';
+  const n=Number(v), pct=Math.max(0,Math.min(100,n/opt.cap*100));
+  const tone=typeof opt.tone==='function'?opt.tone(n):opt.tone;
+  const txt=opt.d===0?nvI(n):nvF(n,opt.d===undefined?1:opt.d);
+  return '<span class="nv-mnum"><span class="nv-mbar"><i style="width:'+pct.toFixed(1)
+    +'%;background:'+tone+'"></i></span><b style="color:'+tone+'">'+txt+'</b></span>';
+}
 function nvDateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function nvAddDays(base,n){ const d=new Date(base.getTime()); d.setDate(d.getDate()+n); return nvDateStr(d); }
 /* One shared default planning window for all five tabs + Proforma: ETA based,
@@ -807,7 +984,7 @@ function nvApplyDefaultWindow(pfx){
 function nvDate(r,basis){ return String(r[basis]||'').slice(0,10); }
 function nvTerm(t){ return String(t||'').toUpperCase().trim(); }          // full 8-char terminal code
 function nvPort(t){ return String(t||'').toUpperCase().slice(0,5); }       // 5-char port prefix (internal only)
-function nvRegion(t){ return NV_REGION[String(t||'').slice(0,2).toUpperCase()] || '其他'; }
+function nvRegion(t){ return NV_REGION[String(t||'').slice(0,2).toUpperCase()] || 'Other'; }
 /* Terminal Name comes from nodes.json: { "CNHUAT04": {n:"Dong Jiang Cang ...", p:"CNHUA", t:"T04"} }.
    Coverage on this feed is ~100%; placeholders such as "Dummy yard" are blanked. */
 function nvTermName(t){
@@ -835,7 +1012,7 @@ function nvBar(v,max,cls){
 function nvShipCell(vv){
   const n=nvShip(vv);
   return n ? '<span class="nv-ship">'+nvEsc(n)+'</span>'
-           : '<span class="nv-na">船名未收录</span> <span class="nv-code">'+nvEsc(nvCode(vv))+'</span>';
+           : '<span class="nv-na">Name not found</span> <span class="nv-code">'+nvEsc(nvCode(vv))+'</span>';
 }
 function nvTermCell(t){
   const n=nvTermName(t);
@@ -876,7 +1053,7 @@ function nvBuildColDropdown(elId){
   const dd=document.getElementById('nv_coldd_'+elId); if(!dd) return;
   const t=NV.tables[elId]; if(!t) return;
   const groups={};
-  t.cols.forEach(c=>{ const g=c.g||'其他'; (groups[g]=groups[g]||[]).push(c); });
+  t.cols.forEach(c=>{ const g=c.g||'Other'; (groups[g]=groups[g]||[]).push(c); });
   let h='<div class="nv-colbtns">'
     +'<button onclick="nvColPreset(\''+elId+'\',\'default\')">Default</button>'
     +'<button onclick="nvColPreset(\''+elId+'\',\'all\')">All</button>'
@@ -898,8 +1075,8 @@ function nvToggleColPanel(e,elId){
   if(!open){ nvBuildColDropdown(elId); dd.classList.add('open'); }
 }
 document.addEventListener('click',function(e){
-  if(e.target && e.target.closest && !e.target.closest('.nv-colwrap')){
-    document.querySelectorAll('.nv-coldd.open').forEach(d=>d.classList.remove('open'));
+  if(e.target && e.target.closest && !e.target.closest('.nv-colwrap') && !e.target.closest('.nv-ms')){
+    document.querySelectorAll('.nv-coldd.open,.nv-msdd.open').forEach(d=>d.classList.remove('open'));
   }
 });
 
@@ -933,17 +1110,39 @@ function nvDrawTable(elId){
     return '<th class="'+(c.num?'num':'')+(on?' sorted':'')+'" onclick="nvSort(\''+elId+'\',\''+c.k+'\')">'
       +nvEsc(c.label)+'<span class="nv-arw">'+(on?(st.dir==='asc'?'▲':'▼'):'↕')+'</span></th>';
   }).join('')+'</tr></thead>';
-  const body='<tbody>'+shown.map(r=>'<tr>'+cols.map(c=>{
-    const v=r[c.k];
-    const txt=c.fmt?c.fmt(v,r):(c.num?(c.d===0?nvI(v):nvF(v,c.d)):nvEsc(v==null?'':v));
-    const cls=[c.num?'num':'',c.cls?c.cls(r):''].filter(Boolean).join(' ');
-    return '<td'+(cls?' class="'+cls+'"':'')+'>'+txt+'</td>';
-  }).join('')+'</tr>').join('')+'</tbody>';
-  el.innerHTML=head+(shown.length?body:'<tbody><tr><td colspan="'+cols.length+'" class="nv-empty">当前条件下没有记录</td></tr></tbody>');
+  const grouped=!!(t.group&&!st);
+  const gcount={};
+  if(grouped) shown.forEach(r=>{ const g=String(t.group(r)||''); gcount[g]=(gcount[g]||0)+1; });
+  let body='', prevG=null, gi=-1;
+  shown.forEach((r,idx)=>{
+    let cls='';
+    if(grouped){
+      const g=String(t.group(r)||'');
+      if(g!==prevG){
+        gi++; prevG=g;
+        body+='<tr class="nv-vg-head"><td colspan="'+cols.length+'">'+t.groupLabel(r,gcount[g])+'</td></tr>';
+        cls='nv-vg-start nv-vg-'+(gi%2?'odd':'even');
+      }else cls='nv-vg-'+(gi%2?'odd':'even');
+      const nx=shown[idx+1];
+      if(!nx||String(t.group(nx)||'')!==g) cls+=' nv-vg-end';
+    }
+    body+='<tr'+(cls?' class="'+cls+'"':'')+'>'+cols.map(c=>{
+      const v=r[c.k];
+      const txt=c.fmt?c.fmt(v,r):(c.num?(c.d===0?nvI(v):nvF(v,c.d)):nvEsc(v==null?'':v));
+      const cc=[c.num?'num':'',c.cls?c.cls(r):''].filter(Boolean).join(' ');
+      return '<td'+(cc?' class="'+cc+'"':'')+'>'+txt+'</td>';
+    }).join('')+'</tr>';
+  });
+  el.innerHTML=head+(shown.length?'<tbody>'+body+'</tbody>':'<tbody><tr><td colspan="'+cols.length+'" class="nv-empty">No matching records</td></tr></tbody>');
 }
-function nvTable(elId,cols,rows,limit){
-  NV.tables[elId]={cols:cols,rows:rows,sorted:rows.slice(),limit:limit||0};
+function nvTable(elId,cols,rows,limit,opts){
+  NV.tables[elId]={cols:cols,rows:rows,sorted:rows.slice(),limit:limit||0,
+                   group:(opts&&opts.group)||null,groupLabel:(opts&&opts.groupLabel)||null};
   nvDrawTable(elId);
+}
+function nvDefaultOrder(elId){
+  NV.sorts[elId]=null;
+  if(elId==='nvf_table') nvRenderFull(); else nvDrawTable(elId);
 }
 function nvKpis(elId,arr){
   const el=document.getElementById(elId); if(!el) return;
@@ -952,7 +1151,7 @@ function nvKpis(elId,arr){
 }
 function nvTrend(elId,arr){
   const el=document.getElementById(elId); if(!el) return;
-  if(!arr.length){ el.innerHTML='<div class="nv-empty">当前条件下没有记录</div>'; return; }
+  if(!arr.length){ el.innerHTML='<div class="nv-empty">No matching records</div>'; return; }
   const max=Math.max.apply(null,arr.map(a=>a.value||0))||1;
   el.innerHTML=arr.map(a=>'<div class="nv-trend-row"><span class="m">'+nvEsc(a.m)+'</span>'
     +'<span class="b"><i style="width:'+((a.value||0)/max*100).toFixed(1)+'%"></i></span>'
@@ -969,7 +1168,7 @@ function nvCSV(cols,rows){
   return [cols.map(c=>e(c.label)).join(',')].concat((rows||[]).map(r=>cols.map(c=>e(r[c.k])).join(','))).join('\n');
 }
 function nvExportTable(elId,name){
-  const t=NV.tables[elId]; if(!t||!t.sorted.length) return alert('当前没有可导出的数据');
+  const t=NV.tables[elId]; if(!t||!t.sorted.length) return alert('No data to export');
   nvDownload(name+'_'+nvDateStr(new Date())+'.csv',nvCSV(nvVisibleCols(elId),t.sorted));
 }
 
@@ -1099,7 +1298,7 @@ function nvSheetName(s,i){
   return n||('Sheet'+(i+1));
 }
 function nvXlsxWorkbook(sheets,filename){
-  if(!sheets.length){ alert('当前没有可导出的数据'); return; }
+  if(!sheets.length){ alert('No data to export'); return; }
   const enc=new TextEncoder();
   const names=sheets.map((s,i)=>nvSheetName(s.name,i+1));
   const used={};
@@ -1144,15 +1343,15 @@ function nvXlsxWorkbook(sheets,filename){
 function nvMeta(pfx){
   const basis=nvVal(pfx+'_basis');
   const b=basis?basis.replace('arrived_anchorage','ETA').replace('berth','ETB').replace('departure','ETD'):'ETA';
-  const op=nvVal(pfx+'_op')||'All operators';
-  const svc=nvVal(pfx+'_svc')||'All lanes';
-  const from=nvVal(pfx+'_from')||'不限', to=nvVal(pfx+'_to')||'不限';
+  const op=nvMsDesc(pfx+'_op','All operators');
+  const svc=nvMsDesc(pfx+'_svc','All lanes');
+  const from=nvVal(pfx+'_from')||'Any', to=nvVal(pfx+'_to')||'Any';
   const q=String(nvVal(pfx+'_q')||'').trim();
   const chip=document.getElementById(pfx+'_chip');
-  return '数据源 bi_vessel_departure.csv（未改动） · Operator '+op+' · Lane '+svc
-    +' · '+b+' '+from+' ~ '+to+(q?' · 搜索 "'+q+'"':'')
-    +' · 导出 '+new Date().toLocaleString('zh-CN')
-    +' · 列与网页一致（含隐藏列设置）'+(chip?' · '+chip.textContent.trim():'');
+  return 'Source bi_vessel_departure.csv (unchanged) · Operator '+op+' · Lane '+svc
+    +' · '+b+' '+from+' ~ '+to+(q?' · Search "'+q+'"':'')
+    +' · Exported '+new Date().toLocaleString('en-GB')
+    +' · Columns match the page (hidden columns respected)'+(chip?' · '+chip.textContent.trim():'');
 }
 function nvExportSheets(defs,prefix){
   const sheets=defs.map(d=>{
@@ -1160,7 +1359,7 @@ function nvExportSheets(defs,prefix){
     const cols=t?nvVisibleCols(d.id):[];
     return {name:d.name,title:d.title,note:d.note||nvMeta(d.pfx||'nvf'),cols:cols,rows:t?t.sorted:[]};
   }).filter(s=>s.cols.length);
-  if(!sheets.length){ alert('当前没有可导出的数据'); return; }
+  if(!sheets.length){ alert('No data to export'); return; }
   nvXlsxWorkbook(sheets,prefix+'_'+nvDateStr(new Date()).replace(/-/g,'')+'.xlsx');
 }
 
@@ -1192,10 +1391,10 @@ function nvFillSelect(id,list,allLabel){
   el.innerHTML='<option value="">'+nvEsc(allLabel)+'</option>'+list.map(o=>
     '<option value="'+nvEsc(o.v)+'">'+nvEsc(o.t)+'</option>').join('');
 }
-const NV_KEEP_IDS=['nvf_basis','nvf_from','nvf_to','nvf_svc','nvf_op','nvf_vessel','nvf_q',
-  'nvw_basis','nvw_from','nvw_to','nvw_term','nvw_svc','nvw_op','nvw_q',
-  'nvc_basis','nvc_from','nvc_to','nvc_svc','nvc_op','nvc_q',
-  'nvp_basis','nvp_from','nvp_to','nvp_svc','nvp_op','nvp_min','nvp_q'];
+const NV_KEEP_IDS=['nvf_basis','nvf_from','nvf_to','nvf_q',
+  'nvw_basis','nvw_from','nvw_to','nvw_q',
+  'nvc_basis','nvc_from','nvc_to','nvc_q',
+  'nvp_basis','nvp_from','nvp_to','nvp_min','nvp_q'];
 function nvBuildControls(first){
   const saved={};
   if(!first) NV_KEEP_IDS.forEach(id=>{const e=document.getElementById(id); if(e) saved[id]=e.value;});
@@ -1206,10 +1405,12 @@ function nvBuildControls(first){
   const codes={}; (DATA||[]).forEach(r=>{const c=nvCode(r.vessel_voyage);if(c)codes[c]=nvShip(r.vessel_voyage)||c;});
   const vslOpts=Object.keys(codes).sort((a,b)=>codes[a].localeCompare(codes[b])).map(c=>({v:c,t:codes[c]+' ('+c+')'}));
   const terms=[...new Set((DATA||[]).map(r=>nvTerm(r.terminal)).filter(Boolean))].sort();
-  ['nvf_svc','nvw_svc','nvc_svc','nvp_svc'].forEach(id=>nvFillSelect(id,svcOpts,'All lanes'));
-  ['nvf_op','nvw_op','nvc_op','nvp_op'].forEach(id=>nvFillSelect(id,opOpts,'All operators'));
-  nvFillSelect('nvf_vessel',vslOpts,'All vessels');
-  nvFillSelect('nvw_term',terms.map(t=>({v:t,t:t+(nvTermName(t)?' · '+nvTermName(t):'')})),'All terminals');
+  const termOpts=terms.map(t=>({v:t,t:t+(nvTermName(t)?' · '+nvTermName(t):'')}));
+  const onch=()=>nvRenderActive();
+  ['nvf_svc','nvw_svc','nvc_svc','nvp_svc'].forEach(id=>nvMsFill(id,'lanes',svcOpts,null,'All lanes',onch));
+  ['nvf_op','nvw_op','nvc_op','nvp_op'].forEach(id=>nvMsFill(id,'operators',opOpts,['CUL'],'All operators',onch));
+  nvMsFill('nvf_vessel','vessels',vslOpts,null,'All vessels',onch);
+  nvMsFill('nvw_term','terminals',termOpts,null,'All terminals',onch);
   if(first){
     // Every tab opens on the same ETA window: 15 days back -> one calendar month ahead.
     const w=biDefaultWindow();
@@ -1219,15 +1420,10 @@ function nvBuildControls(first){
       const s=document.getElementById(p+'_basis'); if(s)s.value='arrived_anchorage';
     });
     const m=document.getElementById('nvp_min'); if(m)m.value='2';
-    // Operator defaults to CUL only; "All operators" is still one click away.
-    const cul=ops.indexOf('CUL')>=0?'CUL':'';
-    if(cul) ['nvf_op','nvw_op','nvc_op','nvp_op'].forEach(id=>{const e=document.getElementById(id); if(e) e.value=cul;});
   }else{
     NV_KEEP_IDS.forEach(id=>{
       const e=document.getElementById(id); if(!e || saved[id]===undefined) return;
-      if(e.tagName==='SELECT'){
-        if(Array.from(e.options).some(o=>o.value===saved[id])) e.value=saved[id];
-      }else e.value=saved[id];
+      e.value=saved[id];
     });
   }
 }
@@ -1242,15 +1438,10 @@ function nvInit(){
   nvRenderActive();
 }
 function nvRebuildPortSelect(){
-  const el=document.getElementById('nvw_term'); if(!el||!NV.ready) return;
-  const cur=el.value;
+  if(!NV.ready) return;
   const terms=[...new Set((DATA||[]).map(r=>nvTerm(r.terminal)).filter(Boolean))].sort();
-  nvFillSelect('nvw_term',terms.map(t=>({v:t,t:t+(nvTermName(t)?' · '+nvTermName(t):'')})),'All terminals');
-  el.value=cur;
-}
-function nvFullWindow(){
-  const t=new Date(); const a=document.getElementById('nvf_from'), b=document.getElementById('nvf_to');
-  if(a)a.value=nvAddDays(t,-90); if(b)b.value=nvAddDays(t,90); nvRenderActive();
+  nvMsFill('nvw_term','terminals',terms.map(t=>({v:t,t:t+(nvTermName(t)?' · '+nvTermName(t):'')})),
+           null,'All terminals',()=>nvRenderActive());
 }
 function nvFullAllDates(){
   const a=document.getElementById('nvf_from'), b=document.getElementById('nvf_to');
@@ -1275,15 +1466,15 @@ function nvCallsPreset(el){
 /* ---------- shared filter ---------- */
 function nvFilter(pfx,basisId){
   const basis=nvVal(basisId), from=nvVal(pfx+'_from'), to=nvVal(pfx+'_to');
-  const svc=nvVal(pfx+'_svc'), op=nvVal(pfx+'_op'), q=String(nvVal(pfx+'_q')||'').trim().toLowerCase();
-  const term=nvVal(pfx+'_term');
+  const q=String(nvVal(pfx+'_q')||'').trim().toLowerCase();
   return (DATA||[]).filter(r=>{
     const d=nvDate(r,basis);
     if(from&&d&&d<from) return false;
     if(to&&d&&d>to) return false;
-    if(svc&&r.svc!==svc) return false;
-    if(op&&r.operator!==op) return false;
-    if(term&&nvTerm(r.terminal)!==term) return false;
+    if(!nvMsHas(pfx+'_svc',r.svc)) return false;
+    if(!nvMsHas(pfx+'_op',r.operator)) return false;
+    if(!nvMsHas(pfx+'_vessel',nvCode(r.vessel_voyage))) return false;
+    if(!nvMsHas(pfx+'_term',nvTerm(r.terminal))) return false;
     if(q){
       const hay=(String(r.vessel_voyage||'')+' '+nvShip(r.vessel_voyage)+' '+String(r.terminal||'')
         +' '+nvTermName(r.terminal)+' '+String(r.svc||'')+' '+nvLaneName(r.svc)
@@ -1300,41 +1491,45 @@ function nvFilter(pfx,basisId){
    container detail, restows, vessel MPGH and the 8 bunker columns are hidden
    by default (def:0) and switched on from the Columns dropdown. */
 const NV_FULL_COLS=[
-  {k:'svc',label:'Lane',def:1,g:'基础信息',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span> <span class="nv-pname">'+nvEsc(nvLaneName(v))+'</span>'},
-  {k:'lanename',label:'Lane Name',def:0,g:'基础信息',w:36,txt:v=>v||'—',
+  {k:'svc',label:'Lane',def:1,g:'Basics',txt:v=>v,fmt:v=>'<span class="nv-lane">'+nvEsc(v)+'</span> <span class="nv-pname">'+nvEsc(nvLaneName(v))+'</span>'},
+  {k:'lanename',label:'Lane Name',def:0,g:'Basics',w:36,txt:v=>v||'—',
    fmt:v=>v?'<span class="nv-lanename" title="'+nvEsc(v)+'">'+nvEsc(v)+'</span>':'<span class="nv-na">—</span>'},
-  {k:'vv',label:'Vessel / Voyage',def:1,g:'基础信息',fmt:v=>'<span class="nv-voy">'+nvEsc(v)+'</span>'},
-  {k:'ship',label:'Ship Name',def:1,g:'基础信息',txt:v=>v||'船名未收录',fmt:(v,r)=>nvShipCell(r.vv)},
-  {k:'term',label:'Terminal',def:1,g:'基础信息',fmt:v=>'<span class="nv-port" title="'+nvEsc(v)+'">'+nvEsc(v)+'</span>'},
-  {k:'termname',label:'Terminal Name',def:1,g:'基础信息',txt:v=>v,fmt:v=>v?'<span class="nv-pname" title="'+nvEsc(v)+'">'+nvEsc(v)+'</span>':'<span class="nv-na">—</span>'},
-  {k:'operator',label:'Opr',def:1,g:'基础信息'},
-  {k:'eta',label:'ETA',def:1,g:'时间',txt:v=>v?String(v).slice(0,16):'',fmt:v=>nvDT(v)},
-  {k:'etb',label:'ETB',def:1,g:'时间',txt:v=>v?String(v).slice(0,16):'',fmt:v=>nvDT(v)},
-  {k:'etd',label:'ETD',def:1,g:'时间',txt:v=>v?String(v).slice(0,16):'',fmt:v=>nvDT(v)},
-  {k:'wait',label:'Wait(h)',def:1,g:'作业',num:true,fmt:(v)=>v==null?'—':'<span class="'+(v>24?'bad':(v>6?'warn':'good'))+'">'+nvF(v,1)+'</span>'},
-  {k:'stay',label:'Stay(h)',def:1,g:'作业',num:true,fmt:v=>nvF(v,1)},
-  {k:'mph',label:'MPH',def:1,g:'作业',num:true,fmt:v=>nvF(v,1)},
-  {k:'moves',label:'Moves',def:1,g:'作业',num:true,d:0},
-  {k:'dis',label:'Dis',def:1,g:'作业',num:true,d:0},
-  {k:'load',label:'Load',def:1,g:'作业',num:true,d:0},
-  {k:'discharge_full_20gp',label:"Dis F20 · 卸20'重箱",def:0,g:'箱量明细（20/40 尺 空/重）',num:true,d:0},
-  {k:'discharge_empty_20gp',label:"Dis E20 · 卸20'空箱",def:0,g:'箱量明细（20/40 尺 空/重）',num:true,d:0},
-  {k:'discharge_full_40hc',label:"Dis F40 · 卸40'重箱",def:0,g:'箱量明细（20/40 尺 空/重）',num:true,d:0},
-  {k:'discharge_empty_40hc',label:"Dis E40 · 卸40'空箱",def:0,g:'箱量明细（20/40 尺 空/重）',num:true,d:0},
-  {k:'load_full_20gp',label:"Load F20 · 装20'重箱",def:0,g:'箱量明细（20/40 尺 空/重）',num:true,d:0},
-  {k:'load_empty_20gp',label:"Load E20 · 装20'空箱",def:0,g:'箱量明细（20/40 尺 空/重）',num:true,d:0},
-  {k:'load_full_40hc',label:"Load F40 · 装40'重箱",def:0,g:'箱量明细（20/40 尺 空/重）',num:true,d:0},
-  {k:'load_empty_40hc',label:"Load E40 · 装40'空箱",def:0,g:'箱量明细（20/40 尺 空/重）',num:true,d:0},
-  {k:'arr_fuel_oil',label:'Arr FO',def:0,g:'燃油',num:true},
-  {k:'arr_lsfo',label:'Arr LSFO',def:0,g:'燃油',num:true},
-  {k:'arr_diesel_oil',label:'Arr DO',def:0,g:'燃油',num:true},
-  {k:'arr_lsdo',label:'Arr LSDO',def:0,g:'燃油',num:true},
-  {k:'dep_fuel_oil',label:'Dep FO',def:0,g:'燃油',num:true},
-  {k:'dep_lsfo',label:'Dep LSFO',def:0,g:'燃油',num:true},
-  {k:'dep_diesel_oil',label:'Dep DO',def:0,g:'燃油',num:true},
-  {k:'dep_lsdo',label:'Dep LSDO',def:0,g:'燃油',num:true},
-  {k:'restows',label:'Restows',def:0,g:'其他',num:true,d:0},
-  {k:'vessel_mpgh',label:'Vessel MPGH',def:0,g:'其他',num:true}
+  {k:'vv',label:'Vessel / Voyage',def:1,g:'Basics',fmt:v=>'<span class="nv-voy">'+nvEsc(v)+'</span>'},
+  {k:'ship',label:'Ship Name',def:1,g:'Basics',txt:v=>v||'Name not found',fmt:(v,r)=>nvShipCell(r.vv)},
+  {k:'term',label:'Terminal',def:1,g:'Basics',fmt:v=>'<span class="nv-port" title="'+nvEsc(v)+'">'+nvEsc(v)+'</span>'},
+  {k:'termname',label:'Terminal Name',def:1,g:'Basics',txt:v=>v,fmt:v=>v?'<span class="nv-pname" title="'+nvEsc(v)+'">'+nvEsc(v)+'</span>':'<span class="nv-na">—</span>'},
+  {k:'operator',label:'Opr',def:1,g:'Basics'},
+  {k:'eta',label:'ETA',def:1,g:'Times',txt:v=>v?String(v).slice(0,16):'',fmt:v=>nvDT(v)},
+  {k:'etb',label:'ETB',def:1,g:'Times',txt:v=>v?String(v).slice(0,16):'',fmt:v=>nvDT(v)},
+  {k:'etd',label:'ETD',def:1,g:'Times',txt:v=>v?String(v).slice(0,16):'',fmt:v=>nvDT(v)},
+  {k:'wait',label:'Wait(h)',def:1,g:'Operations',num:true,
+   fmt:v=>nvMetric(v,{cap:72,d:1,tone:n=>n>24?'#c5221f':(n>6?'#b26a00':'#137333')})},
+  {k:'stay',label:'Stay(h)',def:1,g:'Operations',num:true,
+   fmt:v=>nvMetric(v,{cap:120,d:1,tone:n=>n>72?'#c5221f':(n>36?'#b26a00':'#6C4FC1')})},
+  {k:'mph',label:'MPH',def:1,g:'Operations',num:true,
+   fmt:v=>nvMetric(v,{cap:60,d:1,tone:n=>n>35?'#0E8C7F':(n>15?'#2E9E8F':'#77B7AC')})},
+  {k:'moves',label:'Moves',def:1,g:'Operations',num:true,d:0,
+   fmt:v=>nvMetric(v,{cap:1500,d:0,tone:n=>n>=1000?'#1F4E79':(n>=400?'#2E75B6':'#79A9DC')})},
+  {k:'dis',label:'Dis',def:1,g:'Operations',num:true,d:0},
+  {k:'load',label:'Load',def:1,g:'Operations',num:true,d:0},
+  {k:'discharge_full_20gp',label:"Dis F20 · 20' laden",def:0,g:'Container Detail (20/40 ft Empty / Laden)',num:true,d:0},
+  {k:'discharge_empty_20gp',label:"Dis E20 · 20' empty",def:0,g:'Container Detail (20/40 ft Empty / Laden)',num:true,d:0},
+  {k:'discharge_full_40hc',label:"Dis F40 · 40' laden",def:0,g:'Container Detail (20/40 ft Empty / Laden)',num:true,d:0},
+  {k:'discharge_empty_40hc',label:"Dis E40 · 40' empty",def:0,g:'Container Detail (20/40 ft Empty / Laden)',num:true,d:0},
+  {k:'load_full_20gp',label:"Load F20 · 20' laden",def:0,g:'Container Detail (20/40 ft Empty / Laden)',num:true,d:0},
+  {k:'load_empty_20gp',label:"Load E20 · 20' empty",def:0,g:'Container Detail (20/40 ft Empty / Laden)',num:true,d:0},
+  {k:'load_full_40hc',label:"Load F40 · 40' laden",def:0,g:'Container Detail (20/40 ft Empty / Laden)',num:true,d:0},
+  {k:'load_empty_40hc',label:"Load E40 · 40' empty",def:0,g:'Container Detail (20/40 ft Empty / Laden)',num:true,d:0},
+  {k:'arr_fuel_oil',label:'Arr FO',def:0,g:'Bunker',num:true},
+  {k:'arr_lsfo',label:'Arr LSFO',def:0,g:'Bunker',num:true},
+  {k:'arr_diesel_oil',label:'Arr DO',def:0,g:'Bunker',num:true},
+  {k:'arr_lsdo',label:'Arr LSDO',def:0,g:'Bunker',num:true},
+  {k:'dep_fuel_oil',label:'Dep FO',def:0,g:'Bunker',num:true},
+  {k:'dep_lsfo',label:'Dep LSFO',def:0,g:'Bunker',num:true},
+  {k:'dep_diesel_oil',label:'Dep DO',def:0,g:'Bunker',num:true},
+  {k:'dep_lsdo',label:'Dep LSDO',def:0,g:'Bunker',num:true},
+  {k:'restows',label:'Restows',def:0,g:'Other',num:true,d:0},
+  {k:'vessel_mpgh',label:'Vessel MPGH',def:0,g:'Other',num:true}
 ];
 function nvFullCols(){ return NV_FULL_COLS; }
 function nvFullRows(rows){
@@ -1348,16 +1543,21 @@ function nvFullRows(rows){
   }));
 }
 function nvRenderFull(){
-  const rows=nvFullRows(nvFilter('nvf','nvf_basis'));
-  rows.sort((a,b)=>String(a.eta||'').localeCompare(String(b.eta||''))||String(a.vv||'').localeCompare(String(b.vv||'')));
-  nvTable('nvf_table',nvFullCols(),rows);
+  const rows=nvFullSort(nvFullRows(nvFilter('nvf','nvf_basis')));
+  nvTable('nvf_table',nvFullCols(),rows,0,{
+    group:r=>nvCode(r.vv),
+    groupLabel:(r,n)=>'<span class="nv-vg-ship">'+nvEsc(nvShip(r.vv)||'Name not found')+'</span>'
+      +'<span class="nv-vg-code">'+nvEsc(nvCode(r.vv))+'</span>'
+      +'<span class="nv-vg-lane">'+nvEsc(r.svc)+'</span>'
+      +'<span class="nv-vg-count">'+n+' calls</span>'
+  });
   const vessels=new Set(rows.map(r=>nvCode(r.vv))).size;
   const chip=document.getElementById('nvf_chip');
   if(chip) chip.textContent=vessels.toLocaleString('en-US')+' vessels · '+rows.length.toLocaleString('en-US')+' rows';
   const note=document.getElementById('nvf_note');
-  if(note) note.innerHTML='共 <b>'+rows.length.toLocaleString('en-US')+'</b> 条挂靠（数据源全量 '+((DATA||[]).length).toLocaleString('en-US')
-    +' 条，Service Type O 航线已隐藏）· <b>默认只显示 CUL</b>，切到 All operators 可看全部 · <b>默认按 ETA 展示今天往前 15 天 ~ 未来 1 个月</b>，可用日期框 / 默认窗口 / ±3M / All dates 调整 · '
-    +'Terminal / Terminal Name 取自 nodes.json · 点 ⚙ Columns 勾选 Lane Name（航线全称）、20/40 尺空重箱与燃油列（默认隐藏，导出 Excel 同步）。';
+  if(note) note.innerHTML='<b>'+rows.length.toLocaleString('en-US')+'</b>  port calls (source total '+((DATA||[]).length).toLocaleString('en-US')
+    +' rows, Service Type O lanes hidden) · <b>CUL only by default</b>; switch to All operators to see everything · <b>Default ETA window: 15 days back to 1 month ahead</b>; adjust with the date boxes, Default window or All dates · '
+    +'Terminal / Terminal Name come from nodes.json · Use ⚙ Columns to enable Lane Name (full service name), 20/40 ft empty/laden and bunker columns (hidden by default, mirrored in the Excel export).';
 }
 function nvExportFull(){
   nvExportSheets([{id:'nvf_table',name:'Full Schedule',title:'Full Schedule',pfx:'nvf'}],'Full_Schedule');
@@ -1395,7 +1595,7 @@ function nvRenderWait(){
   const totalWait=valid.reduce((s,r)=>s+r.wait_time,0);
   const avgWait=valid.length?totalWait/valid.length:0;
   const over=valid.filter(r=>r.wait_time>nvWaitThr(r.terminal)).length;
-  const thrTxt=NV.waitHours?('统一 '+NV.waitHours+'h'):'CNSHA / CNNGB 12h，其他港口 6h';
+  const thrTxt=NV.waitHours?('flat '+NV.waitHours+'h'):'CNSHA / CNNGB 12h, other ports 6h';
   nvKpis('nvw_kpis',[
     {v:valid.length.toLocaleString('en-US'),l:'Terminal calls with wait',s:'of '+rows.length.toLocaleString('en-US')+' calls in window'},
     {v:nvF(avgWait,1)+'h',l:'Avg Wait',cls:'amber'},
@@ -1446,13 +1646,13 @@ function nvRenderWait(){
   });
   nvTrend('nvw_trend',trend);
   const note=document.getElementById('nvw_note');
-  if(note) note.innerHTML='口径：等泊 = <b>wait_time (Arrival → Berth)</b>；BOA 窗口当前为 <b>'+thrTxt
-    +'</b>（Over-range 可切换）。按 <b>Terminal（8 位码头代码）归并</b>，阈值与区域按前 5 / 2 位港码判定。'
-    +' 数据源仍是 <b>bi_vessel_departure.csv</b>，没有 Remark / BOA 备注字段，因此不提供 remark 归因分类；'
-    +'「BOA」按阈值推算，与 CUL Daily Movement 的 master 表口径不同 · 默认只显示 CUL，ETA 窗口为过去 15 天 ~ 未来 1 个月。';
+  if(note) note.innerHTML='Definition: waiting = <b>wait_time (Arrival → Berth)</b>; BOA window is now <b>'+thrTxt
+    +'</b> (switchable via Over-range). Grouped by <b>Terminal (8-char code)</b>; thresholds and regions from the first 5 / 2 port-code characters.'
+    +' Source is still <b>bi_vessel_departure.csv</b>; it has no Remark / BOA field, so no remark attribution is offered; '
+    +'BOA is estimated from thresholds and differs from the CUL Daily Movement master table · CUL only by default, ETA window = 15 days back to 1 month ahead.';
   const tn=document.getElementById('nvw_tnote');
-  if(tn) tn.innerHTML='按平均等泊时长降序。BOA rate = 窗口内靠泊的挂靠数 / 总挂靠数；空值（无 wait_time）不参与统计。'
-    +' 数据缺失：约 '+(rows.length-valid.length).toLocaleString('en-US')+' 条挂靠没有等泊时间。';
+  if(tn) tn.innerHTML='Sorted by average waiting time. BOA rate = calls inside the window / total calls; blank wait_time is excluded.'
+    +' Missing data: about '+(rows.length-valid.length).toLocaleString('en-US')+' calls have no waiting time.';
   const wc=document.getElementById('nvw_chip');
   if(wc) wc.textContent=valid.length.toLocaleString('en-US')+' calls · '+byTerm.length+' terminals';
 }
@@ -1492,14 +1692,14 @@ function nvSumGroup(rows,keyFn,extra){
 }
 function nvCallRows(){
   const basis=nvVal('nvc_basis')||'arrived_anchorage';
-  const from=nvVal('nvc_from'),to=nvVal('nvc_to'),svc=nvVal('nvc_svc'),op=nvVal('nvc_op');
+  const from=nvVal('nvc_from'),to=nvVal('nvc_to');
   const q=String(nvVal('nvc_q')||'').trim().toLowerCase();
   return (DATA||[]).filter(r=>{
     const d=nvDate(r,basis);
     if(from&&d&&d<from) return false;
     if(to&&d&&d>to) return false;
-    if(svc&&r.svc!==svc) return false;
-    if(op&&r.operator!==op) return false;
+    if(!nvMsHas('nvc_svc',r.svc)) return false;
+    if(!nvMsHas('nvc_op',r.operator)) return false;
     if(q){
       const hay=(String(r.vessel_voyage||'')+' '+nvShip(r.vessel_voyage)+' '+nvCode(r.vessel_voyage)
         +' '+String(r.svc||'')+' '+nvLaneName(r.svc)+' '+String(r.terminal||'')+' '+nvTermName(r.terminal)).toLowerCase();
@@ -1528,7 +1728,7 @@ function nvRenderCalls(){
     {v:nvF(avgWait,1)+'h',l:'Avg Wait',cls:'green',s:wait.length.toLocaleString('en-US')+' calls with data'}
   ]);
   const vesselCols=[
-    {k:'name',label:'Vessel',txt:v=>v||'船名未收录',fmt:(v,r)=>v?'<span class="nv-ship">'+nvEsc(v)+'</span>':'<span class="nv-na">船名未收录</span>'},
+    {k:'name',label:'Vessel',txt:v=>v||'Name not found',fmt:(v,r)=>v?'<span class="nv-ship">'+nvEsc(v)+'</span>':'<span class="nv-na">Name not found</span>'},
     {k:'k',label:'Code',txt:v=>v,fmt:v=>'<span class="nv-code">'+nvEsc(v)+'</span>'},
     {k:'lanes',label:'Lanes',num:true,d:0},
     {k:'calls',label:'Calls',num:true,d:0},
@@ -1571,11 +1771,11 @@ function nvRenderCalls(){
   const detail=nvFullRows(rows).sort((a,b)=>String(a[dKey]||'').localeCompare(String(b[dKey]||'')));
   nvTable('nvc_detail',nvFullCols(),detail,500);
   const dn=document.getElementById('nvc_detail_note');
-  if(dn) dn.textContent='共 '+detail.length.toLocaleString('en-US')+' 条，表格最多显示 500 条；导出 Excel 会包含全部 '+detail.length.toLocaleString('en-US')+' 条（可用 ⚙ Columns 选择列）';
+  if(dn) dn.textContent=''+detail.length.toLocaleString('en-US')+' rows; the table shows up to 500, the Excel export contains all '+detail.length.toLocaleString('en-US')+' rows (use ⚙ Columns to pick columns)';
   const note=document.getElementById('nvc_note');
-  if(note) note.innerHTML='<b>1 call</b> = 一条 '+bLabel+' 落在所选窗口内的码头挂靠记录（数据源已按 船代码 + Terminal + 离港时间 去重，TBN 待定船已排除）。'
-    +' 与 CUL Daily Movement 不同，本页数据 <b>包含未来计划挂靠</b>，且没有 Remark 备注，因此不做 bunker-only / remark 归因剔除。'
-    +' 按 ' + (nvVal('nvc_from')||'不限') + ' → ' + (nvVal('nvc_to')||'不限') + '（'+bLabel+'）统计 · <b>默认只显示 CUL</b>。';
+  if(note) note.innerHTML='<b>1 call</b> = one port call with '+bLabel+' inside the selected window (feed de-duplicated by vessel code + Terminal + departure time; TBN placeholders excluded).'
+    +' Unlike CUL Daily Movement this feed <b>includes future planned calls</b> and has no Remark field, so no bunker-only / remark exclusion is applied.'
+    +' Window ' + (nvVal('nvc_from')||'Any') + ' → ' + (nvVal('nvc_to')||'Any') + ' ('+bLabel+') · <b>CUL only by default</b>.';
   const chip=document.getElementById('nvc_chip');
   if(chip) chip.textContent=rows.length.toLocaleString('en-US')+' calls · '+byVessel.length+' vessels';
 }
@@ -1592,13 +1792,13 @@ function nvExportCalls(){
 /* ======================= 4. Productivity ======================= */
 function nvProdRows(){
   const basis=nvVal('nvp_basis'),from=nvVal('nvp_from'),to=nvVal('nvp_to');
-  const svc=nvVal('nvp_svc'),op=nvVal('nvp_op'),q=String(nvVal('nvp_q')||'').trim().toLowerCase();
+  const q=String(nvVal('nvp_q')||'').trim().toLowerCase();
   return (DATA||[]).filter(r=>{
     const d=nvDate(r,basis);
     if(from&&d&&d<from) return false;
     if(to&&d&&d>to) return false;
-    if(svc&&r.svc!==svc) return false;
-    if(op&&r.operator!==op) return false;
+    if(!nvMsHas('nvp_svc',r.svc)) return false;
+    if(!nvMsHas('nvp_op',r.operator)) return false;
     if(nvMph(r)==null) return false;
     if(q){
       const hay=(String(r.vessel_voyage||'')+' '+nvShip(r.vessel_voyage)+' '+nvTerm(r.terminal)+' '+nvTermName(r.terminal)
@@ -1660,7 +1860,7 @@ function nvRenderProd(){
     {k:'avgStay',label:'Avg Stay(h)',num:true,fmt:v=>nvF(v,1)}
   ];
   const vslCols=[
-    {k:'name',label:'Vessel',txt:v=>v||'船名未收录',fmt:(v,r)=>v?'<span class="nv-ship">'+nvEsc(v)+'</span>':'<span class="nv-na">船名未收录</span>'},
+    {k:'name',label:'Vessel',txt:v=>v||'Name not found',fmt:(v,r)=>v?'<span class="nv-ship">'+nvEsc(v)+'</span>':'<span class="nv-na">Name not found</span>'},
     {k:'k',label:'Code',txt:v=>v,fmt:v=>'<span class="nv-code">'+nvEsc(v)+'</span>'},
     {k:'lane',label:'Lane'},
     {k:'calls',label:'Calls',num:true,d:0},
@@ -1691,10 +1891,10 @@ function nvRenderProd(){
     return {m:m,value:mph,label:nvF(mph,1)+' MPH · '+x.calls+' calls'};
   }));
   const note=document.getElementById('nvp_note');
-  if(note) note.innerHTML='<b>MPH</b> = Moves ÷ (Port Stay − Wait)，即实际在泊作业小时的效率；<b>Avg per call</b> = 每条挂靠 MPH 的算术平均。'
-    +' 仅统计 Moves / Stay / Wait 三项齐全的挂靠（全量 '+((DATA||[]).length).toLocaleString('en-US')
-    +' 条中有效 '+all.length.toLocaleString('en-US')+' 条）。按 Terminal、按船、按航线三个维度同时给出，'
-    +' 「Min calls ≥ '+minCalls+'」用于过滤小样本 · <b>默认只显示 CUL</b>，ETA 窗口为过去 15 天 ~ 未来 1 个月。';
+  if(note) note.innerHTML='<b>MPH</b> = Moves ÷ (Port Stay − Wait), i.e. moves per working berth hour; <b>Avg per call</b> is the arithmetic mean of per-call MPH.'
+    +' Only calls with all of Moves / Stay / Wait are counted ('+((DATA||[]).length).toLocaleString('en-US')
+    +' rows in the feed, '+all.length.toLocaleString('en-US')+' valid). Shown by Terminal, by vessel and by lane at the same time; '
+    +' "Min calls ≥ '+minCalls+'" filters small samples · <b>CUL only by default</b>, ETA window = 15 days back to 1 month ahead.';
   const chip=document.getElementById('nvp_chip');
   if(chip) chip.textContent=all.length.toLocaleString('en-US')+' valid calls · '+byTerm.length+' terminals / '+byVessel.length+' vessels';
 }
@@ -1800,8 +2000,8 @@ function refreshLaneGate(){
   const total = codes.reduce((a, k) => a + cnt[k], 0);
   const el = document.getElementById('lane-hidden-note');
   if (el) {
-    el.textContent = codes.length ? ('已隐藏 ' + codes.length + ' 条 Service Type O 航线 · ' + total.toLocaleString() + ' 行') : '';
-    el.title = codes.length ? ('不展示的航线：' + codes.join(' / ')) : '';
+    el.textContent = codes.length ? (codes.length + ' Service Type O lanes hidden · ' + total.toLocaleString() + ' rows') : '';
+    el.title = codes.length ? ('Hidden lanes: ' + codes.join(' / ')) : '';
   }
   return codes.length;
 }
@@ -2142,8 +2342,8 @@ let DPS_SVC_HIDDEN_COUNT = 0;           // lanes skipped because their Service T
 const DPS_DEFAULT_OPERATOR = 'CUL';     // preselected operator
 let dpsSvc = 'REX';
 let dpsFrom = '', dpsTo = '';
-let dpsOperator = DPS_DEFAULT_OPERATOR, dpsOperatorTouched = false;
-let dpsVessel = '';                     // '' = all
+let dpsOperator = [DPS_DEFAULT_OPERATOR], dpsOperatorTouched = false;   // [] = all operators
+let dpsVessel = [];                     // [] = all vessels
 let dpsQuery = '';                      // free text: vessel name / code / voyage
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
 let dpsMerge = false;                   // false = one row per voyage, true = one row per vessel
@@ -2184,29 +2384,29 @@ function dpsMatchQuery(r){
 }
 function dpsFilteredRows(){
   return dpsSvcRows().filter(r=>
-    (!dpsOperator || r.operator===dpsOperator) &&
-    (!dpsVessel   || dpsVesselCode(r.vessel_voyage)===dpsVessel) &&
+    (!dpsOperator.length || dpsOperator.indexOf(r.operator)>=0) &&
+    (!dpsVessel.length   || dpsVessel.indexOf(dpsVesselCode(r.vessel_voyage))>=0) &&
     dpsMatchQuery(r)
   );
 }
-function dpsSetFilter(kind, val){
-  if(kind==='operator'){
-    dpsOperator=val; dpsOperatorTouched=true;
-    dpsBuildPills();          // lanes without rows for this operator drop off the pill row
-    dpsFillFilters();         // the lane may have changed, so rebuild the vessel list
-  } else dpsVessel=val;
+function dpsOnFilterChange(){
+  dpsOperatorTouched=true;
+  dpsOperator=nvMsSelected('dps_operator')||[];
+  dpsVessel=nvMsSelected('dps_vessel')||[];
+  dpsBuildPills();
+  dpsFillFilters();
   renderDps();
 }
 // Typing filters the rows live (vessel name, code or voyage number).
 function dpsSetQuery(v){ dpsQuery=v; renderDps(); }
-// Pressing Enter / leaving the box on a service code jumps to that service (航线筛选).
+// Pressing Enter / leaving the box on a service code jumps to that service (lane filter).
 function dpsJumpService(v){
   const q=String(v||'').trim().toUpperCase();
   if(!q) return;
   if(DPS_SERVICES.indexOf(q)<0){
     // A real lane that is intentionally not on screen: say why instead of doing nothing.
-    if(dpsLaneHidden(q)) dpsNote(q+' 是 Service Type O 航线，按规则不展示');
-    else if(dpsOperator) dpsNote(q+' 在 Operator '+dpsOperator+' 下没有记录（切到 All operators 可查看）');
+    if(dpsLaneHidden(q)) dpsNote(q+' is a Service Type O lane and is hidden by rule');
+    else if(dpsOperator.length) dpsNote(q+' has no records for the selected operators (choose All operators to view)');
     return;
   }
   dpsSvc=q; dpsQuery=''; dpsNote('');
@@ -2218,23 +2418,23 @@ function dpsJumpService(v){
 // Rebuild the Operator / Vessel dropdowns.  Operators come from the whole feed (so the choice
 // survives a lane switch), vessels from the lane currently on screen.
 function dpsFillFilters(){
-  const opSel=document.getElementById('dps_operator'), vSel=document.getElementById('dps_vessel');
-  if(!opSel||!vSel) return;
+  if(!document.getElementById('nvms_dps_operator')||!document.getElementById('nvms_dps_vessel')) return;
+  if(!DATA||!DATA.length) return;   // wait for the feed before creating the default selection
   const rows=dpsSvcRows();
   const ops=[]; (DATA||[]).forEach(r=>{ if(r.operator && ops.indexOf(r.operator)===-1) ops.push(r.operator); }); ops.sort();
-  // CUL stays preselected; if the feed has no CUL at all fall back to "All operators".
-  if(!dpsOperatorTouched && ops.indexOf(DPS_DEFAULT_OPERATOR)>=0) dpsOperator=DPS_DEFAULT_OPERATOR;
-  if(dpsOperator && ops.indexOf(dpsOperator)===-1) dpsOperator='';
-  opSel.innerHTML='<option value="">All operators</option>'+ops.map(o=>
-    '<option value="'+o+'"'+(o===dpsOperator?' selected':'')+'>'+o+'</option>').join('');
+  if(!dpsOperatorTouched && ops.indexOf(DPS_DEFAULT_OPERATOR)>=0) dpsOperator=[DPS_DEFAULT_OPERATOR];
+  dpsOperator=dpsOperator.filter(o=>ops.indexOf(o)>=0);
   const codes=[];
   rows.forEach(r=>{ const c=dpsVesselCode(r.vessel_voyage); if(c && codes.indexOf(c)===-1) codes.push(c); }); codes.sort();
-  if(dpsVessel && codes.indexOf(dpsVessel)===-1) dpsVessel='';
-  vSel.innerHTML='<option value="">All vessels</option>'+codes.map(c=>{
+  dpsVessel=dpsVessel.filter(c=>codes.indexOf(c)>=0);
+  const onch=()=>dpsOnFilterChange();
+  nvMsFill('dps_operator','operators',ops.map(o=>({v:o,t:o})),dpsOperator,'All operators',onch);
+  nvMsFill('dps_vessel','vessels',codes.map(c=>{
     const nm=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[c])||'';
-    const label=nm ? (nm+' ('+c+')') : c;
-    return '<option value="'+c+'" title="'+label+'"'+(c===dpsVessel?' selected':'')+'>'+label+'</option>';
-  }).join('');
+    return {v:c,t:nm?(nm+' ('+c+')'):c};
+  }),dpsVessel,'All vessels',onch);
+  dpsOperator=nvMsSelected('dps_operator')||[];
+  dpsVessel=nvMsSelected('dps_vessel')||[];
 }
 // A voyage label is 4-char vessel code + voyage number + direction letter,
 // e.g. CSJ72633W / CSJ72633E = same vessel, same voyage number, opposite legs.
@@ -2535,7 +2735,7 @@ function dpsBuildPills(){
   (DATA||[]).forEach(function(r){
     const k=String(r.svc||'').toUpperCase(); if(!k) return;
     if(dpsLaneHidden(k)){ hid[k]=1; return; }
-    if(dpsOperator && r.operator!==dpsOperator) return;   // nothing for this operator -> no pill
+    if(dpsOperator.length && dpsOperator.indexOf(r.operator)<0) return;   // nothing for these operators -> no pill
     cnt[k]=(cnt[k]||0)+1;
   });
   DPS_SVC_COUNT=cnt;
@@ -2543,12 +2743,12 @@ function dpsBuildPills(){
   DPS_SERVICES=Object.keys(cnt).sort((a,b)=>(cnt[b]-cnt[a])||a.localeCompare(b));
   if(DPS_SERVICES.indexOf(dpsSvc)<0) dpsSvc=DPS_SERVICES[0]||'';
   if(!DPS_SERVICES.length){
-    pills.innerHTML='<span style="color:#8a8f98;font-size:12px;padding:4px 2px;">Operator '+(dpsOperator||'All')+' 下没有航线记录</span>';
+    pills.innerHTML='<span style="color:#8a8f98;font-size:12px;padding:4px 2px;">No lane records for the selected operators</span>';
     return;
   }
   pills.innerHTML=DPS_SERVICES.map(s=>{
     const nm=dpsLaneName(s), tp=dpsLaneType(s);
-    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+cnt[s]+' 条记录';
+    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+cnt[s]+' rows';
     return '<span class="dps-pill'+(s===dpsSvc?' active':'')+'" data-svc="'+s+'" title="'+dpsEsc(tip)+'" onclick="dpsSelectSvc(\''+s+'\')">'+s+'</span>';
   }).join('');
 }
@@ -2628,10 +2828,10 @@ function renderDps(){
   }
   const rows=dpsFilteredRows();
   if(!rows.length){
-    const why = (dpsOperator||dpsVessel||String(dpsQuery||'').trim())
-      ? ('没有符合筛选条件的航次（Operator: '+(dpsOperator||'All')+' / Vessel: '+(dpsVessel||'All')
-         +(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'')+'）')
-      : ('服务 '+dpsSvc+' 在当前数据源中没有记录');
+    const why = (dpsOperator.length||dpsVessel.length||String(dpsQuery||'').trim())
+      ? ('No voyages match the filters (Operator: '+(dpsOperator.length?dpsOperator.join('/'):'All')+' / Vessel: '+(dpsVessel.length?dpsVessel.join('/'):'All')
+         +(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'')+')')
+      : ('Lane '+dpsSvc+' has no records in the current feed');
     wrap.innerHTML='<div class="dps-empty">'+why+'</div>'; if(meta)meta.textContent=''; dpsLastSel=[]; dpsLastMax=1; return;
   }
   const built=dpsBuildBlocks(rows);
@@ -2661,9 +2861,9 @@ function renderDps(){
     const pfCells=colArr.map(dpsPlanTd).join('');
     const rmCells=colArr.map(dpsRemarkTd).join('');
     const known=!!(vcode && nmap[vcode]);
-    const vcTip=known ? (vname+' / '+vcode) : ('代码 '+vcode+' 暂未收录船名');
+    const vcTip=known ? (vname+' / '+vcode) : ('Code '+vcode+' has no vessel name yet');
     const vc='<span class="vc-name'+(known?'':' vc-noname')+'" title="'+dpsEsc(vcTip)+'">'+dpsEsc(vname||'—')+'</span>'+
-             (known?'<span class="vc-code">'+dpsEsc(vcode)+'</span>':'<span class="vc-code vc-na">船名未收录</span>')+
+             (known?'<span class="vc-code">'+dpsEsc(vcode)+'</span>':'<span class="vc-code vc-na">Name not found</span>')+
              '<span class="vc-voy">'+dpsEsc(voy)+'</span>';
     html+='<tr class="dps-block-start dps-row-port"><td class="dps-lbl">Port</td><td class="dps-vesselcol">'+vc+'</td>'+portCells+'</tr>';
     html+='<tr class="dps-row-voy"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol"></td>'+voyCells+'</tr>';
@@ -2677,13 +2877,13 @@ function renderDps(){
   wrap.innerHTML=html;
   const cnt=dpsCounts(sel);
   const alignTxt = built.aligned
-    ? ('已对齐 '+maxCols+' 列')
-    : '未对齐：航序不统一，按挂靠顺序铺开';
-  const dropTxt = built.split ? (' · 个别船舶航次较多，已分 '+built.split+' 段续行') : '';
-  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' 艘船 / '+cnt.voyages+' 个航次 · '+sel.length+' 行'+(built.merge?'（每船一行）':'（W/E 同行）')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · 该航线在所选日期没有记录，已显示'+(dpsOperator?(' 全部 '+dpsOperator):' 全部')+' 数据':'')+dropTxt+(noNameCnt?' · '+noNameCnt+' 行船名未收录（显示 4 位船代码）':'')+(DPS_SVC_HIDDEN_COUNT?' · 已隐藏 '+DPS_SVC_HIDDEN_COUNT+' 条 Service Type O 航线':'');
+    ? ('Aligned to '+maxCols+' columns')
+    : 'Not aligned: port rotation differs; laid out by call order';
+  const dropTxt = built.split ? (' · '+built.split+' vessel(s) split over continued rows') : '';
+  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+(built.widened?' · no records in the selected date window; all data shown':'')+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'');
   if(meta) meta.title = built.aligned
-    ? '每个港口固定在某一列，方便上下对比不同船舶'
-    : ('该航线在数据里挂靠顺序不统一（或港口太分散），强行对齐会更乱，因此按每条航次自己的顺序铺开');
+    ? 'Each port is pinned to one column so vessels can be compared vertically'
+    : ('Port rotation is inconsistent (or ports too scattered) in this lane; forcing alignment would be messier, so each voyage keeps its own call order');
 }
 
 /* ===== Excel export: minimal XLSX writer (no external library) =====
@@ -2856,7 +3056,7 @@ function dpsWorkbookSheets(){
 function dpsSheetPart(svc, tabName){
   const prevSvc=dpsSvc, prevOp=dpsOperator, prevVes=dpsVessel, prevQ=dpsQuery;
   let rows=[], built={blocks:[],aligned:false,merge:!!dpsMerge,widened:false,split:0};
-  dpsSvc=svc; dpsOperator=''; dpsVessel=''; dpsQuery='';
+  dpsSvc=svc; dpsOperator=[]; dpsVessel=[]; dpsQuery='';
   try{ rows=dpsFilteredRows(); built=dpsBuildBlocks(rows); }
   finally{ dpsSvc=prevSvc; dpsOperator=prevOp; dpsVessel=prevVes; dpsQuery=prevQ; }
   const sel=built.blocks||[];
@@ -2864,11 +3064,11 @@ function dpsSheetPart(svc, tabName){
   const nCols=2+maxPorts;
   const rowsXml=[]; let rowNum=1;
   const cntE=dpsCounts(sel);
-  const alignTxt=built.aligned?('已对齐 '+maxPorts+' 列'):'按挂靠顺序铺开';
-  const groupTxt=built.merge?'每船一行':'一航次号一行（W/E 同行）';
-  const dropTxt=(built.merge&&built.split)?(' / 其中 '+built.split+' 块为续行'):'';
-  const fltTxt='Operator: All operators（全量导出，不含页面筛选）';
-  const aliasTxt=(tabName!==svc)?('   数据代码 '+svc):'';
+  const alignTxt=built.aligned?('Aligned to '+maxPorts+' columns'):'Laid out by call order';
+  const groupTxt=built.merge?'One row per vessel':'One row per voyage (W/E together)';
+  const dropTxt=(built.merge&&built.split)?(' / '+built.split+' continued block(s)'):'';
+  const fltTxt='Operator: All operators (full export, page filters excluded)';
+  const aliasTxt=(tabName!==svc)?('   Feed lane code '+svc):'';
   // Actual span of the calls kept here: a voyage that straddles the window keeps all of its
   // calls, so a sheet may start before From or end after To — state it instead of looking wrong.
   let dataMin='', dataMax='';
@@ -2877,16 +3077,16 @@ function dpsSheetPart(svc, tabName){
     if(!dataMin||t<dataMin) dataMin=t;
     if(!dataMax||t>dataMax) dataMax=t;
   }); });
-  const rangeTxt=sel.length?('   数据 '+dataMin.slice(0,10)+' ~ '+dataMax.slice(0,10)):'';
+  const rangeTxt=sel.length?('   Data '+dataMin.slice(0,10)+' ~ '+dataMax.slice(0,10)):'';
   let metaText;
   if(!sel.length){
     metaText=tabName+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')
-      +'   该航线在 Proforma 日期窗内没有记录   '+fltTxt+aliasTxt;
+      +'   No records for this lane in the Proforma date window   '+fltTxt+aliasTxt;
   } else {
     metaText=tabName+'   Proforma   '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+rangeTxt+'   ('
-      +cntE.vessels+' 艘船 / '+cntE.voyages+' 个航次 / '+sel.length+' 行 / '+groupTxt+' / '+alignTxt
+      +cntE.vessels+' vessels / '+cntE.voyages+' voyages / '+sel.length+' rows / '+groupTxt+' / '+alignTxt
       +dropTxt+')   '+fltTxt+aliasTxt
-      +(built.widened?'   该航线在所选日期没有记录，已显示全部数据':'');
+      +(built.widened?'   No records in the selected date window; all data shown':'');
   }
   rowsXml.push('<row r="1" ht="22" customHeight="1">'+xlsxStrCell('A1',metaText,1)+'</row>');
   rowNum=2;
@@ -2932,7 +3132,7 @@ function dpsSheetPart(svc, tabName){
     });
     // Vessel cell carries both the name and the 4-letter code (the code is what ops quote).
     const knownExp=!!(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[vcode]);
-    const vLabel=(vname===vcode) ? (vname+'\n'+(knownExp?'':'船名未收录\n')+voyLabel) : (vname+'\n'+vcode+'\n'+voyLabel);
+    const vLabel=(vname===vcode) ? (vname+'\n'+(knownExp?'':'Name not found\n')+voyLabel) : (vname+'\n'+vcode+'\n'+voyLabel);
     put('Port', vLabel, portCells, 3, true);
     put('Voyage', '', one(function(c){ return dpsVoyLabel(c.vessel_voyage); }), 4, false);
     put('ETA', '', one(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
@@ -2962,12 +3162,12 @@ function dpsSheetPart(svc, tabName){
 }
 let dpsSheetPartFirst=null;
 function exportDpsXlsx(){
-  if(!DATA || !DATA.length){ alert('数据还没加载完成，请稍后再试。'); return; }
+  if(!DATA || !DATA.length){ alert('Data is still loading. Please try again shortly.'); return; }
   const sheets=dpsWorkbookSheets();
-  if(!sheets.length){ alert('当前没有可导出的航线。'); return; }
+  if(!sheets.length){ alert('No lanes to export.'); return; }
   const btn=document.querySelector('button[onclick="exportDpsXlsx()"]');
   const oldTxt=btn?btn.textContent:'';
-  if(btn){ btn.disabled=true; btn.textContent='导出中…'; }
+  if(btn){ btn.disabled=true; btn.textContent='Exporting…'; }
   // Let the button repaint before the synchronous build loop takes over the thread.
   setTimeout(function(){
     try{
@@ -3025,10 +3225,10 @@ function exportDpsXlsx(){
       a.click();
       setTimeout(function(){ try{ URL.revokeObjectURL(a.href); }catch(e){} if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
       if(emptyCount){
-        alert('已导出 '+parts.length+' 条航线（每条一个 sheet，含该航线全部 operator）。\n其中 '+emptyCount+' 条在 Proforma 日期窗 '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+' 内没有记录，页内已标注。');
+        alert('Exported '+parts.length+' lanes (one sheet each, all operators included).\n'+emptyCount+' lanes had no records in the Proforma window '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+' and are flagged on the page.');
       }
     }catch(e){
-      alert('导出失败：'+(e&&e.message?e.message:e));
+      alert('Export failed: '+(e&&e.message?e.message:e));
     }finally{
       if(btn){ btn.disabled=false; btn.textContent=oldTxt||'Export Excel'; }
     }
