@@ -463,7 +463,7 @@ section.view.nv-view[hidden] { display:none; }
     </div>
   </div>
 </div>
-<label>Dep. From</label>
+<label>ETA From</label>
 <input type="date" id="f_from" />
 <label>To</label>
 <input type="date" id="f_to" />
@@ -496,7 +496,7 @@ section.view.nv-view[hidden] { display:none; }
 <div class="dps-toolbar">
   <label>From</label><input type="date" id="dps_from" onchange="renderDps()" />
   <label>To</label><input type="date" id="dps_to" onchange="renderDps()" />
-  <button class="btn btn-secondary" onclick="dpsResetRange()">Upcoming</button>
+  <button class="btn btn-secondary" onclick="dpsResetRange()" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
   <button class="btn btn-secondary" onclick="dpsAllRange()">All dates</button>
   <label>Operator</label>
   <select id="dps_operator" onchange="dpsSetFilter('operator', this.value)"><option value="">All operators</option></select>
@@ -586,6 +586,7 @@ section.view.nv-view[hidden] { display:none; }
     <select id="nvf_basis" onchange="nvRenderActive()"><option value="arrived_anchorage">ETA</option><option value="berth">ETB</option><option value="departure">ETD</option></select>
     <label>From</label><input type="date" id="nvf_from" onchange="nvRenderActive()" />
     <span class="nv-sep">–</span><input type="date" id="nvf_to" onchange="nvRenderActive()" />
+    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvf')" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
     <button class="nv-preset" onclick="nvFullWindow()">± 3M</button>
     <button class="nv-preset" onclick="nvFullAllDates()">All dates</button>
     <label>Lane</label><select id="nvf_svc" onchange="nvRenderActive()"></select>
@@ -600,7 +601,7 @@ section.view.nv-view[hidden] { display:none; }
   </div>
   <div class="nv-noteline"><div class="nv-note" id="nvf_note"></div><span class="nv-chip" id="nvf_chip">— vessels · — rows</span></div>
   <div class="nv-panel">
-    <div class="nv-panel-h"><span>&#128203; Full Schedule</span><small>每条挂靠一行 · 默认 CUL · 点表头排序 · 数据源 bi_vessel_departure.csv（Service Type O 航线已隐藏）</small></div>
+    <div class="nv-panel-h"><span>&#128203; Full Schedule</span><small>每条挂靠一行 · 默认 CUL · 默认按 ETA 展示过去 15 天 ~ 未来 1 个月 · 点表头排序 · 数据源 bi_vessel_departure.csv（Service Type O 航线已隐藏）</small></div>
     <div class="nv-scroll" id="nvf_scroll"><table class="nv-table" id="nvf_table"></table></div>
   </div>
 </section>
@@ -611,6 +612,7 @@ section.view.nv-view[hidden] { display:none; }
     <select id="nvw_basis" onchange="nvRenderActive()"><option value="arrived_anchorage">ETA</option><option value="berth">ETB</option><option value="departure">ETD</option></select>
     <label>From</label><input type="date" id="nvw_from" onchange="nvRenderActive()" />
     <span class="nv-sep">–</span><input type="date" id="nvw_to" onchange="nvRenderActive()" />
+    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvw')" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
     <label>Terminal</label><select id="nvw_term" onchange="nvRenderActive()"></select>
     <label>Lane</label><select id="nvw_svc" onchange="nvRenderActive()"></select>
     <label>Operator</label><select id="nvw_op" onchange="nvRenderActive()"></select>
@@ -654,9 +656,12 @@ section.view.nv-view[hidden] { display:none; }
 
 <section class="view nv-view" id="nv-calls" hidden>
   <div class="nv-ctl">
-    <label>ETB window</label>
+    <label>Date by</label>
+    <select id="nvc_basis" onchange="nvRenderActive()"><option value="arrived_anchorage">ETA</option><option value="berth">ETB</option><option value="departure">ETD</option></select>
+    <label>From</label>
     <input type="date" id="nvc_from" onchange="nvRenderActive()" />
     <span class="nv-sep">&rarr;</span><input type="date" id="nvc_to" onchange="nvRenderActive()" />
+    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvc')" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
     <span id="nvc_presets" style="display:inline-flex;gap:4px;">
       <button class="nv-preset" data-r="ytd" onclick="nvCallsPreset(this)">YTD</button>
       <button class="nv-preset" data-r="6m" onclick="nvCallsPreset(this)">6M</button>
@@ -706,6 +711,7 @@ section.view.nv-view[hidden] { display:none; }
     <select id="nvp_basis" onchange="nvRenderActive()"><option value="arrived_anchorage">ETA</option><option value="berth">ETB</option><option value="departure">ETD</option></select>
     <label>From</label><input type="date" id="nvp_from" onchange="nvRenderActive()" />
     <span class="nv-sep">–</span><input type="date" id="nvp_to" onchange="nvRenderActive()" />
+    <button class="nv-preset" onclick="nvApplyDefaultWindow('nvp')" title="ETA 口径：今天往前 15 天 ~ 未来 1 个月">默认窗口</button>
     <label>Lane</label><select id="nvp_svc" onchange="nvRenderActive()"></select>
     <label>Operator</label><select id="nvp_op" onchange="nvRenderActive()"></select>
     <label>Min calls ≥</label><input type="number" id="nvp_min" value="2" min="1" step="1" onchange="nvRenderActive()" />
@@ -779,6 +785,23 @@ function nvEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</
 function nvVal(id){ const e=document.getElementById(id); return e?e.value:''; }
 function nvDateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function nvAddDays(base,n){ const d=new Date(base.getTime()); d.setDate(d.getDate()+n); return nvDateStr(d); }
+/* One shared default planning window for all five tabs + Proforma: ETA based,
+   15 calendar days back through one calendar month ahead (clamped at month end). */
+function biDefaultWindow(){
+  const t=new Date(), hi=new Date(t.getTime()), day=hi.getDate();
+  hi.setDate(1); hi.setMonth(hi.getMonth()+1);
+  const last=new Date(hi.getFullYear(),hi.getMonth()+1,0).getDate();
+  hi.setDate(Math.min(day,last));
+  return {from:nvAddDays(t,-15),to:nvDateStr(hi)};
+}
+function nvApplyDefaultWindow(pfx){
+  const w=biDefaultWindow();
+  const a=document.getElementById(pfx+'_from'), b=document.getElementById(pfx+'_to');
+  if(a)a.value=w.from; if(b)b.value=w.to;
+  const s=document.getElementById(pfx+'_basis'); if(s)s.value='arrived_anchorage';
+  document.querySelectorAll('.nv-preset.sel').forEach(x=>x.classList.remove('sel'));
+  nvRenderActive();
+}
 function nvDate(r,basis){ return String(r[basis]||'').slice(0,10); }
 function nvTerm(t){ return String(t||'').toUpperCase().trim(); }          // full 8-char terminal code
 function nvPort(t){ return String(t||'').toUpperCase().slice(0,5); }       // 5-char port prefix (internal only)
@@ -1118,7 +1141,7 @@ function nvXlsxWorkbook(sheets,filename){
 }
 function nvMeta(pfx){
   const basis=nvVal(pfx+'_basis');
-  const b=basis?basis.replace('arrived_anchorage','ETA').replace('berth','ETB').replace('departure','ETD'):'ETB';
+  const b=basis?basis.replace('arrived_anchorage','ETA').replace('berth','ETB').replace('departure','ETD'):'ETA';
   const op=nvVal(pfx+'_op')||'All operators';
   const svc=nvVal(pfx+'_svc')||'All lanes';
   const from=nvVal(pfx+'_from')||'不限', to=nvVal(pfx+'_to')||'不限';
@@ -1169,7 +1192,7 @@ function nvFillSelect(id,list,allLabel){
 }
 const NV_KEEP_IDS=['nvf_basis','nvf_from','nvf_to','nvf_svc','nvf_op','nvf_vessel','nvf_q',
   'nvw_basis','nvw_from','nvw_to','nvw_term','nvw_svc','nvw_op','nvw_q',
-  'nvc_from','nvc_to','nvc_svc','nvc_op','nvc_q',
+  'nvc_basis','nvc_from','nvc_to','nvc_svc','nvc_op','nvc_q',
   'nvp_basis','nvp_from','nvp_to','nvp_svc','nvp_op','nvp_min','nvp_q'];
 function nvBuildControls(first){
   const saved={};
@@ -1186,14 +1209,13 @@ function nvBuildControls(first){
   nvFillSelect('nvf_vessel',vslOpts,'All vessels');
   nvFillSelect('nvw_term',terms.map(t=>({v:t,t:t+(nvTermName(t)?' · '+nvTermName(t):'')})),'All terminals');
   if(first){
-    const today=new Date(), y=today.getFullYear();
-    const lo=nvAddDays(today,-90), hi=nvAddDays(today,90);
-    // Full Schedule starts with NO date window ("Full"); the other three views use a planning window.
-    [['nvw_from',lo],['nvw_to',hi],['nvp_from',lo],['nvp_to',hi]].forEach(p=>{
-      const e=document.getElementById(p[0]); if(e) e.value=p[1];
+    // Every tab opens on the same ETA window: 15 days back -> one calendar month ahead.
+    const w=biDefaultWindow();
+    ['nvf','nvw','nvc','nvp'].forEach(p=>{
+      const a=document.getElementById(p+'_from'), b=document.getElementById(p+'_to');
+      if(a)a.value=w.from; if(b)b.value=w.to;
+      const s=document.getElementById(p+'_basis'); if(s)s.value='arrived_anchorage';
     });
-    const a=document.getElementById('nvc_from'), b=document.getElementById('nvc_to');
-    if(a)a.value=y+'-01-01'; if(b)b.value=y+'-12-31';
     const m=document.getElementById('nvp_min'); if(m)m.value='2';
     // Operator defaults to CUL only; "All operators" is still one click away.
     const cul=ops.indexOf('CUL')>=0?'CUL':'';
@@ -1328,7 +1350,7 @@ function nvRenderFull(){
   if(chip) chip.textContent=vessels.toLocaleString('en-US')+' vessels · '+rows.length.toLocaleString('en-US')+' rows';
   const note=document.getElementById('nvf_note');
   if(note) note.innerHTML='共 <b>'+rows.length.toLocaleString('en-US')+'</b> 条挂靠（数据源全量 '+((DATA||[]).length).toLocaleString('en-US')
-    +' 条，Service Type O 航线已隐藏）· <b>默认只显示 CUL</b>，切到 All operators 可看全部 · 默认无日期窗，可用日期框或 ±3M 缩小 · '
+    +' 条，Service Type O 航线已隐藏）· <b>默认只显示 CUL</b>，切到 All operators 可看全部 · <b>默认按 ETA 展示今天往前 15 天 ~ 未来 1 个月</b>，可用日期框 / 默认窗口 / ±3M / All dates 调整 · '
     +'Terminal / Terminal Name 取自 nodes.json · 点 ⚙ Columns 勾选 20/40 尺空重箱与燃油列（默认隐藏，导出 Excel 同步）。';
 }
 function nvExportFull(){
@@ -1421,7 +1443,7 @@ function nvRenderWait(){
   if(note) note.innerHTML='口径：等泊 = <b>wait_time (Arrival → Berth)</b>；BOA 窗口当前为 <b>'+thrTxt
     +'</b>（Over-range 可切换）。按 <b>Terminal（8 位码头代码）归并</b>，阈值与区域按前 5 / 2 位港码判定。'
     +' 数据源仍是 <b>bi_vessel_departure.csv</b>，没有 Remark / BOA 备注字段，因此不提供 remark 归因分类；'
-    +'「BOA」按阈值推算，与 CUL Daily Movement 的 master 表口径不同 · 默认只显示 CUL。';
+    +'「BOA」按阈值推算，与 CUL Daily Movement 的 master 表口径不同 · 默认只显示 CUL，ETA 窗口为过去 15 天 ~ 未来 1 个月。';
   const tn=document.getElementById('nvw_tnote');
   if(tn) tn.innerHTML='按平均等泊时长降序。BOA rate = 窗口内靠泊的挂靠数 / 总挂靠数；空值（无 wait_time）不参与统计。'
     +' 数据缺失：约 '+(rows.length-valid.length).toLocaleString('en-US')+' 条挂靠没有等泊时间。';
@@ -1463,10 +1485,11 @@ function nvSumGroup(rows,keyFn,extra){
   });
 }
 function nvCallRows(){
+  const basis=nvVal('nvc_basis')||'arrived_anchorage';
   const from=nvVal('nvc_from'),to=nvVal('nvc_to'),svc=nvVal('nvc_svc'),op=nvVal('nvc_op');
   const q=String(nvVal('nvc_q')||'').trim().toLowerCase();
   return (DATA||[]).filter(r=>{
-    const d=nvDate(r,'berth');
+    const d=nvDate(r,basis);
     if(from&&d&&d<from) return false;
     if(to&&d&&d>to) return false;
     if(svc&&r.svc!==svc) return false;
@@ -1480,6 +1503,9 @@ function nvCallRows(){
   });
 }
 function nvRenderCalls(){
+  const basis=nvVal('nvc_basis')||'arrived_anchorage';
+  const bLabel={arrived_anchorage:'ETA',berth:'ETB',departure:'ETD'}[basis]||'ETA';
+  const dKey={arrived_anchorage:'eta',berth:'etb',departure:'etd'}[basis]||'eta';
   const rows=nvCallRows();
   const byVessel=nvSumGroup(rows,r=>nvCode(r.vessel_voyage),(x,r)=>{ if(!x.name) x.name=nvShip(r.vessel_voyage)||''; });
   const byTerm=nvSumGroup(rows,r=>nvTerm(r.terminal),(x,r)=>{ if(!x.name) x.name=nvTermName(r.terminal); x.region=nvRegion(r.terminal); });
@@ -1489,7 +1515,7 @@ function nvRenderCalls(){
   const avgStay=stay.length?stay.reduce((s,r)=>s+r.port_stay,0)/stay.length:null;
   const avgWait=wait.length?wait.reduce((s,r)=>s+r.wait_time,0)/wait.length:null;
   nvKpis('nvc_kpis',[
-    {v:rows.length.toLocaleString('en-US'),l:'Terminal calls',s:'ETB in selected window'},
+    {v:rows.length.toLocaleString('en-US'),l:'Terminal calls',s:bLabel+' in selected window'},
     {v:byVessel.length.toLocaleString('en-US'),l:'Vessels'},
     {v:byTerm.length.toLocaleString('en-US'),l:'Terminals'},
     {v:nvF(avgStay,1)+'h',l:'Avg Port Stay',cls:'amber',s:stay.length.toLocaleString('en-US')+' calls with data'},
@@ -1536,14 +1562,14 @@ function nvRenderCalls(){
   byTerm.sort((a,b)=>b.calls-a.calls);   nvTable('nvc_byport',termCols,byTerm);
   byLane.sort((a,b)=>b.calls-a.calls);   nvTable('nvc_bylane',laneCols,byLane);
   byRegion.sort((a,b)=>b.calls-a.calls); nvTable('nvc_byregion',regionCols,byRegion);
-  const detail=nvFullRows(rows).sort((a,b)=>String(a.etb||'').localeCompare(String(b.etb||'')));
+  const detail=nvFullRows(rows).sort((a,b)=>String(a[dKey]||'').localeCompare(String(b[dKey]||'')));
   nvTable('nvc_detail',nvFullCols(),detail,500);
   const dn=document.getElementById('nvc_detail_note');
   if(dn) dn.textContent='共 '+detail.length.toLocaleString('en-US')+' 条，表格最多显示 500 条；导出 Excel 会包含全部 '+detail.length.toLocaleString('en-US')+' 条（可用 ⚙ Columns 选择列）';
   const note=document.getElementById('nvc_note');
-  if(note) note.innerHTML='<b>1 call</b> = 一条 ETB 落在所选窗口内的码头挂靠记录（数据源已按 船代码 + Terminal + 离港时间 去重，TBN 待定船已排除）。'
+  if(note) note.innerHTML='<b>1 call</b> = 一条 '+bLabel+' 落在所选窗口内的码头挂靠记录（数据源已按 船代码 + Terminal + 离港时间 去重，TBN 待定船已排除）。'
     +' 与 CUL Daily Movement 不同，本页数据 <b>包含未来计划挂靠</b>，且没有 Remark 备注，因此不做 bunker-only / remark 归因剔除。'
-    +' 按 ' + (nvVal('nvc_from')||'不限') + ' → ' + (nvVal('nvc_to')||'不限') + '（ETB）统计 · <b>默认只显示 CUL</b>。';
+    +' 按 ' + (nvVal('nvc_from')||'不限') + ' → ' + (nvVal('nvc_to')||'不限') + '（'+bLabel+'）统计 · <b>默认只显示 CUL</b>。';
   const chip=document.getElementById('nvc_chip');
   if(chip) chip.textContent=rows.length.toLocaleString('en-US')+' calls · '+byVessel.length+' vessels';
 }
@@ -1662,7 +1688,7 @@ function nvRenderProd(){
   if(note) note.innerHTML='<b>MPH</b> = Moves ÷ (Port Stay − Wait)，即实际在泊作业小时的效率；<b>Avg per call</b> = 每条挂靠 MPH 的算术平均。'
     +' 仅统计 Moves / Stay / Wait 三项齐全的挂靠（全量 '+((DATA||[]).length).toLocaleString('en-US')
     +' 条中有效 '+all.length.toLocaleString('en-US')+' 条）。按 Terminal、按船、按航线三个维度同时给出，'
-    +' 「Min calls ≥ '+minCalls+'」用于过滤小样本 · <b>默认只显示 CUL</b>。';
+    +' 「Min calls ≥ '+minCalls+'」用于过滤小样本 · <b>默认只显示 CUL</b>，ETA 窗口为过去 15 天 ~ 未来 1 个月。';
   const chip=document.getElementById('nvp_chip');
   if(chip) chip.textContent=all.length.toLocaleString('en-US')+' valid calls · '+byTerm.length+' terminals / '+byVessel.length+' vessels';
 }
@@ -2098,12 +2124,9 @@ function closeAllPanels() {
 }
 
 function setDefaultDateRange() {
-  const now = new Date();
-  const from = new Date(now); from.setMonth(from.getMonth() - 1); // one month before today
-  const to = new Date(now); to.setMonth(to.getMonth() + 1);       // one month after today
-  const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  document.getElementById('f_from').value = fmt(from);
-  document.getElementById('f_to').value = fmt(to);
+  const w = biDefaultWindow();   // ETA: 15 days back -> one calendar month ahead
+  document.getElementById('f_from').value = w.from;
+  document.getElementById('f_to').value = w.to;
 }
 
 /* ===== DPS Proforma module (Excel-style schedule grid) ===== */
@@ -2490,12 +2513,10 @@ function dpsBuildBlocks(rows){
   return { blocks:blocks, widened:widened, dropped:0, split:split,
            axis:(aligned&&!merge)?ax.loop.slice(0,width):null, aligned:aligned, merge:merge, info:ax };
 }
-// Default window: the past week (already sailed) through the next two months (planned).
+// Default window (same as the other five tabs): ETA based, 15 days back -> one calendar month ahead.
 function dpsSetDefaultRange(){
-  const t=new Date();
-  dpsFrom=dpsAddDays(t,-7);
-  const to=new Date(t.getTime()); to.setMonth(to.getMonth()+2);
-  dpsTo=dpsDateStr(to);
+  const w=biDefaultWindow();
+  dpsFrom=w.from; dpsTo=w.to;
   const f=document.getElementById('dps_from'), g=document.getElementById('dps_to');
   if(f)f.value=dpsFrom; if(g)g.value=dpsTo;
 }
@@ -3211,8 +3232,9 @@ function applyFilter() {
     if (selTerminals.size > 0 && !selTerminals.has(r.terminal)) return false;
     if (selSvcs.size > 0 && !selSvcs.has(r.svc)) return false;
     if (selOperators.size > 0 && !selOperators.has(r.operator)) return false;
-    if (from && r.departure && r.departure < from) return false;
-    if (to && r.departure && r.departure > to) return false;
+    const eta = String(r.arrived_anchorage || '').slice(0, 10);   // schedule window is ETA based
+    if (from && eta && eta < from) return false;
+    if (to && eta && eta > to) return false;
     if (q) {
       const qn = vesselFullName(r.vessel_voyage) || '';
       const hay = (r.vessel_voyage + ' ' + qn + ' ' + r.terminal + ' ' + r.svc).toLowerCase();
