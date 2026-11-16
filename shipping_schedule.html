@@ -1374,6 +1374,10 @@
       <div class="section-title">Total Estimated Fuel</div>
       <div class="fuel-summary" id="totalFuelSummary">
         <div class="fuel-row fuel-total" style="border-top:2px solid var(--border)">
+          <span class="fuel-label">Total Days</span>
+          <span class="fuel-val" id="fs-total-days">-- days</span>
+        </div>
+        <div class="fuel-row fuel-total">
           <span class="fuel-label">Grand Total LSFO</span>
           <span class="fuel-val" id="fs-total-lsfo">-- mt</span>
         </div>
@@ -4354,6 +4358,8 @@ function updateFuelEstimate(){
   document.getElementById('fs-ps-lsfo').textContent   = psLsfo ? psLsfo+' mt' : '0 mt';
   document.getElementById('fs-ps-mgo').textContent    = psMgo  ? psMgo+' mt' : '0 mt';
   const adj = getFuelAdjustMultiplier();
+  const voyageTotalDays = seaDays + manInDays + totalPortStayDays;
+  document.getElementById('fs-total-days').textContent = voyageTotalDays ? voyageTotalDays.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-total-lsfo').textContent = +((lsfo + psLsfo) * adj).toFixed(1)+' mt';
   document.getElementById('fs-total-mgo').textContent  = +((mgo + psMgo) * adj).toFixed(1)+' mt';
   document.getElementById('fs-total-hsfo').textContent = +((hsfo + psHsfo) * adj).toFixed(1)+' mt';
@@ -4397,6 +4403,8 @@ function updateFuelFromSchedule(){
   document.getElementById('fs-ps-lsfo').textContent   = psLsfo ? psLsfo+' mt' : '0 mt';
   document.getElementById('fs-ps-mgo').textContent    = psMgo  ? psMgo+' mt' : '0 mt';
   const adj2 = getFuelAdjustMultiplier();
+  const voyageTotalDays2 = seaDays + manInDays + totalPortStayDays;
+  document.getElementById('fs-total-days').textContent = voyageTotalDays2 ? voyageTotalDays2.toFixed(2)+' days' : '-- days';
   document.getElementById('fs-total-lsfo').textContent = +((lsfo + psLsfo) * adj2).toFixed(1)+' mt';
   document.getElementById('fs-total-mgo').textContent  = +((mgo + psMgo) * adj2).toFixed(1)+' mt';
   document.getElementById('fs-total-hsfo').textContent = +((hsfo + psHsfo) * adj2).toFixed(1)+' mt';
