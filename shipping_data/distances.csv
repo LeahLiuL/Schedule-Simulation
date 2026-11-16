@@ -1,4 +1,6 @@
 from_port,to_port,distance_nm,source
+IDJKT,CNNAS,1801,manual
+CNSHK,IDJKT,1802,manual
 IDSUB,CNSHA,2530,manual
 IDJKT,IDSUB,399,manual
 CNQZL,IDJKT,2009,manual
