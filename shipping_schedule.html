@@ -9187,16 +9187,10 @@ function switchAppTab(tab){
   const el = document.getElementById(tabId);
   if(tab==='portcharges'||tab==='dailymovement'||tab==='oilreport'){ el.classList.add('active'); }
   else { el.classList.add('active','block'); }
-  // Force-refresh iframe for external tabs (bypass browser cache)
-  if(tab==='portcharges'||tab==='dailymovement'||tab==='oilreport'){
-    var iframe = el.querySelector('iframe');
-    if(iframe){
-      var src = iframe.getAttribute('src');
-      // Strip any existing cache-bust param, then add new one
-      var base = src.split('?')[0];
-      iframe.setAttribute('src', base + '?_t=' + Date.now());
-    }
-  }
+  // 2026-11-24: 不再在每次切 tab 时重置 iframe src。
+  // 旧逻辑给 src 加 ?_t=Date.now() 会整页重载 6.8MB 的 Fuel Report,
+  // 导致每次切回来都要重新解密/输密码, 且滚动位置与筛选条件全部丢失。
+  // iframe 只加载一次, 隐藏/显示即可保留原状态; 需要拿最新数据时刷新父页面(F5)。
 }
 
 // ==================== DAILY FLEET SCHEDULE ====================
