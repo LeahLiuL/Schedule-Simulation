@@ -230,7 +230,13 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .dps-toolbar label { font-size:11px; color:#5f6368; font-weight:700; }
 .dps-toolbar input[type=date] { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; }
 .dps-toolbar select { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; max-width:230px; background:#fff; }
-.dps-search { font-size:12px; padding:4px 8px; border:1px solid #d0d7de; border-radius:6px; min-width:260px; flex:0 0 auto; }
+.dps-search { font-size:12px; padding:4px 26px 4px 8px; border:1px solid #d0d7de; border-radius:6px; min-width:330px; flex:0 0 auto; }
+.dps-filterbox { position:relative; display:inline-flex; align-items:center; }
+.dps-filterbox .dps-clear { display:none; position:absolute; right:5px; top:50%; transform:translateY(-50%);
+  width:17px; height:17px; line-height:15px; text-align:center; padding:0; border:0; border-radius:50%;
+  background:#dfe6ee; color:#42536b; font-size:13px; cursor:pointer; }
+.dps-filterbox.has-value .dps-clear { display:block; }
+.dps-hit { font-size:11px; color:#1F4E79; font-weight:600; white-space:nowrap; }
 .dps-toolbar .btn { font-size:11px; padding:5px 12px; }
 .dps-meta { font-size:11px; color:#5f6368; margin-left:4px; }
 .dps-note { display:none; font-size:11px; font-weight:600; color:#a33; background:#fdecea; border:1px solid #f6c7c2; border-radius:6px; padding:3px 9px; white-space:nowrap; }
@@ -305,7 +311,7 @@ section.view.nv-view[hidden] { display:none; }
             max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left; }
 .nv-msbtn.filtered { border-color:#2E75B6; background:#eaf2fb; color:#16335a; font-weight:700; }
 .dps-toolbar .nv-msbtn { height:28px; font-size:11.5px; }
-.nv-msdd { display:none; position:absolute; top:36px; left:0; z-index:130; width:272px;
+.nv-msdd { display:none; position:absolute; top:36px; left:0; z-index:130; width:318px;
            background:#fff; border:1px solid #cfdceb; border-radius:7px;
            box-shadow:0 8px 22px rgba(16,42,71,.16); padding:8px; }
 .nv-msdd.open { display:block; }
@@ -314,6 +320,7 @@ section.view.nv-view[hidden] { display:none; }
                     background:#f7fafd; color:#1F4E79; cursor:pointer; }
 .nv-mssearch { width:100%; box-sizing:border-box; font-size:11.5px; padding:5px 8px;
                border:1px solid #d6e0ea; border-radius:4px; margin-bottom:6px; }
+.nv-mstip { font-size:10.5px; color:#7a8798; padding:0 2px 6px; }
 .nv-mslist { max-height:242px; overflow:auto; }
 .nv-msitem { display:flex; align-items:center; gap:7px; font-size:11.5px; color:#334155;
              padding:4px 5px; border-radius:4px; cursor:pointer; }
@@ -530,7 +537,12 @@ section.view.nv-view[hidden] { display:none; }
 <div class="dps-toolbar">
   <label>Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
-  <input type="search" id="dpsSearch" class="dps-search" placeholder="Filter vessel / voyage / port (Enter on a lane code jumps to that lane)" oninput="dpsSetQuery(this.value)" onchange="dpsJumpService(this.value)" />
+  <label>Filter</label>
+  <span class="dps-filterbox" id="dpsFilterBox">
+    <input type="text" id="dpsSearch" class="dps-search" placeholder="Type vessel / port / voyage — e.g. CNNAS" title="Filter by vessel name, vessel code, voyage number, operator, port or terminal code — several words are OR-ed" oninput="dpsSetQuery(this.value)" onkeydown="dpsQueryKey(event)" autocomplete="off" />
+    <button type="button" class="dps-clear" onclick="dpsClearQuery()" title="Clear filter (Esc)">×</button>
+  </span>
+  <span class="dps-hit" id="dpsHit"></span>
   <span class="dps-note" id="dpsNote"></span>
 </div>
 <div class="dps-toolbar">
@@ -873,13 +885,22 @@ function nvMsBuild(id){
   let h='<div class="nv-msbtns"><button type="button" data-act="all">All</button>'
     +'<button type="button" data-act="none">None</button>'
     +'<button type="button" data-act="close">Close</button></div>';
-  if(m.opts.length>12) h+='<input class="nv-mssearch" placeholder="Search..." />';
+  // A text box is always present: typing narrows the list, Enter picks the visible option(s).
+  // With "All" active nothing is ticked, so one click on a box really does narrow the data —
+  // previously every box was ticked and ticking one silently reset the filter back to All.
+  h+='<input class="nv-mssearch" placeholder="Type to filter, Enter to pick" />';
+  h+='<div class="nv-mstip" data-tip="1">'+(m.sel===null?'All — tick one or more, or type above':(m.sel.size+' selected'))+'</div>';
   h+='<div class="nv-mslist">'+m.opts.map(o=>{
-    const on=m.sel===null||m.sel.has(o.v);
+    const on=m.sel!==null && m.sel.has(o.v);
     return '<label class="nv-msitem" data-k="'+nvEsc(o.v)+'" data-t="'+nvEsc(String(o.t).toLowerCase())+'">'
       +'<input type="checkbox" '+(on?'checked':'')+'><span>'+nvEsc(o.t)+'</span></label>';
   }).join('')+'</div>';
   dd.innerHTML=h;
+  const tip=dd.querySelector('[data-tip]');
+  const syncTip=function(){
+    const cur=NV_MS[id]; if(!cur||!tip) return;
+    tip.textContent=cur.sel===null?'All — tick one or more, or type above':(cur.sel.size+' selected');
+  };
   dd.onclick=function(e){
     e.stopPropagation();
     const a=e.target.closest&&e.target.closest('button[data-act]'); if(!a) return;
@@ -896,18 +917,36 @@ function nvMsBuild(id){
     // Look up the CURRENT state: a re-filter may have replaced NV_MS[id] meanwhile.
     const cur=NV_MS[id]; if(!cur) return;
     const v=item.getAttribute('data-k');
-    if(cur.sel===null) cur.sel=new Set(cur.opts.map(o=>o.v));
+    // Coming from All: a tick means "only this one so far", an untick means "everything but
+    // this one". Ticking used to rebuild the whole set and immediately fall back to All.
+    if(cur.sel===null) cur.sel=e.target.checked?new Set():new Set(cur.opts.map(o=>o.v));
     if(e.target.checked) cur.sel.add(v); else cur.sel.delete(v);
     if(cur.sel.size===cur.opts.length) cur.sel=null;
-    nvMsPaint(id); nvMsChanged(id);
+    nvMsPaint(id); syncTip(); nvMsChanged(id);
   };
   const s=dd.querySelector('.nv-mssearch');
-  if(s) s.oninput=function(){
-    const q=this.value.trim().toLowerCase();
-    dd.querySelectorAll('.nv-msitem').forEach(it=>{
-      it.style.display=(!q||it.getAttribute('data-t').indexOf(q)>=0)?'':'none';
-    });
-  };
+  if(s){
+    const visible=()=>[...dd.querySelectorAll('.nv-msitem')].filter(it=>it.style.display!=='none');
+    s.oninput=function(){
+      const q=this.value.trim().toLowerCase();
+      dd.querySelectorAll('.nv-msitem').forEach(it=>{
+        it.style.display=(!q||it.getAttribute('data-t').indexOf(q)>=0)?'':'none';
+      });
+    };
+    s.onkeydown=function(e){
+      if(e.key!=='Enter') return;
+      e.preventDefault();
+      const vis=visible(); if(!vis.length) return;
+      const cur=NV_MS[id]; if(!cur) return;
+      cur.sel=new Set(vis.map(it=>it.getAttribute('data-k')));
+      if(cur.sel.size===cur.opts.length) cur.sel=null;
+      dd.querySelectorAll('.nv-msitem').forEach(it=>{
+        const cb=it.querySelector('input[type=checkbox]');
+        if(cb) cb.checked=cur.sel===null?false:cur.sel.has(it.getAttribute('data-k'));
+      });
+      nvMsPaint(id); syncTip(); nvMsChanged(id);
+    };
+  }
 }
 function nvMsChanged(id){ const m=NV_MS[id]; if(m&&m.onchange) m.onchange(); }
 function nvToggleMs(e,id){
@@ -2375,21 +2414,21 @@ function dpsNodeInfo(t){
     name:(n&&n.n)||''
   };
 }
-// Rows matching the free-text box: vessel name / vessel code / voyage number, and — so the
-// same box can find a port — the 5-char port code, the 8-char terminal code and the terminal
-// name ("nansha", "CNNAS", "CNNAST04").
+// Rows matching the free-text box: vessel name / code / voyage number / operator, plus the
+// 5-char port code, the 8-char terminal code and the terminal name ("nansha", "CNNAS",
+// "CNNAST04"). Several words (space / comma separated) are OR-ed — any word may hit.
 function dpsMatchQuery(r){
-  const q=String(dpsQuery||'').trim().toUpperCase();
-  if(!q) return true;
+  const raw=String(dpsQuery||'').trim().toUpperCase();
+  if(!raw) return true;
+  const qs=raw.split(/[\s,;]+/).filter(Boolean);
   const vv=String(r.vessel_voyage||'').toUpperCase();
   const code=dpsVesselCode(vv);
   const nm=((typeof VESSEL_NAMES!=='undefined' && VESSEL_NAMES[code])||'').toUpperCase();
-  if(vv.indexOf(q)>=0 || nm.indexOf(q)>=0) return true;
   const term=String(r.terminal||'').toUpperCase();
-  if(!term) return false;
-  if(term.indexOf(q)>=0) return true;                       // CNNAS / CNNAST04
-  const info=dpsNodeInfo(term);
-  return String(info.name||'').toUpperCase().indexOf(q)>=0;  // "nansha"
+  const info=term?dpsNodeInfo(term):{name:'',port:''};
+  const hay=[vv,nm,String(r.operator||'').toUpperCase(),term,
+             String(info.name||'').toUpperCase(),String(info.port||'').toUpperCase()].join(' | ');
+  return qs.some(q=>hay.indexOf(q)>=0);
 }
 // Voyage key shared by the filters and the blocks: 4-char vessel code + voyage number, the
 // direction letter dropped (2639W and 2639E are one row).
@@ -2426,23 +2465,42 @@ function dpsOnFilterChange(){
   dpsFillFilters();
   renderDps();
 }
-// Typing filters the rows live (vessel name, code, voyage number, port or terminal).
-function dpsSetQuery(v){ dpsQuery=v; renderDps(); }
-// Pressing Enter / leaving the box on a service code jumps to that service (lane filter).
+// Typing filters the rows live. Enter on an exact lane code still jumps to that lane; Enter on
+// ordinary text just keeps filtering (no more confusing "no records for the operators" note).
+function dpsSetQuery(v){
+  dpsQuery=String(v||'');
+  const box=document.getElementById('dpsFilterBox');
+  if(box) box.classList.toggle('has-value', !!dpsQuery.trim());
+  dpsNote('');
+  renderDps();
+}
+function dpsClearQuery(){
+  const se=document.getElementById('dpsSearch'); if(se) se.value='';
+  dpsSetQuery('');
+}
+function dpsQueryKey(e){
+  if(e.key==='Escape'){ dpsClearQuery(); return; }
+  if(e.key!=='Enter') return;
+  const q=String(dpsQuery||'').trim().toUpperCase();
+  if(DPS_SERVICES.indexOf(q)>=0) dpsJumpService(q);
+}
 function dpsJumpService(v){
   const q=String(v||'').trim().toUpperCase();
-  if(!q) return;
-  if(DPS_SERVICES.indexOf(q)<0){
-    // A real lane that is intentionally not on screen: say why instead of doing nothing.
-    if(dpsLaneHidden(q)) dpsNote(q+' is a Service Type O lane and is hidden by rule');
-    else if(dpsOperator.length) dpsNote(q+' has no records for the selected operators (choose All operators to view)');
-    return;
-  }
+  if(!q || DPS_SERVICES.indexOf(q)<0) return;
   dpsSvc=q; dpsQuery=''; dpsNote('');
   const se=document.getElementById('dpsSearch'); if(se) se.value='';
+  const box=document.getElementById('dpsFilterBox'); if(box) box.classList.remove('has-value');
   const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
   for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===q);
   dpsFillFilters(); renderDps();
+}
+// Live feedback next to the free-text box, so it is obvious that typing actually did something.
+function dpsShowHit(n){
+  const h=document.getElementById('dpsHit'); if(!h) return;
+  const q=String(dpsQuery||'').trim();
+  if(!q){ h.textContent=''; h.style.color=''; return; }
+  h.textContent=n?(n+' voyage'+(n===1?'':'s')+' match "'+q+'"'):('No match for "'+q+'" — clear or change the text');
+  h.style.color=n?'#1F4E79':'#a33';
 }
 // Rebuild the Operator / Vessel / Port dropdowns.  Operators come from the whole feed (so the
 // choice survives a lane switch), vessels and ports from the lane currently on screen — a port
@@ -2978,9 +3036,9 @@ function renderDps(){
     const why = (dpsOperator.length||dpsVessel.length||dpsPort.length||String(dpsQuery||'').trim())
       ? ('No voyages match the filters (Operator: '+(dpsOperator.length?dpsOperator.join('/'):'All')+' / Vessel: '+(dpsVessel.length?dpsVessel.join('/'):'All')
          +(dpsPort.length?(' / Port: '+dpsPort.join('/')):'')
-         +(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'')+')')
+         +(String(dpsQuery||'').trim()?(' / Filter: '+String(dpsQuery).trim()):'')+')')
       : ('Lane '+dpsSvc+' has no records in the current feed');
-    wrap.innerHTML='<div class="dps-empty">'+why+'</div>'; if(meta)meta.textContent=''; dpsLastSel=[]; dpsLastMax=1; return;
+    wrap.innerHTML='<div class="dps-empty">'+why+'</div>'; if(meta)meta.textContent=''; dpsShowHit(0); dpsLastSel=[]; dpsLastMax=1; return;
   }
   const built=dpsBuildBlocks(rows);
   const sel=built.blocks;
@@ -2992,8 +3050,9 @@ function renderDps(){
       +(dpsPort.length?'Clear the Port filter, widen':'The feed has data for this lane, but none of it lands in these dates. Widen')
       +' From / To, or press <b>Default window</b>.</div>';
     if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · 0 voyages in the selected date window · '+span
-      +(dpsOperator.length?' · Operator: '+dpsOperator.join('/'):'')+(dpsPort.length?' · Port: '+dpsPort.join('/'):'');
-    dpsLastSel=[]; dpsLastMax=1; dpsLastMerge=!!dpsMerge; dpsLastAligned=false; dpsLastAxis=null; return;
+      +(dpsOperator.length?' · Operator: '+dpsOperator.join('/'):'')+(dpsPort.length?' · Port: '+dpsPort.join('/'):'')
+      +(String(dpsQuery||'').trim()?' · Filter: '+String(dpsQuery).trim():'');
+    dpsShowHit(0); dpsLastSel=[]; dpsLastMax=1; dpsLastMerge=!!dpsMerge; dpsLastAligned=false; dpsLastAxis=null; return;
   }
   const maxCols=Math.max(1, ...sel.map(b=>b.cols.length));
   dpsLastSel=sel; dpsLastMax=maxCols; dpsLastAligned=built.aligned; dpsLastAxis=built.axis;
@@ -3035,6 +3094,7 @@ function renderDps(){
   html+='</tbody></table>';
   wrap.innerHTML=html;
   const cnt=dpsCounts(sel);
+  dpsShowHit(cnt.voyages);
   const alignTxt = built.aligned
     ? ('Aligned to '+maxCols+' columns')
     : (built.mode==='portavg'
@@ -3043,7 +3103,7 @@ function renderDps(){
   const dropTxt = built.split ? (' · '+built.split+' vessel(s) split over continued rows') : '';
   const fltTxt = (dpsVessel.length?(' · Vessel: '+dpsVessel.join('/')):'')
     +(dpsPort.length?(' · Port: '+dpsPort.join('/')):'')
-    +(String(dpsQuery||'').trim()?(' · Search: '+String(dpsQuery).trim()):'');
+    +(String(dpsQuery||'').trim()?(' · Filter: '+String(dpsQuery).trim()):'');
   if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+fltTxt+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'');
   if(meta) meta.title = built.aligned
     ? 'Each port is pinned to one column so vessels can be compared vertically'
