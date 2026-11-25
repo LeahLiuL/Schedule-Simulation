@@ -2503,49 +2503,38 @@ function dpsMapCalls(calls, loop){
   });
   return { placed:placed, loose:loose };
 }
-// Same, but keyed on the 8-char terminal instead of the 5-char port, so two terminals in the
-// same city (CNNAST04 / CNNAST05) never share a column (see dpsTermAxis).
-function dpsMapCallsTerm(calls, axis){
-  const placed=[], loose=[]; let last=-1;
-  (calls||[]).forEach(c=>{
-    const t=String(c.terminal||'').toUpperCase();
-    let col=-1;
-    for(let i=last+1;i<axis.length;i++){ if(axis[i]===t){ col=i; break; } }
-    if(col<0){ loose.push(c); return; }
-    last=col; placed.push({c:c,col:col});
-  });
-  return { placed:placed, loose:loose };
-}
-// Fallback axis for lanes whose port rotation is too irregular to align on (SGX, for one):
-// one column per distinct terminal, ordered by the terminal's average position inside a
+// Fallback axis for lanes whose port rotation is too irregular to align on a fixed loop (SGX,
+// for one): one column per 5-char port, ordered by the port's average position inside a
 // voyage, so Klang lands in the same column on every row instead of wherever call order puts
-// it. Built from the rows on screen, so the window — not the whole lane history — decides how
-// wide the grid gets. Returns null when aligning would be worse than call order.
-function dpsTermAxis(units){
+// it. Anchoring on the port — not the 8-char terminal — keeps the grid narrow: CNNAST04 and
+// CNNAST05 share the CNNAS column, which is what gets compared visually anyway. Built from the
+// rows on screen, so the window — not the whole lane history — decides how wide the grid gets.
+// Returns null when aligning would be worse than call order.
+function dpsPortAxis(units){
   const seqs=(units||[]).map(u=>{
     const s=[];
-    (u.calls||[]).forEach(c=>{ const t=String(c.terminal||'').toUpperCase(); if(t && s[s.length-1]!==t) s.push(t); });
+    (u.calls||[]).forEach(c=>{ const p=dpsPortOf(c.terminal); if(p && s[s.length-1]!==p) s.push(p); });
     return s;
   }).filter(s=>s.length>1);
-  if(seqs.length<3) return null;
+  if(seqs.length<2) return null;
   const pos={}, cnt={};
   seqs.forEach(s=>{
     const n=Math.max(1,s.length-1);
-    s.forEach((t,i)=>{ pos[t]=(pos[t]||0)+(i/n); cnt[t]=(cnt[t]||0)+1; });
+    s.forEach((p,i)=>{ pos[p]=(pos[p]||0)+(i/n); cnt[p]=(cnt[p]||0)+1; });
   });
-  const terms=Object.keys(pos);
-  if(terms.length<2) return { axis:null, fit:0, terms:terms.length, reason:'few' };
-  if(terms.length>DPS_MAX_COLS) return { axis:null, fit:0, terms:terms.length, reason:'wide' };
-  terms.sort((a,b)=>(pos[a]/cnt[a])-(pos[b]/cnt[b]) || (cnt[b]-cnt[a]) || a.localeCompare(b));
+  const ports=Object.keys(pos);
+  if(ports.length<2) return { axis:null, fit:0, ports:ports.length, reason:'few' };
+  if(ports.length>DPS_MAX_COLS) return { axis:null, fit:0, ports:ports.length, reason:'wide' };
+  ports.sort((a,b)=>(pos[a]/cnt[a])-(pos[b]/cnt[b]) || (cnt[b]-cnt[a]) || a.localeCompare(b));
   // Only keep it when most calls can actually move forward along this column order; a lane
-  // that zig-zags between terminals reads worse aligned than laid out in call order.
+  // that zig-zags between ports reads worse aligned than laid out in call order.
   let placed=0, total=0;
   seqs.forEach(s=>{
     let last=-1;
-    s.forEach(t=>{ total++; const j=terms.indexOf(t,last+1); if(j>-1){ last=j; placed++; } });
+    s.forEach(p=>{ total++; const j=ports.indexOf(p,last+1); if(j>-1){ last=j; placed++; } });
   });
-  if(!total || placed/total<0.85) return { axis:null, fit:total?placed/total:0, terms:terms.length, reason:'irregular' };
-  return { axis:terms, fit:placed/total, terms:terms.length, reason:'ok' };
+  if(!total || placed/total<0.85) return { axis:null, fit:total?placed/total:0, ports:ports.length, reason:'irregular' };
+  return { axis:ports, fit:placed/total, ports:ports.length, reason:'ok' };
 }
 // Same idea on a rotation repeated end to end (a whole vessel = several voyages): a call may
 // only move forward, and at most one full rotation ahead, so a skipped port leaves a gap
@@ -2672,7 +2661,7 @@ function dpsBuildBlocks(rows){
   });
   // Date window is applied per voyage first, so a merged row only carries the voyages that
   // actually fall inside it (a vessel's own span would otherwise run for years).
-  const taxTry = aligned ? null : dpsTermAxis(kept);
+  const taxTry = aligned ? null : dpsPortAxis(kept);
   const tax = (taxTry && taxTry.axis) ? taxTry : null;
   let groups=kept;
   if(merge){
@@ -2700,6 +2689,25 @@ function dpsBuildBlocks(rows){
                     part:i+1, parts:parts, head:(i===0) });
     }
   });
+  // Column axis for the port-anchored fallback, built once per lane: the port order plus one
+  // repeated lap (front half only for a single voyage, as many laps as the longest vessel row
+  // when voyages are merged). Every block then maps onto the very same axis, so a column keeps
+  // one meaning across all rows. `taxExtra` gives a port its own extra column for repeat visits.
+  let taxRot=[], taxExtra={}, taxExtraAt=0;
+  if(tax){
+    const lap=tax.axis.length;
+    taxRot=tax.axis.slice();
+    let extra=1;
+    if(merge){
+      let maxc=1;
+      chunks.forEach(c=>{ if(c.calls.length>maxc) maxc=c.calls.length; });
+      extra=Math.max(1,Math.min(4,Math.ceil(maxc/lap)));
+    }
+    for(let i=0;i<extra;i++){
+      (merge ? tax.axis : tax.axis.slice(0,Math.ceil(lap/2))).forEach(p=>taxRot.push(p));
+    }
+    taxExtraAt=taxRot.length;
+  }
   const blocks=chunks.map(u=>{
     let cols, axisArr=null;
     if(merge && aligned){
@@ -2735,28 +2743,25 @@ function dpsBuildBlocks(rows){
         m.placed.forEach(x=>{ cols[x.col].push(x.c); });
       }
     } else if(tax){
-      // Terminal-anchored fallback: one column per terminal, so the same terminal sits in the
-      // same column on every row. The front half is repeated at the end so a return leg (a
-      // terminal visited twice per loop) still lands forward instead of in a trailing column.
-      const lap=tax.axis.length;
-      const rot=tax.axis.slice();
-      const extra=merge ? Math.max(1,Math.min(4,Math.ceil(u.calls.length/lap))) : 1;
-      for(let i=0;i<extra;i++){
-        (merge ? tax.axis : tax.axis.slice(0,Math.ceil(lap/2))).forEach(t=>rot.push(t));
-      }
+      // Port-anchored fallback: one column per port, so the same port sits in the same column
+      // on every row. The front half is repeated at the end so a return leg (a port visited
+      // twice per loop) still lands forward instead of in a trailing column. The repeated
+      // length is decided once for the whole lane (taxRot), so column N means the same port
+      // in every block — otherwise merged rows would drift against each other.
+      const rot=taxRot.slice();
       axisArr=rot.slice();
-      const m=dpsMapCallsTerm(u.calls, rot);
+      const m=dpsMapCalls(u.calls, rot);
       cols=axisArr.map(()=>[]);
       m.placed.forEach(x=>{ cols[x.col].push(x.c); });
-      // Repeat visits / calls that cannot advance keep their own trailing column, never share
-      // a cell; the same rule the port-aligned path uses.
-      let at=0;
-      cols.forEach((cs,i)=>{ if(cs.length) at=i+1; });
+      // A column belongs to one port in this mode, so a call that cannot advance gets that
+      // port's own extra column — shared by every row — instead of dropping into another
+      // port's column (a Nansha call must never show up under the VNSGN header).
       m.loose.forEach(c=>{
-        while(at<cols.length && cols[at].length) at++;
-        if(at<cols.length){ cols[at].push(c); }
-        else { cols.push([c]); }
-        at++;
+        const p=dpsPortOf(c.terminal);
+        if(taxExtra[p]===undefined) taxExtra[p]=taxExtraAt++;
+        const j=taxExtra[p];
+        while(cols.length<=j){ cols.push([]); axisArr.push(''); }
+        cols[j].push(c); axisArr[j]=p;
       });
     } else {
       cols=u.calls.map(c=>[c]);
@@ -2786,9 +2791,9 @@ function dpsBuildBlocks(rows){
   }
   blocks.sort((a,b)=>(a.start||'').localeCompare(b.start||'')||String(a.vv).localeCompare(String(b.vv))||(a.part-b.part));
   const split=blocks.filter(b=>b.parts>1).length;
-  return { blocks:blocks, dropped:0, split:split, mode:(aligned?'port':(tax?'terminal':'call')),
+  return { blocks:blocks, dropped:0, split:split, mode:(aligned?'port':(tax?'portavg':'call')),
            termNote:(taxTry && !taxTry.axis && taxTry.reason==='wide')
-             ? ('Too many terminals ('+taxTry.terms+') in this window to align — narrow the dates')
+             ? ('Too many ports ('+taxTry.ports+') in this window to align — narrow the dates')
              : '',
            axis:(aligned&&!merge)?ax.loop.slice(0,width):null, aligned:aligned, merge:merge, info:ax };
 }
@@ -2883,11 +2888,23 @@ function dpsRemarkTd(calls){
   return '<td class="pcell">'+dpsEsc(v.join(' / '))+'</td>';
 }
 // Port cell: the terminal node code (e.g. TWKELT01) large, the terminal name small below.
+// A port-anchored column can hold two terminals of the same city (CNNAST04 + CNNAST05): list
+// both codes on their own lines instead of letting the second one disappear behind the first.
 function dpsPortTd(calls){
   if(!calls || !calls.length) return '<td class="pcell pc-blank"></td>';
-  const info=dpsNodeInfo(calls[0].terminal);
-  const name=info.name||info.port;
-  return '<td class="pcell" title="'+dpsEsc(info.node+'  '+name)+'"><span class="pc-code">'+dpsEsc(info.node)+'</span><span class="pc-name">'+dpsEsc(name)+'</span></td>';
+  const terms=[];
+  (calls||[]).forEach(c=>{ const t=String(c.terminal||'').toUpperCase(); if(t && terms.indexOf(t)===-1) terms.push(t); });
+  const infos=terms.map(dpsNodeInfo);
+  if(infos.length<2){
+    const info=infos[0]||dpsNodeInfo(calls[0].terminal);
+    const name=info.name||info.port;
+    return '<td class="pcell" title="'+dpsEsc(info.node+'  '+name)+'"><span class="pc-code">'+dpsEsc(info.node)+'</span><span class="pc-name">'+dpsEsc(name)+'</span></td>';
+  }
+  const names=[];
+  infos.forEach(i=>{ const n=i.name||i.port; if(n && names.indexOf(n)===-1) names.push(n); });
+  return '<td class="pcell" title="'+dpsEsc(infos.map(i=>i.node).join(' / ')+'  '+names.join(' / '))+'">'
+    + infos.map(i=>'<span class="pc-code">'+dpsEsc(i.node)+'</span>').join('')
+    + '<span class="pc-name">'+dpsEsc(names.join(' / '))+'</span></td>';
 }
 function renderDps(){
   const wrap=document.getElementById('dpsWrap'); if(!wrap) return;
@@ -2959,15 +2976,15 @@ function renderDps(){
   const cnt=dpsCounts(sel);
   const alignTxt = built.aligned
     ? ('Aligned to '+maxCols+' columns')
-    : (built.mode==='terminal'
-        ? 'Aligned by terminal: same terminal in the same column'
+    : (built.mode==='portavg'
+        ? 'Aligned by port: same port in the same column'
         : (built.termNote || 'Not aligned: port rotation differs; laid out by call order'));
   const dropTxt = built.split ? (' · '+built.split+' vessel(s) split over continued rows') : '';
   if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'');
   if(meta) meta.title = built.aligned
     ? 'Each port is pinned to one column so vessels can be compared vertically'
-    : (built.mode==='terminal'
-        ? 'Port rotation is too irregular to pin ports, so each terminal is pinned to one column instead; a voyage that skips a terminal leaves that cell empty'
+    : (built.mode==='portavg'
+        ? 'Port rotation is too irregular to follow a fixed loop, so each port is pinned to one column by its average position in the voyage; a voyage that skips a port leaves that cell empty'
         : 'Port rotation is inconsistent (or ports too scattered) in this lane; forcing alignment would be messier, so each voyage keeps its own call order');
 }
 
@@ -3150,7 +3167,7 @@ function dpsSheetPart(svc, tabName){
   const rowsXml=[]; let rowNum=1;
   const cntE=dpsCounts(sel);
   const alignTxt=built.aligned?('Aligned to '+maxPorts+' columns')
-    :(built.mode==='terminal'?'Aligned by terminal: same terminal, same column':(built.termNote||'Laid out by call order'));
+    :(built.mode==='portavg'?'Aligned by port: same port, same column':(built.termNote||'Laid out by call order'));
   const groupTxt=built.merge?'One row per vessel':'One row per voyage (W/E together)';
   const dropTxt=(built.merge&&built.split)?(' / '+built.split+' continued block(s)'):'';
   const fltTxt='Operator: All operators (full export, page filters excluded)';
@@ -3201,8 +3218,13 @@ function dpsSheetPart(svc, tabName){
     };
     const portCells=cols.map(function(cs){
       if(!cs.length) return '';
-      const info=dpsNodeInfo(cs[0].terminal);
-      return info.node+(info.name?('\n'+info.name):'');
+      // Port-anchored columns may hold two terminals of one city; keep both codes in the cell.
+      const terms=[];
+      cs.forEach(function(c){ const t=String(c.terminal||'').toUpperCase(); if(t && terms.indexOf(t)===-1) terms.push(t); });
+      const infos=terms.map(dpsNodeInfo);
+      const names=[];
+      infos.forEach(function(i){ const n=i.name||i.port; if(n && names.indexOf(n)===-1) names.push(n); });
+      return infos.map(function(i){ return i.node; }).join(' / ')+(names.length?('\n'+names.join(' / ')):'');
     });
     const planCells=cols.map(function(cs){
       const v=[];
