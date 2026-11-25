@@ -230,6 +230,8 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .dps-toolbar label { font-size:11px; color:#5f6368; font-weight:700; }
 .dps-toolbar input[type=date] { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; }
 .dps-toolbar select { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; max-width:230px; background:#fff; }
+.dps-toolbar .dps-alignsel { min-width:150px; max-width:205px; }
+.dps-toolbar .dps-alignsel.on { border-color:#2E75B6; background:#eaf2fb; color:#16335a; font-weight:700; }
 .dps-search { font-size:12px; padding:4px 26px 4px 8px; border:1px solid #d0d7de; border-radius:6px; min-width:330px; flex:0 0 auto; }
 .dps-filterbox { position:relative; display:inline-flex; align-items:center; }
 .dps-filterbox .dps-clear { display:none; position:absolute; right:5px; top:50%; transform:translateY(-50%);
@@ -557,6 +559,13 @@ section.view.nv-view[hidden] { display:none; }
   <label>Port</label>
   <div class="nv-ms" id="nvms_dps_port" title="Keep every voyage that calls at the selected port(s) — the whole voyage stays on screen, so the grid can still be aligned"><button class="nv-msbtn" onclick="nvToggleMs(event,'dps_port')">All</button><div class="nv-msdd" id="nvmsdd_dps_port"></div></div>
   <label class="dps-merge" title="Unchecked (default): one row per voyage number; outbound/inbound 2639W + 2639E share a row. Checked: one row per vessel, 2640W/E continues on the same row; each cell still holds one timestamp"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
+  <label>Align</label>
+  <select id="dpsAlignSel" class="dps-alignsel" onchange="dpsSetAlign(this.value)" title="Off (default): every voyage keeps its own call order. By port: pin every port to one column. Pin one port / terminal: line every voyage up on that single call, so it always sits in the same column.">
+    <option value="off">Off — call order</option>
+    <option value="port">By port (auto)</option>
+    <optgroup label="Pin one port" id="dpsAlignPorts"></optgroup>
+    <optgroup label="Pin one terminal" id="dpsAlignTerms"></optgroup>
+  </select>
   <span class="dps-meta" id="dpsMeta"></span>
   <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;" title="Export every lane (ignores the page Operator / vessel / port / search filters, includes all operators per lane, keeps the current Proforma date window), one sheet per lane: SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS, remaining lanes appended">Export Excel</button>
 </div>
@@ -2388,6 +2397,11 @@ let dpsPort = [];                       // [] = all ports (5-char codes), keeps 
 let dpsQuery = '';                      // free text: vessel name / code / voyage / port / terminal
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
 let dpsMerge = false;                   // default unmerged: false = one row per voyage (W/E together), true = one row per vessel
+// Alignment is OFF by default: every voyage simply keeps its own call order. The Align dropdown
+// turns it on — 'port' = the automatic port axis, 'pin:P:XXXXX' / 'pin:T:XXXXXXXX' = line every
+// voyage up on that one port / terminal. Nothing aligns until the user asks for it.
+let dpsAlignMode = 'off';
+let dpsAlignSig = '';
 let dpsLastAligned = false, dpsLastAxis = null, dpsLastMerge = false, dpsLastDrop = 0, dpsLastSplit = 0;
 const DPS_MAX_COLS = 16;                // grids wider than this are too sparse to read
 const DPS_MERGE_MAX_COLS = 40;          // a merged row spans several rotations; cap the grid
@@ -2552,6 +2566,47 @@ function dpsVoyageParts(vv){
 }
 function dpsVoyLabel(vv){ const p=dpsVoyageParts(vv); return p.dir ? (p.num+p.dir) : String(vv||'').slice(4); }
 function dpsSetMerge(v){ dpsMerge=!!v; renderDps(); }
+// Alignment control. Off is the default: nothing is pinned, every voyage shows its calls in
+// their natural order. 'port' restores the automatic port axis; a pin lines every voyage up on
+// one chosen port / terminal so that call always sits in the same column.
+function dpsSetAlign(v){
+  dpsAlignMode=String(v||'off');
+  const sel=document.getElementById('dpsAlignSel');
+  if(sel){ sel.value=dpsAlignMode; sel.classList.toggle('on', dpsAlignMode!=='off'); }
+  renderDps();
+}
+function dpsAlignKeyOf(c,pin){
+  return pin.term ? String(c.terminal||'').toUpperCase() : dpsPortOf(c.terminal);
+}
+// Rebuild the pin options for the lane / date window on screen. A signature guard keeps this
+// cheap: it only runs when the lane, window or operator / vessel filters actually change.
+function dpsFillAlignOptions(){
+  const sel=document.getElementById('dpsAlignSel');
+  const po=document.getElementById('dpsAlignPorts'), to=document.getElementById('dpsAlignTerms');
+  if(!sel||!po||!to||!DATA||!DATA.length) return;
+  const sig=[dpsSvc,dpsFrom,dpsTo,dpsOperator.join(','),dpsVessel.join(','),(DATA||[]).length].join('|');
+  if(sig===dpsAlignSig) return;
+  dpsAlignSig=sig;
+  const rows=dpsSvcRows(), inWin={};
+  dpsUnitsOf(rows).filter(dpsInWindow).forEach(u=>{ inWin[u.key]=1; });
+  const ports={}, terms={};
+  rows.forEach(r=>{
+    if(!inWin[dpsVoyKeyOf(r.vessel_voyage)]) return;
+    const t=String(r.terminal||'').toUpperCase(); if(!t) return;
+    const info=dpsNodeInfo(t), p=dpsPortOf(t);
+    if(p && ports[p]===undefined) ports[p]=info.name||p;
+    if(terms[t]===undefined) terms[t]=info.name||t;
+  });
+  const pk=Object.keys(ports).sort(), tk=Object.keys(terms).sort();
+  po.innerHTML=pk.map(p=>'<option value="pin:P:'+dpsEsc(p)+'">'+dpsEsc(p+'  '+(ports[p]||''))+'</option>').join('');
+  to.innerHTML=tk.map(t=>'<option value="pin:T:'+dpsEsc(t)+'">'+dpsEsc(t+'  '+(terms[t]||''))+'</option>').join('');
+  // A pin that no longer exists on this lane falls back to Off rather than showing an
+  // unaligned grid under a misleading label.
+  const valid=['off','port'].concat(pk.map(p=>'pin:P:'+p), tk.map(t=>'pin:T:'+t));
+  if(valid.indexOf(dpsAlignMode)<0) dpsAlignMode='off';
+  sel.value=dpsAlignMode;
+  sel.classList.toggle('on', dpsAlignMode!=='off');
+}
 // Voyage label for a block: a single voyage, "E/W" for the two legs of one voyage number,
 // or "first -> last" when a whole vessel is merged.
 function dpsBlockVoyLabel(b){
@@ -2768,7 +2823,12 @@ function dpsAxisRows(){
 }
 function dpsBuildBlocks(rows){
   const ax=dpsAxisFor(dpsSvc);
-  const aligned=dpsAlignOn(dpsSvc) && ax.loop.length>0;
+  // Alignment is opt-in now. 'off' (default) and a pin both skip the automatic axes entirely;
+  // only 'port' computes the rotation / average-position axis.
+  const mode=String(dpsAlignMode||'off');
+  const autoPort=(mode==='port');
+  let pin=(mode.indexOf('pin:')===0) ? { key:mode.slice(6), term:(mode.charAt(4)==='T') } : null;
+  const aligned=autoPort && dpsAlignOn(dpsSvc) && ax.loop.length>0;
   const merge=!!dpsMerge;
   const kept=dpsUnitsOf(rows).filter(dpsInWindow);
   // A Port / search filter narrows the rows only. The axis still comes from the whole lane
@@ -2776,7 +2836,7 @@ function dpsBuildBlocks(rows){
   // for stays in the column it had before and the rows can be compared vertically.
   const narrowed=!!(dpsPort.length || String(dpsQuery||'').trim());
   const axisUnits = narrowed ? dpsUnitsOf(dpsAxisRows()).filter(dpsInWindow) : kept;
-  const taxTry = aligned ? null : dpsPortAxis(axisUnits);
+  const taxTry = (autoPort && !aligned) ? dpsPortAxis(axisUnits) : null;
   const tax = (taxTry && taxTry.axis) ? taxTry : null;
   let groups=kept;
   if(merge){
@@ -2822,6 +2882,20 @@ function dpsBuildBlocks(rows){
       (merge ? tax.axis : tax.axis.slice(0,Math.ceil(lap/2))).forEach(p=>taxRot.push(p));
     }
     taxExtraAt=taxRot.length;
+  }
+  // Pin mode: put the chosen call in the SAME column on every voyage. Calls before it go to
+  // the left, calls after it to the right, so rows can be compared around that one call.
+  // pinCol is the longest "before" run in this window, so no row needs a negative column.
+  let pinCol=0, pinHits=0;
+  if(pin){
+    chunks.forEach(u=>{
+      let i=-1;
+      for(let j=0;j<u.calls.length;j++){ if(dpsAlignKeyOf(u.calls[j],pin)===pin.key){ i=j; break; } }
+      if(i>=0){ pinHits++; if(i>pinCol) pinCol=i; }
+    });
+    // Nothing in this lane / window calls at the pin (export builds a sheet for every lane):
+    // fall back to call order instead of shifting every row to the right of an empty column.
+    if(!pinHits) pin=null;
   }
   const blocks=chunks.map(u=>{
     let cols, axisArr=null;
@@ -2878,6 +2952,20 @@ function dpsBuildBlocks(rows){
         while(cols.length<=j){ cols.push([]); axisArr.push(''); }
         cols[j].push(c); axisArr[j]=p;
       });
+    } else if(pin){
+      let i=-1;
+      for(let j=0;j<u.calls.length;j++){ if(dpsAlignKeyOf(u.calls[j],pin)===pin.key){ i=j; break; } }
+      const arr=[];
+      const place=(c,col)=>{ while(arr.length<=col) arr.push([]); arr[col].push(c); };
+      if(i<0){
+        // This voyage never calls at the pin: keep its own order from the left edge but skip
+        // the pin column, so the row is not a block of blanks and the pin cell stays empty.
+        u.calls.forEach((c,j)=>place(c, j<pinCol ? j : j+1));
+      } else {
+        u.calls.forEach((c,j)=>place(c,pinCol+(j-i)));
+      }
+      while(arr.length<=pinCol) arr.push([]);
+      cols=arr;
     } else {
       cols=u.calls.map(c=>[c]);
     }
@@ -2906,7 +2994,9 @@ function dpsBuildBlocks(rows){
   }
   blocks.sort((a,b)=>(a.start||'').localeCompare(b.start||'')||String(a.vv).localeCompare(String(b.vv))||(a.part-b.part));
   const split=blocks.filter(b=>b.parts>1).length;
-  return { blocks:blocks, dropped:0, split:split, mode:(aligned?'port':(tax?'portavg':'call')),
+  return { blocks:blocks, dropped:0, split:split,
+           mode:(pin?'pin':(aligned?'port':(tax?'portavg':'call'))),
+           pinLabel:pin?pin.key:'', pinHits:pin?pinHits:0,
            termNote:(taxTry && !taxTry.axis && taxTry.reason==='wide')
              ? ('Too many ports ('+taxTry.ports+') in this window to align — narrow the dates')
              : '',
@@ -3025,6 +3115,7 @@ function renderDps(){
   const wrap=document.getElementById('dpsWrap'); if(!wrap) return;
   const fe=document.getElementById('dps_from'), te=document.getElementById('dps_to');
   if(fe&&fe.value) dpsFrom=fe.value; if(te&&te.value) dpsTo=te.value;
+  dpsFillAlignOptions();
   const meta=document.getElementById('dpsMeta');
   if(!DATA||!DATA.length){
     wrap.innerHTML='<div class="dps-empty">No schedule data loaded — the data file could not be fetched.<br><br><button onclick="loadCSVWithRetry(0)" style="padding:6px 14px;background:#1a73e8;color:#fff;border:none;border-radius:4px;cursor:pointer;">Retry loading data</button></div>';
@@ -3097,9 +3188,11 @@ function renderDps(){
   dpsShowHit(cnt.voyages);
   const alignTxt = built.aligned
     ? ('Aligned to '+maxCols+' columns')
-    : (built.mode==='portavg'
-        ? 'Aligned by port: same port in the same column'
-        : (built.termNote || 'Not aligned: port rotation differs; laid out by call order'));
+    : (built.mode==='pin'
+        ? ('Pinned at '+built.pinLabel+' — '+built.pinHits+' of '+sel.length+' rows call it, same column')
+        : (built.mode==='portavg'
+            ? 'Aligned by port: same port in the same column'
+            : (built.termNote || 'Not aligned — call order (Align: Off)')));
   const dropTxt = built.split ? (' · '+built.split+' vessel(s) split over continued rows') : '';
   const fltTxt = (dpsVessel.length?(' · Vessel: '+dpsVessel.join('/')):'')
     +(dpsPort.length?(' · Port: '+dpsPort.join('/')):'')
@@ -3107,9 +3200,11 @@ function renderDps(){
   if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+fltTxt+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'');
   if(meta) meta.title = built.aligned
     ? 'Each port is pinned to one column so vessels can be compared vertically'
-    : (built.mode==='portavg'
-        ? 'Port rotation is too irregular to follow a fixed loop, so each port is pinned to one column by its average position in the voyage; a voyage that skips a port leaves that cell empty'
-        : 'Port rotation is inconsistent (or ports too scattered) in this lane; forcing alignment would be messier, so each voyage keeps its own call order');
+    : (built.mode==='pin'
+        ? 'Every voyage calling at '+built.pinLabel+' puts that call in the same column; earlier calls sit to its left, later calls to its right. Rows that skip it keep their own order (the pin cell stays empty)'
+        : (built.mode==='portavg'
+            ? 'Port rotation is too irregular to follow a fixed loop, so each port is pinned to one column by its average position in the voyage; a voyage that skips a port leaves that cell empty'
+            : 'Alignment is Off — every voyage keeps its own call order. Use the Align dropdown to pin a port or terminal.'));
 }
 
 /* ===== Excel export: minimal XLSX writer (no external library) =====
@@ -3291,7 +3386,8 @@ function dpsSheetPart(svc, tabName){
   const rowsXml=[]; let rowNum=1;
   const cntE=dpsCounts(sel);
   const alignTxt=built.aligned?('Aligned to '+maxPorts+' columns')
-    :(built.mode==='portavg'?'Aligned by port: same port, same column':(built.termNote||'Laid out by call order'));
+    :(built.mode==='pin'?('Pinned at '+built.pinLabel+' ('+built.pinHits+'/'+sel.length+' rows, same column)')
+      :(built.mode==='portavg'?'Aligned by port: same port, same column':(built.termNote||'Laid out by call order')));
   const groupTxt=built.merge?'One row per vessel':'One row per voyage (W/E together)';
   const dropTxt=(built.merge&&built.split)?(' / '+built.split+' continued block(s)'):'';
   const fltTxt='Operator: All operators (full export, page filters excluded)';
