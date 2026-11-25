@@ -530,7 +530,7 @@ section.view.nv-view[hidden] { display:none; }
 <div class="dps-toolbar">
   <label>Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
-  <input type="search" id="dpsSearch" class="dps-search" placeholder="Filter vessel / code / voyage (Enter jumps to a lane)" oninput="dpsSetQuery(this.value)" onchange="dpsJumpService(this.value)" />
+  <input type="search" id="dpsSearch" class="dps-search" placeholder="Filter vessel / voyage / port (Enter on a lane code jumps to that lane)" oninput="dpsSetQuery(this.value)" onchange="dpsJumpService(this.value)" />
   <span class="dps-note" id="dpsNote"></span>
 </div>
 <div class="dps-toolbar">
@@ -542,9 +542,11 @@ section.view.nv-view[hidden] { display:none; }
   <div class="nv-ms" id="nvms_dps_operator"><button class="nv-msbtn" onclick="nvToggleMs(event,'dps_operator')">All</button><div class="nv-msdd" id="nvmsdd_dps_operator"></div></div>
   <label>Vessel</label>
   <div class="nv-ms" id="nvms_dps_vessel"><button class="nv-msbtn" onclick="nvToggleMs(event,'dps_vessel')">All</button><div class="nv-msdd" id="nvmsdd_dps_vessel"></div></div>
+  <label>Port</label>
+  <div class="nv-ms" id="nvms_dps_port" title="Keep every voyage that calls at the selected port(s) — the whole voyage stays on screen, so the grid can still be aligned"><button class="nv-msbtn" onclick="nvToggleMs(event,'dps_port')">All</button><div class="nv-msdd" id="nvmsdd_dps_port"></div></div>
   <label class="dps-merge" title="Unchecked (default): one row per voyage number; outbound/inbound 2639W + 2639E share a row. Checked: one row per vessel, 2640W/E continues on the same row; each cell still holds one timestamp"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
   <span class="dps-meta" id="dpsMeta"></span>
-  <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;" title="Export every lane (ignores the page Operator / vessel / search filters, includes all operators per lane, keeps the current Proforma date window), one sheet per lane: SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS, remaining lanes appended">Export Excel</button>
+  <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;" title="Export every lane (ignores the page Operator / vessel / port / search filters, includes all operators per lane, keeps the current Proforma date window), one sheet per lane: SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS, remaining lanes appended">Export Excel</button>
 </div>
 <div class="dps-wrap" id="dpsWrap"><div class="dps-empty">Loading…</div></div>
 </section>
@@ -2343,7 +2345,8 @@ let dpsSvc = 'REX';
 let dpsFrom = '', dpsTo = '';
 let dpsOperator = [DPS_DEFAULT_OPERATOR], dpsOperatorTouched = false;   // [] = all operators
 let dpsVessel = [];                     // [] = all vessels
-let dpsQuery = '';                      // free text: vessel name / code / voyage
+let dpsPort = [];                       // [] = all ports (5-char codes), keeps whole voyages
+let dpsQuery = '';                      // free text: vessel name / code / voyage / port / terminal
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
 let dpsMerge = false;                   // default unmerged: false = one row per voyage (W/E together), true = one row per vessel
 let dpsLastAligned = false, dpsLastAxis = null, dpsLastMerge = false, dpsLastDrop = 0, dpsLastSplit = 0;
@@ -2372,31 +2375,58 @@ function dpsNodeInfo(t){
     name:(n&&n.n)||''
   };
 }
-// Rows after the Operator / Vessel filters.
+// Rows matching the free-text box: vessel name / vessel code / voyage number, and — so the
+// same box can find a port — the 5-char port code, the 8-char terminal code and the terminal
+// name ("nansha", "CNNAS", "CNNAST04").
 function dpsMatchQuery(r){
   const q=String(dpsQuery||'').trim().toUpperCase();
   if(!q) return true;
   const vv=String(r.vessel_voyage||'').toUpperCase();
   const code=dpsVesselCode(vv);
   const nm=((typeof VESSEL_NAMES!=='undefined' && VESSEL_NAMES[code])||'').toUpperCase();
-  return vv.indexOf(q)>=0 || nm.indexOf(q)>=0;
+  if(vv.indexOf(q)>=0 || nm.indexOf(q)>=0) return true;
+  const term=String(r.terminal||'').toUpperCase();
+  if(!term) return false;
+  if(term.indexOf(q)>=0) return true;                       // CNNAS / CNNAST04
+  const info=dpsNodeInfo(term);
+  return String(info.name||'').toUpperCase().indexOf(q)>=0;  // "nansha"
 }
+// Voyage key shared by the filters and the blocks: 4-char vessel code + voyage number, the
+// direction letter dropped (2639W and 2639E are one row).
+function dpsVoyKeyOf(vv){
+  const s=String(vv||'').toUpperCase();
+  const p=dpsVoyageParts(s);
+  return (p && p.num) ? (p.code+p.num) : s;
+}
+// A Port filter keeps whole voyages: every call of a voyage that touches one of the selected
+// ports stays on screen, otherwise the row would collapse to one cell and there would be
+// nothing left to align. The same rule applies to the free-text box, which is why the filter is
+// resolved to a set of voyage keys first and only then applied to the rows.
 function dpsFilteredRows(){
-  return dpsSvcRows().filter(r=>
+  const rows=dpsSvcRows().filter(r=>
     (!dpsOperator.length || dpsOperator.indexOf(r.operator)>=0) &&
-    (!dpsVessel.length   || dpsVessel.indexOf(dpsVesselCode(r.vessel_voyage))>=0) &&
-    dpsMatchQuery(r)
+    (!dpsVessel.length   || dpsVessel.indexOf(dpsVesselCode(r.vessel_voyage))>=0)
   );
+  const q=String(dpsQuery||'').trim();
+  if(!dpsPort.length && !q) return rows;
+  const hit={};
+  rows.forEach(r=>{
+    if(dpsPort.length && dpsPort.indexOf(dpsPortOf(r.terminal))<0) return;
+    if(q && !dpsMatchQuery(r)) return;
+    hit[dpsVoyKeyOf(r.vessel_voyage)]=1;
+  });
+  return rows.filter(r=>hit[dpsVoyKeyOf(r.vessel_voyage)]);
 }
 function dpsOnFilterChange(){
   dpsOperatorTouched=true;
   dpsOperator=nvMsSelected('dps_operator')||[];
   dpsVessel=nvMsSelected('dps_vessel')||[];
+  dpsPort=nvMsSelected('dps_port')||[];
   dpsBuildPills();
   dpsFillFilters();
   renderDps();
 }
-// Typing filters the rows live (vessel name, code or voyage number).
+// Typing filters the rows live (vessel name, code, voyage number, port or terminal).
 function dpsSetQuery(v){ dpsQuery=v; renderDps(); }
 // Pressing Enter / leaving the box on a service code jumps to that service (lane filter).
 function dpsJumpService(v){
@@ -2414,8 +2444,9 @@ function dpsJumpService(v){
   for(let i=0;i<ps.length;i++) ps[i].classList.toggle('active', ps[i].getAttribute('data-svc')===q);
   dpsFillFilters(); renderDps();
 }
-// Rebuild the Operator / Vessel dropdowns.  Operators come from the whole feed (so the choice
-// survives a lane switch), vessels from the lane currently on screen.
+// Rebuild the Operator / Vessel / Port dropdowns.  Operators come from the whole feed (so the
+// choice survives a lane switch), vessels and ports from the lane currently on screen — a port
+// list built from the whole feed would offer hundreds of codes that lane never calls.
 function dpsFillFilters(){
   if(!document.getElementById('nvms_dps_operator')||!document.getElementById('nvms_dps_vessel')) return;
   if(!DATA||!DATA.length) return;   // wait for the feed before creating the default selection
@@ -2426,14 +2457,32 @@ function dpsFillFilters(){
   const codes=[];
   rows.forEach(r=>{ const c=dpsVesselCode(r.vessel_voyage); if(c && codes.indexOf(c)===-1) codes.push(c); }); codes.sort();
   dpsVessel=dpsVessel.filter(c=>codes.indexOf(c)>=0);
+  // Ports: the 5-char code plus the shortest terminal name that maps to it, so the dropdown
+  // reads "CNNAS  Nansha International…" instead of a bare code. Only ports with a voyage
+  // inside the current date window are listed — offering a port that would open an empty grid
+  // is worse than not offering it.
+  const inWin={};
+  dpsUnitsOf(rows).filter(dpsInWindow).forEach(u=>{ inWin[u.key]=1; });
+  const ports=[], pname={};
+  rows.forEach(r=>{
+    if(!inWin[dpsVoyKeyOf(r.vessel_voyage)]) return;
+    const p=dpsPortOf(r.terminal); if(!p) return;
+    if(ports.indexOf(p)===-1) ports.push(p);
+    const nm=dpsNodeInfo(r.terminal).name;
+    if(nm && (!pname[p] || nm.length<pname[p].length)) pname[p]=nm;
+  });
+  ports.sort();
+  dpsPort=dpsPort.filter(p=>ports.indexOf(p)>=0);
   const onch=()=>dpsOnFilterChange();
   nvMsFill('dps_operator','operators',ops.map(o=>({v:o,t:o})),dpsOperator,'All operators',onch);
   nvMsFill('dps_vessel','vessels',codes.map(c=>{
     const nm=(typeof VESSEL_NAMES!=='undefined'&&VESSEL_NAMES[c])||'';
     return {v:c,t:nm?(nm+' ('+c+')'):c};
   }),dpsVessel,'All vessels',onch);
+  nvMsFill('dps_port','ports',ports.map(p=>({v:p,t:pname[p]?(p+'  '+pname[p]):p})),dpsPort,'All ports',onch);
   dpsOperator=nvMsSelected('dps_operator')||[];
   dpsVessel=nvMsSelected('dps_vessel')||[];
+  dpsPort=nvMsSelected('dps_port')||[];
 }
 // A voyage label is 4-char vessel code + voyage number + direction letter,
 // e.g. CSJ72633W / CSJ72633E = same vessel, same voyage number, opposite legs.
@@ -2628,19 +2677,13 @@ function dpsAlignOn(svc){
 // One block per voyage number (vessel code + digits), so the two legs of one voyage —
 // 2639W and 2639E — sit on the same row. With `dpsMerge` on, every voyage of that vessel
 // inside the date window joins the same row as well.
-function dpsBuildBlocks(rows){
-  const ax=dpsAxisFor(dpsSvc);
-  const aligned=dpsAlignOn(dpsSvc) && ax.loop.length>0;
-  const merge=!!dpsMerge;
+function dpsUnitsOf(rows){
   const umap={};
-  rows.forEach(r=>{
-    const vv=String(r.vessel_voyage||'').toUpperCase();
-    const p=vv?dpsVoyageParts(vv):null;
-    // Direction letter is dropped from the key: E and W are the same voyage number.
-    const k=(p && p.num) ? (p.code+p.num) : (vv||('~'+(r.terminal||'')+'|'+(r.departure||'')));
+  (rows||[]).forEach(r=>{
+    const k=dpsVoyKeyOf(r.vessel_voyage) || ('~'+(r.terminal||'')+'|'+(r.departure||''));
     (umap[k]=umap[k]||[]).push(r);
   });
-  let units=Object.keys(umap).map(k=>{
+  return Object.keys(umap).map(k=>{
     const raw=dpsSortCalls(umap[k]);
     const calls=dpsDropTurnDuplicates(raw);
     const voyages=[];
@@ -2650,18 +2693,32 @@ function dpsBuildBlocks(rows){
     return { vv:voyages[0]||k, key:k, voyages:voyages.length?voyages:[k], calls:calls,
              start:starts[0]||'', end:ends[ends.length-1]||starts[0]||'' };
   });
-  // The From / To window is authoritative. If none of the lane's voyages fall inside it the
-  // grid stays empty and renderDps() says so — it must never widen to the whole lane, because
-  // that put rows outside the selected dates back on screen (CCT + CUL, Nov 2026).
-  const kept=units.filter(u=>{
-    const s=(u.start||'').slice(0,10), e=(u.end||u.start||'').slice(0,10);
-    if(dpsFrom && e && e<dpsFrom) return false;
-    if(dpsTo && s && s>dpsTo) return false;
-    return true;
-  });
-  // Date window is applied per voyage first, so a merged row only carries the voyages that
-  // actually fall inside it (a vessel's own span would otherwise run for years).
-  const taxTry = aligned ? null : dpsPortAxis(kept);
+}
+// The From / To window is authoritative ...
+function dpsInWindow(u){
+  const s=(u.start||'').slice(0,10), e=(u.end||u.start||'').slice(0,10);
+  if(dpsFrom && e && e<dpsFrom) return false;
+  if(dpsTo && s && s>dpsTo) return false;
+  return true;
+}
+// Rows of the lane under the Operator / Vessel filters only: the column axis is built from
+// these, so narrowing by Port or by the search box never moves a column.
+function dpsAxisRows(){
+  return dpsSvcRows().filter(r=>
+    (!dpsOperator.length || dpsOperator.indexOf(r.operator)>=0) &&
+    (!dpsVessel.length   || dpsVessel.indexOf(dpsVesselCode(r.vessel_voyage))>=0));
+}
+function dpsBuildBlocks(rows){
+  const ax=dpsAxisFor(dpsSvc);
+  const aligned=dpsAlignOn(dpsSvc) && ax.loop.length>0;
+  const merge=!!dpsMerge;
+  const kept=dpsUnitsOf(rows).filter(dpsInWindow);
+  // A Port / search filter narrows the rows only. The axis still comes from the whole lane
+  // (operator / vessel filters included, Port and search excluded), so the port you filtered
+  // for stays in the column it had before and the rows can be compared vertically.
+  const narrowed=!!(dpsPort.length || String(dpsQuery||'').trim());
+  const axisUnits = narrowed ? dpsUnitsOf(dpsAxisRows()).filter(dpsInWindow) : kept;
+  const taxTry = aligned ? null : dpsPortAxis(axisUnits);
   const tax = (taxTry && taxTry.axis) ? taxTry : null;
   let groups=kept;
   if(merge){
@@ -2918,8 +2975,9 @@ function renderDps(){
   }
   const rows=dpsFilteredRows();
   if(!rows.length){
-    const why = (dpsOperator.length||dpsVessel.length||String(dpsQuery||'').trim())
+    const why = (dpsOperator.length||dpsVessel.length||dpsPort.length||String(dpsQuery||'').trim())
       ? ('No voyages match the filters (Operator: '+(dpsOperator.length?dpsOperator.join('/'):'All')+' / Vessel: '+(dpsVessel.length?dpsVessel.join('/'):'All')
+         +(dpsPort.length?(' / Port: '+dpsPort.join('/')):'')
          +(String(dpsQuery||'').trim()?(' / Search: '+String(dpsQuery).trim()):'')+')')
       : ('Lane '+dpsSvc+' has no records in the current feed');
     wrap.innerHTML='<div class="dps-empty">'+why+'</div>'; if(meta)meta.textContent=''; dpsLastSel=[]; dpsLastMax=1; return;
@@ -2928,10 +2986,13 @@ function renderDps(){
   const sel=built.blocks;
   if(!sel.length){
     const span=(dpsFrom||'—')+' ~ '+(dpsTo||'—');
-    wrap.innerHTML='<div class="dps-empty">No '+dpsEsc(dpsSvc)+' voyage falls inside the selected date window ('+dpsEsc(span)+').<br><br>'
-      +'The feed has data for this lane, but none of it lands in these dates. Widen From / To, or press <b>Default window</b>.</div>';
+    wrap.innerHTML='<div class="dps-empty">No '+dpsEsc(dpsSvc)+' voyage'
+      +(dpsPort.length?(' calling at '+dpsEsc(dpsPort.join(' / '))):'')
+      +' falls inside the selected date window ('+dpsEsc(span)+').<br><br>'
+      +(dpsPort.length?'Clear the Port filter, widen':'The feed has data for this lane, but none of it lands in these dates. Widen')
+      +' From / To, or press <b>Default window</b>.</div>';
     if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · 0 voyages in the selected date window · '+span
-      +(dpsOperator.length?' · Operator: '+dpsOperator.join('/'):'');
+      +(dpsOperator.length?' · Operator: '+dpsOperator.join('/'):'')+(dpsPort.length?' · Port: '+dpsPort.join('/'):'');
     dpsLastSel=[]; dpsLastMax=1; dpsLastMerge=!!dpsMerge; dpsLastAligned=false; dpsLastAxis=null; return;
   }
   const maxCols=Math.max(1, ...sel.map(b=>b.cols.length));
@@ -2980,7 +3041,10 @@ function renderDps(){
         ? 'Aligned by port: same port in the same column'
         : (built.termNote || 'Not aligned: port rotation differs; laid out by call order'));
   const dropTxt = built.split ? (' · '+built.split+' vessel(s) split over continued rows') : '';
-  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'');
+  const fltTxt = (dpsVessel.length?(' · Vessel: '+dpsVessel.join('/')):'')
+    +(dpsPort.length?(' · Port: '+dpsPort.join('/')):'')
+    +(String(dpsQuery||'').trim()?(' · Search: '+String(dpsQuery).trim()):'');
+  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+fltTxt+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'');
   if(meta) meta.title = built.aligned
     ? 'Each port is pinned to one column so vessels can be compared vertically'
     : (built.mode==='portavg'
@@ -3156,11 +3220,11 @@ function dpsWorkbookSheets(){
 // every operator, and without the page's vessel / search filter.  Only the Proforma date
 // window still applies, so the workbook matches the schedule period on screen.
 function dpsSheetPart(svc, tabName){
-  const prevSvc=dpsSvc, prevOp=dpsOperator, prevVes=dpsVessel, prevQ=dpsQuery;
+  const prevSvc=dpsSvc, prevOp=dpsOperator, prevVes=dpsVessel, prevQ=dpsQuery, prevPort=dpsPort;
   let rows=[], built={blocks:[],aligned:false,merge:!!dpsMerge,split:0};
-  dpsSvc=svc; dpsOperator=[]; dpsVessel=[]; dpsQuery='';
+  dpsSvc=svc; dpsOperator=[]; dpsVessel=[]; dpsQuery=''; dpsPort=[];
   try{ rows=dpsFilteredRows(); built=dpsBuildBlocks(rows); }
-  finally{ dpsSvc=prevSvc; dpsOperator=prevOp; dpsVessel=prevVes; dpsQuery=prevQ; }
+  finally{ dpsSvc=prevSvc; dpsOperator=prevOp; dpsVessel=prevVes; dpsQuery=prevQ; dpsPort=prevPort; }
   const sel=built.blocks||[];
   let maxPorts=1; sel.forEach(function(b){ if(b.cols.length>maxPorts) maxPorts=b.cols.length; });
   const nCols=2+maxPorts;
