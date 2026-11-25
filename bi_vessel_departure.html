@@ -542,7 +542,7 @@ section.view.nv-view[hidden] { display:none; }
   <div class="nv-ms" id="nvms_dps_operator"><button class="nv-msbtn" onclick="nvToggleMs(event,'dps_operator')">All</button><div class="nv-msdd" id="nvmsdd_dps_operator"></div></div>
   <label>Vessel</label>
   <div class="nv-ms" id="nvms_dps_vessel"><button class="nv-msbtn" onclick="nvToggleMs(event,'dps_vessel')">All</button><div class="nv-msdd" id="nvmsdd_dps_vessel"></div></div>
-  <label class="dps-merge" title="Checked (default): one row per vessel, 2640W/E continues on the same row; each cell still holds one timestamp. Unchecked: one row per voyage number; outbound/inbound 2639W + 2639E share a row"><input type="checkbox" id="dpsMergeChk" checked onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
+  <label class="dps-merge" title="Unchecked (default): one row per voyage number; outbound/inbound 2639W + 2639E share a row. Checked: one row per vessel, 2640W/E continues on the same row; each cell still holds one timestamp"><input type="checkbox" id="dpsMergeChk" onchange="dpsSetMerge(this.checked)" /> Merge voyages</label>
   <span class="dps-meta" id="dpsMeta"></span>
   <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;" title="Export every lane (ignores the page Operator / vessel / search filters, includes all operators per lane, keeps the current Proforma date window), one sheet per lane: SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS, remaining lanes appended">Export Excel</button>
 </div>
@@ -2345,7 +2345,7 @@ let dpsOperator = [DPS_DEFAULT_OPERATOR], dpsOperatorTouched = false;   // [] = 
 let dpsVessel = [];                     // [] = all vessels
 let dpsQuery = '';                      // free text: vessel name / code / voyage
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
-let dpsMerge = true;                    // default merged: true = one row per vessel, false = one row per voyage (W/E together)
+let dpsMerge = false;                   // default unmerged: false = one row per voyage (W/E together), true = one row per vessel
 let dpsLastAligned = false, dpsLastAxis = null, dpsLastMerge = false, dpsLastDrop = 0, dpsLastSplit = 0;
 const DPS_MAX_COLS = 16;                // grids wider than this are too sparse to read
 const DPS_MERGE_MAX_COLS = 40;          // a merged row spans several rotations; cap the grid
