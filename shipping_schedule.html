@@ -456,6 +456,11 @@
   .dm-tier-table th { position:static; background:#eef1f5; padding:6px 8px; text-align:left; color:var(--muted); font-size:.68rem; text-transform:uppercase; }
   .dm-tier-table td { padding:5px 8px; border-top:1px solid #f0f2f5; }
   .dm-tier-table input { width:76px; padding:4px 6px; font-size:.76rem; }
+  .dm-src-badge { display:inline-block; padding:1px 6px; border-radius:9px; font-size:.66rem; font-weight:700; white-space:nowrap; }
+  .dm-src-act { background:#d4edda; color:#155724; }
+  .dm-src-tcd { background:#cce5ff; color:#004085; }
+  .dm-src-mix { background:#fff0c2; color:#7a5c00; }
+  .dm-src-none { background:#f0f0f0; color:#999; font-weight:400; }
   .dm-tier-table .dm-tier-add { padding:7px 10px; border-top:1px dashed #d7dce2; }
   .dm-btn-commit:hover { background:#0b5ed7; }
   .dm-btn-commit.loading { opacity:.65; pointer-events:none; }
@@ -1729,6 +1734,7 @@
               <th>Vessel Code</th>
               <th>Vessel Name</th>
               <th style="width:340px">Speeds (kn)</th>
+              <th style="width:90px">Source</th>
               <th style="width:100px">Hire/Day $</th>
               <th style="width:110px">Actions</th>
             </tr>
@@ -2953,6 +2959,30 @@ async function loadAllData(){
   loadBestModelData().catch(function(){});
   // Load PTX averages (fire-and-forget)
   loadPtxData().catch(function(){});
+  // Load vessel fuel-data source map (Actual / TCD / MIXED) — fire-and-forget
+  loadVesselSourceMap().catch(function(){});
+}
+
+// ===== Vessel fuel data source map (Actual vs TCD) =====
+let VESSEL_SOURCE = {};   // { code: {type, act, tcd, tiers:{speed:'ACT'|'TCD'}} }
+async function loadVesselSourceMap(){
+  const urls = [
+    '/data/vessel_source.json?t=' + Date.now(),
+    CSV_GITHUB + '/vessel_source.json?t=' + Date.now(),
+    'shipping_data/vessel_source.json?t=' + Date.now()
+  ];
+  for(const u of urls){
+    try {
+      const resp = await fetch(u, { cache:'no-store' });
+      if(resp.ok){
+        const json = await resp.json();
+        VESSEL_SOURCE = json.ships || {};
+        console.log('[sourceMap] loaded', Object.keys(VESSEL_SOURCE).length, 'ships');
+        return;
+      }
+    } catch(e){ /* try next */ }
+  }
+  console.warn('[sourceMap] unavailable — Source column will show —');
 }
 
 // Load CUL Ship Particular data (transposed CSV: rows=fields, cols=vessels)
@@ -7438,7 +7468,14 @@ function switchDmTab(tab){
 }
 
 function updateDmStatus(){
-  const np=PORTS_DATA.length, nv=VESSELS_DATA.length, nd=DIST_RAW.length, nl=LANES_DATA.length;
+  const np=PORTS_DATA.length, nd=DIST_RAW.length, nl=LANES_DATA.length;
+  const nv=getShipGroups().filter(g => g.rows.some(r =>
+    (parseFloat(r.v.lsfo)||0) > 0 ||
+    (parseFloat(r.v.hsfo)||0) > 0 ||
+    (parseFloat(r.v.mgo)||0) > 0 ||
+    (parseFloat(r.v.ps_lsfo)||0) > 0 ||
+    (parseFloat(r.v.ps_mgo)||0) > 0
+  )).length;
   document.getElementById('dmStatus').textContent = np+' ports | '+nv+' vessels | '+nd+' distances | '+nl+' lanes';
 }
 
@@ -7771,11 +7808,37 @@ function getVesselDupMap(){
   for(const key in counts){ if(counts[key] > 1) dups.add(key); }
   return dups;
 }
+function sourceBadge(code){
+  const s = VESSEL_SOURCE[code];
+  if(!s) return '<span class="dm-src-badge dm-src-none" title="Not in 2026-11-26 update - original value kept">-</span>';
+  const isAct = s.type==='ACT';
+  const cls = isAct ? 'dm-src-act' : 'dm-src-tcd';
+  const tip = isAct
+    ? 'Actual first' + (s.tcd ? ' - '+s.tcd+' tier(s) absent from Actual, filled from TCD' : ' - all tiers from Actual')
+    : 'No Actual data - all tiers from TCD Daily Consumption';
+  return '<span class="dm-src-badge '+cls+'" title="'+tip+'">'+s.type+'</span>';
+}
+function tierSourceBadge(code, speed){
+  const s = VESSEL_SOURCE[code];
+  if(!s || !s.tiers) return '<span class="dm-src-badge dm-src-none">-</span>';
+  const v = parseFloat(speed);
+  const src = s.tiers[String(v)] || s.tiers[String(v.toFixed(1))] || s.tiers[String(Math.round(v))];
+  if(!src) return '<span class="dm-src-badge dm-src-none">-</span>';
+  const tip = src==='ACT' ? 'Actual Daily Consumption' : 'TCD fallback - this speed tier absent from Actual';
+  return '<span class="dm-src-badge '+(src==='ACT'?'dm-src-act':'dm-src-tcd')+'" title="'+tip+'">'+src+'</span>';
+}
 function renderDmVessels(filter=''){
   const body = document.getElementById('dmVesselBody');
   const f = (filter||'').toLowerCase();
   const dupMap = getVesselDupMap();
-  const groups = getShipGroups();
+  // Hide vessels with no fuel data at all (all LSFO/HSFO/MGO/PS values zero)
+  const groups = getShipGroups().filter(g => g.rows.some(r =>
+    (parseFloat(r.v.lsfo)||0) > 0 ||
+    (parseFloat(r.v.hsfo)||0) > 0 ||
+    (parseFloat(r.v.mgo)||0) > 0 ||
+    (parseFloat(r.v.ps_lsfo)||0) > 0 ||
+    (parseFloat(r.v.ps_mgo)||0) > 0
+  ));
   let html = '', shown = 0;
   groups.forEach(g=>{
     if(f && !(g.code.toLowerCase().includes(f) || (g.name||'').toLowerCase().includes(f))) return;
@@ -7789,6 +7852,7 @@ function renderDmVessels(filter=''){
       <td><input value="${esc(g.code)}" onchange="editDmVesselShip('${dmJsStr(g.code)}','code',this.value)" style="width:80px;font-weight:600"/></td>
       <td><input value="${esc(g.name)}" onchange="editDmVesselShip('${dmJsStr(g.code)}','name',this.value)" style="width:150px"/></td>
       <td class="dm-speeds-cell" title="${esc(speedList)}">${esc(speedList)}</td>
+      <td>${sourceBadge(g.code)}</td>
       <td><input type="number" value="${g.rows[0].v.hire||''}" min="0" step="1" onchange="editDmVesselShip('${dmJsStr(g.code)}','hire',this.value)" style="width:85px" placeholder="0" title="Daily hire rate (USD) — applies to all tiers"/></td>
       <td class="dm-actions-cell">
         <button class="dm-btn dm-btn-sm" onclick="toggleDmShip('${dmJsStr(g.code)}')" title="${g.rows.length} speed tier(s) — click to show/hide" style="background:#e7f0ff;color:#0d6efd;">${open?'▴ Hide':'▾ Tiers ('+g.rows.length+')'}</button>
@@ -7796,8 +7860,8 @@ function renderDmVessels(filter=''){
       </td>
     </tr>`;
     if(open){
-      html += `<tr class="dm-tier-row"><td colspan="6"><div class="dm-tier-wrap"><table class="dm-tier-table">
-        <thead><tr><th style="width:36px">#</th><th>Speed (kn)</th><th>LSFO mt/d</th><th>HSFO mt/d</th><th>MGO mt/d</th><th>PS LSFO</th><th>PS MGO</th><th style="width:70px">Actions</th></tr></thead><tbody>`;
+      html += `<tr class="dm-tier-row"><td colspan="7"><div class="dm-tier-wrap"><table class="dm-tier-table">
+        <thead><tr><th style="width:36px">#</th><th>Speed (kn)</th><th>LSFO mt/d</th><th>HSFO mt/d</th><th>MGO mt/d</th><th>PS LSFO</th><th>PS MGO</th><th style="width:64px">Source</th><th style="width:70px">Actions</th></tr></thead><tbody>`;
       g.rows.forEach((r,ti)=>{
         const v=r.v, i=r.i;
         const isDup = dupMap.has((v.name||'').trim().toLowerCase()+'|'+parseFloat(v.speed||0));
@@ -7809,13 +7873,14 @@ function renderDmVessels(filter=''){
           <td><input type="number" value="${v.mgo}" min="0" step="0.1" onchange="editDmVessel(${i},'mgo',this.value)" style="width:76px"/></td>
           <td><input type="number" value="${v.ps_lsfo||''}" min="0" step="0.5" onchange="editDmVessel(${i},'ps_lsfo',this.value)" style="width:76px" placeholder="0" title="Port Stay LSFO mt/day"/></td>
           <td><input type="number" value="${v.ps_mgo||''}" min="0" step="0.1" onchange="editDmVessel(${i},'ps_mgo',this.value)" style="width:76px" placeholder="0" title="Port Stay MGO mt/day"/></td>
+          <td>${tierSourceBadge(g.code, v.speed)}</td>
           <td><button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmVesselTier(${i})" title="Delete this speed tier">✕</button></td>
         </tr>`;
       });
       html += `</tbody></table><div class="dm-tier-add"><button class="dm-btn dm-btn-sm" onclick="addDmVesselTier('${dmJsStr(g.code)}')" style="background:#28a745;color:#fff;">+ Add Tier</button></div></div></td></tr>`;
     }
   });
-  if(!shown) html = '<tr><td colspan="6" class="dm-empty">No vessels found</td></tr>';
+  if(!shown) html = '<tr><td colspan="7" class="dm-empty">No vessels found</td></tr>';
   body.innerHTML = html;
   updateDmStatus();
 }
