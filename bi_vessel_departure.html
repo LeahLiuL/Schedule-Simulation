@@ -227,6 +227,12 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .dps-pill:hover { background:#f0f4fa; }
 .dps-pill.active { background:#16335a; color:#fff; border-color:#16335a; }
 .dps-pill.empty { opacity:.4; }
+.dps-pill[draggable="true"] { cursor:grab; }
+.dps-pill.dps-drag { opacity:.32; cursor:grabbing; }
+.dps-pill.dps-drop-before { box-shadow:-3px 0 0 #2E75B6; }
+.dps-pill-reset { flex:0 0 auto; border:0; background:transparent; color:#98a2b3; font-size:10.5px;
+  padding:2px 6px; margin-left:2px; cursor:pointer; white-space:nowrap; }
+.dps-pill-reset:hover { color:#16335a; text-decoration:underline; }
 .dps-toolbar label { font-size:11px; color:#5f6368; font-weight:700; }
 .dps-toolbar input[type=date] { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; }
 .dps-toolbar select { font-size:12px; padding:3px 6px; border:1px solid #ddd; border-radius:6px; max-width:230px; background:#fff; }
@@ -539,6 +545,7 @@ section.view.nv-view[hidden] { display:none; }
 <div class="dps-toolbar">
   <label>Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
+  <button type="button" class="dps-pill-reset" onclick="dpsResetPillOrder()" title="Restore the default lane order (the order you supplied for the workbook)">Reset order</button>
   <label>Filter</label>
   <span class="dps-filterbox" id="dpsFilterBox">
     <input type="text" id="dpsSearch" class="dps-search" placeholder="Type vessel / port / voyage — e.g. CNNAS" title="Filter by vessel name, vessel code, voyage number, operator, port or terminal code — several words are OR-ed" oninput="dpsSetQuery(this.value)" onkeydown="dpsQueryKey(event)" autocomplete="off" />
@@ -567,7 +574,8 @@ section.view.nv-view[hidden] { display:none; }
     <optgroup label="Pin one terminal" id="dpsAlignTerms"></optgroup>
   </select>
   <span class="dps-meta" id="dpsMeta"></span>
-  <button class="btn btn-success" onclick="exportDpsXlsx()" style="margin-left:auto;" title="Export every lane (ignores the page Operator / vessel / port / search filters, includes all operators per lane, keeps the current Proforma date window), one sheet per lane: SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS, remaining lanes appended">Export Excel</button>
+  <button class="btn btn-secondary" onclick="exportCurrentViewXlsx()" style="margin-left:auto;" title="Export ONLY what is on screen: the current lane with the current Operator / Vessel / Port / Filter selections, the current From-To window, Merge and Align. One sheet.">Export current view</button>
+  <button class="btn btn-success" onclick="exportDpsXlsx()" title="Export every lane (ignores the page Operator / vessel / port / search filters, includes all operators per lane, keeps the current Proforma date window), one sheet per lane: SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS, remaining lanes appended">Export Excel (all lanes)</button>
 </div>
 <div class="dps-wrap" id="dpsWrap"><div class="dps-empty">Loading…</div></div>
 </section>
@@ -3009,6 +3017,74 @@ function dpsSetDefaultRange(){
   const f=document.getElementById('dps_from'), g=document.getElementById('dps_to');
   if(f)f.value=dpsFrom; if(g)g.value=dpsTo;
 }
+// ---- Lane pill order ---------------------------------------------------------------
+// The sequence the user supplied for the workbook, mapped back from Excel tab names to the
+// feed's svc codes (SCT3→ST3, NSCT1→ST1, AEM→AM1). Lanes not on the list follow in
+// alphabetical order. The order is draggable and persisted, so it survives a reload.
+const DPS_PILL_KEY='dps_pill_order_v1';
+const DPS_PILL_DEFAULT=['ST3','ST1','HDT','NSX','CST','CCT','NP2','REX','RTS','SGX','RES','CGX','HLX','CGS','AM1','IMR','NAF','MES','JPS'];
+let dpsPillOrder=null, dpsDragCode=null, dpsDragMoved=false;
+function dpsLoadPillOrder(){
+  if(dpsPillOrder) return dpsPillOrder;
+  let a=null;
+  try{ a=JSON.parse(localStorage.getItem(DPS_PILL_KEY)||'null'); }catch(e){}
+  const src=(Array.isArray(a)&&a.length)?a:DPS_PILL_DEFAULT, seen={};
+  dpsPillOrder=[];
+  src.forEach(x=>{ if(typeof x==='string' && x && !seen[x]){ seen[x]=1; dpsPillOrder.push(x); } });
+  return dpsPillOrder;
+}
+function dpsSavePillOrder(){ try{ localStorage.setItem(DPS_PILL_KEY,JSON.stringify(dpsPillOrder)); }catch(e){} }
+function dpsOrderedServices(codes){
+  const ord=dpsLoadPillOrder(), rank={}, tail=ord.length+1;
+  ord.forEach((c,i)=>{ if(rank[c]===undefined) rank[c]=i; });
+  return codes.slice().sort((a,b)=>{
+    const ra=rank[a]===undefined?tail:rank[a], rb=rank[b]===undefined?tail:rank[b];
+    return (ra-rb) || a.localeCompare(b);
+  });
+}
+function dpsResetPillOrder(){
+  dpsPillOrder=DPS_PILL_DEFAULT.slice(); dpsSavePillOrder();
+  DPS_SERVICES=dpsOrderedServices(DPS_SERVICES);
+  dpsBuildPills();
+}
+// HTML5 drag & drop on the pills. Reordering saves the FULL visible order, so a lane moved
+// in front of another keeps that exact position on the next visit.
+function dpsPillClick(e,code){ if(dpsDragMoved) return; dpsSelectSvc(code); }
+function dpsDragStart(e,code){
+  dpsDragCode=code; dpsDragMoved=false;
+  if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain',code); }catch(err){} }
+  if(e.target&&e.target.classList) e.target.classList.add('dps-drag');
+}
+function dpsDragOver(e,code){
+  if(!dpsDragCode||dpsDragCode===code) return;
+  e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='move';
+  if(e.currentTarget&&e.currentTarget.classList) e.currentTarget.classList.add('dps-drop-before');
+}
+function dpsDragLeave(e){ if(e.currentTarget&&e.currentTarget.classList) e.currentTarget.classList.remove('dps-drop-before'); }
+function dpsDrop(e,code){
+  e.preventDefault();
+  const src=dpsDragCode; dpsDragCode=null;
+  if(e.currentTarget&&e.currentTarget.classList) e.currentTarget.classList.remove('dps-drop-before');
+  if(src&&src!==code) dpsReorderPill(src,code);
+}
+function dpsDragEnd(e){
+  dpsDragCode=null;
+  if(e.target&&e.target.classList) e.target.classList.remove('dps-drag');
+  const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
+  for(let i=0;i<ps.length;i++) ps[i].classList.remove('dps-drop-before');
+  dpsDragMoved=true; setTimeout(function(){ dpsDragMoved=false; },250);
+}
+function dpsReorderPill(src,target){
+  const cur=dpsLoadPillOrder().slice();
+  (DPS_SERVICES||[]).forEach(c=>{ if(cur.indexOf(c)<0) cur.push(c); });
+  const i=cur.indexOf(src); if(i<0) return;
+  cur.splice(i,1);
+  const j=cur.indexOf(target);
+  cur.splice(j<0?cur.length:j,0,src);
+  dpsPillOrder=cur; dpsSavePillOrder();
+  DPS_SERVICES=dpsOrderedServices(DPS_SERVICES);
+  dpsBuildPills();
+}
 // Lane pills list only the lanes that actually carry rows for the selected operator.
 // With CUL preselected a lane CUL does not serve would otherwise open an empty grid, and the
 // workbook used to end up with one blank sheet per such lane.
@@ -3023,7 +3099,7 @@ function dpsBuildPills(){
   });
   DPS_SVC_COUNT=cnt;
   DPS_SVC_HIDDEN_COUNT=Object.keys(hid).length;
-  DPS_SERVICES=Object.keys(cnt).sort((a,b)=>(cnt[b]-cnt[a])||a.localeCompare(b));
+  DPS_SERVICES=dpsOrderedServices(Object.keys(cnt));
   if(DPS_SERVICES.indexOf(dpsSvc)<0) dpsSvc=DPS_SERVICES[0]||'';
   if(!DPS_SERVICES.length){
     pills.innerHTML='<span style="color:#8a8f98;font-size:12px;padding:4px 2px;">No lane records for the selected operators</span>';
@@ -3031,8 +3107,12 @@ function dpsBuildPills(){
   }
   pills.innerHTML=DPS_SERVICES.map(s=>{
     const nm=dpsLaneName(s), tp=dpsLaneType(s);
-    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+cnt[s]+' rows';
-    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+'" data-svc="'+s+'" title="'+dpsEsc(tip)+'" onclick="dpsSelectSvc(\''+s+'\')">'+s+'</span>';
+    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+cnt[s]+' rows · drag to reorder';
+    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+'" data-svc="'+s+'" draggable="true"'
+      +' title="'+dpsEsc(tip)+'"'
+      +' ondragstart="dpsDragStart(event,\''+s+'\')" ondragover="dpsDragOver(event,\''+s+'\')"'
+      +' ondragleave="dpsDragLeave(event)" ondrop="dpsDrop(event,\''+s+'\')" ondragend="dpsDragEnd(event)"'
+      +' onclick="dpsPillClick(event,\''+s+'\')">'+s+'</span>';
   }).join('');
 }
 function dpsInit(){
@@ -3374,10 +3454,12 @@ function dpsWorkbookSheets(){
 // One worksheet part: the same 7-row blocks as the screen, but always for the whole lane —
 // every operator, and without the page's vessel / search filter.  Only the Proforma date
 // window still applies, so the workbook matches the schedule period on screen.
-function dpsSheetPart(svc, tabName){
+// useFilters=false (default) = full-lane workbook: page filters are cleared and restored
+// around the call. useFilters=true = "Export current view": keep every filter exactly as it is.
+function dpsSheetPart(svc, tabName, useFilters){
   const prevSvc=dpsSvc, prevOp=dpsOperator, prevVes=dpsVessel, prevQ=dpsQuery, prevPort=dpsPort;
   let rows=[], built={blocks:[],aligned:false,merge:!!dpsMerge,split:0};
-  dpsSvc=svc; dpsOperator=[]; dpsVessel=[]; dpsQuery=''; dpsPort=[];
+  if(!useFilters){ dpsSvc=svc; dpsOperator=[]; dpsVessel=[]; dpsQuery=''; dpsPort=[]; }
   try{ rows=dpsFilteredRows(); built=dpsBuildBlocks(rows); }
   finally{ dpsSvc=prevSvc; dpsOperator=prevOp; dpsVessel=prevVes; dpsQuery=prevQ; dpsPort=prevPort; }
   const sel=built.blocks||[];
@@ -3390,7 +3472,12 @@ function dpsSheetPart(svc, tabName){
       :(built.mode==='portavg'?'Aligned by port: same port, same column':(built.termNote||'Laid out by call order')));
   const groupTxt=built.merge?'One row per vessel':'One row per voyage (W/E together)';
   const dropTxt=(built.merge&&built.split)?(' / '+built.split+' continued block(s)'):'';
-  const fltTxt='Operator: All operators (full export, page filters excluded)';
+  const fltTxt = useFilters
+    ? ('Filters (current view): Operator '+(dpsOperator.length?dpsOperator.join('/'):'All')
+        +' / Vessel '+(dpsVessel.length?dpsVessel.join('/'):'All')
+        +' / Port '+(dpsPort.length?dpsPort.join('/'):'All')
+        +' / Search '+(String(dpsQuery||'').trim()?('"'+String(dpsQuery).trim()+'"'):'—'))
+    : 'Operator: All operators (full export, page filters excluded)';
   const aliasTxt=(tabName!==svc)?('   Feed lane code '+svc):'';
   // Actual span of the calls kept here: a voyage that straddles the window keeps all of its
   // calls, so a sheet may start before From or end after To — state it instead of looking wrong.
@@ -3489,6 +3576,57 @@ function dpsSheetPart(svc, tabName){
   return { name:tabName, svc:svc, xml:sheetXml, blocks:sel.length, empty:!sel.length, maxPorts:maxPorts };
 }
 let dpsSheetPartFirst=null;
+// Shared OOXML packaging, used by both the full workbook and the current-view export.
+function dpsPackXlsx(parts){
+  const sheetTags=parts.map(function(p,i){
+    return '<sheet name="'+xlsxEsc(p.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>';
+  }).join('');
+  const workbookXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+    '<sheets>'+sheetTags+'</sheets></workbook>';
+  let relItems='';
+  parts.forEach(function(p,i){
+    relItems+='<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>';
+  });
+  relItems+='<Relationship Id="rId'+(parts.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+  const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+relItems+'</Relationships>';
+  const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+    parts.map(function(p,i){
+      return '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+    }).join('')+
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
+    '</Types>';
+  const rootRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
+    '</Relationships>';
+  const enc=new TextEncoder();
+  const files=[
+    {name:'[Content_Types].xml', data:enc.encode(contentTypes)},
+    {name:'_rels/.rels', data:enc.encode(rootRels)},
+    {name:'xl/workbook.xml', data:enc.encode(workbookXml)},
+    {name:'xl/_rels/workbook.xml.rels', data:enc.encode(wbRels)},
+    {name:'xl/styles.xml', data:enc.encode(xlsxStylesXml())}
+  ];
+  parts.forEach(function(p,i){
+    files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml', data:enc.encode(p.xml)});
+  });
+  return new Blob([xlsxZip(files)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function dpsDownload(blob,filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  if(document.body) document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ try{ URL.revokeObjectURL(a.href); }catch(e){} if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
+}
+// Full workbook: every lane, all operators, page filters excluded. Unchanged behaviour.
 function exportDpsXlsx(){
   if(!DATA || !DATA.length){ alert('Data is still loading. Please try again shortly.'); return; }
   const sheets=dpsWorkbookSheets();
@@ -3507,58 +3645,36 @@ function exportDpsXlsx(){
         parts.push(p);
       });
       dpsSheetPartFirst=null;
-      const sheetTags=parts.map(function(p,i){
-        return '<sheet name="'+xlsxEsc(p.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>';
-      }).join('');
-      const workbookXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
-        '<sheets>'+sheetTags+'</sheets></workbook>';
-      let relItems='';
-      parts.forEach(function(p,i){
-        relItems+='<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>';
-      });
-      relItems+='<Relationship Id="rId'+(parts.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
-      const wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+relItems+'</Relationships>';
-      const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
-        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
-        '<Default Extension="xml" ContentType="application/xml"/>'+
-        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
-        parts.map(function(p,i){
-          return '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
-        }).join('')+
-        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
-        '</Types>';
-      const rootRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
-        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
-        '</Relationships>';
-      const enc=new TextEncoder();
-      const files=[
-        {name:'[Content_Types].xml', data:enc.encode(contentTypes)},
-        {name:'_rels/.rels', data:enc.encode(rootRels)},
-        {name:'xl/workbook.xml', data:enc.encode(workbookXml)},
-        {name:'xl/_rels/workbook.xml.rels', data:enc.encode(wbRels)},
-        {name:'xl/styles.xml', data:enc.encode(xlsxStylesXml())}
-      ];
-      parts.forEach(function(p,i){
-        files.push({name:'xl/worksheets/sheet'+(i+1)+'.xml', data:enc.encode(p.xml)});
-      });
-      const blob=new Blob([xlsxZip(files)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-      const a=document.createElement('a');
-      a.href=URL.createObjectURL(blob);
-      a.download='Proforma_AllLanes_'+dpsDateStr(new Date()).replace(/-/g,'')+'.xlsx';
-      if(document.body) document.body.appendChild(a);
-      a.click();
-      setTimeout(function(){ try{ URL.revokeObjectURL(a.href); }catch(e){} if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
+      dpsDownload(dpsPackXlsx(parts),'Proforma_AllLanes_'+dpsDateStr(new Date()).replace(/-/g,'')+'.xlsx');
       if(emptyCount){
         alert('Exported '+parts.length+' lanes (one sheet each, all operators included).\n'+emptyCount+' lanes had no records in the Proforma window '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+' and are flagged on the page.');
       }
     }catch(e){
       alert('Export failed: '+(e&&e.message?e.message:e));
     }finally{
-      if(btn){ btn.disabled=false; btn.textContent=oldTxt||'Export Excel'; }
+      if(btn){ btn.disabled=false; btn.textContent=oldTxt||'Export Excel (all lanes)'; }
+    }
+  }, 30);
+}
+// Current view: one sheet for the lane on screen, with EVERY page filter applied
+// (Operator / Vessel / Port / search box) plus the From-To window, Merge and Align.
+function exportCurrentViewXlsx(){
+  if(!DATA || !DATA.length){ alert('Data is still loading. Please try again shortly.'); return; }
+  const btn=document.querySelector('button[onclick="exportCurrentViewXlsx()"]');
+  const oldTxt=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='Exporting…'; }
+  setTimeout(function(){
+    try{
+      const svc=dpsSvc||'LANE';
+      dpsSheetPartFirst=svc;
+      const p=dpsSheetPart(svc,svc,true);
+      dpsSheetPartFirst=null;
+      dpsDownload(dpsPackXlsx([p]),'Proforma_'+svc+'_CurrentView_'+dpsDateStr(new Date()).replace(/-/g,'')+'.xlsx');
+      if(p.empty) alert('No '+svc+' voyage matches the current filters / date window — an empty sheet was exported.');
+    }catch(e){
+      alert('Export failed: '+(e&&e.message?e.message:e));
+    }finally{
+      if(btn){ btn.disabled=false; btn.textContent=oldTxt||'Export current view'; }
     }
   }, 30);
 }
