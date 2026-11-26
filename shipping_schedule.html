@@ -446,6 +446,17 @@
   .dm-row-dup { background:#fff3cd !important; }
   .dm-row-dup input { background:#fffbea; }
   .dm-dup-badge { display:inline-block; background:#dc3545; color:#fff; font-size:10px; padding:1px 5px; border-radius:8px; margin-left:4px; vertical-align:middle; }
+  /* vessel tier sub-table */
+  .dm-ship-toggle { cursor:pointer; user-select:none; color:var(--primary); font-weight:700; display:inline-block; width:15px; }
+  .dm-ship-toggle:hover { color:#0b5ed7; }
+  .dm-speeds-cell { font-size:.74rem; color:var(--muted); max-width:340px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dm-tier-row > td { padding:0 !important; background:#fafbfc; }
+  .dm-tier-wrap { margin:6px 12px 10px 42px; border:1px solid #e3e6ea; border-radius:8px; overflow:hidden; background:#fff; }
+  .dm-tier-table { width:100%; border-collapse:collapse; font-size:.76rem; }
+  .dm-tier-table th { position:static; background:#eef1f5; padding:6px 8px; text-align:left; color:var(--muted); font-size:.68rem; text-transform:uppercase; }
+  .dm-tier-table td { padding:5px 8px; border-top:1px solid #f0f2f5; }
+  .dm-tier-table input { width:76px; padding:4px 6px; font-size:.76rem; }
+  .dm-tier-table .dm-tier-add { padding:7px 10px; border-top:1px dashed #d7dce2; }
   .dm-btn-commit:hover { background:#0b5ed7; }
   .dm-btn-commit.loading { opacity:.65; pointer-events:none; }
   .dm-btn-external { background:#0d6efd22; color:#0d6efd; text-decoration:none; display:inline-block; text-align:center; }
@@ -1714,17 +1725,12 @@
         <table class="dm-table" id="dmVesselTable">
           <thead>
             <tr>
-              <th style="width:40px">#</th>
+              <th style="width:50px">#</th>
               <th>Vessel Code</th>
               <th>Vessel Name</th>
-              <th style="width:90px">Speed (kn)</th>
-              <th style="width:90px">LSFO mt/d</th>
-              <th style="width:90px">HSFO mt/d</th>
-              <th style="width:90px">MGO mt/d</th>
-              <th style="width:90px">PS LSFO</th>
-              <th style="width:90px">PS MGO</th>
-              <th style="width:90px">Hire/Day $</th>
-              <th style="width:100px">Actions</th>
+              <th style="width:340px">Speeds (kn)</th>
+              <th style="width:100px">Hire/Day $</th>
+              <th style="width:110px">Actions</th>
             </tr>
           </thead>
           <tbody id="dmVesselBody"></tbody>
@@ -7740,6 +7746,20 @@ async function fetchDistancesForNewPorts(newPortCodes){
 }
 
 // ========== VESSELS ==========
+// One row per ship (grouped by vessel_code); speed tiers expand inline.
+// VESSELS_DATA stays one-row-per-tier so export / commit logic is untouched.
+let dmExpandedShips = new Set();
+// Escape a value for use inside a single-quoted JS string in an HTML onclick attribute.
+function dmJsStr(s){ return esc(String(s)).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function getShipGroups(){
+  const groups = [], byCode = new Map();
+  VESSELS_DATA.forEach((v,i)=>{
+    let g = byCode.get(v.code);
+    if(!g){ g = {code:v.code, name:v.name||'', rows:[]}; byCode.set(v.code,g); groups.push(g); }
+    g.rows.push({i, v});
+  });
+  return groups;
+}
 function getVesselDupMap(){
   // Returns a Set of "name|speed" keys that appear more than once
   const counts = {};
@@ -7753,30 +7773,49 @@ function getVesselDupMap(){
 }
 function renderDmVessels(filter=''){
   const body = document.getElementById('dmVesselBody');
-  const f = filter.toLowerCase();
+  const f = (filter||'').toLowerCase();
   const dupMap = getVesselDupMap();
-  let html = '';
-  VESSELS_DATA.forEach((v,i)=>{
-    if(f && !(v.code.toLowerCase().includes(f) || v.name.toLowerCase().includes(f))) return;
-    const dupKey = (v.name||'').trim().toLowerCase() + '|' + parseFloat(v.speed||0);
-    const isDup = dupMap.has(dupKey);
-    html += `<tr${isDup ? ' class="dm-row-dup"' : ''}>
-      <td>${i+1}${isDup ? '<span class="dm-dup-badge" title="Duplicate: same vessel name + speed">DUP</span>' : ''}</td>
-      <td><input value="${esc(v.code)}" onchange="editDmVessel(${i},'code',this.value)" style="width:80px;font-weight:600"/></td>
-      <td><input value="${esc(v.name)}" onchange="editDmVessel(${i},'name',this.value)"/></td>
-      <td><input type="number" value="${v.speed}" min="0" max="30" step="0.5" onchange="editDmVessel(${i},'speed',this.value)" style="width:75px"/></td>
-      <td><input type="number" value="${v.lsfo}" min="0" step="0.5" onchange="editDmVessel(${i},'lsfo',this.value)" style="width:75px"/></td>
-      <td><input type="number" value="${v.hsfo}" min="0" step="0.5" onchange="editDmVessel(${i},'hsfo',this.value)" style="width:75px"/></td>
-      <td><input type="number" value="${v.mgo}" min="0" step="0.1" onchange="editDmVessel(${i},'mgo',this.value)" style="width:75px"/></td>
-      <td><input type="number" value="${v.ps_lsfo||''}" min="0" step="0.5" onchange="editDmVessel(${i},'ps_lsfo',this.value)" style="width:75px" placeholder="0" title="Port Stay LSFO mt/day"/></td>
-      <td><input type="number" value="${v.ps_mgo||''}" min="0" step="0.1" onchange="editDmVessel(${i},'ps_mgo',this.value)" style="width:75px" placeholder="0" title="Port Stay MGO mt/day"/></td>
-      <td><input type="number" value="${v.hire||''}" min="0" step="1" onchange="editDmVessel(${i},'hire',this.value)" style="width:85px" placeholder="0" title="Daily hire rate (USD)"/></td>
+  const groups = getShipGroups();
+  let html = '', shown = 0;
+  groups.forEach(g=>{
+    if(f && !(g.code.toLowerCase().includes(f) || (g.name||'').toLowerCase().includes(f))) return;
+    shown++;
+    const open = dmExpandedShips.has(g.code);
+    const speeds = g.rows.map(r=>parseFloat(r.v.speed||0)).sort((a,b)=>a-b);
+    const speedList = speeds.map(s=>Number.isInteger(s)?s:+s.toFixed(2)).join(' / ');
+    const anyDup = g.rows.some(r=>dupMap.has((r.v.name||'').trim().toLowerCase()+'|'+parseFloat(r.v.speed||0)));
+    html += `<tr class="${anyDup?'dm-row-dup':''}" data-ship="${esc(g.code)}">
+      <td>${shown}${anyDup?'<span class="dm-dup-badge" title="Duplicate name + speed tier">DUP</span>':''}</td>
+      <td><input value="${esc(g.code)}" onchange="editDmVesselShip('${dmJsStr(g.code)}','code',this.value)" style="width:80px;font-weight:600"/></td>
+      <td><input value="${esc(g.name)}" onchange="editDmVesselShip('${dmJsStr(g.code)}','name',this.value)" style="width:150px"/></td>
+      <td class="dm-speeds-cell" title="${esc(speedList)}">${esc(speedList)}</td>
+      <td><input type="number" value="${g.rows[0].v.hire||''}" min="0" step="1" onchange="editDmVesselShip('${dmJsStr(g.code)}','hire',this.value)" style="width:85px" placeholder="0" title="Daily hire rate (USD) — applies to all tiers"/></td>
       <td class="dm-actions-cell">
-        <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmVessel(${i})">✕</button>
+        <button class="dm-btn dm-btn-sm" onclick="toggleDmShip('${dmJsStr(g.code)}')" title="${g.rows.length} speed tier(s) — click to show/hide" style="background:#e7f0ff;color:#0d6efd;">${open?'▴ Hide':'▾ Tiers ('+g.rows.length+')'}</button>
+        <button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmVessel('${dmJsStr(g.code)}')" title="Delete vessel (all tiers)">✕</button>
       </td>
     </tr>`;
+    if(open){
+      html += `<tr class="dm-tier-row"><td colspan="6"><div class="dm-tier-wrap"><table class="dm-tier-table">
+        <thead><tr><th style="width:36px">#</th><th>Speed (kn)</th><th>LSFO mt/d</th><th>HSFO mt/d</th><th>MGO mt/d</th><th>PS LSFO</th><th>PS MGO</th><th style="width:70px">Actions</th></tr></thead><tbody>`;
+      g.rows.forEach((r,ti)=>{
+        const v=r.v, i=r.i;
+        const isDup = dupMap.has((v.name||'').trim().toLowerCase()+'|'+parseFloat(v.speed||0));
+        html += `<tr${isDup?' class="dm-row-dup"':''}>
+          <td>${ti+1}${isDup?'<span class="dm-dup-badge" title="Duplicate: same vessel name + speed">DUP</span>':''}</td>
+          <td><input type="number" value="${v.speed}" min="0" max="30" step="0.5" onchange="editDmVessel(${i},'speed',this.value)" style="width:76px"/></td>
+          <td><input type="number" value="${v.lsfo}" min="0" step="0.5" onchange="editDmVessel(${i},'lsfo',this.value)" style="width:76px"/></td>
+          <td><input type="number" value="${v.hsfo}" min="0" step="0.5" onchange="editDmVessel(${i},'hsfo',this.value)" style="width:76px"/></td>
+          <td><input type="number" value="${v.mgo}" min="0" step="0.1" onchange="editDmVessel(${i},'mgo',this.value)" style="width:76px"/></td>
+          <td><input type="number" value="${v.ps_lsfo||''}" min="0" step="0.5" onchange="editDmVessel(${i},'ps_lsfo',this.value)" style="width:76px" placeholder="0" title="Port Stay LSFO mt/day"/></td>
+          <td><input type="number" value="${v.ps_mgo||''}" min="0" step="0.1" onchange="editDmVessel(${i},'ps_mgo',this.value)" style="width:76px" placeholder="0" title="Port Stay MGO mt/day"/></td>
+          <td><button class="dm-btn dm-btn-danger dm-btn-sm" onclick="deleteDmVesselTier(${i})" title="Delete this speed tier">✕</button></td>
+        </tr>`;
+      });
+      html += `</tbody></table><div class="dm-tier-add"><button class="dm-btn dm-btn-sm" onclick="addDmVesselTier('${dmJsStr(g.code)}')" style="background:#28a745;color:#fff;">+ Add Tier</button></div></div></td></tr>`;
+    }
   });
-  if(!html) html = '<tr><td colspan="10" class="dm-empty">No vessels found</td></tr>';
+  if(!shown) html = '<tr><td colspan="6" class="dm-empty">No vessels found</td></tr>';
   body.innerHTML = html;
   updateDmStatus();
 }
@@ -7801,15 +7840,59 @@ function editDmVessel(i,key,val){
   }
   updateDmStatus();
 }
-function deleteDmVessel(i){
-  if(!confirm('Delete vessel '+VESSELS_DATA[i].code+' – '+VESSELS_DATA[i].name+'?')) return;
+function editDmVesselShip(code,key,val){
+  // Ship-level fields (code / name / hire) apply to every speed tier of this vessel.
+  const rows = VESSELS_DATA.map((v,i)=>({v,i})).filter(x=>x.v.code===code);
+  if(!rows.length) return;
+  if(key==='hire') val = parseFloat(val)||0;
+  const newCode = (key==='code') ? val : code;
+  rows.forEach(x=>{ x.v[key] = val; });
+  if(key==='code' && dmExpandedShips.has(code)){
+    dmExpandedShips.delete(code); dmExpandedShips.add(val);
+  }
+  initVesselCombobox();
+  renderDmVessels(document.getElementById('dmVesselSearch').value);
+  showToast('Updated '+code+' ('+rows.length+' tier'+(rows.length===1?'':'s')+')');
+}
+function toggleDmShip(code){
+  if(dmExpandedShips.has(code)) dmExpandedShips.delete(code);
+  else dmExpandedShips.add(code);
+  renderDmVessels(document.getElementById('dmVesselSearch').value);
+}
+function deleteDmVesselTier(i){
+  const v = VESSELS_DATA[i];
+  if(!v) return;
+  if(!confirm('Delete '+v.code+' @ '+v.speed+' kn speed tier?')) return;
   VESSELS_DATA.splice(i,1);
+  initVesselCombobox();
+  renderDmVessels(document.getElementById('dmVesselSearch').value);
+  showToast('Speed tier deleted');
+}
+function addDmVesselTier(code){
+  const rows = VESSELS_DATA.filter(v=>v.code===code);
+  if(!rows.length) return;
+  const base = rows[0];
+  const maxSpeed = Math.max.apply(null, rows.map(r=>parseFloat(r.speed)||0).concat([0]));
+  VESSELS_DATA.push({code:base.code,name:base.name,speed:maxSpeed+1,lsfo:0,hsfo:0,mgo:0,ps_lsfo:base.ps_lsfo||0,ps_mgo:base.ps_mgo||0,hire:base.hire||0});
+  if(!dmExpandedShips.has(code)) dmExpandedShips.add(code);
+  renderDmVessels(document.getElementById('dmVesselSearch').value);
+  showToast('Speed tier added – edit values in the expanded table');
+}
+function deleteDmVessel(code){
+  const rows = VESSELS_DATA.filter(v=>v.code===code);
+  if(!rows.length) return;
+  if(!confirm('Delete vessel '+code+' – '+rows[0].name+' (all '+rows.length+' speed tier'+(rows.length===1?'':'s')+')?')) return;
+  for(let i=VESSELS_DATA.length-1;i>=0;i--) if(VESSELS_DATA[i].code===code) VESSELS_DATA.splice(i,1);
+  dmExpandedShips.delete(code);
   initVesselCombobox();
   renderDmVessels(document.getElementById('dmVesselSearch').value);
   showToast('Vessel deleted');
 }
 function addDmVessel(){
-  VESSELS_DATA.unshift({code:'NEW',name:'New Vessel',speed:14,lsfo:24,hsfo:0,mgo:2,ps_lsfo:0,ps_mgo:0,hire:0});
+  let code = 'NEW', n = 1;
+  while(VESSELS_DATA.some(v=>v.code===code)) code = 'NEW'+n++;
+  VESSELS_DATA.unshift({code:code,name:'New Vessel',speed:14,lsfo:24,hsfo:0,mgo:2,ps_lsfo:0,ps_mgo:0,hire:0});
+  dmExpandedShips.add(code);
   initVesselCombobox();
   document.getElementById('dmVesselSearch').value = '';
   renderDmVessels('');
@@ -7819,9 +7902,11 @@ function addDmVessel(){
     if(firstRow){
       firstRow.classList.add('dm-row-new');
       firstRow.scrollIntoView({behavior:'smooth', block:'nearest'});
+      const tierInput = firstRow.nextElementSibling && firstRow.nextElementSibling.querySelector('input');
+      if(tierInput) tierInput.focus();
     }
   });
-  showToast('New vessel added – edit the row');
+  showToast('New vessel added – edit the row and tiers');
 }
 function filterDmVessels(){ renderDmVessels(document.getElementById('dmVesselSearch').value); }
 
