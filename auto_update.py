@@ -38,14 +38,19 @@ LOG_FILE = os.path.join(REPO_DIR, "auto_update.log")
 os.environ["GIT_TERMINAL_PROMPT"] = "0"
 
 # Excel column -> CSV column mapping
+# 2026-11-26: Source workbook split the time columns into Planned* and Estimated*.
+# The dashboard's legacy keys (arrived_anchorage/berth/departure) map to ESTIMATED
+# times — verified against data: 398/399 rows matched Estimated (only 176/399 Planned).
+# New columns (vessel name, Planned times, TUG counts) are appended at the END so
+# the first 28 columns remain byte-compatible with the HTML dashboard.
 COL_MAP = {
     "TERMINAL": "terminal",
     "SVC": "svc",
     "OPERATOR": "operator",
     "VESSEL / VOYAGE": "vessel_voyage",
-    "ARRIVED / ANCHORAGE": "arrived_anchorage",
-    "BERTH": "berth",
-    "DEPARTURE": "departure",
+    "Estimated ARRIVED / ANCHORAGE": "arrived_anchorage",
+    "Estimated BERTH": "berth",
+    "Estimated DEPARTURE": "departure",
     "WAIT TIME": "wait_time",
     "PORT STAY": "port_stay",
     "Discharging Vol. Full 20GP": "discharge_full_20gp",
@@ -67,7 +72,17 @@ COL_MAP = {
     "Departure LSFO": "dep_lsfo",
     "Departure DIESEL OIL": "dep_diesel_oil",
     "Departure LSDO": "dep_lsdo",
+    # --- new columns appended (dashboard ignores unknown columns) ---
+    "Vessel Name": "vessel_name",
+    "Planned ARRIVED / ANCHORAGE": "planned_arrived_anchorage",
+    "Planned BERTH": "planned_berth",
+    "Planned DEPARTURE": "planned_departure",
+    "Arrival No. of TUG Departure": "arr_tug_count",
+    "Departure No. of TUG Departure": "dep_tug_count",
 }
+
+# Numeric columns now also include the two TUG counts
+NEW_NUM_COLS = ["arr_tug_count", "dep_tug_count"]
 
 LOG_FILE = os.path.join(REPO_DIR, "auto_update.log")
 
@@ -189,7 +204,7 @@ def convert_to_csv():
         "restows", "vessel_mpgh",
         "arr_fuel_oil", "arr_lsfo", "arr_diesel_oil", "arr_lsdo",
         "dep_fuel_oil", "dep_lsfo", "dep_diesel_oil", "dep_lsdo",
-    ]
+    ] + NEW_NUM_COLS
     for c in num_cols:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
