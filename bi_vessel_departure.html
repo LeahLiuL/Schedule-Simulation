@@ -270,6 +270,24 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 .dps-row-rm td.pcell.pc-blank { background:#fbfbfc; }
 .dps-row-pf .dps-lbl { background:#eef1f6; color:#5f6368; }
 .dps-row-rm .dps-lbl { background:#f1f3f6; color:#5f6368; font-weight:600; }
+/* Service lane chips are now multi-select: the checkbox picks lanes for "Export current
+   view", clicking the code switches the grid, dragging still reorders. */
+.dps-pill { display:inline-flex; align-items:center; gap:5px; }
+.dps-pill .dps-pick { width:12px; height:12px; margin:0; padding:0; cursor:pointer; accent-color:#16335a; flex:0 0 auto; }
+.dps-pill.active .dps-pick { accent-color:#fff; }
+.dps-pill .dps-pill-txt { cursor:pointer; }
+.dps-pill.picked { border-color:#2E75B6; background:#eaf2fb; color:#16335a; }
+.dps-pill.picked.active { background:#16335a; color:#fff; border-color:#16335a; }
+.dps-lane-tools { display:inline-flex; gap:4px; align-items:center; flex:0 0 auto; }
+.dps-lane-tools button { border:1px solid #d0d7de; background:#fff; color:#5f6368; font-size:10.5px; padding:2px 7px; border-radius:11px; cursor:pointer; white-space:nowrap; }
+.dps-lane-tools button:hover { border-color:#2E75B6; color:#16335a; }
+.dps-lane-tools .dps-pill-reset { border:0; border-radius:0; padding:2px 6px; }
+/* ETA Delay row: Estimated ETA - Planned ETA, shown for ST3 / HDT / ST1 only. */
+.dps-row-delay td.pcell { text-align:center; font-size:10.5px; padding:2px 4px; font-weight:700; }
+.dps-row-delay .dps-lbl { background:#fff4e5; color:#9a5b00; }
+.dps-delay-late { color:#c5221f; }
+.dps-delay-early { color:#137333; }
+.dps-delay-zero { color:#5f6368; }
 td.pcell .pc-code { display:block; font-size:11.5px; font-weight:800; letter-spacing:.2px; line-height:1.2; color:#1a237e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 td.pcell .pc-name { display:block; font-size:9px; line-height:1.15; color:#5b6474; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 td.pcell.pc-blank { background:#fafbfd; }
@@ -543,9 +561,13 @@ section.view.nv-view[hidden] { display:none; }
 </section>
 <section class="view" id="sec-dps" hidden>
 <div class="dps-toolbar">
-  <label>Service</label>
+  <label title="Only lanes defined in the schedule lane master (shipping_data/lanes.json) are offered. Tick a lane to include it in Export current view; click its code to view the grid.">Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
-  <button type="button" class="dps-pill-reset" onclick="dpsResetPillOrder()" title="Restore the default lane order (the order you supplied for the workbook)">Reset order</button>
+  <span class="dps-lane-tools">
+    <button type="button" onclick="dpsExportAll()" title="Tick every service lane for export">All</button>
+    <button type="button" onclick="dpsExportNone()" title="Untick every service lane">None</button>
+    <button type="button" class="dps-pill-reset" onclick="dpsResetPillOrder()" title="Restore the default lane order (the order you supplied for the workbook)">Reset order</button>
+  </span>
   <label>Filter</label>
   <span class="dps-filterbox" id="dpsFilterBox">
     <input type="text" id="dpsSearch" class="dps-search" placeholder="Type vessel / port / voyage — e.g. CNNAS" title="Filter by vessel name, vessel code, voyage number, operator, port or terminal code — several words are OR-ed" oninput="dpsSetQuery(this.value)" onkeydown="dpsQueryKey(event)" autocomplete="off" />
@@ -574,7 +596,7 @@ section.view.nv-view[hidden] { display:none; }
     <optgroup label="Pin one terminal" id="dpsAlignTerms"></optgroup>
   </select>
   <span class="dps-meta" id="dpsMeta"></span>
-  <button class="btn btn-secondary" onclick="exportCurrentViewXlsx()" style="margin-left:auto;" title="Export ONLY what is on screen: the current lane with the current Operator / Vessel / Port / Filter selections, the current From-To window, Merge and Align. One sheet.">Export current view</button>
+  <button class="btn btn-secondary" id="dpsExportViewBtn" onclick="exportCurrentViewXlsx()" style="margin-left:auto;" title="Export the service lanes you ticked — one sheet per lane — with the current Operator / Vessel / Port / Filter selections and the From-To window applied to every sheet.">Export current view</button>
   <button class="btn btn-success" onclick="exportDpsXlsx()" title="Export every lane (ignores the page Operator / vessel / port / search filters, includes all operators per lane, keeps the current Proforma date window), one sheet per lane: SCT3 → NSCT1 → HDT → NSX → CST → CCT → NP2 → REX → RTS → SGX → RES → CGX → HLX → CGS → AEM → IMR → NAF → MES → JPS, remaining lanes appended">Export Excel (all lanes)</button>
 </div>
 <div class="dps-wrap" id="dpsWrap"><div class="dps-empty">Loading…</div></div>
@@ -2403,6 +2425,29 @@ let dpsOperator = [DPS_DEFAULT_OPERATOR], dpsOperatorTouched = false;   // [] = 
 let dpsVessel = [];                     // [] = all vessels
 let dpsPort = [];                       // [] = all ports (5-char codes), keeps whole voyages
 let dpsQuery = '';                      // free text: vessel name / code / voyage / port / terminal
+// Proforma grid: lanes that show the "ETA Delay" row = Estimated ETA - Planned ETA.
+const DPS_DELAY_LANES = ['ST3','HDT','ST1'];
+// Service lanes ticked for "Export current view". null = never chosen -> all visible lanes.
+const DPS_EXPORT_SEL_KEY = 'dps_export_lanes_v1';
+let dpsExportSel = null;
+function dpsLoadExportSel(){
+  if(dpsExportSel!==null) return dpsExportSel;
+  let a=null;
+  try{ a=JSON.parse(localStorage.getItem(DPS_EXPORT_SEL_KEY)||'null'); }catch(e){}
+  dpsExportSel=Array.isArray(a)?a:null;   // [] is a deliberate "nothing ticked", not "all"
+  return dpsExportSel;
+}
+function dpsSaveExportSel(){ try{ localStorage.setItem(DPS_EXPORT_SEL_KEY,JSON.stringify(dpsExportSel||[])); }catch(e){} }
+function dpsExportLanes(){
+  const sel=dpsLoadExportSel(), vis=DPS_SERVICES||[];
+  return sel===null ? vis.slice() : vis.filter(function(s){ return sel.indexOf(s)>=0; });
+}
+// A service is offered only if it exists in the schedule lane master (shipping_data/lanes.json).
+// Until that master has loaded, keep the feed's lanes so the grid never opens empty.
+function dpsLaneInSchedule(code){
+  if(typeof LANES==='undefined' || !LANES || !Object.keys(LANES).length) return true;
+  return !!LANES[String(code||'').toUpperCase()];
+}
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
 let dpsMerge = false;                   // default unmerged: false = one row per voyage (W/E together), true = one row per vessel
 // Alignment is OFF by default: every voyage simply keeps its own call order. The Align dropdown
@@ -3085,35 +3130,74 @@ function dpsReorderPill(src,target){
   DPS_SERVICES=dpsOrderedServices(DPS_SERVICES);
   dpsBuildPills();
 }
-// Lane pills list only the lanes that actually carry rows for the selected operator.
-// With CUL preselected a lane CUL does not serve would otherwise open an empty grid, and the
-// workbook used to end up with one blank sheet per such lane.
+// Service chips list only the lanes that (a) exist in the schedule lane master,
+// (b) are not Service Type O, and (c) carry rows for the selected operator.
+// Each chip has a checkbox = "include this lane in Export current view"; clicking
+// the code still switches the grid, and dragging still reorders / persists order.
 function dpsBuildPills(){
   const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
   const cnt={}, hid={};
   (DATA||[]).forEach(function(r){
     const k=String(r.svc||'').toUpperCase(); if(!k) return;
     if(dpsLaneHidden(k)){ hid[k]=1; return; }
-    if(dpsOperator.length && dpsOperator.indexOf(r.operator)<0) return;   // nothing for these operators -> no pill
+    if(!dpsLaneInSchedule(k)) return;          // not part of the schedule lane master
+    if(dpsOperator.length && dpsOperator.indexOf(r.operator)<0) return;
     cnt[k]=(cnt[k]||0)+1;
   });
   DPS_SVC_COUNT=cnt;
   DPS_SVC_HIDDEN_COUNT=Object.keys(hid).length;
   DPS_SERVICES=dpsOrderedServices(Object.keys(cnt));
   if(DPS_SERVICES.indexOf(dpsSvc)<0) dpsSvc=DPS_SERVICES[0]||'';
+  // Drop ticks for lanes that are no longer visible; a first visit ticks them all.
+  const saved=dpsLoadExportSel();
+  if(saved!==null){ dpsExportSel=saved.filter(function(s){ return DPS_SERVICES.indexOf(s)>=0; }); dpsSaveExportSel(); }
   if(!DPS_SERVICES.length){
     pills.innerHTML='<span style="color:#8a8f98;font-size:12px;padding:4px 2px;">No lane records for the selected operators</span>';
-    return;
+    dpsUpdateExportBtn(); return;
   }
+  const picked=dpsExportLanes();
   pills.innerHTML=DPS_SERVICES.map(s=>{
     const nm=dpsLaneName(s), tp=dpsLaneType(s);
-    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+cnt[s]+' rows · drag to reorder';
-    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+'" data-svc="'+s+'" draggable="true"'
+    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+cnt[s]+' rows'
+      +' · tick = include in export · click code to view · drag to reorder';
+    const on=picked.indexOf(s)>=0;
+    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+(on?' picked':'')+'" data-svc="'+s+'" draggable="true"'
       +' title="'+dpsEsc(tip)+'"'
       +' ondragstart="dpsDragStart(event,\''+s+'\')" ondragover="dpsDragOver(event,\''+s+'\')"'
       +' ondragleave="dpsDragLeave(event)" ondrop="dpsDrop(event,\''+s+'\')" ondragend="dpsDragEnd(event)"'
-      +' onclick="dpsPillClick(event,\''+s+'\')">'+s+'</span>';
+      +'><input type="checkbox" class="dps-pick"'+(on?' checked':'')
+      +' onclick="dpsToggleExportLane(event,\''+s+'\')" onmousedown="event.stopPropagation()" />'
+      +'<span class="dps-pill-txt" onclick="dpsPillClick(event,\''+s+'\')">'+s+'</span></span>';
   }).join('');
+  dpsUpdateExportBtn();
+}
+function dpsRepaintTicks(){
+  const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
+  for(let k=0;k<ps.length;k++){
+    const s=ps[k].getAttribute('data-svc'), cb=ps[k].querySelector('.dps-pick');
+    const on=(dpsExportSel||[]).indexOf(s)>=0;
+    ps[k].classList.toggle('picked',on); if(cb) cb.checked=on;
+  }
+  dpsUpdateExportBtn();
+}
+function dpsToggleExportLane(e,code){
+  if(e){ e.stopPropagation(); if(e.preventDefault) e.preventDefault(); }
+  const cur=dpsExportLanes(), i=cur.indexOf(code);
+  if(i>=0) cur.splice(i,1); else cur.push(code);
+  dpsExportSel=cur.slice(); dpsSaveExportSel(); dpsRepaintTicks();
+}
+function dpsExportAll(){
+  dpsExportSel=(DPS_SERVICES||[]).slice(); dpsSaveExportSel(); dpsRepaintTicks();
+}
+function dpsExportNone(){
+  dpsExportSel=[]; dpsSaveExportSel(); dpsRepaintTicks();
+}
+function dpsUpdateExportBtn(){
+  const b=document.getElementById('dpsExportViewBtn'); if(!b) return;
+  const n=dpsExportLanes().length;
+  b.textContent='Export current view ('+n+' lane'+(n===1?'':'s')+')';
+  b.title='Export the '+n+' ticked service lane'+(n===1?'':'s')
+    +' — one sheet per lane — with the current Operator / Vessel / Port / Filter selections and From-To window applied.';
 }
 function dpsInit(){
   const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
@@ -3171,6 +3255,28 @@ function dpsRemarkTd(calls){
   const v=(calls||[]).map(c=>c&&c.remark).filter(Boolean);
   if(!v.length) return '<td class="pcell pc-blank"></td>';
   return '<td class="pcell">'+dpsEsc(v.join(' / '))+'</td>';
+}
+// ETA Delay = Estimated ETA - Planned ETA, rounded to whole hours. The new feed carries
+// planned_arrived_anchorage alongside the (estimated) arrived_anchorage. Only the lanes
+// in DPS_DELAY_LANES render this row, so the rest of the grid keeps its 7-row layout.
+function dpsDelayHours(c){
+  const e=c&&c.arrived_anchorage, p=c&&c.planned_arrived_anchorage;
+  if(!e||!p) return null;
+  const te=Date.parse(String(e).trim().replace(' ','T'));
+  const tp=Date.parse(String(p).trim().replace(' ','T'));
+  if(isNaN(te)||isNaN(tp)) return null;
+  return Math.round((te-tp)/3600000);
+}
+function dpsDelayTd(calls){
+  const parts=[], hs=[];
+  (calls||[]).forEach(function(c){
+    const h=dpsDelayHours(c); if(h===null) return;
+    hs.push(h); parts.push('ETA Delay '+h+'h');
+  });
+  if(!parts.length) return '<td class="pcell pc-blank"></td>';
+  const h0=hs[0], cls=h0>0?'dps-delay-late':(h0<0?'dps-delay-early':'dps-delay-zero');
+  const txt=parts.join('  ');
+  return '<td class="pcell '+cls+'" title="'+dpsEsc(txt)+'">'+dpsEsc(txt)+'</td>';
 }
 // Port cell: the terminal node code (e.g. TWKELT01) large, the terminal name small below.
 // A port-anchored column can hold two terminals of the same city (CNNAST04 + CNNAST05): list
@@ -3235,6 +3341,7 @@ function renderDps(){
   for(let i=0;i<maxCols;i++) cols+='<col style="width:126px">';
   cols+='</colgroup>';
   const pad=arr=>{ const b=arr.slice(); while(b.length<maxCols) b.push([]); return b; };
+  const showDelay=DPS_DELAY_LANES.indexOf(dpsSvc)>=0;   // ST3 / HDT / ST1 only
   let html='<table class="dps-table" style="width:'+W+'px">'+cols+'<tbody>';
   sel.forEach(b=>{
     const vcode=dpsVesselCode(b.vv);
@@ -3245,6 +3352,7 @@ function renderDps(){
     const portCells=colArr.map(dpsPortTd).join('');
     const voyCells=colArr.map(dpsVoyTd).join('');
     const etaCells=colArr.map(cs=>dpsTimeTd(cs,'arrived_anchorage')).join('');
+    const delayCells=showDelay?colArr.map(dpsDelayTd).join(''):'';
     const etbCells=colArr.map(cs=>dpsTimeTd(cs,'berth')).join('');
     const etdCells=colArr.map(cs=>dpsTimeTd(cs,'departure')).join('');
     const pfCells=colArr.map(dpsPlanTd).join('');
@@ -3257,6 +3365,7 @@ function renderDps(){
     // The block's voyage label sits in the Voyage row, not under the vessel name.
     html+='<tr class="dps-row-voy"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol">'+dpsEsc(voy)+'</td>'+voyCells+'</tr>';
     html+='<tr class="dps-row-eta"><td class="dps-lbl">ETA</td><td class="dps-vesselcol"></td>'+etaCells+'</tr>';
+    if(showDelay) html+='<tr class="dps-row-delay"><td class="dps-lbl">ETA Delay</td><td class="dps-vesselcol"></td>'+delayCells+'</tr>';
     html+='<tr class="dps-row-etb"><td class="dps-lbl">ETB</td><td class="dps-vesselcol"></td>'+etbCells+'</tr>';
     html+='<tr class="dps-row-etd"><td class="dps-lbl">ETD</td><td class="dps-vesselcol"></td>'+etdCells+'</tr>';
     html+='<tr class="dps-row-pf"><td class="dps-lbl">Proforma</td><td class="dps-vesselcol"></td>'+pfCells+'</tr>';
@@ -3427,7 +3536,7 @@ function dpsAllLaneCounts(){
   const cnt={};
   (DATA||[]).forEach(function(r){
     const k=String(r.svc||'').toUpperCase();
-    if(!k || dpsLaneHidden(k)) return;
+    if(!k || dpsLaneHidden(k) || !dpsLaneInSchedule(k)) return;
     cnt[k]=(cnt[k]||0)+1;
   });
   return cnt;
@@ -3459,7 +3568,10 @@ function dpsWorkbookSheets(){
 function dpsSheetPart(svc, tabName, useFilters){
   const prevSvc=dpsSvc, prevOp=dpsOperator, prevVes=dpsVessel, prevQ=dpsQuery, prevPort=dpsPort;
   let rows=[], built={blocks:[],aligned:false,merge:!!dpsMerge,split:0};
-  if(!useFilters){ dpsSvc=svc; dpsOperator=[]; dpsVessel=[]; dpsQuery=''; dpsPort=[]; }
+  if(!useFilters){ dpsOperator=[]; dpsVessel=[]; dpsQuery=''; dpsPort=[]; }
+  // A sheet is always for one lane (dpsFilteredRows() keys off dpsSvc), so switch it for
+  // BOTH export modes and restore it afterwards. Current-view mode keeps every filter.
+  dpsSvc=svc;
   try{ rows=dpsFilteredRows(); built=dpsBuildBlocks(rows); }
   finally{ dpsSvc=prevSvc; dpsOperator=prevOp; dpsVessel=prevVes; dpsQuery=prevQ; dpsPort=prevPort; }
   const sel=built.blocks||[];
@@ -3551,6 +3663,9 @@ function dpsSheetPart(svc, tabName, useFilters){
     // The block's voyage label sits in the Voyage row, not under the vessel name.
     put('Voyage', voyLabel, one(function(c){ return dpsVoyLabel(c.vessel_voyage); }), 4, false, 4);
     put('ETA', '', one(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
+    if(DPS_DELAY_LANES.indexOf(svc)>=0){
+      put('ETA Delay', '', one(function(c){ const h=dpsDelayHours(c); return h===null?'':('ETA Delay '+h+'h'); }), 6, false);
+    }
     put('ETB', '', one(function(c){ return dpsFmtDT(c.berth); }), 6, false);
     put('ETD', '', one(function(c){ return dpsFmtDT(c.departure); }), 6, false);
     put('Proforma', '', planCells, 9, false);
@@ -3656,25 +3771,33 @@ function exportDpsXlsx(){
     }
   }, 30);
 }
-// Current view: one sheet for the lane on screen, with EVERY page filter applied
+// Current view: ONE SHEET PER TICKED SERVICE LANE, with EVERY page filter applied
 // (Operator / Vessel / Port / search box) plus the From-To window, Merge and Align.
+// Lane ticks live on the Service chips; "Export Excel (all lanes)" stays as the full workbook.
 function exportCurrentViewXlsx(){
   if(!DATA || !DATA.length){ alert('Data is still loading. Please try again shortly.'); return; }
-  const btn=document.querySelector('button[onclick="exportCurrentViewXlsx()"]');
+  const lanes=dpsExportLanes();
+  if(!lanes.length){ alert('No service lane is ticked. Use the checkboxes on the Service row (or press All) to choose the lanes to export.'); return; }
+  const btn=document.getElementById('dpsExportViewBtn')||document.querySelector('button[onclick="exportCurrentViewXlsx()"]');
   const oldTxt=btn?btn.textContent:'';
   if(btn){ btn.disabled=true; btn.textContent='Exporting…'; }
   setTimeout(function(){
     try{
-      const svc=dpsSvc||'LANE';
-      dpsSheetPartFirst=svc;
-      const p=dpsSheetPart(svc,svc,true);
+      const parts=[], empties=[];
+      dpsSheetPartFirst=lanes[0];
+      lanes.forEach(function(svc){
+        const p=dpsSheetPart(svc,svc,true);   // keep every page filter exactly as it is
+        if(p.empty) empties.push(svc);
+        parts.push(p);
+      });
       dpsSheetPartFirst=null;
-      dpsDownload(dpsPackXlsx([p]),'Proforma_'+svc+'_CurrentView_'+dpsDateStr(new Date()).replace(/-/g,'')+'.xlsx');
-      if(p.empty) alert('No '+svc+' voyage matches the current filters / date window — an empty sheet was exported.');
+      dpsDownload(dpsPackXlsx(parts),'Proforma_CurrentView_'+dpsDateStr(new Date()).replace(/-/g,'')+'.xlsx');
+      if(empties.length) alert('Exported '+parts.length+' lane sheet(s) with the current filters.\n'
+        +empties.length+' had no matching voyage in the date window: '+empties.join(', '));
     }catch(e){
       alert('Export failed: '+(e&&e.message?e.message:e));
     }finally{
-      if(btn){ btn.disabled=false; btn.textContent=oldTxt||'Export current view'; }
+      if(btn){ btn.disabled=false; if(oldTxt) btn.textContent=oldTxt; else dpsUpdateExportBtn(); }
     }
   }, 30);
 }
