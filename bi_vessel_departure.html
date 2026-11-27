@@ -2029,34 +2029,41 @@ function dataUrls(file) {
 const CSV_URLS = dataUrls('bi_vessel_departure.csv');
 let CSV_URL = CSV_URLS[0];
 
-// Vessel name lookup (code -> full ship name). Loaded from shipping_data/vessel_names.json
-// (built from the Allegro Vessel Master export + the CUL fleet tables). When a code is not
-// in the map the Schedule table shows "—".
-const VESSEL_NAME_URLS = dataUrls('vessel_names.json');
+// Vessel name lookup (code -> full ship name). Names now come straight from the source
+// file: the `vessel_name` column of the Vessel Departure Report (bi_vessel_departure.csv).
+// The old shipping_data/vessel_names.json lookup is no longer used.
 let VESSEL_NAMES = {};
 function vesselFullName(vv) {
   if (!vv) return null;
   const code = String(vv).slice(0, 4).toUpperCase();
   return VESSEL_NAMES[code] || null;
 }
+// Build the code -> name map from the feed on every CSV (re)parse. If one code carries
+// several spellings, keep the most frequent one so the map tracks the current source file.
+function buildVesselNamesFromFeed(data) {
+  const tally = {};
+  (data || []).forEach(function(r) {
+    const code = String(r.vessel_voyage || '').slice(0, 4).toUpperCase();
+    const nm = String(r.vessel_name || '').trim();
+    if (!code || !nm) return;
+    if (!tally[code]) tally[code] = {};
+    tally[code][nm] = (tally[code][nm] || 0) + 1;
+  });
+  const out = {};
+  Object.keys(tally).forEach(function(code) {
+    let best = null, n = 0;
+    Object.keys(tally[code]).forEach(function(nm) {
+      if (tally[code][nm] > n) { n = tally[code][nm]; best = nm; }
+    });
+    if (best) out[code] = best;
+  });
+  VESSEL_NAMES = out;
+  return out;
+}
 function fetchVesselNames() {
-  let i = 0;
-  const tryNext = () => {
-    if (i >= VESSEL_NAME_URLS.length) return;
-    const url = VESSEL_NAME_URLS[i++];
-    fetch(url)
-      .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
-      .then(j => {
-        VESSEL_NAMES = j || {};
-        // Data may already be rendered: re-render so names appear immediately.
-        if (typeof filtered !== 'undefined' && filtered.length) { renderTable(); renderAnalysis(); }
-        if (typeof dpsFillFilters === 'function') { try { dpsFillFilters(); } catch (e) {} }
-        if (typeof renderDps === 'function') { try { renderDps(); } catch (e) {} }
-        if (typeof nvRefresh === 'function') nvRefresh();
-      })
-      .catch(() => tryNext());
-  };
-  tryNext();
+  // Kept for call-site compatibility. Names are built during CSV parsing; this is only
+  // a safety net for the rare case the map is still empty when init runs.
+  if (!Object.keys(VESSEL_NAMES).length && (DATA_RAW || []).length) buildVesselNamesFromFeed(DATA_RAW);
 }
 
 // Port rotation (lanes.json) and terminal names (nodes.json). The Proforma grid uses the
@@ -2171,7 +2178,7 @@ function svcColor(svc) {
 const COL_DEFS = [
   { key: 'svc', label: 'SVC', cls: 'col-svc', fmt: v => { const c = svcColor(v); return '<span class="svc-pill" style="background:' + c.bg + ';color:' + c.fg + '">' + (v || '') + '</span>'; } },
   { key: 'vessel_voyage', label: 'VESSEL / VOYAGE', cls: 'col-vsl', fmt: v => { const m = /^([A-Z0-9]{4})([0-9]{4}[A-Z]?)$/.exec(v || ''); return m ? '<span class="vsl-code">' + m[1] + '</span><span class="voy-no">' + m[2] + '</span>' : (v || ''); } },
-  { key: 'vessel_name', label: 'VESSEL NAME', cls: 'col-vname', fmt: (v, r) => { const n = vesselFullName(r.vessel_voyage); return n ? '<span class="vname">' + n + '</span>' : '<span class="vname-empty">&mdash;</span>'; } },
+  { key: 'vessel_name', label: 'VESSEL NAME', cls: 'col-vname', fmt: (v, r) => { const n = String(r.vessel_name || '').trim() || vesselFullName(r.vessel_voyage); return n ? '<span class="vname">' + n + '</span>' : '<span class="vname-empty">&mdash;</span>'; } },
   { key: 'terminal', label: 'TERMINAL', cls: 'col-term', fmt: v => '<span class="term-code">' + (v || '') + '</span>' },
   { key: 'operator', label: 'OPERATOR', cls: 'col-op', fmt: v => '<span class="op-tag">' + (v || '') + '</span>' },
   { key: 'arrived_anchorage', label: 'Arrival', cls: 'col-date', fmt: v => v ? v.slice(0, 16) : '' },
@@ -2252,6 +2259,8 @@ function dedupeVesselRows(rawText) {
     const vv = (r.vessel_voyage || '').toUpperCase();
     return !vv.startsWith('TBN');
   });
+  // Vessel names come from the source CSV itself, not from a separate master file.
+  buildVesselNamesFromFeed(data);
   const groups = {};
   for (const r of data) {
     const vv = r.vessel_voyage || '';
@@ -2502,7 +2511,7 @@ function dpsMatchQuery(r){
   const qs=raw.split(/[\s,;]+/).filter(Boolean);
   const vv=String(r.vessel_voyage||'').toUpperCase();
   const code=dpsVesselCode(vv);
-  const nm=((typeof VESSEL_NAMES!=='undefined' && VESSEL_NAMES[code])||'').toUpperCase();
+  const nm=String(r.vessel_name||VESSEL_NAMES[code]||'').toUpperCase();
   const term=String(r.terminal||'').toUpperCase();
   const info=term?dpsNodeInfo(term):{name:'',port:''};
   const hay=[vv,nm,String(r.operator||'').toUpperCase(),term,
@@ -4223,7 +4232,7 @@ function sortFiltered() {
       const isNum = colDef && colDef.num;
       let va = a[key], vb = b[key];
       if (key === 'vessel_voyage') { va = vesselName(va); vb = vesselName(vb); }
-      if (key === 'vessel_name') { va = (vesselFullName(a.vessel_voyage) || '').toLowerCase(); vb = (vesselFullName(b.vessel_voyage) || '').toLowerCase(); }
+      if (key === 'vessel_name') { va = String(a.vessel_name || vesselFullName(a.vessel_voyage) || '').toLowerCase(); vb = String(b.vessel_name || vesselFullName(b.vessel_voyage) || '').toLowerCase(); }
       if (key === 'mph') { va = mphOf(a); vb = mphOf(b); }
       if (va == null && vb == null) continue;
       if (va == null) return dir === 'asc' ? 1 : -1;
