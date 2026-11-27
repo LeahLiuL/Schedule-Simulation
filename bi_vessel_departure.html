@@ -282,6 +282,9 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 .dps-lane-tools button { border:1px solid #d0d7de; background:#fff; color:#5f6368; font-size:10.5px; padding:2px 7px; border-radius:11px; cursor:pointer; white-space:nowrap; }
 .dps-lane-tools button:hover { border-color:#2E75B6; color:#16335a; }
 .dps-lane-tools .dps-pill-reset { border:0; border-radius:0; padding:2px 6px; }
+/* Service lane regions: CUL only / CUL + partner / partner only. */
+.dps-grp-tag { flex:0 0 auto; align-self:center; font-size:9.5px; font-weight:700; letter-spacing:.2px; color:#5f6b7a; background:#eef2f7; border:1px solid #dde4ed; border-radius:9px; padding:2px 7px; white-space:nowrap; user-select:none; }
+.dps-grp-sep { flex:0 0 auto; align-self:stretch; width:1px; margin:3px 5px; background:#c8d2df; }
 /* ETA Delay (Estimated ETA - Planned ETA) is shown in the Proforma row for ST3 / HDT / ST1,
    not in a separate row. */
 .dps-row-pf td.pcell.dps-pf-delay { font-size:10.5px; font-weight:700; }
@@ -561,7 +564,7 @@ section.view.nv-view[hidden] { display:none; }
 </section>
 <section class="view" id="sec-dps" hidden>
 <div class="dps-toolbar">
-  <label title="Only lanes defined in the schedule lane master (shipping_data/lanes.json) are offered. Tick a lane to include it in Export current view; click its code to view the grid.">Service</label>
+  <label title="Every lane present in the ship schedule feed is shown, except Service Type O lanes. Three regions: CUL-only, CUL + partner, partner-only. Tick a lane to include it in Export current view; click its code to view the grid; drag inside a region to reorder.">Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
   <span class="dps-lane-tools">
     <button type="button" onclick="dpsExportAll()" title="Tick every service lane for export">All</button>
@@ -2415,9 +2418,11 @@ function setDefaultDateRange() {
 }
 
 /* ===== DPS Proforma module (Excel-style schedule grid) ===== */
-let DPS_SERVICES = [];                  // lanes the current operator actually serves, filled at init
-let DPS_SVC_COUNT = {};                 // service -> number of rows (used to sort the pills)
+let DPS_SERVICES = [];                  // every lane in the feed (Type O removed), region-sorted
+let DPS_SVC_COUNT = {};                 // service -> number of feed rows
 let DPS_SVC_HIDDEN_COUNT = 0;           // lanes skipped because their Service Type is "O"
+let DPS_LANE_REGION = {};                // service -> 1 CUL only / 2 CUL + partner / 3 partner only
+let DPS_OP_RELAXED = false;              // operator filter auto-relaxed on a lane with no selected operator
 const DPS_DEFAULT_OPERATOR = 'CUL';     // preselected operator
 let dpsSvc = 'REX';
 let dpsFrom = '', dpsTo = '';
@@ -2442,12 +2447,8 @@ function dpsExportLanes(){
   const sel=dpsLoadExportSel(), vis=DPS_SERVICES||[];
   return sel===null ? vis.slice() : vis.filter(function(s){ return sel.indexOf(s)>=0; });
 }
-// A service is offered only if it exists in the schedule lane master (shipping_data/lanes.json).
-// Until that master has loaded, keep the feed's lanes so the grid never opens empty.
-function dpsLaneInSchedule(code){
-  if(typeof LANES==='undefined' || !LANES || !Object.keys(LANES).length) return true;
-  return !!LANES[String(code||'').toUpperCase()];
-}
+// Every lane that appears in the schedule feed is offered. Service Type O lanes are already
+// stripped from DATA by laneVisibleRows(); lanes.json is used for the name / type only.
 let dpsLastSel = [], dpsLastMax = 1;    // last rendered blocks (used by Export Excel)
 let dpsMerge = false;                   // default unmerged: false = one row per voyage (W/E together), true = one row per vessel
 // Alignment is OFF by default: every voyage simply keeps its own call order. The Align dropdown
@@ -2509,8 +2510,16 @@ function dpsVoyKeyOf(vv){
 // nothing left to align. The same rule applies to the free-text box, which is why the filter is
 // resolved to a set of voyage keys first and only then applied to the rows.
 function dpsFilteredRows(){
-  const rows=dpsSvcRows().filter(r=>
-    (!dpsOperator.length || dpsOperator.indexOf(r.operator)>=0) &&
+  const svcRows=dpsSvcRows();
+  // CUL is preselected. A partner-only lane would otherwise open an empty grid, so when the
+  // current lane has no row for the selected operator(s), show all operators on that lane.
+  DPS_OP_RELAXED=false;
+  let op=dpsOperator;
+  if(op.length && !svcRows.some(function(r){ return op.indexOf(r.operator)>=0; })){
+    op=[]; DPS_OP_RELAXED=true;
+  }
+  const rows=svcRows.filter(r=>
+    (!op.length || op.indexOf(r.operator)>=0) &&
     (!dpsVessel.length   || dpsVessel.indexOf(dpsVesselCode(r.vessel_voyage))>=0)
   );
   const q=String(dpsQuery||'').trim();
@@ -3089,8 +3098,7 @@ function dpsOrderedServices(codes){
 }
 function dpsResetPillOrder(){
   dpsPillOrder=DPS_PILL_DEFAULT.slice(); dpsSavePillOrder();
-  DPS_SERVICES=dpsOrderedServices(DPS_SERVICES);
-  dpsBuildPills();
+  dpsBuildPills();   // rebuilds the three regions from the restored order
 }
 // HTML5 drag & drop on the pills. Reordering saves the FULL visible order, so a lane moved
 // in front of another keeps that exact position on the next visit.
@@ -3100,8 +3108,12 @@ function dpsDragStart(e,code){
   if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain',code); }catch(err){} }
   if(e.target&&e.target.classList) e.target.classList.add('dps-drag');
 }
+// Regions are derived from who operates the lane, so dragging only reorders INSIDE a region;
+// a cross-region drop is ignored (the lane would just snap back to its own region anyway).
+function dpsSameRegion(a,b){ return !!a && !!b && DPS_LANE_REGION[a]===DPS_LANE_REGION[b]; }
 function dpsDragOver(e,code){
   if(!dpsDragCode||dpsDragCode===code) return;
+  if(!dpsSameRegion(dpsDragCode,code)) return;
   e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='move';
   if(e.currentTarget&&e.currentTarget.classList) e.currentTarget.classList.add('dps-drop-before');
 }
@@ -3110,7 +3122,7 @@ function dpsDrop(e,code){
   e.preventDefault();
   const src=dpsDragCode; dpsDragCode=null;
   if(e.currentTarget&&e.currentTarget.classList) e.currentTarget.classList.remove('dps-drop-before');
-  if(src&&src!==code) dpsReorderPill(src,code);
+  if(src&&src!==code&&dpsSameRegion(src,code)) dpsReorderPill(src,code);
 }
 function dpsDragEnd(e){
   dpsDragCode=null;
@@ -3127,48 +3139,76 @@ function dpsReorderPill(src,target){
   const j=cur.indexOf(target);
   cur.splice(j<0?cur.length:j,0,src);
   dpsPillOrder=cur; dpsSavePillOrder();
-  DPS_SERVICES=dpsOrderedServices(DPS_SERVICES);
-  dpsBuildPills();
+  dpsBuildPills();   // region buckets are re-sorted from the saved order
 }
-// Service chips list only the lanes that (a) exist in the schedule lane master,
-// (b) are not Service Type O, and (c) carry rows for the selected operator.
-// Each chip has a checkbox = "include this lane in Export current view"; clicking
-// the code still switches the grid, and dragging still reorders / persists order.
+// Service chips list EVERY lane in the schedule feed (Service Type O is already stripped from
+// DATA by laneVisibleRows), independent of the Operator / Vessel / Port filters. They are split
+// into three fixed regions derived from who actually operates the lane in the feed:
+//   1 = CUL vessels only   2 = CUL + partner(s)   3 = partner(s) only
+// Inside a region the user's lane order is used (draggable + persisted in localStorage).
+const DPS_REGION_LABELS={1:'CUL only',2:'CUL + partner',3:'Partner only'};
+const DPS_REGION_TIPS={
+  1:'Region 1 — lanes operated by CUL vessels only',
+  2:'Region 2 — lanes with both CUL and partner vessels',
+  3:'Region 3 — lanes with partner vessels only (no CUL)'
+};
 function dpsBuildPills(){
   const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
-  const cnt={}, hid={};
+  const cnt={}, hid={}, ops={};
   (DATA||[]).forEach(function(r){
     const k=String(r.svc||'').toUpperCase(); if(!k) return;
     if(dpsLaneHidden(k)){ hid[k]=1; return; }
-    if(!dpsLaneInSchedule(k)) return;          // not part of the schedule lane master
-    if(dpsOperator.length && dpsOperator.indexOf(r.operator)<0) return;
+    if(!ops[k]) ops[k]={};
+    ops[k][String(r.operator||'?').toUpperCase()]=1;
     cnt[k]=(cnt[k]||0)+1;
   });
   DPS_SVC_COUNT=cnt;
   DPS_SVC_HIDDEN_COUNT=Object.keys(hid).length;
-  DPS_SERVICES=dpsOrderedServices(Object.keys(cnt));
+  const buckets={1:[],2:[],3:[]};
+  DPS_LANE_REGION={};
+  Object.keys(cnt).forEach(function(k){
+    const o=Object.keys(ops[k]||{}), hasCul=o.indexOf('CUL')>=0;
+    const g=hasCul?(o.length>1?2:1):3;
+    DPS_LANE_REGION[k]=g; buckets[g].push(k);
+  });
+  const ordered=dpsOrderedServices(Object.keys(cnt)), rank={};
+  ordered.forEach(function(c,i){ rank[c]=i; });
+  [1,2,3].forEach(function(g){
+    buckets[g].sort(function(a,b){ return (rank[a]-rank[b])||a.localeCompare(b); });
+  });
+  DPS_SERVICES=buckets[1].concat(buckets[2],buckets[3]);
   if(DPS_SERVICES.indexOf(dpsSvc)<0) dpsSvc=DPS_SERVICES[0]||'';
   // Drop ticks for lanes that are no longer visible; a first visit ticks them all.
   const saved=dpsLoadExportSel();
   if(saved!==null){ dpsExportSel=saved.filter(function(s){ return DPS_SERVICES.indexOf(s)>=0; }); dpsSaveExportSel(); }
   if(!DPS_SERVICES.length){
-    pills.innerHTML='<span style="color:#8a8f98;font-size:12px;padding:4px 2px;">No lane records for the selected operators</span>';
+    pills.innerHTML='<span style="color:#8a8f98;font-size:12px;padding:4px 2px;">No lane records in the schedule feed</span>';
     dpsUpdateExportBtn(); return;
   }
   const picked=dpsExportLanes();
-  pills.innerHTML=DPS_SERVICES.map(s=>{
-    const nm=dpsLaneName(s), tp=dpsLaneType(s);
-    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+cnt[s]+' rows'
-      +' · tick = include in export · click code to view · drag to reorder';
+  const pillHtml=function(s){
+    const nm=dpsLaneName(s), tp=dpsLaneType(s), g=DPS_LANE_REGION[s];
+    const o=Object.keys(ops[s]||{});
+    const tip=s+(nm?' · '+nm:'')+(tp?' · Type '+tp:'')+' · '+DPS_REGION_LABELS[g]
+      +' · operators: '+o.join('/')+' · '+cnt[s]+' rows'
+      +' · tick = include in export · click code to view · drag inside the region to reorder';
     const on=picked.indexOf(s)>=0;
-    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+(on?' picked':'')+'" data-svc="'+s+'" draggable="true"'
+    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+(on?' picked':'')+'" data-svc="'+s+'" data-region="'+g+'" draggable="true"'
       +' title="'+dpsEsc(tip)+'"'
       +' ondragstart="dpsDragStart(event,\''+s+'\')" ondragover="dpsDragOver(event,\''+s+'\')"'
       +' ondragleave="dpsDragLeave(event)" ondrop="dpsDrop(event,\''+s+'\')" ondragend="dpsDragEnd(event)"'
       +'><input type="checkbox" class="dps-pick"'+(on?' checked':'')
       +' onclick="dpsToggleExportLane(event,\''+s+'\')" onmousedown="event.stopPropagation()" />'
       +'<span class="dps-pill-txt" onclick="dpsPillClick(event,\''+s+'\')">'+s+'</span></span>';
-  }).join('');
+  };
+  let html='';
+  [1,2,3].forEach(function(g){
+    if(!buckets[g].length) return;
+    if(html) html+='<span class="dps-grp-sep" aria-hidden="true"></span>';
+    html+='<span class="dps-grp-tag" title="'+dpsEsc(DPS_REGION_TIPS[g])+'">'+dpsEsc(DPS_REGION_LABELS[g])+' ('+buckets[g].length+')</span>';
+    html+=buckets[g].map(pillHtml).join('');
+  });
+  pills.innerHTML=html;
   dpsUpdateExportBtn();
 }
 function dpsRepaintTicks(){
@@ -3392,7 +3432,8 @@ function renderDps(){
   const dropTxt = built.split ? (' · '+built.split+' vessel(s) split over continued rows') : '';
   const fltTxt = (dpsVessel.length?(' · Vessel: '+dpsVessel.join('/')):'')
     +(dpsPort.length?(' · Port: '+dpsPort.join('/')):'')
-    +(String(dpsQuery||'').trim()?(' · Filter: '+String(dpsQuery).trim()):'');
+    +(String(dpsQuery||'').trim()?(' · Filter: '+String(dpsQuery).trim()):'')
+    +(DPS_OP_RELAXED?(' · Operator filter relaxed: no '+dpsOperator.join('/')+' vessels on '+dpsSvc):'');
   if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+fltTxt+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'');
   if(meta) meta.title = built.aligned
     ? 'Each port is pinned to one column so vessels can be compared vertically'
@@ -3543,7 +3584,7 @@ function dpsAllLaneCounts(){
   const cnt={};
   (DATA||[]).forEach(function(r){
     const k=String(r.svc||'').toUpperCase();
-    if(!k || dpsLaneHidden(k) || !dpsLaneInSchedule(k)) return;
+    if(!k || dpsLaneHidden(k)) return;
     cnt[k]=(cnt[k]||0)+1;
   });
   return cnt;
@@ -3593,6 +3634,7 @@ function dpsSheetPart(svc, tabName, useFilters){
   const dropTxt=(built.merge&&built.split)?(' / '+built.split+' continued block(s)'):'';
   const fltTxt = useFilters
     ? ('Filters (current view): Operator '+(dpsOperator.length?dpsOperator.join('/'):'All')
+        +(DPS_OP_RELAXED?' (relaxed: this lane has no such operator)':'')
         +' / Vessel '+(dpsVessel.length?dpsVessel.join('/'):'All')
         +' / Port '+(dpsPort.length?dpsPort.join('/'):'All')
         +' / Search '+(String(dpsQuery||'').trim()?('"'+String(dpsQuery).trim()+'"'):'—'))
