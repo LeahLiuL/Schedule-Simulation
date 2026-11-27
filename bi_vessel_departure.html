@@ -228,7 +228,9 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .dps-pill:hover { background:#f0f4fa; }
 .dps-pill.active { background:#16335a; color:#fff; border-color:#16335a; }
 .dps-pill.empty { opacity:.4; }
-.dps-pill[draggable="true"] { cursor:grab; }
+/* Only the code text is the drag handle: if the whole pill were draggable, a 1-2px mouse
+   movement while pressing the checkbox would start a drag and swallow the click. */
+.dps-pill-txt[draggable="true"] { cursor:grab; }
 .dps-pill.dps-drag { opacity:.32; cursor:grabbing; }
 .dps-pill.dps-drop-before { box-shadow:-3px 0 0 #2E75B6; }
 .dps-pill-reset { flex:0 0 auto; border:0; background:transparent; color:#98a2b3; font-size:10.5px;
@@ -572,7 +574,7 @@ section.view.nv-view[hidden] { display:none; }
 </section>
 <section class="view" id="sec-dps" hidden>
 <div class="dps-toolbar dps-toolbar-lanes">
-  <label title="Every lane present in the ship schedule feed is shown, except Service Type O lanes. Three regions: CUL-only, CUL + partner, partner-only. Each region has its own All / None buttons and a ticked/total counter for bulk selection. Tick a lane to include it in Export current view; click its code to view the grid; drag inside a region to reorder.">Service</label>
+  <label title="Only lanes with at least one voyage in the current From-To window are shown (Service Type O lanes excluded). Three regions: CUL-only, CUL + partner, partner-only. Each region has its own All / None buttons and a ticked/total counter. Tick a lane to include it in Export current view; click its code to view the grid; drag the code inside a region to reorder.">Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
   <span class="dps-lane-tools">
     <button type="button" onclick="dpsExportAll()" title="Tick every service lane for export">All</button>
@@ -2429,6 +2431,7 @@ function setDefaultDateRange() {
 let DPS_SERVICES = [];                  // every lane in the feed (Type O removed), region-sorted
 let DPS_SVC_COUNT = {};                 // service -> number of feed rows
 let DPS_SVC_HIDDEN_COUNT = 0;           // lanes skipped because their Service Type is "O"
+let DPS_SVC_NOWIN_COUNT = 0;            // lanes skipped because no voyage overlaps the From-To window
 let DPS_LANE_REGION = {};                // service -> 1 CUL only / 2 CUL + partner / 3 partner only
 let DPS_OP_RELAXED = false;              // operator filter auto-relaxed on a lane with no selected operator
 const DPS_DEFAULT_OPERATOR = 'CUL';     // preselected operator
@@ -3111,10 +3114,11 @@ function dpsResetPillOrder(){
 // HTML5 drag & drop on the pills. Reordering saves the FULL visible order, so a lane moved
 // in front of another keeps that exact position on the next visit.
 function dpsPillClick(e,code){ if(dpsDragMoved) return; dpsSelectSvc(code); }
+function dpsDragPill(el){ return el&&el.closest?el.closest('.dps-pill'):null; }
 function dpsDragStart(e,code){
   dpsDragCode=code; dpsDragMoved=false;
   if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain',code); }catch(err){} }
-  if(e.target&&e.target.classList) e.target.classList.add('dps-drag');
+  const pill=dpsDragPill(e.target); if(pill) pill.classList.add('dps-drag');
 }
 // Regions are derived from who operates the lane, so dragging only reorders INSIDE a region;
 // a cross-region drop is ignored (the lane would just snap back to its own region anyway).
@@ -3123,18 +3127,18 @@ function dpsDragOver(e,code){
   if(!dpsDragCode||dpsDragCode===code) return;
   if(!dpsSameRegion(dpsDragCode,code)) return;
   e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='move';
-  if(e.currentTarget&&e.currentTarget.classList) e.currentTarget.classList.add('dps-drop-before');
+  const pill=dpsDragPill(e.currentTarget); if(pill) pill.classList.add('dps-drop-before');
 }
-function dpsDragLeave(e){ if(e.currentTarget&&e.currentTarget.classList) e.currentTarget.classList.remove('dps-drop-before'); }
+function dpsDragLeave(e){ const pill=dpsDragPill(e.currentTarget); if(pill) pill.classList.remove('dps-drop-before'); }
 function dpsDrop(e,code){
   e.preventDefault();
   const src=dpsDragCode; dpsDragCode=null;
-  if(e.currentTarget&&e.currentTarget.classList) e.currentTarget.classList.remove('dps-drop-before');
+  const pill=dpsDragPill(e.currentTarget); if(pill) pill.classList.remove('dps-drop-before');
   if(src&&src!==code&&dpsSameRegion(src,code)) dpsReorderPill(src,code);
 }
 function dpsDragEnd(e){
   dpsDragCode=null;
-  if(e.target&&e.target.classList) e.target.classList.remove('dps-drag');
+  const pill=dpsDragPill(e.target); if(pill) pill.classList.remove('dps-drag');
   const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
   for(let i=0;i<ps.length;i++) ps[i].classList.remove('dps-drop-before');
   dpsDragMoved=true; setTimeout(function(){ dpsDragMoved=false; },250);
@@ -3160,18 +3164,47 @@ const DPS_REGION_TIPS={
   2:'Region 2 — lanes with both CUL and partner vessels',
   3:'Region 3 — lanes with partner vessels only (no CUL)'
 };
-function dpsBuildPills(){
-  const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
-  const cnt={}, hid={}, ops={};
+// Index every non-Type-O lane once: its operators, row count and per-voyage ETA span.
+// A lane is "in service" for the current From-To window when ANY of its voyages overlaps the
+// window — the same rule the grid uses when it keeps a whole voyage. Lanes with no voyage in
+// the window are neither shown as a pill nor exported, so no empty sheet is produced.
+function dpsLaneIndex(){
+  const raw={}, hidden={};
   (DATA||[]).forEach(function(r){
     const k=String(r.svc||'').toUpperCase(); if(!k) return;
-    if(dpsLaneHidden(k)){ hid[k]=1; return; }
-    if(!ops[k]) ops[k]={};
-    ops[k][String(r.operator||'?').toUpperCase()]=1;
-    cnt[k]=(cnt[k]||0)+1;
+    if(dpsLaneHidden(k)){ hidden[k]=1; return; }
+    const e=raw[k]||(raw[k]={ops:{},n:0,units:{}});
+    e.ops[String(r.operator||'?').toUpperCase()]=1; e.n++;
+    const t=(dpsEtaOf(r)||'').slice(0,10); if(!t) return;
+    const key=dpsVoyKeyOf(r.vessel_voyage);
+    const u=e.units[key]||(e.units[key]={s:t,e:t});
+    if(t<u.s) u.s=t; if(t>u.e) u.e=t;
   });
+  const lanes={};
+  Object.keys(raw).forEach(function(k){
+    const e=raw[k], keys=Object.keys(e.units);
+    if(!keys.length) return;
+    if(dpsFrom||dpsTo){
+      const hit=keys.some(function(key){
+        const u=e.units[key];
+        if(dpsFrom && u.e<dpsFrom) return false;
+        if(dpsTo && u.s>dpsTo) return false;
+        return true;
+      });
+      if(!hit) return;
+    }
+    lanes[k]={ops:e.ops,n:e.n};
+  });
+  return { lanes:lanes, hiddenCount:Object.keys(hidden).length,
+           noWindowCount:Object.keys(raw).length-Object.keys(lanes).length };
+}
+function dpsBuildPills(){
+  const pills=document.getElementById('dpsSvcPills'); if(!pills) return;
+  const idx=dpsLaneIndex(), cnt={}, ops={};
+  Object.keys(idx.lanes).forEach(function(k){ cnt[k]=idx.lanes[k].n; ops[k]=idx.lanes[k].ops; });
   DPS_SVC_COUNT=cnt;
-  DPS_SVC_HIDDEN_COUNT=Object.keys(hid).length;
+  DPS_SVC_HIDDEN_COUNT=idx.hiddenCount;
+  DPS_SVC_NOWIN_COUNT=idx.noWindowCount;
   const buckets={1:[],2:[],3:[]};
   DPS_LANE_REGION={};
   Object.keys(cnt).forEach(function(k){
@@ -3186,11 +3219,11 @@ function dpsBuildPills(){
   });
   DPS_SERVICES=buckets[1].concat(buckets[2],buckets[3]);
   if(DPS_SERVICES.indexOf(dpsSvc)<0) dpsSvc=DPS_SERVICES[0]||'';
-  // Drop ticks for lanes that are no longer visible; a first visit ticks them all.
-  const saved=dpsLoadExportSel();
-  if(saved!==null){ dpsExportSel=saved.filter(function(s){ return DPS_SERVICES.indexOf(s)>=0; }); dpsSaveExportSel(); }
+  // Keep the raw tick set intact across window changes: a lane with no voyage in the current
+  // From-To window disappears from the pills but its tick survives, so widening restores it.
+  dpsLoadExportSel();
   if(!DPS_SERVICES.length){
-    pills.innerHTML='<span style="color:#8a8f98;font-size:12px;padding:4px 2px;">No lane records in the schedule feed</span>';
+    pills.innerHTML='<span style="color:#8a8f98;font-size:12px;padding:4px 2px;">No lane has a voyage in the current From-To window</span>';
     dpsUpdateExportBtn(); return;
   }
   const picked=dpsExportLanes();
@@ -3201,13 +3234,18 @@ function dpsBuildPills(){
       +' · operators: '+o.join('/')+' · '+cnt[s]+' rows'
       +' · tick = include in export · click code to view · drag inside the region to reorder';
     const on=picked.indexOf(s)>=0;
-    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+(on?' picked':'')+'" data-svc="'+s+'" data-region="'+g+'" draggable="true"'
+    // Drag handle is the code TEXT only. Keeping draggable off the checkbox is what makes a
+    // real mouse click on the box register reliably (Chrome cancels click when a draggable
+    // ancestor starts a drag on mousedown).
+    return '<span class="dps-pill'+(s===dpsSvc?' active':'')+(on?' picked':'')+'" data-svc="'+s+'" data-region="'+g+'"'
       +' title="'+dpsEsc(tip)+'"'
+      +'><input type="checkbox" class="dps-pick"'+(on?' checked':'')
+      +' onclick="dpsToggleExportLane(event,\''+s+'\')" />'
+      +'<span class="dps-pill-txt" draggable="true"'
+      +' onclick="dpsPillClick(event,\''+s+'\')"'
       +' ondragstart="dpsDragStart(event,\''+s+'\')" ondragover="dpsDragOver(event,\''+s+'\')"'
       +' ondragleave="dpsDragLeave(event)" ondrop="dpsDrop(event,\''+s+'\')" ondragend="dpsDragEnd(event)"'
-      +'><input type="checkbox" class="dps-pick"'+(on?' checked':'')
-      +' onclick="dpsToggleExportLane(event,\''+s+'\')" onmousedown="event.stopPropagation()" />'
-      +'<span class="dps-pill-txt" onclick="dpsPillClick(event,\''+s+'\')">'+s+'</span></span>';
+      +'>'+s+'</span></span>';
   };
   let html='';
   [1,2,3].forEach(function(g){
@@ -3402,6 +3440,9 @@ function renderDps(){
   const wrap=document.getElementById('dpsWrap'); if(!wrap) return;
   const fe=document.getElementById('dps_from'), te=document.getElementById('dps_to');
   if(fe&&fe.value) dpsFrom=fe.value; if(te&&te.value) dpsTo=te.value;
+  // The visible lane set depends on the window: rebuild pills whenever the date inputs change.
+  // A lane whose voyages all fall outside the window is hidden from both the grid and exports.
+  dpsBuildPills();
   dpsFillAlignOptions();
   const meta=document.getElementById('dpsMeta');
   if(!DATA||!DATA.length){
@@ -3489,7 +3530,8 @@ function renderDps(){
     +(dpsPort.length?(' · Port: '+dpsPort.join('/')):'')
     +(String(dpsQuery||'').trim()?(' · Filter: '+String(dpsQuery).trim()):'')
     +(DPS_OP_RELAXED?(' · Operator filter relaxed: no '+dpsOperator.join('/')+' vessels on '+dpsSvc):'');
-  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+fltTxt+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'');
+  if(meta) meta.textContent=dpsSvc+(dpsLaneName(dpsSvc)?' · '+dpsLaneName(dpsSvc):'')+' · '+cnt.vessels+' vessels / '+cnt.voyages+' voyages · '+sel.length+' rows'+(built.merge?' (one row per vessel)':' (W/E together)')+' · '+alignTxt+' · '+(dpsFrom||'—')+' ~ '+(dpsTo||'—')+fltTxt+dropTxt+(noNameCnt?' · '+noNameCnt+' rows with no vessel name (4-char code shown)':'')+(DPS_SVC_HIDDEN_COUNT?' · '+DPS_SVC_HIDDEN_COUNT+' Service Type O lanes hidden':'')
+  +(DPS_SVC_NOWIN_COUNT?' · '+DPS_SVC_NOWIN_COUNT+' lanes with no voyage in window hidden':'');
   if(meta) meta.title = built.aligned
     ? 'Each port is pinned to one column so vessels can be compared vertically'
     : (built.mode==='pin'
@@ -3636,12 +3678,8 @@ const DPS_SHEET_ORDER=[
 // row count.  The workbook is always the full feed, so this ignores the page's operator /
 // vessel / search filters on purpose.
 function dpsAllLaneCounts(){
-  const cnt={};
-  (DATA||[]).forEach(function(r){
-    const k=String(r.svc||'').toUpperCase();
-    if(!k || dpsLaneHidden(k)) return;
-    cnt[k]=(cnt[k]||0)+1;
-  });
+  const idx=dpsLaneIndex(), cnt={};
+  Object.keys(idx.lanes).forEach(function(k){ cnt[k]=idx.lanes[k].n; });
   return cnt;
 }
 function dpsWorkbookSheets(){
