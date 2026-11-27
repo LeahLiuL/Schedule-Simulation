@@ -282,12 +282,12 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 .dps-lane-tools button { border:1px solid #d0d7de; background:#fff; color:#5f6368; font-size:10.5px; padding:2px 7px; border-radius:11px; cursor:pointer; white-space:nowrap; }
 .dps-lane-tools button:hover { border-color:#2E75B6; color:#16335a; }
 .dps-lane-tools .dps-pill-reset { border:0; border-radius:0; padding:2px 6px; }
-/* ETA Delay row: Estimated ETA - Planned ETA, shown for ST3 / HDT / ST1 only. */
-.dps-row-delay td.pcell { text-align:center; font-size:10.5px; padding:2px 4px; font-weight:700; }
-.dps-row-delay .dps-lbl { background:#fff4e5; color:#9a5b00; }
-.dps-delay-late { color:#c5221f; }
-.dps-delay-early { color:#137333; }
-.dps-delay-zero { color:#5f6368; }
+/* ETA Delay (Estimated ETA - Planned ETA) is shown in the Proforma row for ST3 / HDT / ST1,
+   not in a separate row. */
+.dps-row-pf td.pcell.dps-pf-delay { font-size:10.5px; font-weight:700; }
+.dps-row-pf td.pcell.dps-delay-late  { color:#c5221f; }
+.dps-row-pf td.pcell.dps-delay-early { color:#137333; }
+.dps-row-pf td.pcell.dps-delay-zero  { color:#5f6368; }
 td.pcell .pc-code { display:block; font-size:11.5px; font-weight:800; letter-spacing:.2px; line-height:1.2; color:#1a237e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 td.pcell .pc-name { display:block; font-size:9px; line-height:1.15; color:#5b6474; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 td.pcell.pc-blank { background:#fafbfd; }
@@ -2425,7 +2425,7 @@ let dpsOperator = [DPS_DEFAULT_OPERATOR], dpsOperatorTouched = false;   // [] = 
 let dpsVessel = [];                     // [] = all vessels
 let dpsPort = [];                       // [] = all ports (5-char codes), keeps whole voyages
 let dpsQuery = '';                      // free text: vessel name / code / voyage / port / terminal
-// Proforma grid: lanes that show the "ETA Delay" row = Estimated ETA - Planned ETA.
+// Proforma grid: lanes whose Proforma row shows ETA Delay = Estimated ETA - Planned ETA.
 const DPS_DELAY_LANES = ['ST3','HDT','ST1'];
 // Service lanes ticked for "Export current view". null = never chosen -> all visible lanes.
 const DPS_EXPORT_SEL_KEY = 'dps_export_lanes_v1';
@@ -3257,8 +3257,9 @@ function dpsRemarkTd(calls){
   return '<td class="pcell">'+dpsEsc(v.join(' / '))+'</td>';
 }
 // ETA Delay = Estimated ETA - Planned ETA, rounded to whole hours. The new feed carries
-// planned_arrived_anchorage alongside the (estimated) arrived_anchorage. Only the lanes
-// in DPS_DELAY_LANES render this row, so the rest of the grid keeps its 7-row layout.
+// planned_arrived_anchorage alongside the (estimated) arrived_anchorage. For the lanes in
+// DPS_DELAY_LANES these values fill the existing Proforma row; no extra row is added, so every
+// lane keeps the same 7-row layout (Port / Voyage / ETA / ETB / ETD / Proforma / Remark).
 function dpsDelayHours(c){
   const e=c&&c.arrived_anchorage, p=c&&c.planned_arrived_anchorage;
   if(!e||!p) return null;
@@ -3276,7 +3277,12 @@ function dpsDelayTd(calls){
   if(!parts.length) return '<td class="pcell pc-blank"></td>';
   const h0=hs[0], cls=h0>0?'dps-delay-late':(h0<0?'dps-delay-early':'dps-delay-zero');
   const txt=parts.join('  ');
-  return '<td class="pcell '+cls+'" title="'+dpsEsc(txt)+'">'+dpsEsc(txt)+'</td>';
+  return '<td class="pcell dps-pf-delay '+cls+'" title="'+dpsEsc(txt)+'">'+dpsEsc(txt)+'</td>';
+}
+// Proforma row: for ST3 / HDT / ST1 show the ETA Delay against planned ETA; for every other
+// lane keep the (currently empty) proforma-times feed. Same row either way.
+function dpsProformaTd(calls){
+  return (DPS_DELAY_LANES.indexOf(dpsSvc)>=0) ? dpsDelayTd(calls) : dpsPlanTd(calls);
 }
 // Port cell: the terminal node code (e.g. TWKELT01) large, the terminal name small below.
 // A port-anchored column can hold two terminals of the same city (CNNAST04 + CNNAST05): list
@@ -3352,10 +3358,9 @@ function renderDps(){
     const portCells=colArr.map(dpsPortTd).join('');
     const voyCells=colArr.map(dpsVoyTd).join('');
     const etaCells=colArr.map(cs=>dpsTimeTd(cs,'arrived_anchorage')).join('');
-    const delayCells=showDelay?colArr.map(dpsDelayTd).join(''):'';
     const etbCells=colArr.map(cs=>dpsTimeTd(cs,'berth')).join('');
     const etdCells=colArr.map(cs=>dpsTimeTd(cs,'departure')).join('');
-    const pfCells=colArr.map(dpsPlanTd).join('');
+    const pfCells=colArr.map(dpsProformaTd).join('');
     const rmCells=colArr.map(dpsRemarkTd).join('');
     const known=!!(vcode && nmap[vcode]);
     const vcTip=known ? (vname+' / '+vcode) : ('Code '+vcode+' has no vessel name yet');
@@ -3365,10 +3370,12 @@ function renderDps(){
     // The block's voyage label sits in the Voyage row, not under the vessel name.
     html+='<tr class="dps-row-voy"><td class="dps-lbl">Voyage</td><td class="dps-vesselcol">'+dpsEsc(voy)+'</td>'+voyCells+'</tr>';
     html+='<tr class="dps-row-eta"><td class="dps-lbl">ETA</td><td class="dps-vesselcol"></td>'+etaCells+'</tr>';
-    if(showDelay) html+='<tr class="dps-row-delay"><td class="dps-lbl">ETA Delay</td><td class="dps-vesselcol"></td>'+delayCells+'</tr>';
     html+='<tr class="dps-row-etb"><td class="dps-lbl">ETB</td><td class="dps-vesselcol"></td>'+etbCells+'</tr>';
     html+='<tr class="dps-row-etd"><td class="dps-lbl">ETD</td><td class="dps-vesselcol"></td>'+etdCells+'</tr>';
-    html+='<tr class="dps-row-pf"><td class="dps-lbl">Proforma</td><td class="dps-vesselcol"></td>'+pfCells+'</tr>';
+    const pfLbl=showDelay
+      ? '<td class="dps-lbl" title="ETA Delay = Estimated ETA − Planned ETA (ST3 / HDT / ST1)">Proforma</td>'
+      : '<td class="dps-lbl">Proforma</td>';
+    html+='<tr class="dps-row-pf">'+pfLbl+'<td class="dps-vesselcol"></td>'+pfCells+'</tr>';
     html+='<tr class="dps-row-rm"><td class="dps-lbl">Remark</td><td class="dps-vesselcol"></td>'+rmCells+'</tr>';
   });
   html+='</tbody></table>';
@@ -3645,7 +3652,14 @@ function dpsSheetPart(svc, tabName, useFilters){
       infos.forEach(function(i){ const n=i.name||i.port; if(n && names.indexOf(n)===-1) names.push(n); });
       return infos.map(function(i){ return i.node; }).join(' / ')+(names.length?('\n'+names.join(' / ')):'');
     });
+    const isDelayLane=DPS_DELAY_LANES.indexOf(svc)>=0;
+    // Proforma row carries ETA Delay for ST3 / HDT / ST1; other lanes keep the (empty) feed.
     const planCells=cols.map(function(cs){
+      if(isDelayLane){
+        const parts=[];
+        cs.forEach(function(c){ const h=dpsDelayHours(c); if(h!==null) parts.push('ETA Delay '+h+'h'); });
+        return parts.join('  ');
+      }
       const v=[];
       cs.forEach(function(c){
         const t=DPS_PROFORMA[String(c.vessel_voyage||'').toUpperCase()+'|'+dpsPortOf(c.terminal)];
@@ -3663,9 +3677,6 @@ function dpsSheetPart(svc, tabName, useFilters){
     // The block's voyage label sits in the Voyage row, not under the vessel name.
     put('Voyage', voyLabel, one(function(c){ return dpsVoyLabel(c.vessel_voyage); }), 4, false, 4);
     put('ETA', '', one(function(c){ return dpsFmtDT(c.arrived_anchorage); }), 6, false);
-    if(DPS_DELAY_LANES.indexOf(svc)>=0){
-      put('ETA Delay', '', one(function(c){ const h=dpsDelayHours(c); return h===null?'':('ETA Delay '+h+'h'); }), 6, false);
-    }
     put('ETB', '', one(function(c){ return dpsFmtDT(c.berth); }), 6, false);
     put('ETD', '', one(function(c){ return dpsFmtDT(c.departure); }), 6, false);
     put('Proforma', '', planCells, 9, false);
