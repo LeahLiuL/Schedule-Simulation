@@ -220,9 +220,10 @@ section.view:not(:first-child) { border-top: 1px solid #e3e7ec; margin-top: 12px
 .cargo-row .total-val { color: #1a73e8; font-weight: 700; }
 /* ===== DPS Proforma grid (Excel-style schedule) ===== */
 .dps-toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:#fff; border-radius:8px; padding:8px 12px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:10px; }
-.dps-svc-pills { display:flex; flex-wrap:nowrap; gap:5px; overflow-x:auto; overflow-y:hidden; flex:1 1 420px; padding-bottom:2px; }
-.dps-svc-pills::-webkit-scrollbar { height:6px; }
-.dps-svc-pills::-webkit-scrollbar-thumb { background:#c8d0da; border-radius:3px; }
+.dps-svc-pills { display:flex; flex-direction:column; gap:5px; overflow:visible; flex:1 1 420px; padding-bottom:0; }
+.dps-toolbar-lanes { align-items:flex-start; }
+.dps-toolbar-lanes > label, .dps-toolbar-lanes > .dps-lane-tools, .dps-toolbar-lanes > .dps-filterbox,
+.dps-toolbar-lanes > .dps-hit, .dps-toolbar-lanes > .dps-note { margin-top:5px; }
 .dps-pill { padding:4px 11px; border-radius:15px; font-size:11.5px; font-weight:700; cursor:pointer; border:1px solid #d0d7de; background:#fff; color:#334155; user-select:none; white-space:nowrap; flex:0 0 auto; }
 .dps-pill:hover { background:#f0f4fa; }
 .dps-pill.active { background:#16335a; color:#fff; border-color:#16335a; }
@@ -282,9 +283,9 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 .dps-lane-tools button { border:1px solid #d0d7de; background:#fff; color:#5f6368; font-size:10.5px; padding:2px 7px; border-radius:11px; cursor:pointer; white-space:nowrap; }
 .dps-lane-tools button:hover { border-color:#2E75B6; color:#16335a; }
 .dps-lane-tools .dps-pill-reset { border:0; border-radius:0; padding:2px 6px; }
-/* Service lane regions: CUL only / CUL + partner / partner only. */
-.dps-grp-tag { flex:0 0 auto; align-self:center; font-size:9.5px; font-weight:700; letter-spacing:.2px; color:#5f6b7a; background:#eef2f7; border:1px solid #dde4ed; border-radius:9px; padding:2px 7px; white-space:nowrap; user-select:none; }
-.dps-grp-sep { flex:0 0 auto; align-self:stretch; width:1px; margin:3px 5px; background:#c8d2df; }
+/* Service lane regions: one vertical row per region, wrapping inside the row (no scrolling). */
+.dps-grp-row { display:flex; flex-wrap:wrap; align-items:center; gap:5px; min-height:26px; }
+.dps-grp-tag { flex:0 0 auto; font-size:9.5px; font-weight:700; letter-spacing:.2px; color:#5f6b7a; background:#eef2f7; border:1px solid #dde4ed; border-radius:9px; padding:2px 7px; white-space:nowrap; user-select:none; }
 /* ETA Delay (Estimated ETA - Planned ETA) is shown in the Proforma row for ST3 / HDT / ST1,
    not in a separate row. */
 .dps-row-pf td.pcell.dps-pf-delay { font-size:10.5px; font-weight:700; }
@@ -563,7 +564,7 @@ section.view.nv-view[hidden] { display:none; }
 </div>
 </section>
 <section class="view" id="sec-dps" hidden>
-<div class="dps-toolbar">
+<div class="dps-toolbar dps-toolbar-lanes">
   <label title="Every lane present in the ship schedule feed is shown, except Service Type O lanes. Three regions: CUL-only, CUL + partner, partner-only. Tick a lane to include it in Export current view; click its code to view the grid; drag inside a region to reorder.">Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
   <span class="dps-lane-tools">
@@ -3204,9 +3205,11 @@ function dpsBuildPills(){
   let html='';
   [1,2,3].forEach(function(g){
     if(!buckets[g].length) return;
-    if(html) html+='<span class="dps-grp-sep" aria-hidden="true"></span>';
-    html+='<span class="dps-grp-tag" title="'+dpsEsc(DPS_REGION_TIPS[g])+'">'+dpsEsc(DPS_REGION_LABELS[g])+' ('+buckets[g].length+')</span>';
-    html+=buckets[g].map(pillHtml).join('');
+    // One vertical row per region; pills wrap inside the row instead of scrolling sideways.
+    html+='<div class="dps-grp-row" data-region="'+g+'">'
+      +'<span class="dps-grp-tag" title="'+dpsEsc(DPS_REGION_TIPS[g])+'">'+dpsEsc(DPS_REGION_LABELS[g])+' ('+buckets[g].length+')</span>'
+      +buckets[g].map(pillHtml).join('')
+      +'</div>';
   });
   pills.innerHTML=html;
   dpsUpdateExportBtn();
