@@ -289,7 +289,7 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
   padding:0 4px; border-radius:3px; margin-left:4px; vertical-align:1px; }
 .dps-op-cul .dps-op-tag     { background:#1a5f9e; color:#fff; }
 .dps-op-partner .dps-op-tag { background:#1f7a3d; color:#fff; }
-/* Past ports: a call whose ETA is before the From date is greyed out. */
+/* Past ports: a call whose ETD is before today is greyed out. */
 td.pcell.pc-past, td.pcell.pc-past .pc-code, td.pcell.pc-past .pc-name { color:#9099a6 !important; }
 td.pcell.pc-past { background:#f0f1f3 !important; }
 /* User-defined port highlight colours (set in the Port colors toolbar). */
@@ -2518,12 +2518,16 @@ function dpsBlockOp(b){
   return best;
 }
 function dpsOpKind(op){ return String(op||'').toUpperCase()==='CUL'?'cul':'partner'; }
-// A port cell is "past" when every call in it happened before the From date. A voyage that
-// straddles the window keeps all its calls, so early ports are greyed rather than dropped.
+// A port cell is "past" when every call in it has ETD before today. Grey is anchored to the
+// current date, not the From filter, so it always means "already sailed". Today's ETD stays
+// normal; calls with no ETD are left normal as well.
 function dpsCellPast(calls){
-  if(!dpsFrom || !calls || !calls.length) return false;
-  const from=dpsFrom.slice(0,10);
-  return (calls||[]).every(function(c){ const t=dpsCallTime(c).slice(0,10); return !!t && t<from; });
+  if(!calls || !calls.length) return false;
+  const today=dpsDateStr(new Date());
+  return calls.every(function(c){
+    const etd=String((c && c.departure)||'').slice(0,10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(etd) && etd<today;
+  });
 }
 // Service lanes ticked for "Export current view". null = never chosen -> all visible lanes.
 const DPS_EXPORT_SEL_KEY = 'dps_export_lanes_v1';
@@ -3535,11 +3539,11 @@ function dpsPortTd(calls){
   if(infos.length<2){
     const info=infos[0]||dpsNodeInfo(calls[0].terminal);
     const name=info.name||info.port;
-    return '<td class="'+cls+'"'+style+' title="'+dpsEsc(info.node+'  '+name+(past?' (before From date)':''))+'"><span class="pc-code">'+dpsEsc(info.node)+'</span><span class="pc-name">'+dpsEsc(name)+'</span></td>';
+    return '<td class="'+cls+'"'+style+' title="'+dpsEsc(info.node+'  '+name+(past?' (ETD before today)':''))+'"><span class="pc-code">'+dpsEsc(info.node)+'</span><span class="pc-name">'+dpsEsc(name)+'</span></td>';
   }
   const names=[];
   infos.forEach(i=>{ const n=i.name||i.port; if(n && names.indexOf(n)===-1) names.push(n); });
-  return '<td class="'+cls+'"'+style+' title="'+dpsEsc(infos.map(i=>i.node).join(' / ')+'  '+names.join(' / ')+(past?' (before From date)':''))+'">'
+  return '<td class="'+cls+'"'+style+' title="'+dpsEsc(infos.map(i=>i.node).join(' / ')+'  '+names.join(' / ')+(past?' (ETD before today)':''))+'">'
     + infos.map(i=>'<span class="pc-code">'+dpsEsc(i.node)+'</span>').join('')
     + '<span class="pc-name">'+dpsEsc(names.join(' / '))+'</span></td>';
 }
@@ -3747,7 +3751,7 @@ const XLSX_XF=[
   {f:0,fl:9,al:'center'}              // 9 planned row (#F5F7FB)
 ];
 // Dynamic style book: base styles plus extra fills for CUL / partner vessel tints,
-// user-defined port highlights and past-port grey. Rebuilt once per export so the sheet XML
+// user-defined port highlights and past-port grey (ETD before today). Rebuilt once per export so the sheet XML
 // and styles.xml agree on style ids.
 let DPS_XLSX_BOOK=null;
 function dpsBuildXlsxStyles(){
