@@ -2,7 +2,10 @@
 Merge Actual Daily Consumption (primary) + TCD Daily Consumption (fallback)
 from P:\\...\\Vessel Daily Consumption.xlsx into shipping_data/vessels.csv.
 
-Rules (user confirmed 2026-11-26):
+Rules (user confirmed 2026-11-26, code normalisation added 2026-11-27):
+  - Excel codes are normalised to Port Charges codes before matching CSV.
+    RENAME = real code changes; IGNORE = stale duplicate blocks removed by the
+    2026-11-26 dedupe (RACINE / CUST / KRCB / SDAM) — never re-import them.
   - Source priority: Actual > TCD for the SAME (code, speed) key.
   - Existing CSV nonzero values:
       * ACTUAL conflict -> overwrite with Actual value
@@ -11,7 +14,9 @@ Rules (user confirmed 2026-11-26):
   - HSFO column -> ALWAYS keep 0 (never write).
   - New (code, speed) rows -> append with all values; hsfo=0.
       * hire_daily: inherit from same code's existing rows if any, else 0.
-  - Never delete rows not covered by Excel.
+  - Never delete rows not covered by Excel, EXCEPT an all-zero placeholder row
+    of a code that now receives real Excel data (removes 14kn zero rows that
+    would otherwise distort low-speed interpolation).
   - Keep CRLF line endings, no BOM.
 
 Usage: python apply_actual_consumption.py        (dry-run)
@@ -28,6 +33,11 @@ FIELDS = ['vessel_code','vessel_name','speed_knots','lsfo_mt_day','hsfo_mt_day',
 XLSX_IDX = {'lsfo':3,'hsfo':4,'mgo':5,'ps_lsfo':6,'ps_mgo':7}
 CSV_FIELD = {'lsfo':'lsfo_mt_day','hsfo':'hsfo_mt_day','mgo':'mgo_mt_day',
              'ps_lsfo':'portstay_lsfo_mt_day','ps_mgo':'portstay_mgo_mt_day'}
+# Excel code -> Port Charges code (2026-11-26 user decision + dedupe data moves)
+RENAME = {'CASR':'ASRR', 'CUML':'CUMN', 'SISO':'SNSO', 'STBL':'STBE',
+          'XHDL':'XHDP', 'ZGXA':'ZGOA'}
+# Obsolete duplicate blocks already removed by dedupe_vessels.py.
+IGNORE = {'RACINE', 'CUST', 'KRCB', 'SDAM'}
 
 
 def num(x):
@@ -49,6 +59,9 @@ def parse_sheet(ws, start_row):
             code, name = str(c).strip(), str(n or '').strip()
         if code is None or spd in (None, ''):
             continue
+        if code in IGNORE:
+            continue
+        code = RENAME.get(code, code)
         vals = [num(x) for x in (list(r) + [None]*8)[3:8]]
         rows.append({'code':code, 'name':name, 'speed':num(spd),
                      'lsfo':vals[0], 'hsfo':vals[1], 'mgo':vals[2],
@@ -125,6 +138,22 @@ def main():
                 else:
                     stats['kept_conflict'].append((k, f, ov, nv, source))
 
+    # Keep the merged file deterministic: (code, speed) order, as expected by
+    # build_vessel_split_csvs.py when it rebuilds the union of the three parts.
+    records.sort(key=lambda r: (r['vessel_code'], num(r['speed_knots'])))
+
+    # Drop obsolete all-zero placeholder rows of codes that now have Excel tiers
+    # (e.g. CZBM/MYTJ/NWTR 14kn zero rows). Keep zero rows that Excel itself has.
+    excel_codes = {k[0] for k in merged}
+    zero_fields = ['lsfo_mt_day', 'hsfo_mt_day', 'mgo_mt_day',
+                   'portstay_lsfo_mt_day', 'portstay_mgo_mt_day']
+    before = len(records)
+    records = [r for r in records if not (
+        r['vessel_code'] in excel_codes
+        and (r['vessel_code'], round(num(r['speed_knots']), 2)) not in merged
+        and all(num(r[f]) == 0 for f in zero_fields))]
+    stats['dropped_placeholder'] = before - len(records)
+
     # write CSV with CRLF, no BOM
     if WRITE:
         os.makedirs('archive/backup', exist_ok=True)
@@ -143,6 +172,7 @@ def main():
         for it in items[:20]:
             print('   ', it)
         if len(items) > 20: print('    ... (%d more)' % (len(items)-20))
+    print('\n=== dropped_placeholder: %d' % stats['dropped_placeholder'])
 
     print('\nSUMMARY: rows %d -> %d, ships %d -> %d' % (
         len(lines)-1, len(records),

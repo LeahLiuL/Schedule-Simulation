@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-26",
+  "generated": "2026-11-27",
   "note": "数据来源二选一：ACT=该船在 Actual Daily Consumption 有数据（Actual 没有的档位由 TCD 补）；TCD=Actual 完全没有。船码以 Port Charges 账单 shipCode 为准（2026-11-26 用户拍板）：CUML/SISO/XHDL/ZGXA 已改回 CUMN/SNSO/XHDP/ZGOA；CZBM/FUYU/MYTJ/NWTR/TBFZ 为无油耗数据船，未写入本来源表。有油耗数据但无 Port Charges 账单的船保留不删。",
   "ships": {
     "ASRR": {
@@ -16,13 +16,13 @@
     },
     "BIBK": {
       "type": "ACT",
-      "act": 4,
-      "tcd": 0,
+      "act": 3,
+      "tcd": 1,
       "tiers": {
         "11": "ACT",
         "13": "ACT",
         "15": "ACT",
-        "17": "ACT"
+        "17": "TCD"
       }
     },
     "BZCF": {
@@ -39,9 +39,11 @@
     },
     "CSJ7": {
       "type": "ACT",
-      "act": 1,
+      "act": 3,
       "tcd": 2,
       "tiers": {
+        "9": "ACT",
+        "10.58": "ACT",
         "11": "ACT",
         "12": "TCD",
         "13": "TCD"
@@ -185,6 +187,21 @@
         "18.5": "TCD"
       }
     },
+    "CUMN": {
+      "type": "ACT",
+      "act": 8,
+      "tcd": 0,
+      "tiers": {
+        "12": "ACT",
+        "12.5": "ACT",
+        "13": "ACT",
+        "13.5": "ACT",
+        "14": "ACT",
+        "14.5": "ACT",
+        "15": "ACT",
+        "15.5": "ACT"
+      }
+    },
     "CUNS": {
       "type": "ACT",
       "act": 15,
@@ -262,6 +279,15 @@
         "17.5": "ACT",
         "18": "ACT",
         "18.5": "TCD"
+      }
+    },
+    "CZBM": {
+      "type": "ACT",
+      "act": 1,
+      "tcd": 1,
+      "tiers": {
+        "11": "ACT",
+        "12": "TCD"
       }
     },
     "DFMH": {
@@ -519,6 +545,16 @@
         "15": "ACT"
       }
     },
+    "MKSN": {
+      "type": "TCD",
+      "act": 0,
+      "tcd": 3,
+      "tiers": {
+        "10": "TCD",
+        "11": "TCD",
+        "12": "TCD"
+      }
+    },
     "MMRN": {
       "type": "ACT",
       "act": 6,
@@ -559,6 +595,20 @@
         "20": "ACT"
       }
     },
+    "MYTJ": {
+      "type": "TCD",
+      "act": 0,
+      "tcd": 7,
+      "tiers": {
+        "10": "TCD",
+        "11": "TCD",
+        "12": "TCD",
+        "13": "TCD",
+        "14": "TCD",
+        "15": "TCD",
+        "16": "TCD"
+      }
+    },
     "NBST": {
       "type": "ACT",
       "act": 5,
@@ -581,6 +631,14 @@
         "16": "ACT",
         "17": "ACT",
         "18": "ACT"
+      }
+    },
+    "NWTR": {
+      "type": "TCD",
+      "act": 0,
+      "tcd": 1,
+      "tiers": {
+        "12": "TCD"
       }
     },
     "OSGB": {
@@ -628,6 +686,43 @@
         "16": "ACT",
         "17": "TCD",
         "18": "TCD"
+      }
+    },
+    "SNSO": {
+      "type": "ACT",
+      "act": 13,
+      "tcd": 0,
+      "tiers": {
+        "12": "ACT",
+        "12.5": "ACT",
+        "13": "ACT",
+        "13.5": "ACT",
+        "14": "ACT",
+        "14.5": "ACT",
+        "15": "ACT",
+        "15.5": "ACT",
+        "16": "ACT",
+        "16.5": "ACT",
+        "17": "ACT",
+        "17.5": "ACT",
+        "18": "ACT"
+      }
+    },
+    "STBE": {
+      "type": "ACT",
+      "act": 10,
+      "tcd": 0,
+      "tiers": {
+        "12": "ACT",
+        "12.5": "ACT",
+        "13": "ACT",
+        "13.5": "ACT",
+        "14": "ACT",
+        "14.5": "ACT",
+        "15": "ACT",
+        "15.5": "ACT",
+        "16": "ACT",
+        "16.5": "ACT"
       }
     },
     "SY68": {
@@ -707,9 +802,10 @@
     },
     "WNFD": {
       "type": "ACT",
-      "act": 8,
+      "act": 9,
       "tcd": 1,
       "tiers": {
+        "7": "ACT",
         "11": "ACT",
         "11.5": "ACT",
         "12": "ACT",
@@ -739,13 +835,24 @@
       }
     },
     "XD88": {
+      "type": "TCD",
+      "act": 0,
+      "tcd": 3,
+      "tiers": {
+        "7": "TCD",
+        "11.5": "TCD",
+        "12.5": "TCD"
+      }
+    },
+    "XHDP": {
       "type": "ACT",
-      "act": 3,
+      "act": 4,
       "tcd": 0,
       "tiers": {
-        "7": "ACT",
-        "11.5": "ACT",
-        "12.5": "ACT"
+        "15": "ACT",
+        "16": "ACT",
+        "17": "ACT",
+        "18": "ACT"
       }
     },
     "XPBL": {
@@ -811,6 +918,19 @@
         "15": "ACT"
       }
     },
+    "ZGOA": {
+      "type": "ACT",
+      "act": 6,
+      "tcd": 0,
+      "tiers": {
+        "10": "ACT",
+        "11": "ACT",
+        "12": "ACT",
+        "13": "ACT",
+        "14": "ACT",
+        "14.5": "ACT"
+      }
+    },
     "ZGYC": {
       "type": "ACT",
       "act": 1,
@@ -860,82 +980,6 @@
       "tcd": 0,
       "tiers": {
         "11": "ACT"
-      }
-    },
-    "STBE": {
-      "type": "ACT",
-      "act": 10,
-      "tcd": 0,
-      "tiers": {
-        "12": "ACT",
-        "12.5": "ACT",
-        "13": "ACT",
-        "13.5": "ACT",
-        "14": "ACT",
-        "14.5": "ACT",
-        "15": "ACT",
-        "15.5": "ACT",
-        "16": "ACT",
-        "16.5": "ACT"
-      }
-    },
-    "CUMN": {
-      "type": "ACT",
-      "act": 8,
-      "tcd": 0,
-      "tiers": {
-        "12": "ACT",
-        "12.5": "ACT",
-        "13": "ACT",
-        "13.5": "ACT",
-        "14": "ACT",
-        "14.5": "ACT",
-        "15": "ACT",
-        "15.5": "ACT"
-      }
-    },
-    "SNSO": {
-      "type": "ACT",
-      "act": 13,
-      "tcd": 0,
-      "tiers": {
-        "12": "ACT",
-        "12.5": "ACT",
-        "13": "ACT",
-        "13.5": "ACT",
-        "14": "ACT",
-        "14.5": "ACT",
-        "15": "ACT",
-        "15.5": "ACT",
-        "16": "ACT",
-        "16.5": "ACT",
-        "17": "ACT",
-        "17.5": "ACT",
-        "18": "ACT"
-      }
-    },
-    "XHDP": {
-      "type": "ACT",
-      "act": 4,
-      "tcd": 0,
-      "tiers": {
-        "15": "ACT",
-        "16": "ACT",
-        "17": "ACT",
-        "18": "ACT"
-      }
-    },
-    "ZGOA": {
-      "type": "ACT",
-      "act": 6,
-      "tcd": 0,
-      "tiers": {
-        "10": "ACT",
-        "11": "ACT",
-        "12": "ACT",
-        "13": "ACT",
-        "14": "ACT",
-        "14.5": "ACT"
       }
     }
   }

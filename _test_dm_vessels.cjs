@@ -83,14 +83,15 @@ function check(label, cond, extra) {
 api.render('');
 const shipRows = (lastHTML.match(/data-ship=/g) || []).length;
 const tierRowsDefault = (lastHTML.match(/dm-tier-row/g) || []).length;
-check('one row per ship (100 codes - 27 no-fuel = 73 visible)', shipRows === 73, 'got ' + shipRows);
+check('one row per ship (101 codes - 25 no-fuel = 76 visible)', shipRows === 76, 'got ' + shipRows);
 check('tiers collapsed by default', tierRowsDefault === 0, 'got ' + tierRowsDefault);
 check('no "No vessels found"', !lastHTML.includes('No vessels found'));
-check('zero-fuel vessels hidden', !['CZBM','FUYU','MYTJ','NWTR','TBFZ'].some(c => lastHTML.includes(c)), lastHTML.slice(0,300));
+// CZBM / MYTJ gained fuel data from the 2026-11-27 Excel; only these remain zero-fuel.
+check('zero-fuel vessels hidden', !['FUYU','NWTR','TBFZ'].some(c => lastHTML.includes(c)), lastHTML.slice(0,300));
 
 // 1b. zero-fuel vessels cannot be revealed by search
-api.render('CZBM');
-check('search cannot reveal zero-fuel vessel', !lastHTML.includes('CZBM') && lastHTML.includes('No vessels found'), lastHTML.slice(0,300));
+api.render('FUYU');
+check('search cannot reveal zero-fuel vessel', !lastHTML.includes('FUYU') && lastHTML.includes('No vessels found'), lastHTML.slice(0,300));
 api.render('');
 
 // 2. search filter
@@ -136,7 +137,7 @@ check('delete tier restores count', VESSELS_DATA.filter(v=>v.code==='CUHC').leng
 api.delShip('BIBK');
 check('whole ship deleted', !VESSELS_DATA.some(v=>v.code==='BIBK'));
 api.render('');
-check('ship count drops to 72', (lastHTML.match(/data-ship=/g)||[]).length === 72);
+check('ship count drops to 75', (lastHTML.match(/data-ship=/g)||[]).length === 75);
 
 // 9. add new vessel unique code + expanded
 api.addShip();

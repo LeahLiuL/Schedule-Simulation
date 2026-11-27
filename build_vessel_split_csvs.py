@@ -50,12 +50,13 @@ FIELDS = ['vessel_code', 'vessel_name', 'speed_knots', 'lsfo_mt_day',
           'portstay_mgo_mt_day', 'hire_daily']
 WRITE = len(sys.argv) > 1 and sys.argv[1].lower() == 'write'
 
-# Excel codes that were folded into the Port Charges canonical codes.
+# Real Excel-code -> Port Charges code changes (plus the two dedupe data moves).
+# Stale duplicate blocks removed by the 2026-11-26 dedupe are ignored.
 EXCEL_CODE_TO_PC = {
-    'CASR': 'ASRR', 'CUML': 'CUMN', 'CUST': 'SHTG', 'KRCB': 'KRCL',
-    'RACINE': 'RACE', 'SDAM': 'SHTG', 'SISO': 'SNSO', 'STBL': 'STBE',
+    'CASR': 'ASRR', 'CUML': 'CUMN', 'SISO': 'SNSO', 'STBL': 'STBE',
     'XHDL': 'XHDP', 'ZGXA': 'ZGOA',
 }
+EXCEL_IGNORE = {'RACINE', 'CUST', 'KRCB', 'SDAM'}
 XLSX_SHEETS = {'ACT': ('Actual Daily Consumption', 3),
                'TCD': ('TCD Daily Consumption', 2)}
 
@@ -103,6 +104,8 @@ def excel_lookup():
             if c not in (None, ''):
                 code = str(c).strip()
             if code and spd not in (None, ''):
+                if code in EXCEL_IGNORE:
+                    continue
                 v = [num(x) for x in (list(r) + [None] * 8)[3:8]]
                 key = (EXCEL_CODE_TO_PC.get(code, code), round(float(spd), 2))
                 out[key] = [v[0], v[2], v[3], v[4]]  # skip HSFO
