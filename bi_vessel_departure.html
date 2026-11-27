@@ -286,6 +286,13 @@ table.dps-table td { border:1px solid #d6dbe2; padding:3px 6px; white-space:nowr
 /* Service lane regions: one vertical row per region, wrapping inside the row (no scrolling). */
 .dps-grp-row { display:flex; flex-wrap:wrap; align-items:center; gap:5px; min-height:26px; }
 .dps-grp-tag { flex:0 0 auto; font-size:9.5px; font-weight:700; letter-spacing:.2px; color:#5f6b7a; background:#eef2f7; border:1px solid #dde4ed; border-radius:9px; padding:2px 7px; white-space:nowrap; user-select:none; }
+/* Region-level bulk tick / untick, plus how many of that region's lanes are ticked. */
+.dps-grp-tools { display:inline-flex; align-items:center; gap:3px; flex:0 0 auto; margin-right:3px; }
+.dps-grp-tools button { border:1px solid #d0d7de; background:#fff; color:#5f6368; font-size:9.5px; padding:1px 7px; border-radius:9px; cursor:pointer; white-space:nowrap; line-height:1.6; }
+.dps-grp-tools button:hover { border-color:#2E75B6; color:#16335a; background:#f4f8fd; }
+.dps-grp-count { font-size:9.5px; color:#98a2b3; font-variant-numeric:tabular-nums; min-width:36px; text-align:center; }
+.dps-grp-row.all-on .dps-grp-count { color:#2E75B6; font-weight:700; }
+.dps-grp-row.all-off .dps-grp-tag { opacity:.5; }
 /* ETA Delay (Estimated ETA - Planned ETA) is shown in the Proforma row for ST3 / HDT / ST1,
    not in a separate row. */
 .dps-row-pf td.pcell.dps-pf-delay { font-size:10.5px; font-weight:700; }
@@ -565,7 +572,7 @@ section.view.nv-view[hidden] { display:none; }
 </section>
 <section class="view" id="sec-dps" hidden>
 <div class="dps-toolbar dps-toolbar-lanes">
-  <label title="Every lane present in the ship schedule feed is shown, except Service Type O lanes. Three regions: CUL-only, CUL + partner, partner-only. Tick a lane to include it in Export current view; click its code to view the grid; drag inside a region to reorder.">Service</label>
+  <label title="Every lane present in the ship schedule feed is shown, except Service Type O lanes. Three regions: CUL-only, CUL + partner, partner-only. Each region has its own All / None buttons and a ticked/total counter for bulk selection. Tick a lane to include it in Export current view; click its code to view the grid; drag inside a region to reorder.">Service</label>
   <div class="dps-svc-pills" id="dpsSvcPills"></div>
   <span class="dps-lane-tools">
     <button type="button" onclick="dpsExportAll()" title="Tick every service lane for export">All</button>
@@ -3205,26 +3212,42 @@ function dpsBuildPills(){
   let html='';
   [1,2,3].forEach(function(g){
     if(!buckets[g].length) return;
+    const n=buckets[g].length;
+    const tipAll='Tick all '+n+' lanes in this region for export';
+    const tipNone='Untick all '+n+' lanes in this region (exclude them from Export current view)';
     // One vertical row per region; pills wrap inside the row instead of scrolling sideways.
+    // Each region carries its own All / None bulk controls and a "ticked / total" counter.
     html+='<div class="dps-grp-row" data-region="'+g+'">'
-      +'<span class="dps-grp-tag" title="'+dpsEsc(DPS_REGION_TIPS[g])+'">'+dpsEsc(DPS_REGION_LABELS[g])+' ('+buckets[g].length+')</span>'
+      +'<span class="dps-grp-tag" title="'+dpsEsc(DPS_REGION_TIPS[g])+'">'+dpsEsc(DPS_REGION_LABELS[g])+' ('+n+')</span>'
+      +'<span class="dps-grp-tools">'
+        +'<button type="button" onclick="dpsRegionSel('+g+',true)" title="'+dpsEsc(tipAll)+'">All</button>'
+        +'<button type="button" onclick="dpsRegionSel('+g+',false)" title="'+dpsEsc(tipNone)+'">None</button>'
+        +'<span class="dps-grp-count"></span>'
+      +'</span>'
       +buckets[g].map(pillHtml).join('')
       +'</div>';
   });
   pills.innerHTML=html;
+  dpsRepaintRegionCounts();
   dpsUpdateExportBtn();
 }
 function dpsRepaintTicks(){
+  const set={}; dpsExportLanes().forEach(function(s){ set[s]=1; });
   const ps=document.querySelectorAll('#dpsSvcPills .dps-pill');
   for(let k=0;k<ps.length;k++){
     const s=ps[k].getAttribute('data-svc'), cb=ps[k].querySelector('.dps-pick');
-    const on=(dpsExportSel||[]).indexOf(s)>=0;
+    const on=!!set[s];
     ps[k].classList.toggle('picked',on); if(cb) cb.checked=on;
   }
+  dpsRepaintRegionCounts();
   dpsUpdateExportBtn();
 }
 function dpsToggleExportLane(e,code){
-  if(e){ e.stopPropagation(); if(e.preventDefault) e.preventDefault(); }
+  // Do NOT preventDefault() here: on a real <input type=checkbox> click the browser would
+  // roll the checked state back AFTER this handler returns, overwriting the repaint below
+  // (counter says 11/12 while all 12 boxes still look ticked). Let the box flip naturally,
+  // then repaint from the authoritative selection so every box agrees.
+  if(e && e.stopPropagation) e.stopPropagation();
   const cur=dpsExportLanes(), i=cur.indexOf(code);
   if(i>=0) cur.splice(i,1); else cur.push(code);
   dpsExportSel=cur.slice(); dpsSaveExportSel(); dpsRepaintTicks();
@@ -3234,6 +3257,35 @@ function dpsExportAll(){
 }
 function dpsExportNone(){
   dpsExportSel=[]; dpsSaveExportSel(); dpsRepaintTicks();
+}
+// Bulk tick / untick ONE region: 1 CUL only, 2 CUL + partner, 3 partner only.
+// Other regions are left exactly as they were, and the canonical lane order is kept.
+function dpsRegionLanes(g){
+  g=Number(g);
+  return (DPS_SERVICES||[]).filter(function(s){ return DPS_LANE_REGION[s]===g; });
+}
+function dpsRegionSel(g,on){
+  const reg=dpsRegionLanes(g), cur=dpsExportLanes();
+  let next;
+  if(on){
+    const set={}; cur.forEach(function(s){ set[s]=1; }); reg.forEach(function(s){ set[s]=1; });
+    next=(DPS_SERVICES||[]).filter(function(s){ return set[s]; });
+  }else{
+    const rm={}; reg.forEach(function(s){ rm[s]=1; });
+    next=cur.filter(function(s){ return !rm[s]; });
+  }
+  dpsExportSel=next; dpsSaveExportSel(); dpsRepaintTicks();
+}
+function dpsRepaintRegionCounts(){
+  const rows=document.querySelectorAll('#dpsSvcPills .dps-grp-row');
+  const set={}; dpsExportLanes().forEach(function(s){ set[s]=1; });
+  for(let k=0;k<rows.length;k++){
+    const row=rows[k], reg=dpsRegionLanes(row.getAttribute('data-region')), n=reg.length;
+    let c=0; reg.forEach(function(s){ if(set[s]) c++; });
+    const el=row.querySelector('.dps-grp-count'); if(el) el.textContent=c+'/'+n;
+    row.classList.toggle('all-on', n>0 && c===n);
+    row.classList.toggle('all-off', c===0);
+  }
 }
 function dpsUpdateExportBtn(){
   const b=document.getElementById('dpsExportViewBtn'); if(!b) return;
